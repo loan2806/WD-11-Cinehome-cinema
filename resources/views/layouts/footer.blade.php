@@ -1,0 +1,45 @@
+<footer class="cine-footer">
+    <div class="container-fluid px-5">
+        <div class="row gy-4">
+
+            <div class="col-md-4">
+                <div class="footer-logo">
+                    <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome Logo">
+                    <strong>Cine<span>Home</span></strong>
+                </div>
+
+                <p>
+                    CineHome là hệ thống đặt vé xem phim trực tuyến, hỗ trợ chọn ghế,
+                    thanh toán QR và vé điện tử tiện lợi.
+                </p>
+            </div>
+
+            <div class="col-md-2">
+                <h5 class="text-white fw-bold">Menu</h5>
+                <p>Phim</p>
+                <p>Rạp</p>
+                <p>Lịch chiếu</p>
+            </div>
+
+            <div class="col-md-3">
+                <h5 class="text-white fw-bold">Hỗ trợ</h5>
+                <p>Điều khoản sử dụng</p>
+                <p>Chính sách hủy vé</p>
+                <p>Liên hệ</p>
+            </div>
+
+            <div class="col-md-3">
+                <h5 class="text-white fw-bold">Liên hệ</h5>
+                <p><i class="fa-solid fa-envelope"></i> support@cinehome.vn</p>
+                <p><i class="fa-solid fa-phone"></i> 0123 456 789</p>
+            </div>
+
+        </div>
+
+        <hr class="border-secondary">
+
+        <div class="text-center">
+            © {{ date('Y') }} CineHome. All rights reserved.
+        </div>
+    </div>
+</footer>
