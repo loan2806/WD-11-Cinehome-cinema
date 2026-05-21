@@ -17,8 +17,7 @@
         <header class="cinema-map-header">
             <h1>Bản đồ <span>rạp chiếu</span></h1>
             <p class="cinema-map-lead">
-                Cho phép trình duyệt lấy vị trí để sắp xếp <strong>rạp gần bạn</strong> và tính khoảng cách (Haversine).
-                Bản đồ hiển thị bằng Leaflet + OpenStreetMap.
+                Cho phép trình duyệt lấy vị trí để sắp xếp <strong>rạp gần bạn</strong>
             </p>
         </header>
 
