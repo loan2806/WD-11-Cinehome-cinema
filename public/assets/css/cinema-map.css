@@ -1,0 +1,288 @@
+/* Trang bản đồ rạp — tông màu đồng bộ CineHome (vàng #f5a623, nền tối) */
+
+.cinema-map-page {
+    min-height: calc(100vh - 120px);
+    background: #0b0705;
+    color: #fff;
+    padding: 6.5rem 1.25rem 2.5rem;
+}
+
+.cinema-map-inner {
+    max-width: 1800px;
+    margin: 0 auto;
+}
+
+.cinema-map-header h1 {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+}
+
+.cinema-map-header h1 span {
+    color: #f5a623;
+}
+
+.cinema-map-lead {
+    color: #9ca3af;
+    max-width: 52rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+    line-height: 1.55;
+}
+
+.cinema-map-alert {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.9rem 1rem;
+    border-radius: 0.85rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.cinema-map-alert--warn {
+    background: rgba(245, 166, 35, 0.12);
+    border: 1px solid rgba(245, 166, 35, 0.35);
+    color: #fde68a;
+}
+
+.cinema-map-alert i {
+    margin-top: 0.15rem;
+    color: #f5a623;
+}
+
+.cinema-map-loading {
+    color: #d1d5db;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.cinema-map-fallback {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.cinema-map-fallback label {
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.cinema-map-select {
+    background: #151515;
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 0.65rem;
+    padding: 0.45rem 0.75rem;
+    min-width: 200px;
+}
+
+.cinema-map-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+
+@media (min-width: 992px) {
+    .cinema-map-layout {
+        grid-template-columns: 1.15fr 0.85fr;
+        align-items: stretch;
+    }
+}
+
+.cinema-map-wrap {
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.cinema-map-canvas {
+    height: min(62vh, 520px);
+    width: 100%;
+    background: #1a1510;
+}
+
+@media (min-width: 992px) {
+    .cinema-map-canvas {
+        height: 560px;
+    }
+}
+
+/* Leaflet popup tối cho đồng bộ theme */
+.leaflet-popup-content-wrapper {
+    background: #151515;
+    color: #f3f4f6;
+    border-radius: 0.65rem;
+    border: 1px solid rgba(245, 166, 35, 0.35);
+}
+
+.leaflet-popup-tip {
+    background: #151515;
+}
+
+.leaflet-popup-content {
+    margin: 0.65rem 0.85rem;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.cinema-map-sidebar {
+    background: #151515;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    padding: 1rem 1rem 0.75rem;
+    max-height: min(62vh, 520px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 992px) {
+    .cinema-map-sidebar {
+        max-height: 560px;
+    }
+}
+
+.cinema-map-sidebar-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #f5a623;
+    margin-bottom: 0.75rem;
+    flex-shrink: 0;
+}
+
+.cinema-map-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.cinema-map-list li {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cinema-map-list button {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    color: inherit;
+    padding: 0.75rem 0.35rem;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: background 0.15s ease;
+}
+
+.cinema-map-list button:hover,
+.cinema-map-list button.is-active {
+    background: rgba(245, 166, 35, 0.12);
+}
+
+.cinema-map-list-name {
+    font-weight: 700;
+    color: #fff;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.cinema-map-list-meta {
+    font-size: 0.78rem;
+    color: #9ca3af;
+}
+
+.cinema-map-detail {
+    margin-top: 1.25rem;
+    padding: 1.1rem 1.25rem;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(245, 166, 35, 0.12), rgba(21, 21, 21, 0.95));
+    border: 1px solid rgba(245, 166, 35, 0.35);
+}
+
+.cinema-map-detail h3 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    color: #fff;
+}
+
+.cinema-map-detail-address {
+    color: #d1d5db;
+    font-size: 0.9rem;
+    margin-bottom: 0.35rem;
+}
+
+.cinema-map-detail-distance {
+    font-weight: 700;
+    color: #f5a623;
+    margin-bottom: 0.75rem;
+}
+
+.cinema-map-btn-directions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: #f5a623;
+    color: #0b0705;
+    font-weight: 800;
+    padding: 0.55rem 1rem;
+    border-radius: 0.65rem;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.cinema-map-btn-directions:hover {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+    color: #0b0705;
+}
+
+.is-hidden {
+    display: none !important;
+}
+
+/* Trang chi tiết rạp — chỉ một marker */
+.cinema-map-layout--single {
+    grid-template-columns: 1fr !important;
+}
+
+.cinema-map-show-block {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 100%;
+}
+
+.cinema-map-canvas--show {
+    height: min(52vh, 460px);
+    min-height: 360px;
+}
+
+@media (min-width: 992px) {
+    .cinema-map-canvas--show {
+        height: 460px;
+    }
+}
+
+.cinema-map-show-block .cinema-map-alert {
+    margin-bottom: 0;
+}
+
+.cinema-map-show-block .cinema-map-loading {
+    margin-bottom: 0;
+}
+
+.cinema-map-show-block .cinema-map-detail {
+    margin-top: 0;
+}
+
+.cinema-show-distance {
+    font-weight: 700;
+    color: #f5a623;
+}

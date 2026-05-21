@@ -14,11 +14,13 @@
     {{-- CSS riêng --}}
     <link rel="stylesheet" href="{{ asset('assets/css/user-home.css') }}">
 
+    @stack('styles')
+
     {{-- Tailwind / Breeze --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="bg-[#080808] text-white">
+<body>
     @include('components.preloader')
 
     @include('layouts.header')
