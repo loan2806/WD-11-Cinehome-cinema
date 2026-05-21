@@ -31,7 +31,7 @@ return new class extends Migration
             $table->integer('duration')->default(90); // phút
             $table->string('age_rating')->default('P');
 
-            $table->date('release_date')->nullable();
+            $table->dateTime('release_date')->nullable();
 
             // now_showing / coming_soon / stopped
             $table->enum('status', ['now_showing', 'coming_soon', 'stopped'])

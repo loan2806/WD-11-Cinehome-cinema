@@ -12,32 +12,23 @@ class MovieController extends Controller
 {
     public function home()
     {
-        $today = Carbon::today('Asia/Ho_Chi_Minh');
-
-        $bannerMovies = Movie::with('showtimes')
-            ->whereDate('release_date', '>=', $today)
+        $movies = Movie::with('showtimes')
             ->latest()
-            ->take(5)
             ->get();
 
-        $nowShowingMovies = Movie::with('showtimes')
-            ->whereDate('release_date', $today)
-            ->latest()
-            ->take(12)
-            ->get();
+        $nowShowingMovies = $movies->filter(
+            fn($movie) => $movie->schedule_status === 'Đang chiếu'
+        );
 
-        $comingSoonMovies = Movie::with('showtimes')
-            ->whereDate('release_date', '>', $today)
-            ->whereDate('release_date', '<=', $today->copy()->addDays(10))
-            ->latest()
-            ->take(12)
-            ->get();
+        $comingSoonMovies = $movies->filter(
+            fn($movie) => $movie->schedule_status === 'Sắp chiếu'
+        );
 
-        $comingLaterMovies = Movie::with('showtimes')
-            ->whereDate('release_date', '>', $today->copy()->addMonth())
-            ->latest()
-            ->take(12)
-            ->get();
+        $comingLaterMovies = $movies->filter(
+            fn($movie) => $movie->schedule_status === 'Sắp ra mắt'
+        );
+
+        $bannerMovies = $nowShowingMovies->take(5);
 
         return view('user.home', compact(
             'bannerMovies',
@@ -46,49 +37,63 @@ class MovieController extends Controller
             'comingLaterMovies'
         ));
     }
-
     public function index(Request $request)
     {
-        $today = Carbon::today('Asia/Ho_Chi_Minh');
-
-        $query = Movie::with('showtimes')
-            ->whereDate('release_date', '>=', $today);
-
-        if ($request->filled('keyword')) {
-            $query->where('title', 'like', '%' . $request->keyword . '%');
-        }
-
-        if ($request->filled('genre')) {
-            $query->where('genre', $request->genre);
-        }
-
-        if ($request->filled('country')) {
-            $query->where('country', $request->country);
-        }
-
-        if ($request->filled('status')) {
-            if ($request->status === 'now_showing') {
-                $query->whereDate('release_date', $today);
-            }
-
-            if ($request->status === 'coming_soon') {
-                $query->whereDate('release_date', '>', $today)
-                    ->whereDate('release_date', '<=', $today->copy()->addDays(10));
-            }
-
-            if ($request->status === 'coming_later') {
-                $query->whereDate('release_date', '>', $today->copy()->addMonth());
-            }
-        }
-
-        if ($request->filled('release_date')) {
-            $query->whereDate('release_date', $request->release_date);
-        }
-
-        $movies = $query
+        $movies = Movie::with('showtimes')
             ->latest()
-            ->paginate(12)
-            ->withQueryString();
+            ->get();
+
+        // SEARCH
+        if ($request->filled('keyword')) {
+
+            $movies = $movies->filter(function ($movie) use ($request) {
+
+                return str_contains(
+                    strtolower($movie->title),
+                    strtolower($request->keyword)
+                );
+            });
+        }
+
+        // GENRE
+        if ($request->filled('genre')) {
+
+            $movies = $movies->where('genre', $request->genre);
+        }
+
+        // COUNTRY
+        if ($request->filled('country')) {
+
+            $movies = $movies->where('country', $request->country);
+        }
+
+        // STATUS
+        if ($request->filled('status')) {
+
+            // ĐANG CHIẾU
+            if ($request->status === 'now_showing') {
+
+                $movies = $movies->filter(
+                    fn($movie) => $movie->schedule_status === 'Đang chiếu'
+                );
+            }
+
+            // SẮP CHIẾU
+            if ($request->status === 'coming_soon') {
+
+                $movies = $movies->filter(
+                    fn($movie) => $movie->schedule_status === 'Sắp chiếu'
+                );
+            }
+
+            // SẮP RA MẮT
+            if ($request->status === 'coming_later') {
+
+                $movies = $movies->filter(
+                    fn($movie) => $movie->schedule_status === 'Sắp ra mắt'
+                );
+            }
+        }
 
         $genres = Movie::select('genre')
             ->whereNotNull('genre')
@@ -112,9 +117,6 @@ class MovieController extends Controller
         $today = Carbon::today('Asia/Ho_Chi_Minh');
         $now = Carbon::now('Asia/Ho_Chi_Minh');
 
-        if ($movie->release_date && $movie->release_date->lt($today)) {
-            abort(404);
-        }
 
         $showtimes = Showtime::with(['cinema', 'movie'])
             ->where('movie_id', $movie->id)

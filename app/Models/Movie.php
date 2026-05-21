@@ -26,9 +26,9 @@ class Movie extends Model
         'status',
     ];
 
-    protected $casts = [
-        'release_date' => 'date',
-    ];
+  protected $casts = [
+    'release_date' => 'datetime',
+];
 
     protected static function booted(): void
     {
@@ -41,21 +41,31 @@ class Movie extends Model
 
 public function getScheduleStatusAttribute(): string
 {
-    $today = Carbon::today('Asia/Ho_Chi_Minh');
+    $now = Carbon::now('Asia/Ho_Chi_Minh');
 
     if (!$this->release_date) {
         return 'Sắp ra mắt';
     }
 
-    if ($this->release_date->lte($today)) {
+    $releaseDate = Carbon::parse($this->release_date);
+
+    // CHƯA TỚI GIỜ CHIẾU
+    if ($releaseDate->gt($now)) {
+
+        // <= 10 ngày
+        if ($releaseDate->lte($now->copy()->addDays(10))) {
+            return 'Sắp chiếu';
+        }
+
+        return 'Sắp ra mắt';
+    }
+
+    // ĐANG CHIẾU (30 ngày)
+    if ($releaseDate->copy()->addDays(30)->gte($now)) {
         return 'Đang chiếu';
     }
 
-    if ($this->release_date->lte($today->copy()->addDays(10))) {
-        return 'Sắp chiếu';
-    }
-
-    return 'Sắp ra mắt';
+    return 'Ngừng chiếu';
 }
     public function showtimes()
     {
