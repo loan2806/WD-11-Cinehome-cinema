@@ -32,7 +32,7 @@
         Khuyến mãi
     </a>
 
-    <a href="#"
+    <a href="{{ route('user.tickets.index') }}"
        class="{{ request()->routeIs('user.tickets.*') ? 'active' : '' }}">
         Vé của tôi
     </a>
