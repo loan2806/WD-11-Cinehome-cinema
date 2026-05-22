@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\User;
 
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Ticket;
 use Illuminate\Http\Request;
@@ -11,7 +12,7 @@ class TicketController extends Controller
     public function index()
     {
         $tickets = Ticket::with('movie')
-            ->where('user_id', auth()->id())
+            ->where('user_id', Auth::id())
             ->latest()
             ->paginate(10);
 
@@ -20,7 +21,7 @@ class TicketController extends Controller
 
     public function show(Ticket $ticket)
     {
-        abort_if($ticket->user_id !== auth()->id(), 403);
+        abort_if($ticket->user_id !== Auth::id(), 403);
 
         $ticket->load('movie');
 
@@ -29,7 +30,7 @@ class TicketController extends Controller
 
     public function cancel(Ticket $ticket)
     {
-        abort_if($ticket->user_id !== auth()->id(), 403);
+        abort_if($ticket->user_id !== Auth::id(), 403);
 
         if (!$ticket->canCancel()) {
             return back()->with('error', 'Chỉ được hủy vé trong vòng 5 phút sau khi đặt.');
