@@ -23,7 +23,7 @@ class TicketController extends Controller
     {
         abort_if($ticket->user_id !== Auth::id(), 403);
 
-        $ticket->load('movie');
+        $ticket->load(['movie', 'foodOrders.items']);
 
         return view('user.tickets.show', compact('ticket'));
     }

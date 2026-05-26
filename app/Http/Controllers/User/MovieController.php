@@ -109,6 +109,8 @@ class MovieController extends Controller
 
     public function show(Movie $movie)
     {
+        $movie->load(['approvedReviews.user']);
+
         $today = Carbon::today('Asia/Ho_Chi_Minh');
         $now = Carbon::now('Asia/Ho_Chi_Minh');
 

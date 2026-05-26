@@ -78,6 +78,30 @@
                 </p>
             @endif
         </div>
+
+        <div class="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
+            <h2 class="mb-4 text-xl font-black text-[#d99a32]">Hoa don do an</h2>
+
+            @forelse($ticket->foodOrders as $order)
+                <div class="mb-5 rounded-xl bg-[#181818] p-4">
+                    <div class="mb-3 flex items-center justify-between gap-4">
+                        <strong>{{ $order->invoice_code }}</strong>
+                        <span>{{ number_format($order->total_amount) }}d</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        @foreach($order->items as $item)
+                            <div class="flex justify-between gap-4 text-sm text-gray-300">
+                                <span>{{ $item->item_name }} x {{ $item->quantity }}</span>
+                                <span>{{ number_format($item->line_total) }}d</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @empty
+                <p class="text-sm text-gray-400">Ve nay chua co hoa don do an.</p>
+            @endforelse
+        </div>
     </div>
 </div>
 @endsection

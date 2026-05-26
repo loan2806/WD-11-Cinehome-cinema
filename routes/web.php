@@ -3,6 +3,12 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 
+use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\FoodOrderController as AdminFoodOrderController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\RevenueReportController;
+use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
+use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Staff\StaffDashboardController;
 
 /* =========================
@@ -13,6 +19,8 @@ use App\Http\Controllers\User\CinemaController;
 use App\Http\Controllers\User\ShowtimeController;
 use App\Http\Controllers\User\BookingController;
 use App\Http\Controllers\User\TicketController;
+use App\Http\Controllers\User\MovieReviewController;
+use App\Http\Controllers\User\NotificationController as UserNotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,6 +54,10 @@ Route::get('/movies', [MovieController::class, 'index'])
 
 Route::get('/movies/{movie}', [MovieController::class, 'show'])
     ->name('user.movies.show');
+
+Route::post('/movies/{movie}/reviews', [MovieReviewController::class, 'store'])
+    ->middleware('auth')
+    ->name('user.movies.reviews.store');
 
 /*
 |--------------------------------------------------------------------------
@@ -163,6 +175,12 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
 
     Route::patch('/tickets/{ticket}/cancel', [TicketController::class, 'cancel'])
         ->name('tickets.cancel');
+
+    Route::get('/notifications', [UserNotificationController::class, 'index'])
+        ->name('notifications.index');
+
+    Route::patch('/notifications/{notification}/read', [UserNotificationController::class, 'markRead'])
+        ->name('notifications.read');
 });
 
 /*
@@ -216,6 +234,34 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/movies', function () {
             return 'Trang quản lý phim';
         })->name('movies.index');
+
+        Route::get('/food-orders', [AdminFoodOrderController::class, 'index'])
+            ->name('food-orders.index');
+        Route::get('/food-orders/{foodOrder}', [AdminFoodOrderController::class, 'show'])
+            ->name('food-orders.show');
+        Route::patch('/food-orders/{foodOrder}/status', [AdminFoodOrderController::class, 'updateStatus'])
+            ->name('food-orders.status');
+
+        Route::resource('notifications', AdminNotificationController::class)
+            ->only(['index', 'create', 'store', 'destroy']);
+
+        Route::get('/reviews', [AdminReviewController::class, 'index'])
+            ->name('reviews.index');
+        Route::patch('/reviews/{review}', [AdminReviewController::class, 'update'])
+            ->name('reviews.update');
+        Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy'])
+            ->name('reviews.destroy');
+
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])
+            ->name('activity-logs.index');
+
+        Route::get('/reports/revenue', [RevenueReportController::class, 'index'])
+            ->name('reports.revenue');
+
+        Route::get('/settings', [SystemSettingController::class, 'index'])
+            ->name('settings.index');
+        Route::put('/settings', [SystemSettingController::class, 'update'])
+            ->name('settings.update');
     });
 
 /*
