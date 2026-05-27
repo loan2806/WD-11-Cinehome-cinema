@@ -138,7 +138,7 @@ Route::get('/dashboard', function () {
     }
 
     return redirect()->route('home');
-})->middleware(['auth', 'verified'])->name('dashboard');
+})->middleware(['auth'])->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
