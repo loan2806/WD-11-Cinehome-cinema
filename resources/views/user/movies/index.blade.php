@@ -98,7 +98,7 @@
 
                             $buttonClass = 'bg-[#f5a623] text-black hover:bg-[#ffc04d]';
 
-                            $buttonUrl = route('user.movies.show', $movie->slug) . '#showtimes';
+                            $buttonUrl = route('user.movies.bookings', $movie->slug) . '#showtimes';
 
                             $buttonIcon = 'fa-solid fa-ticket';
                         }

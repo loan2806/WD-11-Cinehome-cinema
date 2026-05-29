@@ -14,66 +14,126 @@ class ShowtimeController extends Controller
     public function index(Request $request)
     {
         $now = Carbon::now('Asia/Ho_Chi_Minh');
-        $today = Carbon::today('Asia/Ho_Chi_Minh');
-        $limitDay = $today->copy()->addDays(10);
 
+        /*
+        |--------------------------------------------------------------------------
+        | CINEMAS
+        |--------------------------------------------------------------------------
+        */
         $cinemas = Cinema::orderBy('name')->get();
 
-        $movies = Movie::whereDate('release_date', '>=', $today)
-            ->whereDate('release_date', '<=', $limitDay)
-            ->orderBy('title')
+        /*
+        |--------------------------------------------------------------------------
+        | MOVIES
+        |--------------------------------------------------------------------------
+        */
+        $movies = Movie::visibleToUsers()
+            ->orderBy('ten_phim')
             ->get();
 
-        $showtimes = Showtime::with(['movie', 'cinema'])
-            ->whereHas('movie', function ($movieQuery) use ($today, $limitDay, $request) {
-                $movieQuery->whereDate('release_date', '>=', $today)
-                    ->whereDate('release_date', '<=', $limitDay);
+        /*
+        |--------------------------------------------------------------------------
+        | SHOWTIMES
+        |--------------------------------------------------------------------------
+        */
+        $showtimes = Showtime::with([
+                'movie',
+                'cinema'
+            ])
 
-                if ($request->status === 'now_showing') {
-                    $movieQuery->whereDate('release_date', $today);
-                }
-
-                if ($request->status === 'coming_soon') {
-                    $movieQuery->whereDate('release_date', '>', $today)
-                        ->whereDate('release_date', '<=', $limitDay);
-                }
-            })
+            /*
+            |--------------------------------------------------------------------------
+            | CHỈ LẤY SUẤT CHƯA KẾT THÚC
+            |--------------------------------------------------------------------------
+            */
             ->whereRaw(
-                "DATE_ADD(
-                    STR_TO_DATE(CONCAT(show_date, ' ', show_time), '%Y-%m-%d %H:%i:%s'),
+                "
+                DATE_ADD(
+                    STR_TO_DATE(
+                        CONCAT(show_date, ' ', show_time),
+                        '%Y-%m-%d %H:%i:%s'
+                    ),
                     INTERVAL (
-                        SELECT duration 
-                        FROM movies 
+                        SELECT thoi_luong
+                        FROM movies
                         WHERE movies.id = showtimes.movie_id
                     ) MINUTE
-                ) >= ?",
+                ) >= ?
+                ",
                 [$now->format('Y-m-d H:i:s')]
             )
+
+            /*
+            |--------------------------------------------------------------------------
+            | FILTER CINEMA
+            |--------------------------------------------------------------------------
+            */
             ->when($request->cinema_id, function ($query) use ($request) {
-                $query->where('cinema_id', $request->cinema_id);
+
+                $query->where(
+                    'cinema_id',
+                    $request->cinema_id
+                );
             })
+
+            /*
+            |--------------------------------------------------------------------------
+            | FILTER MOVIE
+            |--------------------------------------------------------------------------
+            */
             ->when($request->movie_id, function ($query) use ($request) {
-                $query->where('movie_id', $request->movie_id);
+
+                $query->where(
+                    'movie_id',
+                    $request->movie_id
+                );
             })
+
+            /*
+            |--------------------------------------------------------------------------
+            | FILTER DATE
+            |--------------------------------------------------------------------------
+            */
             ->when($request->show_date, function ($query) use ($request) {
-                $query->whereDate('show_date', $request->show_date);
+
+                $query->whereDate(
+                    'show_date',
+                    $request->show_date
+                );
             })
+
+            /*
+            |--------------------------------------------------------------------------
+            | ORDER
+            |--------------------------------------------------------------------------
+            */
             ->orderBy('show_date')
+
             ->orderBy('show_time')
+
             ->get();
 
-        return view('user.showtimes.index', compact(
-            'showtimes',
-            'cinemas',
-            'movies',
-            'now'
-        ));
+        return view(
+            'user.showtimes.index',
+            compact(
+                'showtimes',
+                'cinemas',
+                'movies',
+                'now'
+            )
+        );
     }
 
     public function show(Showtime $showtime)
     {
-        $showtime->load(['movie', 'cinema']);
+        $showtime->load([
+            'movie',
+            'cinema'
+        ]);
 
-        return view('user.showtimes.show', compact('showtime'));
+        return view(
+            'user.showtimes.show',
+            compact('showtime')
+        );
     }
 }

@@ -1,125 +1,219 @@
 <div class="row g-4">
 
-    @forelse ($movies as $movie)
-        @php
+@forelse ($movies as $movie)
 
-            $badgeText = $movie->schedule_status;
+    {{-- BỎ PHIM ĐÃ KẾT THÚC --}}
+    @if ($movie->schedule_status === 'Đã kết thúc')
+        @continue
+    @endif
 
-            // SẮP RA MẮT
-            if ($badgeText === 'Sắp ra mắt') {
-                $badgeClass = 'bg-pink-600 text-white';
+    @php
 
-                $buttonText = 'Quan tâm';
+        $status = $movie->schedule_status;
 
-                $buttonClass = 'bg-pink-600 text-white hover:bg-pink-500';
+        // DEFAULT
+        $badgeClass = '';
+        $buttonText = '';
+        $buttonClass = '';
+        $buttonUrl = '';
+        $buttonIcon = '';
 
-                $buttonUrl = route('user.movies.show', $movie->slug);
+        /*
+        |--------------------------------------------------------------------------
+        | SẮP RA MẮT
+        |--------------------------------------------------------------------------
+        */
+        if ($status === 'Sắp ra mắt') {
 
-                $buttonIcon = 'fa-regular fa-heart';
-            }
+            $badgeClass = 'bg-pink-600 text-white';
 
-            // SẮP CHIẾU
-            elseif ($badgeText === 'Sắp chiếu') {
-                $badgeClass = 'bg-blue-500 text-white';
+            $buttonText = 'Quan tâm';
 
-                $buttonText = 'Đặt vé';
+            $buttonClass =
+                'bg-pink-600 text-white hover:bg-pink-500';
 
-                $buttonClass = 'bg-[#f5a623] text-black hover:bg-[#ffc04d]';
+            $buttonUrl =
+                route('user.movies.show', $movie->slug);
 
-                $buttonUrl = route('user.movies.show', $movie->slug) . '#showtimes';
+            $buttonIcon =
+                'fa-regular fa-heart';
+        }
 
-                $buttonIcon = 'fa-solid fa-ticket';
-            }
+        /*
+        |--------------------------------------------------------------------------
+        | SẮP CHIẾU
+        |--------------------------------------------------------------------------
+        */
+        elseif ($status === 'Sắp chiếu') {
 
-            // ĐANG CHIẾU
-            else {
-                $badgeClass = 'bg-[#f5a623] text-black';
+            $badgeClass =
+                'bg-blue-500 text-white';
 
-                $buttonText = 'Chi tiết';
+            $buttonText =
+                'Đặt vé';
 
-                $buttonClass = 'bg-white text-black hover:bg-gray-200';
+            $buttonClass =
+                'bg-[#f5a623] text-black hover:bg-[#ffc04d]';
 
-                $buttonUrl = route('user.movies.show', $movie->slug);
+            $buttonUrl =
+                route('user.bookings.index', $movie);
 
-                $buttonIcon = 'fa-solid fa-circle-info';
-            }
+            $buttonIcon =
+                'fa-solid fa-ticket';
+        }
 
-        @endphp
+        /*
+        |--------------------------------------------------------------------------
+        | ĐANG CHIẾU
+        |--------------------------------------------------------------------------
+        */
+        else {
 
-        <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+            $badgeClass =
+                'bg-[#f5a623] text-black';
 
-            <div class="movie-card">
+            $buttonText =
+                'Chi tiết';
 
-                <div class="movie-poster relative overflow-hidden">
+            $buttonClass =
+                'bg-white text-black hover:bg-gray-200';
 
-                    <img src="{{ $movie->poster }}" alt="{{ $movie->title }}">
+            $buttonUrl =
+                route('user.movies.show', $movie->slug);
 
-                    {{-- STATUS --}}
-                    <div
-                        class="absolute top-3 left-3 z-10 px-4 py-2 rounded-full text-xs font-bold shadow-lg {{ $badgeClass }}">
-                        {{ $badgeText }}
-                    </div>
+            $buttonIcon =
+                'fa-solid fa-circle-info';
+        }
 
-                    {{-- AGE --}}
-                    <div
-                        class="absolute top-3 right-3 z-10 px-3 py-2 rounded-full bg-black/70 text-white text-xs font-bold shadow-lg">
-                        {{ $movie->age_rating }}
-                    </div>
+    @endphp
+
+    <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+
+        <div class="movie-card">
+
+            {{-- POSTER --}}
+            <div class="movie-poster relative overflow-hidden">
+
+                <img
+                    src="{{ asset('storage/' . $movie->poster) }}"
+                    alt="{{ $movie->ten_phim }}"
+                    class="w-full h-full object-cover"
+                >
+
+                {{-- STATUS --}}
+                <div class="absolute top-3 left-3 z-10 px-4 py-2 rounded-full text-xs font-bold shadow-lg {{ $badgeClass }}">
+
+                    {{ $status }}
 
                 </div>
 
-                <div class="movie-body">
+                {{-- AGE --}}
+                <div class="absolute top-3 right-3 z-10 px-3 py-2 rounded-full bg-black/70 text-white text-xs font-bold shadow-lg">
 
-                    <h3 class="movie-title">
-                        {{ $movie->title }}
-                    </h3>
+                    {{ $movie->gioi_han_tuoi ?? 'P' }}
 
-                    <div class="movie-info">
+                </div>
 
-                        <p class="mb-1">
-                            <i class="fa-solid fa-film"></i>
-                            {{ $movie->genre }}
-                        </p>
+            </div>
 
-                        <p class="mb-0">
-                            <i class="fa-solid fa-clock"></i>
-                            {{ $movie->duration }} phút
-                        </p>
+            {{-- BODY --}}
+            <div class="movie-body">
 
-                    </div>
+                {{-- TITLE --}}
+                <h3 class="movie-title">
 
-                    <div class="movie-actions">
+                    {{ $movie->ten_phim }}
 
-                        {{-- SẮP CHIẾU --}}
-                        @if ($badgeText === 'Sắp chiếu')
-                            <a href="{{ $buttonUrl }}" class="btn-small-book {{ $buttonClass }}">
+                </h3>
 
-                                <i class="{{ $buttonIcon }} mr-1"></i>
+                {{-- INFO --}}
+                <div class="movie-info space-y-1 text-sm text-gray-300">
 
-                                {{ $buttonText }}
+                    {{-- GENRES --}}
+                    <p class="mb-0">
 
-                            </a>
+                        <i class="fa-solid fa-film mr-2"></i>
 
-                            {{-- SẮP RA MẮT --}}
-                        @elseif ($badgeText === 'Sắp ra mắt')
-                            <a href="{{ $buttonUrl }}" class="btn-small-book {{ $buttonClass }}">
+                        {{
+                            $movie->genres
+                                ->pluck('ten_the_loai')
+                                ->join(', ')
+                            ?: '—'
+                        }}
 
-                                <i class="{{ $buttonIcon }} mr-1"></i>
+                    </p>
 
-                                {{ $buttonText }}
+                    {{-- COUNTRY --}}
+                    <p class="mb-0 text-xs text-gray-400">
 
-                            </a>
-                        @endif
+                        <i class="fa-solid fa-flag mr-2"></i>
 
+                        {{
+                            $movie->country?->ten_quoc_gia
+                            ?? '—'
+                        }}
 
-                        {{-- CHI TIẾT --}}
-                        <a href="{{ route('user.movies.show', $movie->slug) }}" class="btn-small-detail">
+                    </p>
+
+                    {{-- DURATION --}}
+                    <p class="mb-0 text-xs text-gray-400">
+
+                        <i class="fa-solid fa-clock mr-2"></i>
+
+                        {{ $movie->thoi_luong }} phút
+
+                    </p>
+
+                    {{-- RELEASE DATE --}}
+                    <p class="mb-0 text-xs text-gray-400">
+
+                        <i class="fa-solid fa-calendar mr-2"></i>
+
+                        {{
+                            $movie->ngay_khoi_chieu
+                            ? \Carbon\Carbon::parse(
+                                $movie->ngay_khoi_chieu
+                              )->format('d/m/Y')
+                            : '—'
+                        }}
+
+                    </p>
+
+                    {{-- AGE --}}
+                    <p class="mb-0 text-xs text-gray-400">
+
+                        <i class="fa-solid fa-user-shield mr-2"></i>
+
+                        {{ $movie->gioi_han_tuoi ?? 'P' }}
+
+                    </p>
+
+                </div>
+
+                {{-- BUTTONS --}}
+                <div class="movie-actions">
+
+                    {{-- MAIN BUTTON --}}
+                    <a href="{{ $buttonUrl }}"
+                       class="btn-small-book {{ $buttonClass }}">
+
+                        <i class="{{ $buttonIcon }} mr-1"></i>
+
+                        {{ $buttonText }}
+
+                    </a>
+
+                    {{-- DETAIL --}}
+                    @if ($status !== 'Đang chiếu')
+
+                        <a href="{{ route('user.movies.show', $movie->slug) }}"
+                           class="btn-small-detail">
 
                             Chi tiết
 
                         </a>
 
-                    </div>
+                    @endif
 
                 </div>
 
@@ -127,11 +221,16 @@
 
         </div>
 
-    @empty
+    </div>
 
-        <div class="col-12 text-center text-secondary py-5">
-            Chưa có phim.
-        </div>
-    @endforelse
+@empty
+
+    <div class="col-12 text-center text-secondary py-5">
+
+        Chưa có phim.
+
+    </div>
+
+@endforelse
 
 </div>

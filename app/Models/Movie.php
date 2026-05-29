@@ -11,64 +11,245 @@ class Movie extends Model
 {
     use HasFactory;
 
+    /*
+    |--------------------------------------------------------------------------
+    | TABLE
+    |--------------------------------------------------------------------------
+    */
+    protected $table = 'movies';
+
+    /*
+    |--------------------------------------------------------------------------
+    | MASS ASSIGNMENT
+    |--------------------------------------------------------------------------
+    */
     protected $fillable = [
-        'title',
+        'ten_phim',
         'slug',
-        'description',
+        'mo_ta',
         'poster',
-        'cover_image',
-        'trailer_url',
-        'genre',
-        'country',
-        'duration',
-        'age_rating',
-        'release_date',
-        'status',
+        'trailer',
+        'quoc_gia_id',
+        'dao_dien',
+        'dien_vien',
+        'ngon_ngu',
+        'thoi_luong',
+        'gioi_han_tuoi',
     ];
 
-  protected $casts = [
-    'release_date' => 'datetime',
-];
+    /*
+    |--------------------------------------------------------------------------
+    | APPENDS
+    |--------------------------------------------------------------------------
+    */
+    protected $appends = [
+        'schedule_status',
+    ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | AUTO SLUG
+    |--------------------------------------------------------------------------
+    */
     protected static function booted(): void
     {
         static::creating(function ($movie) {
+
             if (empty($movie->slug)) {
-                $movie->slug = Str::slug($movie->title) . '-' . uniqid();
+
+                $movie->slug =
+                    Str::slug($movie->ten_phim)
+                    . '-' .
+                    uniqid();
             }
         });
     }
 
-public function getScheduleStatusAttribute(): string
-{
-    $now = Carbon::now('Asia/Ho_Chi_Minh');
-
-    if (!$this->release_date) {
-        return 'Sắp ra mắt';
+    /*
+    |--------------------------------------------------------------------------
+    | RELATION: SHOWTIMES
+    |--------------------------------------------------------------------------
+    */
+    public function showtimes()
+    {
+        return $this->hasMany(
+            Showtime::class
+        );
     }
 
-    $releaseDate = Carbon::parse($this->release_date);
+    /*
+    |--------------------------------------------------------------------------
+    | RELATION: COUNTRY
+    |--------------------------------------------------------------------------
+    */
+    public function country()
+    {
+        return $this->belongsTo(
+            Country::class,
+            'quoc_gia_id'
+        );
+    }
 
-    // CHƯA TỚI GIỜ CHIẾU
-    if ($releaseDate->gt($now)) {
+    /*
+    |--------------------------------------------------------------------------
+    | RELATION: GENRES
+    |--------------------------------------------------------------------------
+    */
+    public function genres()
+    {
+        return $this->belongsToMany(
+            Genre::class,
+            'movie_genre',
+            'movie_id',
+            'genre_id'
+        );
+    }
 
-        // <= 10 ngày
-        if ($releaseDate->lte($now->copy()->addDays(10))) {
+    /*
+    |--------------------------------------------------------------------------
+    | CHỈ HIỆN PHIM CÓ SUẤT CHIẾU
+    |--------------------------------------------------------------------------
+    */
+    public function scopeVisibleToUsers($query)
+    {
+        return $query->whereHas('showtimes');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | ALIAS SCOPE
+    |--------------------------------------------------------------------------
+    */
+    public function scopeWithAvailableShowtimes($query)
+    {
+        return $this->scopeVisibleToUsers($query);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | REALTIME STATUS
+    |--------------------------------------------------------------------------
+    */
+    public function getScheduleStatusAttribute(): string
+    {
+        $now = now(config('app.timezone'));
+
+        $showtimes = $this->showtimes;
+
+        /*
+        |--------------------------------------------------------------------------
+        | KHÔNG CÓ SUẤT CHIẾU
+        |--------------------------------------------------------------------------
+        */
+        if ($showtimes->isEmpty()) {
+
+            return 'Sắp ra mắt';
+        }
+
+        $hasNowShowing = false;
+
+        $hasFutureWithin10 = false;
+
+        $hasFutureBeyond10 = false;
+
+        /*
+        |--------------------------------------------------------------------------
+        | CHECK SHOWTIMES
+        |--------------------------------------------------------------------------
+        */
+        foreach ($showtimes as $showtime) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | FIX DATE
+            |--------------------------------------------------------------------------
+            */
+            $date = Carbon::parse(
+                $showtime->show_date
+            )->format('Y-m-d');
+
+            /*
+            |--------------------------------------------------------------------------
+            | START TIME
+            |--------------------------------------------------------------------------
+            */
+            $startTime = Carbon::createFromFormat(
+                'Y-m-d H:i:s',
+                $date . ' ' . $showtime->show_time,
+                config('app.timezone')
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | END TIME
+            |--------------------------------------------------------------------------
+            */
+            $endTime = $startTime
+                ->copy()
+                ->addMinutes(
+                    $this->thoi_luong ?? 90
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | ĐANG CHIẾU
+            |--------------------------------------------------------------------------
+            */
+            if ($now->between(
+                $startTime,
+                $endTime
+            )) {
+
+                $hasNowShowing = true;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | SUẤT CHIẾU TƯƠNG LAI
+            |--------------------------------------------------------------------------
+            */
+            if ($startTime->gt($now)) {
+
+                $days = $now->diffInDays(
+                    $startTime
+                );
+
+                if ($days > 10) {
+
+                    $hasFutureBeyond10 = true;
+
+                } else {
+
+                    $hasFutureWithin10 = true;
+                }
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | RETURN STATUS
+        |--------------------------------------------------------------------------
+        */
+        if ($hasNowShowing) {
+
+            return 'Đang chiếu';
+        }
+
+        if ($hasFutureBeyond10) {
+
+            return 'Sắp ra mắt';
+        }
+
+        if ($hasFutureWithin10) {
+
             return 'Sắp chiếu';
         }
 
-        return 'Sắp ra mắt';
-    }
-
-    // ĐANG CHIẾU (30 ngày)
-    if ($releaseDate->copy()->addDays(30)->gte($now)) {
-        return 'Đang chiếu';
-    }
-
-    return 'Ngừng chiếu';
-}
-    public function showtimes()
-    {
-        return $this->hasMany(Showtime::class);
+        /*
+        |--------------------------------------------------------------------------
+        | ĐÃ KẾT THÚC
+        |--------------------------------------------------------------------------
+        */
+        return 'Đã kết thúc';
     }
 }
