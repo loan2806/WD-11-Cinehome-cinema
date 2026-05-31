@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AccountSeeder::class,
             TicketSeeder::class,
+            UserSeeder::class,
         ]);
     }
 }
