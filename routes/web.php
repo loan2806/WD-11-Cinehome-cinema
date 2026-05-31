@@ -1,31 +1,146 @@
 <?php
 
-use App\Http\Controllers\Api\CinemaMapApiController;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
+
+use App\Http\Controllers\Api\CinemaMapApiController;
+use App\Http\Controllers\Staff\StaffDashboardController;
+
+/* =========================
+| USER CONTROLLERS
+========================= */
+use App\Http\Controllers\User\MovieController;
 use App\Http\Controllers\User\CinemaController;
 use App\Http\Controllers\User\CinemaMapController;
-use App\Http\Controllers\User\MovieController;
 use App\Http\Controllers\User\ShowtimeController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\User\BookingController;
+use App\Http\Controllers\User\TicketController;
 
 /*
 |--------------------------------------------------------------------------
-| Public / User
+| PUBLIC ROUTES
+|--------------------------------------------------------------------------
+| Các route không cần đăng nhập
+| Trang chủ, phim, rạp, lịch chiếu
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', [MovieController::class, 'home'])->name('home');
+/* =========================
+| HOME
+========================= */
 
+Route::get('/', [MovieController::class, 'home'])
+    ->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| MOVIE ROUTES
+|--------------------------------------------------------------------------
+| Danh sách phim và chi tiết phim
+|--------------------------------------------------------------------------
+*/
+
+/* =========================
+| MOVIES
+========================= */
 Route::get('/movies', [MovieController::class, 'index'])
     ->name('user.movies.index');
 
+Route::get('/movies/{movie}', [MovieController::class, 'show'])
+    ->name('user.movies.show');
+
 /*
 |--------------------------------------------------------------------------
-| Dashboard redirect sau đăng nhập
+| CINEMA ROUTES
+|--------------------------------------------------------------------------
+| Danh sách rạp và chi tiết rạp
 |--------------------------------------------------------------------------
 */
 
+/* =========================
+| CINEMAS
+========================= */
+Route::get('/cinemas', [CinemaController::class, 'index'])
+    ->name('user.cinemas.index');
+
+Route::get('/cinemas/map', CinemaMapController::class)
+    ->name('user.cinemas.map');
+
+Route::get('/cinemas/{cinema}', [CinemaController::class, 'show'])
+    ->name('user.cinemas.show');
+
+/*
+|--------------------------------------------------------------------------
+| CINEMA API
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/api/cinemas', CinemaMapApiController::class)
+    ->name('api.cinemas.index');
+
+/*
+|--------------------------------------------------------------------------
+| SHOWTIME ROUTES
+|--------------------------------------------------------------------------
+| Lịch chiếu phim
+|--------------------------------------------------------------------------
+*/
+
+/* =========================
+| SHOWTIMES PAGE
+========================= */
+Route::get('/showtime', [ShowtimeController::class, 'index'])
+    ->name('user.showtimes.index');
+
+Route::get('/showtime/{showtime}', [ShowtimeController::class, 'show'])
+    ->name('user.showtimes.show');
+
+/*
+|--------------------------------------------------------------------------
+| BOOKING ROUTES
+|--------------------------------------------------------------------------
+| Đặt vé, chọn ghế
+| Yêu cầu đăng nhập
+|--------------------------------------------------------------------------
+*/
+
+/* =========================
+| BOOKING FLOW
+========================= */
+Route::get('/booking/{movie}', [BookingController::class, 'index'])
+    ->name('booking');
+
+Route::get('/showtimes/{movie}/{cinema}', [BookingController::class, 'showtimes'])
+    ->name('booking.showtimes');
+
+Route::prefix('bookings')
+    ->name('user.bookings.')
+    ->middleware('auth')
+    ->group(function () {
+
+        Route::get('{showtime}/select-seats', [BookingController::class, 'selectSeats'])
+            ->name('selectSeats');
+
+        Route::post('{showtime}/store', [BookingController::class, 'store'])
+            ->name('store');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| DASHBOARD REDIRECT
+|--------------------------------------------------------------------------
+| Điều hướng dashboard theo role
+| admin  -> admin.dashboard
+| staff  -> staff.dashboard
+| user   -> home
+|--------------------------------------------------------------------------
+*/
+
+/* =========================
+| DASHBOARD
+========================= */
 Route::get('/dashboard', function () {
+
     $user = auth()->user();
 
     if ($user->role === 'admin') {
@@ -41,73 +156,95 @@ Route::get('/dashboard', function () {
 
 /*
 |--------------------------------------------------------------------------
-| User routes
+| USER ROUTES
+|--------------------------------------------------------------------------
+| Middleware:
+| - auth
+| - role:user
 |--------------------------------------------------------------------------
 */
 
+/* =========================
+| USER (AUTH)
+========================= */
 Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
-    Route::get('/tickets', function () {
-        return 'Trang vé của User';
-    })->name('tickets.index');
-});
 
-Route::get('/movies/{movie:slug}', [MovieController::class, 'show'])
-    ->name('user.movies.show');
+    Route::get('/tickets', [TicketController::class, 'index'])
+        ->name('tickets.index');
 
-Route::get('/api/cinemas', CinemaMapApiController::class)->name('api.cinemas.index');
+    Route::get('/tickets/{ticket}', [TicketController::class, 'show'])
+        ->name('tickets.show');
 
-Route::get('/cinemas/map', CinemaMapController::class)->name('user.cinemas.map');
-
-Route::get('/cinemas', [CinemaController::class, 'index'])
-    ->name('user.cinemas.index');
-
-Route::get('/cinemas/{cinema}', [CinemaController::class, 'show'])
-    ->name('user.cinemas.show');
-
-Route::get('/showtime', [ShowtimeController::class, 'index'])
-    ->name('user.showtimes.index');
-
-Route::get('/showtime/{showtime}', [ShowtimeController::class, 'show'])
-    ->name('user.showtimes.show');
-/*
-|--------------------------------------------------------------------------
-| Staff routes
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['auth', 'role:staff'])->prefix('staff')->name('staff.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('staff.dashboard');
-    })->name('dashboard');
-
-    Route::get('/tickets/scan', function () {
-        return 'Trang soát vé QR';
-    })->name('tickets.scan');
+    Route::patch('/tickets/{ticket}/cancel', [TicketController::class, 'cancel'])
+        ->name('tickets.cancel');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Admin routes
+| STAFF ROUTES
+|--------------------------------------------------------------------------
+| Middleware:
+| - auth
+| - role:staff
+|
+| Prefix:
+| - /staff
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
+Route::middleware(['auth', 'role:staff'])
+    ->prefix('staff')
+    ->name('staff.')
+    ->group(function () {
 
-    Route::get('/movies', function () {
-        return 'Trang quản lý phim';
-    })->name('movies.index');
-});
+        Route::get('/dashboard', [StaffDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        Route::get('/tickets/scan', function () {
+            return 'Trang soát vé QR';
+        })->name('tickets.scan');
+    });
 
 /*
 |--------------------------------------------------------------------------
-| Profile Breeze
+| ADMIN ROUTES
+|--------------------------------------------------------------------------
+| Middleware:
+| - auth
+| - role:admin
+|
+| Prefix:
+| - /admin
 |--------------------------------------------------------------------------
 */
 
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        Route::get('/dashboard', function () {
+            return view('admin.dashboard');
+        })->name('dashboard');
+
+        Route::get('/movies', function () {
+            return 'Trang quản lý phim';
+        })->name('movies.index');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| PROFILE ROUTES
+|--------------------------------------------------------------------------
+| Laravel Breeze profile management
+|--------------------------------------------------------------------------
+*/
+
+/* =========================
+| PROFILE
+========================= */
 Route::middleware('auth')->group(function () {
+
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
 
@@ -120,8 +257,13 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Auth Breeze
+| AUTH ROUTES
+|--------------------------------------------------------------------------
+| Laravel Breeze authentication
 |--------------------------------------------------------------------------
 */
 
-require __DIR__.'/auth.php';
+/* =========================
+| AUTH BREEZE
+========================= */
+require __DIR__ . '/auth.php';

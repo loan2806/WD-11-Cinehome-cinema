@@ -29,4 +29,5 @@ class Cinema extends Model
             'longitude' => 'float',
         ];
     }
+    
 }
