@@ -17,7 +17,7 @@
     <div class="stat-card"><div class="stat-label">Doanh thu vé</div><div class="stat-value">{{ number_format($summary['ticket_revenue'], 0, ',', '.') }}đ</div></div>
     <div class="stat-card"><div class="stat-label">Doanh thu đồ ăn</div><div class="stat-value">{{ number_format($summary['food_revenue'], 0, ',', '.') }}đ</div></div>
     <div class="stat-card"><div class="stat-label">Tổng doanh thu</div><div class="stat-value">{{ number_format($summary['total_revenue'], 0, ',', '.') }}đ</div></div>
-    <div class="stat-card"><div class="stat-label">Vé / hóa đơn</div><div class="stat-value">{{ $summary['tickets_sold'] }} / {{ $summary['food_orders'] }}</div></div>
+    <div class="stat-card"><div class="stat-label">Vé / hóa đơn</div><div class="stat-value">{{ $summary['tickets_sold'] }} / {{ $summary['food_invoices'] }}</div></div>
 </div>
 
 <div class="grid gap-6 xl:grid-cols-2">

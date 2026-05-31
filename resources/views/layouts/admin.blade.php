@@ -108,14 +108,9 @@
                     <span>Thanh toán QR</span>
                 </a>
 
-                <a href="{{ route('admin.food-orders.index') }}" class="{{ request()->routeIs('admin.food-orders.index') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                <a href="{{ route('admin.food-invoices.index') }}" class="{{ request()->routeIs('admin.food-invoices.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-burger w-5"></i>
                     <span>Đồ ăn</span>
-                </a>
-
-                <a href="{{ route('admin.food-invoices.index') }}" class="{{ request()->routeIs('admin.food-invoices.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
-                    <i class="fa-solid fa-receipt w-5"></i>
-                    <span>Chi tiết hóa đơn đồ ăn</span>
                 </a>
             </nav>
 
@@ -145,7 +140,7 @@
             </p>
 
             <nav class="space-y-2">
-                <a href="{{ route('admin.reports.revenue') }}" class="{{ request()->routeIs('admin.reports.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                <a href="{{ route('admin.revenue-reports.index') }}" class="{{ request()->routeIs('admin.revenue-reports.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-chart-pie w-5"></i>
                     <span>Báo cáo doanh thu</span>
                 </a>
@@ -165,17 +160,12 @@
                     <span>Thông báo</span>
                 </a>
 
-                <a href="{{ route('admin.reviews.index') }}" class="{{ request()->routeIs('admin.reviews.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                <a href="{{ route('admin.movie-reviews.index') }}" class="{{ request()->routeIs('admin.movie-reviews.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-star w-5"></i>
                     <span>Đánh giá phim</span>
                 </a>
 
-                <a href="{{ route('admin.movie-reviews.index') }}" class="{{ request()->routeIs('admin.movie-reviews.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
-                    <i class="fa-solid fa-star-half-stroke w-5"></i>
-                    <span>Quản lý đánh giá phim</span>
-                </a>
-
-                <a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                <a href="{{ route('admin.system-settings.index') }}" class="{{ request()->routeIs('admin.system-settings.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-gear w-5"></i>
                     <span>Cấu hình hệ thống</span>
                 </a>
@@ -286,7 +276,7 @@
                                     Tài khoản
                                 </a>
 
-                                <a href="{{ route('admin.settings.index') }}" class="admin-dropdown-item">
+                                <a href="{{ route('admin.system-settings.index') }}" class="admin-dropdown-item">
                                     <i class="fa-solid fa-gear w-4 text-xs"></i>
                                     Cài đặt
                                 </a>

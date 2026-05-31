@@ -14,7 +14,7 @@ class SystemSettingController extends Controller
 
         $settings = SystemSetting::query()->orderBy('group')->orderBy('id')->get()->groupBy('group');
 
-        return view('admin.settings.index', compact('settings'));
+        return view('admin.system-settings.index', compact('settings'));
     }
 
     public function update(Request $request)

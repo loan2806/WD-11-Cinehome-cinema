@@ -16,13 +16,6 @@
                             <h2 class="mt-1 text-xl font-bold">{{ $notification->title }}</h2>
                             <p class="mt-2 text-gray-300">{{ $notification->message }}</p>
                         </div>
-                        @if(!$notification->read_at)
-                            <form method="POST" action="{{ route('user.notifications.read', $notification) }}">
-                                @csrf
-                                @method('PATCH')
-                                <button class="rounded-xl bg-[#d99a32] px-4 py-2 text-sm font-bold text-black">Da doc</button>
-                            </form>
-                        @endif
                     </div>
                 </div>
             @empty

@@ -5,11 +5,9 @@ use App\Http\Controllers\ProfileController;
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\FoodInvoiceController;
-use App\Http\Controllers\Admin\FoodOrderController as AdminFoodOrderController;
 use App\Http\Controllers\Admin\MovieReviewController as AdminMovieReviewController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\RevenueReportController;
-use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Api\CinemaMapApiController;
 use App\Http\Controllers\Staff\StaffDashboardController;
@@ -195,8 +193,6 @@ Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(f
     Route::get('/notifications', [UserNotificationController::class, 'index'])
         ->name('notifications.index');
 
-    Route::patch('/notifications/{notification}/read', [UserNotificationController::class, 'markRead'])
-        ->name('notifications.read');
 });
 
 /*
@@ -251,13 +247,6 @@ Route::middleware(['auth', 'role:admin'])
             return 'Trang quản lý phim';
         })->name('movies.index');
 
-        Route::get('/food-orders', [AdminFoodOrderController::class, 'index'])
-            ->name('food-orders.index');
-        Route::get('/food-orders/{foodOrder}', [AdminFoodOrderController::class, 'show'])
-            ->name('food-orders.show');
-        Route::patch('/food-orders/{foodOrder}/status', [AdminFoodOrderController::class, 'updateStatus'])
-            ->name('food-orders.status');
-
         Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])
             ->name('food-invoices.index');
         Route::post('/food-invoices', [FoodInvoiceController::class, 'store'])
@@ -267,13 +256,6 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::resource('notifications', AdminNotificationController::class)
             ->only(['index', 'create', 'store', 'destroy']);
-
-        Route::get('/reviews', [AdminReviewController::class, 'index'])
-            ->name('reviews.index');
-        Route::patch('/reviews/{review}', [AdminReviewController::class, 'update'])
-            ->name('reviews.update');
-        Route::delete('/reviews/{review}', [AdminReviewController::class, 'destroy'])
-            ->name('reviews.destroy');
 
         Route::get('/movie-reviews', [AdminMovieReviewController::class, 'index'])
             ->name('movie-reviews.index');
@@ -287,15 +269,9 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/activity-logs', [ActivityLogController::class, 'index'])
             ->name('activity-logs.index');
 
-        Route::get('/reports/revenue', [RevenueReportController::class, 'index'])
-            ->name('reports.revenue');
         Route::get('/revenue-reports', [RevenueReportController::class, 'index'])
             ->name('revenue-reports.index');
 
-        Route::get('/settings', [SystemSettingController::class, 'index'])
-            ->name('settings.index');
-        Route::put('/settings', [SystemSettingController::class, 'update'])
-            ->name('settings.update');
         Route::get('/system-settings', [SystemSettingController::class, 'index'])
             ->name('system-settings.index');
         Route::patch('/system-settings', [SystemSettingController::class, 'update'])

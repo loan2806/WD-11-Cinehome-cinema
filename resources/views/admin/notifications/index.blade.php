@@ -25,7 +25,7 @@
             @forelse($notifications as $notification)
                 <tr>
                     <td><strong>{{ $notification->title }}</strong><br><small>{{ $notification->message }}</small></td>
-                    <td>{{ $notification->target_role ?: ($notification->user?->email ?? 'Tat ca') }}</td>
+                    <td>{{ $notification->audience === 'all' ? 'Tat ca' : $notification->audience }}</td>
                     <td><span class="status-badge status-coming">{{ $notification->type }}</span></td>
                     <td>{{ $notification->created_at->format('d/m/Y H:i') }}</td>
                     <td class="text-end">

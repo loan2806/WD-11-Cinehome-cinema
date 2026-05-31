@@ -29,10 +29,9 @@
             </div>
             <div>
                 <label class="mb-2 block text-sm font-bold text-gray-300">Vai tro nhan</label>
-                <select name="target_role" class="w-full rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-white">
-                    <option value="">Tat ca</option>
-                    @foreach(['user', 'staff', 'admin'] as $role)
-                        <option value="{{ $role }}">{{ $role }}</option>
+                <select name="audience" class="w-full rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-white">
+                    @foreach(['all' => 'Tat ca', 'user' => 'user', 'staff' => 'staff', 'admin' => 'admin'] as $value => $label)
+                        <option value="{{ $value }}" @selected(old('audience', 'all') === $value)>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
