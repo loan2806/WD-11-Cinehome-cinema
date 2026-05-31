@@ -9,34 +9,59 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('movies', function (Blueprint $table) {
+
             $table->id();
 
-            $table->string('title');
+            /*
+            |--------------------------------------------------------------------------
+            | THÔNG TIN PHIM
+            |--------------------------------------------------------------------------
+            */
+            $table->string('ten_phim');
+
             $table->string('slug')->unique();
 
-            $table->text('description')->nullable();
+            $table->text('mo_ta')->nullable();
 
-            // Ảnh poster dọc
+            /*
+            |--------------------------------------------------------------------------
+            | MEDIA
+            |--------------------------------------------------------------------------
+            */
             $table->string('poster')->nullable();
 
-            // Ảnh bìa ngang dùng làm banner
-            $table->string('cover_image')->nullable();
+            $table->string('trailer')->nullable();
 
-            // Trailer YouTube
-            $table->string('trailer_url')->nullable();
+            /*
+            |--------------------------------------------------------------------------
+            | THÔNG TIN BỔ SUNG
+            |--------------------------------------------------------------------------
+            */
+            $table->string('dao_dien')->nullable();
 
-            $table->string('genre')->nullable();
-            $table->string('country')->nullable();
+            $table->text('dien_vien')->nullable();
 
-            $table->integer('duration')->default(90); // phút
-            $table->string('age_rating')->default('P');
+            $table->string('ngon_ngu')->nullable();
 
-            $table->date('release_date')->nullable();
+            $table->integer('thoi_luong')->default(90);
 
-            // now_showing / coming_soon / stopped
-            $table->enum('status', ['now_showing', 'coming_soon', 'stopped'])
-                ->default('now_showing');
+            $table->string('gioi_han_tuoi')->nullable();
 
+            /*
+            |--------------------------------------------------------------------------
+            | QUỐC GIA
+            |--------------------------------------------------------------------------
+            */
+            $table->foreignId('quoc_gia_id')
+                ->nullable()
+                ->constrained('countries')
+                ->onDelete('set null');
+
+            /*
+            |--------------------------------------------------------------------------
+            | TIMESTAMPS
+            |--------------------------------------------------------------------------
+            */
             $table->timestamps();
         });
     }

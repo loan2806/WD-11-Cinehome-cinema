@@ -78,14 +78,21 @@ class MovieFactory extends Factory
                 'T18',
             ]),
 
-            'release_date' => fake()->dateTimeBetween('-2 months', '+2 months'),
+            'release_date' => fake()->randomElement([
 
-            'status' => fake()->randomElement([
-                'now_showing',
-                'now_showing',
-                'now_showing',
-                'coming_soon',
+                // ĐANG CHIẾU
+                now()->subDays(rand(1, 20))
+                    ->setTime(rand(8, 22), rand(0, 59)),
+
+                // SẮP CHIẾU
+                now()->addDays(rand(1, 10))
+                    ->setTime(rand(8, 22), rand(0, 59)),
+
+                // SẮP RA MẮT
+                now()->addDays(rand(15, 40))
+                    ->setTime(rand(8, 22), rand(0, 59)),
             ]),
+
         ];
     }
 }

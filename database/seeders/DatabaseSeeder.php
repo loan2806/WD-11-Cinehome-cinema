@@ -21,12 +21,15 @@ class DatabaseSeeder extends Seeder
             MovieSeeder::class,
             AccountSeeder::class,
             CinemaSeeder::class,
+            AccountSeeder::class,
+            TicketSeeder::class,
         ]);
 
         // User::factory()->create([
         //     'name' => 'Test User',
         //     'email' => 'test@example.com',
         // ]);
+
 
         $this->call([
             AccountSeeder::class,

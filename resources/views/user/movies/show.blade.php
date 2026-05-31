@@ -1,225 +1,177 @@
 @extends('layouts.user')
 
-
-@section('title', $movie->title)
-
-@section('content')
-<div class="min-h-screen bg-[#080808] px-6 pt-28 pb-10 text-white">
-    <div class="mx-auto max-w-6xl">
-        <div class="grid gap-8 lg:grid-cols-[320px_1fr]">
-            <div>
-                <img src="{{ $movie->poster ?: asset('assets/images/logo.png') }}" alt="{{ $movie->title }}" class="w-full rounded-2xl border border-white/10 object-cover">
-            </div>
-
-            <div>
-                <h1 class="text-4xl font-black text-[#d99a32]">{{ $movie->title }}</h1>
-                <div class="mt-3 flex flex-wrap gap-3 text-sm text-gray-300">
-                    <span>{{ $movie->genre }}</span>
-                    <span>{{ $movie->duration }} phut</span>
-                    <span>{{ optional($movie->release_date)->format('d/m/Y') }}</span>
-                </div>
-                <p class="mt-5 leading-7 text-gray-200">{{ $movie->description }}</p>
-
-                <div class="mt-8 rounded-2xl border border-white/10 bg-[#121212] p-5">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-2xl font-black">Danh gia phim</h2>
-                        <div class="text-[#d99a32]">
-                            {{ number_format($movie->approvedReviews->avg('rating') ?: 0, 1) }}/5
-                        </div>
-                    </div>
-
-                    @auth
-                        <form method="POST" action="{{ route('user.movies.reviews.store', $movie) }}" class="mt-5 grid gap-4">
-                            @csrf
-                            <select name="rating" class="rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-white" required>
-                                @for($i = 5; $i >= 1; $i--)
-                                    <option value="{{ $i }}">{{ $i }} sao</option>
-                                @endfor
-                            </select>
-                            <textarea name="content" rows="3" class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white" placeholder="Cam nhan cua ban ve phim"></textarea>
-                            <button class="w-fit rounded-xl bg-[#d99a32] px-5 py-3 font-bold text-black">Gui danh gia</button>
-                        </form>
-                    @else
-                        <p class="mt-4 text-gray-400">Dang nhap de danh gia phim.</p>
-                    @endauth
-
-                    <div class="mt-6 space-y-3">
-                        @forelse($movie->approvedReviews as $review)
-                            <div class="rounded-xl bg-white/5 p-4">
-                                <div class="flex justify-between gap-4">
-                                    <strong>{{ $review->user?->name }}</strong>
-                                    <span class="text-[#d99a32]">{{ str_repeat('★', $review->rating) }}</span>
-                                </div>
-                                <p class="mt-2 text-gray-300">{{ $review->content }}</p>
-                            </div>
-                        @empty
-                            <p class="text-gray-400">Chua co danh gia nao.</p>
-                        @endforelse
-                    </div>
-                </div>
-
-                <div class="mt-8 rounded-2xl border border-white/10 bg-[#121212] p-5">
-                    <h2 class="text-2xl font-black">Suat chieu</h2>
-                    <div class="mt-4 grid gap-3 md:grid-cols-2">
-                        @forelse($showtimes as $showtime)
-                            <div class="rounded-xl bg-white/5 p-4">
-                                <strong>{{ $showtime->cinema->name ?? 'CineHome' }}</strong>
-                                <div class="text-sm text-gray-300">{{ $showtime->show_date ?? '' }} {{ $showtime->show_time ?? '' }}</div>
-                            </div>
-                        @empty
-                            <p class="text-gray-400">Chua co suat chieu phu hop.</p>
-                        @endforelse
-
 @section('title', $movie->title . ' - CineHome')
 
 @section('content')
 
-<section class="min-h-screen bg-[#0b0705] text-white">
+    <section class="min-h-screen bg-[#0b0705] text-white overflow-hidden">
 
-    {{-- BANNER --}}
-    <div class="relative min-h-[520px] bg-cover bg-center"
-         style="background-image: url('{{ $movie->cover_image }}');">
-        <div class="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/30"></div>
-        <div class="absolute inset-0 bg-gradient-to-t from-[#0b0705] via-transparent to-transparent"></div>
+        <div class="min-h-screen grid grid-cols-1 lg:grid-cols-2">
 
-        <div class="relative max-w-7xl mx-auto px-6 pt-20 pb-12">
-            <a href="{{ route('user.movies.index') }}"
-               class="inline-block mb-8 text-gray-300 hover:text-[#f5a623] transition">
-                <i class="fa-solid fa-arrow-left mr-2"></i>
-                Quay lại danh sách phim
-            </a>
+            {{-- LEFT - POSTER --}}
+            <div class="relative min-h-screen flex items-center justify-center overflow-hidden px-8 py-24 bg-black">
 
-            <div class="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8 items-end">
-                <img src="{{ $movie->poster }}"
-                     alt="{{ $movie->title }}"
-                     class="w-full max-w-[300px] h-[430px] object-cover rounded-3xl shadow-2xl border border-white/10">
+                <div class="absolute inset-0 bg-cover bg-center scale-110 opacity-25 blur-md"
+                    style="background-image: url('{{ $movie->cover_image ?? $movie->poster }}');">
+                </div>
 
-                <div>
-                    <div class="inline-flex items-center gap-2 bg-[#f5a623] text-black font-extrabold px-4 py-2 rounded-full mb-4">
-                        <i class="fa-solid fa-film"></i>
-                        {{ $movie->status_text }}
+                <div class="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-[#0b0705]"></div>
+
+                <div class="relative flex flex-col items-center">
+
+                    {{-- POSTER --}}
+                    <img src="{{ $movie->poster }}" alt="{{ $movie->title }}"
+                        class="poster-pop-left relative z-10 w-[320px] md:w-[410px] lg:w-[450px] h-[520px] md:h-[620px] object-cover rounded-3xl shadow-2xl border border-white/10">
+
+                    {{-- BUTTONS UNDER POSTER --}}
+                    <div class="relative z-10 mt-6 w-[320px] md:w-[410px] lg:w-[450px] space-y-3">
+
+                        {{-- TRAILER --}}
+                        <a href="{{ $movie->trailer_url }}" target="_blank"
+                            class="w-full flex items-center justify-center gap-2 bg-white/10 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/20 transition">
+                            <i class="fa-solid fa-play"></i>
+                            Xem trailer
+                        </a>
+
+                        {{-- BOOKING / INTEREST --}}
+                        {{-- BUTTON ACTION --}}
+                        @php
+                            $status = $movie->schedule_status;
+                        @endphp
+
+                        {{-- SẮP RA MẮT --}}
+                        @if ($status === 'Sắp ra mắt')
+                            <button
+                                class="w-full flex items-center justify-center gap-2 bg-pink-500 text-white font-extrabold px-6 py-3 rounded-xl hover:bg-pink-400 transition">
+                                <i class="fa-regular fa-heart"></i>
+                                Quan tâm
+                            </button>
+
+                            {{-- SẮP CHIẾU --}}
+                        @elseif ($status === 'Sắp chiếu')
+                            <a href="#showtimes"
+                                class="w-full flex items-center justify-center gap-2 bg-[#f5a623] text-black font-extrabold px-6 py-3 rounded-xl hover:bg-[#ffc04d] transition">
+                                <i class="fa-solid fa-ticket"></i>
+                                Đặt vé ngay
+                            </a>
+
+                            {{-- ĐANG CHIẾU --}}
+                        @else
+                            <div
+                                class="w-full flex items-center justify-center gap-2 bg-white/10 text-white font-extrabold px-6 py-3 rounded-xl border border-white/10">
+                                <i class="fa-solid fa-film"></i>
+                                Đang chiếu
+                            </div>
+                        @endif
+
                     </div>
 
-                    <h1 class="text-5xl md:text-6xl font-extrabold mb-5">
+                </div>
+            </div>
+
+            {{-- RIGHT - CONTENT --}}
+            <div class="relative min-h-screen flex items-center px-8 md:px-14 lg:px-20 py-24 bg-[#0b0705]">
+
+                <div class="content-fade-right max-w-2xl">
+
+                    <div class="flex flex-wrap items-center gap-3 mb-8">
+
+                        <a href="{{ route('home') }}"
+                            class="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-gray-300 hover:border-[#f5a623]/60 hover:bg-[#f5a623]/10 hover:text-[#f5a623] transition">
+
+                            <span
+                                class="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 group-hover:bg-[#f5a623] group-hover:text-black transition">
+                                <i class="fa-solid fa-arrow-left"></i>
+                            </span>
+
+                            Quay lại
+                        </a>
+                        <span
+                            class="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#f5a623] to-[#ffc04d] px-5 py-2.5 text-sm font-extrabold text-black shadow-lg shadow-[#f5a623]/20">
+                            <i class="fa-solid fa-clapperboard"></i>
+                            {{ $movie->status_text ?? $movie->schedule_status }}
+                        </span>
+
+                    </div>
+
+                    <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#f5a623] mb-6 leading-tight">
                         {{ $movie->title }}
                     </h1>
 
-                    <p class="text-gray-300 max-w-3xl leading-relaxed mb-6">
+                    <p class="text-gray-300 leading-relaxed mb-8 text-lg">
                         {{ $movie->description }}
                     </p>
 
-                    <div class="flex flex-wrap gap-3 mb-8">
-                        <span class="bg-white/10 px-4 py-2 rounded-full">
-                            <i class="fa-solid fa-clapperboard text-[#f5a623] mr-1"></i>
-                            {{ $movie->genre }}
-                        </span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
 
-                        <span class="bg-white/10 px-4 py-2 rounded-full">
-                            <i class="fa-solid fa-location-dot text-[#f5a623] mr-1"></i>
-                            {{ $movie->country }}
-                        </span>
+                        <div class="bg-white/10 rounded-2xl p-4">
+                            <p class="text-gray-400 text-sm mb-1">Thể loại</p>
+                            <p class="font-bold">{{ $movie->genre }}</p>
+                        </div>
 
-                        <span class="bg-white/10 px-4 py-2 rounded-full">
-                            <i class="fa-solid fa-clock text-[#f5a623] mr-1"></i>
-                            {{ $movie->duration }} phút
-                        </span>
+                        <div class="bg-white/10 rounded-2xl p-4">
+                            <p class="text-gray-400 text-sm mb-1">Quốc gia</p>
+                            <p class="font-bold">{{ $movie->country }}</p>
+                        </div>
 
-                        <span class="bg-white/10 px-4 py-2 rounded-full">
-                            <i class="fa-solid fa-user-shield text-[#f5a623] mr-1"></i>
-                            {{ $movie->age_rating }}
-                        </span>
+                        <div class="bg-white/10 rounded-2xl p-4">
+                            <p class="text-gray-400 text-sm mb-1">Thời lượng</p>
+                            <p class="font-bold">{{ $movie->duration }} phút</p>
+                        </div>
 
-                        <span class="bg-white/10 px-4 py-2 rounded-full">
-                            <i class="fa-solid fa-calendar text-[#f5a623] mr-1"></i>
-                            {{ $movie->release_date?->format('d/m/Y') }}
-                        </span>
-                    </div>
+                        <div class="bg-white/10 rounded-2xl p-4">
+                            <p class="text-gray-400 text-sm mb-1">Độ tuổi</p>
+                            <p class="font-bold">{{ $movie->age_rating }}</p>
+                        </div>
 
-                    <div class="flex flex-wrap gap-4">
-                        <a href="#showtimes"
-                           class="bg-[#f5a623] text-black font-extrabold px-7 py-3 rounded-xl hover:bg-[#ffc04d] transition">
-                            <i class="fa-solid fa-ticket mr-1"></i>
-                            Đặt vé ngay
-                        </a>
-
-                        <a href="{{ $movie->trailer_url }}"
-                           target="_blank"
-                           class="bg-white/10 text-white font-bold px-7 py-3 rounded-xl hover:bg-white/20 transition">
-                            <i class="fa-solid fa-play mr-1"></i>
-                            Xem trailer
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>
-@endsection
-
-
-    {{-- LỊCH CHIẾU --}}
-    <div id="showtimes" class="max-w-7xl mx-auto px-6 py-12">
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h2 class="text-3xl font-extrabold">
-                    Lịch <span class="text-[#f5a623]">chiếu</span>
-                </h2>
-                <p class="text-gray-400">
-                    Chọn suất chiếu phù hợp để đặt vé.
-                </p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            @forelse ($showtimes as $showtime)
-                <div class="bg-[#151515] border border-white/10 rounded-2xl p-5 hover:-translate-y-1 transition">
-                    <div class="flex items-start justify-between gap-4 mb-4">
-                        <div>
-                            <h3 class="text-xl font-extrabold text-[#f5a623] mb-2">
-                                {{ $showtime->cinema->name }}
-                            </h3>
-
-                            <p class="text-gray-400 text-sm">
-                                <i class="fa-solid fa-location-dot text-[#f5a623] mr-1"></i>
-                                {{ $showtime->cinema->address }}
+                        <div class="bg-white/10 rounded-2xl p-4 md:col-span-2">
+                            <p class="text-gray-400 text-sm mb-1">Diễn viên</p>
+                            <p class="font-bold">
+                                @if (is_array($movie->cast ?? null))
+                                    {{ implode(', ', $movie->cast) }}
+                                @else
+                                    {{ $movie->cast ?? 'Đang cập nhật' }}
+                                @endif
                             </p>
                         </div>
 
-                        <div class="text-right">
-                            <div class="text-2xl font-extrabold text-[#f5a623]">
-                                {{ \Carbon\Carbon::parse($showtime->show_time)->format('H:i') }}
-                            </div>
-                            <div class="text-gray-400 text-sm">
-                                {{ \Carbon\Carbon::parse($showtime->show_date)->format('d/m/Y') }}
-                            </div>
+                        <div class="bg-white/10 rounded-2xl p-4 md:col-span-2">
+                            <p class="text-gray-400 text-sm mb-1">Ngày khởi chiếu</p>
+                            <p class="font-bold">
+                                {{ $movie->release_date?->format('d/m/Y') }}
+                            </p>
                         </div>
+
                     </div>
 
-                    <div class="flex items-center justify-between text-gray-300 mb-5">
-                        <span>
-                            <i class="fa-solid fa-door-open text-[#f5a623] mr-1"></i>
-                            {{ $showtime->room_name }}
-                        </span>
-
-                        <span class="font-bold">
-                            {{ number_format($showtime->price) }}đ
-                        </span>
-                    </div>
-
-                    <a href="#"
-                       class="block text-center bg-[#f5a623] text-black font-extrabold py-2.5 rounded-xl hover:bg-[#ffc04d] transition">
-                        Đặt vé
-                    </a>
                 </div>
-            @empty
-                <div class="md:col-span-2 xl:col-span-3 text-center py-16 text-gray-400 bg-[#151515] rounded-2xl border border-white/10">
-                    Phim này hiện chưa có lịch chiếu.
-                </div>
-            @endforelse
+            </div>
+
         </div>
-    </div>
+    </section>
 
-</section>
+    <script>
+        function backWithAnimation(url) {
+            const poster = document.querySelector('.poster-pop-left');
+            const content = document.querySelector('.content-fade-right');
+
+            if (!poster || !content) {
+                window.location.href = url;
+                return;
+            }
+
+            poster.classList.remove('poster-pop-left');
+            content.classList.remove('content-fade-right');
+
+            void poster.offsetWidth;
+
+            poster.classList.add('poster-back');
+            content.classList.add('content-back');
+
+            setTimeout(function() {
+                window.location.href = url;
+            }, 600);
+        }
+    </script>
 
 @endsection

@@ -5,132 +5,275 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\Movie;
 use App\Models\Showtime;
+use App\Models\Genre;
+use App\Models\Country;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class MovieController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | HOME PAGE
+    |--------------------------------------------------------------------------
+    */
     public function home()
     {
-        $today = Carbon::today('Asia/Ho_Chi_Minh');
+        $movies = Movie::with([
+            'showtimes',
+            'genres',
+            'country'
+        ])
+        ->visibleToUsers()
+        ->orderBy('created_at', 'desc')
+        ->get();
 
-        $bannerMovies = Movie::with('showtimes')
-            ->whereDate('release_date', '>=', $today)
-            ->latest()
-            ->take(5)
-            ->get();
+        /*
+        |--------------------------------------------------------------------------
+        | NOW SHOWING
+        |--------------------------------------------------------------------------
+        */
+        $nowShowingMovies = $movies->filter(
+            fn($movie)
+                => $movie->schedule_status === 'Đang chiếu'
+        );
 
-        $nowShowingMovies = Movie::with('showtimes')
-            ->whereDate('release_date', $today)
-            ->latest()
-            ->take(12)
-            ->get();
+        /*
+        |--------------------------------------------------------------------------
+        | COMING SOON
+        |--------------------------------------------------------------------------
+        */
+        $comingSoonMovies = $movies->filter(
+            fn($movie)
+                => $movie->schedule_status === 'Sắp chiếu'
+        );
 
-        $comingSoonMovies = Movie::with('showtimes')
-            ->whereDate('release_date', '>', $today)
-            ->whereDate('release_date', '<=', $today->copy()->addDays(10))
-            ->latest()
-            ->take(12)
-            ->get();
+        /*
+        |--------------------------------------------------------------------------
+        | COMING LATER
+        |--------------------------------------------------------------------------
+        */
+        $comingLaterMovies = $movies->filter(
+            fn($movie)
+                => $movie->schedule_status === 'Sắp ra mắt'
+        );
 
-        $comingLaterMovies = Movie::with('showtimes')
-            ->whereDate('release_date', '>', $today->copy()->addMonth())
-            ->latest()
-            ->take(12)
-            ->get();
+        /*
+        |--------------------------------------------------------------------------
+        | BANNER
+        |--------------------------------------------------------------------------
+        */
+        $bannerMovies = $nowShowingMovies->take(5);
 
-        return view('user.home', compact(
-            'bannerMovies',
-            'nowShowingMovies',
-            'comingSoonMovies',
-            'comingLaterMovies'
-        ));
+        return view(
+            'user.home',
+            compact(
+                'bannerMovies',
+                'nowShowingMovies',
+                'comingSoonMovies',
+                'comingLaterMovies'
+            )
+        );
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | MOVIE LIST
+    |--------------------------------------------------------------------------
+    */
     public function index(Request $request)
     {
-        $today = Carbon::today('Asia/Ho_Chi_Minh');
-
-        $query = Movie::with('showtimes')
-            ->whereDate('release_date', '>=', $today);
-
-        if ($request->filled('keyword')) {
-            $query->where('title', 'like', '%' . $request->keyword . '%');
-        }
-
-        if ($request->filled('genre')) {
-            $query->where('genre', $request->genre);
-        }
-
-        if ($request->filled('country')) {
-            $query->where('country', $request->country);
-        }
-
-        if ($request->filled('status')) {
-            if ($request->status === 'now_showing') {
-                $query->whereDate('release_date', $today);
-            }
-
-            if ($request->status === 'coming_soon') {
-                $query->whereDate('release_date', '>', $today)
-                    ->whereDate('release_date', '<=', $today->copy()->addDays(10));
-            }
-
-            if ($request->status === 'coming_later') {
-                $query->whereDate('release_date', '>', $today->copy()->addMonth());
-            }
-        }
-
-        if ($request->filled('release_date')) {
-            $query->whereDate('release_date', $request->release_date);
-        }
-
-        $movies = $query
-            ->latest()
-            ->paginate(12)
-            ->withQueryString();
-
-        $genres = Movie::select('genre')
-            ->whereNotNull('genre')
-            ->distinct()
-            ->pluck('genre');
-
-        $countries = Movie::select('country')
-            ->whereNotNull('country')
-            ->distinct()
-            ->pluck('country');
-
-        return view('user.movies.index', compact(
-            'movies',
+        $query = Movie::with([
+            'showtimes',
             'genres',
-            'countries'
-        ));
-    }
+            'country'
+        ])
+        ->visibleToUsers();
 
-    public function show(Movie $movie)
-    {
-        $movie->load(['approvedReviews.user']);
+        /*
+        |--------------------------------------------------------------------------
+        | SEARCH
+        |--------------------------------------------------------------------------
+        */
+        if ($request->filled('keyword')) {
 
-        $today = Carbon::today('Asia/Ho_Chi_Minh');
-        $now = Carbon::now('Asia/Ho_Chi_Minh');
-
-        if ($movie->release_date && $movie->release_date->lt($today)) {
-            abort(404);
+            $query->where(
+                'ten_phim',
+                'like',
+                '%' . $request->keyword . '%'
+            );
         }
 
-        $showtimes = Showtime::with(['cinema', 'movie'])
-            ->where('movie_id', $movie->id)
-            ->whereRaw(
-                "DATE_ADD(
-                    STR_TO_DATE(CONCAT(show_date, ' ', show_time), '%Y-%m-%d %H:%i:%s'),
-                    INTERVAL ? MINUTE
-                ) >= ?",
-                [(int) $movie->duration, $now->format('Y-m-d H:i:s')]
-            )
-            ->orderBy('show_date')
-            ->orderBy('show_time')
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER GENRE
+        |--------------------------------------------------------------------------
+        */
+        if ($request->filled('genre_id')) {
+
+            $query->whereHas(
+                'genres',
+                function ($q) use ($request) {
+
+                    $q->where(
+                        'genre_id',
+                        $request->genre_id
+                    );
+                }
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER COUNTRY
+        |--------------------------------------------------------------------------
+        */
+        if ($request->filled('quoc_gia_id')) {
+
+            $query->where(
+                'quoc_gia_id',
+                $request->quoc_gia_id
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GET MOVIES
+        |--------------------------------------------------------------------------
+        */
+        $movies = $query
+            ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('user.movies.show', compact('movie', 'showtimes', 'now'));
+        /*
+        |--------------------------------------------------------------------------
+        | FILTER STATUS
+        |--------------------------------------------------------------------------
+        */
+        if ($request->filled('status')) {
+
+            if ($request->status === 'now_showing') {
+
+                $movies = $movies->filter(
+                    fn($movie)
+                        => $movie->schedule_status === 'Đang chiếu'
+                );
+            }
+
+            elseif ($request->status === 'coming_soon') {
+
+                $movies = $movies->filter(
+                    fn($movie)
+                        => $movie->schedule_status === 'Sắp chiếu'
+                );
+            }
+
+            elseif ($request->status === 'coming_later') {
+
+                $movies = $movies->filter(
+                    fn($movie)
+                        => $movie->schedule_status === 'Sắp ra mắt'
+                );
+            }
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | DROPDOWN DATA
+        |--------------------------------------------------------------------------
+        */
+        $genres = Genre::where(
+            'trang_thai',
+            1
+        )->get();
+
+        $countries = Country::where(
+            'trang_thai',
+            1
+        )->get();
+
+        return view(
+            'user.movies.index',
+            compact(
+                'movies',
+                'genres',
+                'countries'
+            )
+        );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOVIE DETAIL
+    |--------------------------------------------------------------------------
+    */
+    public function show(Movie $movie)
+    {
+        $now = Carbon::now('Asia/Ho_Chi_Minh');
+
+        /*
+        |--------------------------------------------------------------------------
+        | SHOWTIMES
+        |--------------------------------------------------------------------------
+        */
+        $showtimes = Showtime::with([
+            'cinema',
+            'movie'
+        ])
+        ->where('movie_id', $movie->id)
+        ->orderBy('show_date')
+        ->orderBy('show_time')
+        ->get()
+        ->filter(function ($showtime) use (
+            $movie,
+            $now
+        ) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | FIX DATE + TIME
+            |--------------------------------------------------------------------------
+            */
+            $date = Carbon::parse(
+                $showtime->show_date
+            )->format('Y-m-d');
+
+            /*
+            |--------------------------------------------------------------------------
+            | START TIME
+            |--------------------------------------------------------------------------
+            */
+            $start = Carbon::createFromFormat(
+                'Y-m-d H:i:s',
+                $date . ' ' . $showtime->show_time
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | END TIME
+            |--------------------------------------------------------------------------
+            */
+            $end = $start
+                ->copy()
+                ->addMinutes(
+                    (int) $movie->thoi_luong
+                );
+
+            /*
+            |--------------------------------------------------------------------------
+            | ONLY SHOW NOT ENDED
+            |--------------------------------------------------------------------------
+            */
+            return $end->gte($now);
+        });
+
+        return view(
+            'user.movies.show',
+            compact(
+                'movie',
+                'showtimes',
+                'now'
+            )
+        );
     }
 }
