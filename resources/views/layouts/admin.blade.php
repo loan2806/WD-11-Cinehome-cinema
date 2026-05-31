@@ -10,6 +10,7 @@
 
     {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
 
     {{-- ChartJS --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -18,7 +19,7 @@
 <body class="overflow-x-hidden bg-[#080808] text-white">
     @include('components.preloader')
 
-<div class="min-h-screen overflow-x-hidden bg-[#080808] text-white">
+<div id="adminLayout" data-sidebar="open" class="min-h-screen overflow-x-hidden bg-[#080808] text-white">
 
     {{-- SIDEBAR --}}
     <aside
@@ -54,7 +55,7 @@
             <nav class="space-y-2">
                 <a
                     href="{{ route('admin.dashboard') }}"
-                    class="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-4 py-3 font-bold text-white shadow-lg"
+                    class="{{ request()->routeIs('admin.dashboard') ? 'admin-nav-link active' : 'admin-nav-link' }}"
                 >
                     <i class="fa-solid fa-chart-line w-5"></i>
                     Dashboard
@@ -66,7 +67,7 @@
             </p>
 
             <nav class="space-y-2">
-                <a href="#" class="admin-nav-link">
+                <a href="{{ route('admin.movies.index') }}" class="{{ request()->routeIs('admin.movies.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-film w-5"></i>
                     <span>Quản lý phim</span>
                 </a>
@@ -107,9 +108,14 @@
                     <span>Thanh toán QR</span>
                 </a>
 
-                <a href="#" class="admin-nav-link">
+                <a href="{{ route('admin.food-orders.index') }}" class="{{ request()->routeIs('admin.food-orders.index') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-burger w-5"></i>
                     <span>Đồ ăn</span>
+                </a>
+
+                <a href="{{ route('admin.food-invoices.index') }}" class="{{ request()->routeIs('admin.food-invoices.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <i class="fa-solid fa-receipt w-5"></i>
+                    <span>Chi tiết hóa đơn đồ ăn</span>
                 </a>
             </nav>
 
@@ -139,14 +145,39 @@
             </p>
 
             <nav class="space-y-2">
-                <a href="#" class="admin-nav-link">
+                <a href="{{ route('admin.reports.revenue') }}" class="{{ request()->routeIs('admin.reports.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-chart-pie w-5"></i>
-                    <span>Thống kê doanh thu</span>
+                    <span>Báo cáo doanh thu</span>
                 </a>
 
-                <a href="#" class="admin-nav-link">
-                    <i class="fa-solid fa-chart-column w-5"></i>
-                    <span>Lượng khách</span>
+                <a href="{{ route('admin.activity-logs.index') }}" class="{{ request()->routeIs('admin.activity-logs.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <i class="fa-solid fa-clock-rotate-left w-5"></i>
+                    <span>Nhật ký hoạt động hệ thống</span>
+                </a>
+            </nav>
+            <p class="mb-3 mt-7 px-3 text-xs font-black uppercase tracking-widest text-[#d7a767]">
+                Hệ thống
+            </p>
+
+            <nav class="space-y-2">
+                <a href="{{ route('admin.notifications.index') }}" class="{{ request()->routeIs('admin.notifications.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <i class="fa-solid fa-bell w-5"></i>
+                    <span>Thông báo</span>
+                </a>
+
+                <a href="{{ route('admin.reviews.index') }}" class="{{ request()->routeIs('admin.reviews.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <i class="fa-solid fa-star w-5"></i>
+                    <span>Đánh giá phim</span>
+                </a>
+
+                <a href="{{ route('admin.movie-reviews.index') }}" class="{{ request()->routeIs('admin.movie-reviews.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <i class="fa-solid fa-star-half-stroke w-5"></i>
+                    <span>Quản lý đánh giá phim</span>
+                </a>
+
+                <a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <i class="fa-solid fa-gear w-5"></i>
+                    <span>Cấu hình hệ thống</span>
                 </a>
             </nav>
         </div>
@@ -255,7 +286,7 @@
                                     Tài khoản
                                 </a>
 
-                                <a href="#" class="admin-dropdown-item">
+                                <a href="{{ route('admin.settings.index') }}" class="admin-dropdown-item">
                                     <i class="fa-solid fa-gear w-4 text-xs"></i>
                                     Cài đặt
                                 </a>

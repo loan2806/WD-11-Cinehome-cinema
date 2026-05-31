@@ -61,4 +61,14 @@ public function getScheduleStatusAttribute(): string
     {
         return $this->hasMany(Showtime::class);
     }
+
+    public function reviews()
+    {
+        return $this->hasMany(MovieReview::class);
+    }
+
+    public function approvedReviews()
+    {
+        return $this->hasMany(MovieReview::class)->where('status', 'approved');
+    }
 }

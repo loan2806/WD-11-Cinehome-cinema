@@ -112,13 +112,24 @@
                     Tài khoản
                 </a>
 
+                @if (Auth::user()->role === 'user')
                 <a 
-                    href="#"
+                    href="{{ route('user.tickets.index') }}"
                     class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]"
                 >
                     <i class="fa-solid fa-ticket w-4 text-xs"></i>
                     Vé của tôi
                 </a>
+
+                <a 
+                    href="{{ route('user.notifications.index') }}"
+                    class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]"
+                >
+                    <i class="fa-solid fa-bell w-4 text-xs"></i>
+                    Thong bao
+                </a>
+
+                @endif
 
                 <a 
                     href="{{ route('user.movies.index') }}"
