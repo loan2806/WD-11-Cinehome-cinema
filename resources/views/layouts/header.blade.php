@@ -3,7 +3,7 @@
         <div class="d-flex justify-content-between align-items-center">
 
             <a href="{{ route('home') }}" class="d-flex align-items-center gap-2 text-decoration-none">
-                <img src="{{ asset('assets/images/logo.png') }}" class="logo-img" alt="CineHome Logo">
+                {{-- <img src="{{ asset('assets/images/logo.png') }}" class="logo-img" alt="CineHome Logo"> --}}
                 <div class="brand-text">Cine<span>Home</span></div>
             </a>
 
@@ -18,15 +18,20 @@
         Phim
     </a>
 
-    {{-- <a href="{{ route('user.cinemas.index') }}"
-       class="{{ request()->routeIs('user.cinemas.*') ? 'active' : '' }}">
+    <a href="{{ route('user.cinemas.index') }}"
+       class="{{ request()->routeIs('user.cinemas.index', 'user.cinemas.show') ? 'active' : '' }}">
         Rạp
-    </a> --}}
+    </a>
 
- {{-- <a href="{{ route('user.showtimes.index') }}"
+    <a href="{{ route('user.cinemas.map') }}"
+       class="{{ request()->routeIs('user.cinemas.map') ? 'active' : '' }}">
+        Bản đồ rạp
+    </a>
+
+ <a href="{{ route('user.showtimes.index') }}"
    class="{{ request()->routeIs('user.showtimes.*') ? 'active' : '' }}">
     Lịch chiếu
-</a> --}}
+</a>
     <a href="#"
        class="{{ request()->is('khuyen-mai*') ? 'active' : '' }}">
         Khuyến mãi

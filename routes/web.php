@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\NotificationController as AdminNotificationContro
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Admin\SystemSettingController;
+use App\Http\Controllers\Api\CinemaMapApiController;
 use App\Http\Controllers\Staff\StaffDashboardController;
 
 /* =========================
@@ -18,6 +19,7 @@ use App\Http\Controllers\Staff\StaffDashboardController;
 ========================= */
 use App\Http\Controllers\User\MovieController;
 use App\Http\Controllers\User\CinemaController;
+use App\Http\Controllers\User\CinemaMapController;
 use App\Http\Controllers\User\ShowtimeController;
 use App\Http\Controllers\User\BookingController;
 use App\Http\Controllers\User\TicketController;
@@ -75,8 +77,20 @@ Route::post('/movies/{movie}/reviews', [MovieReviewController::class, 'store'])
 Route::get('/cinemas', [CinemaController::class, 'index'])
     ->name('user.cinemas.index');
 
+Route::get('/cinemas/map', CinemaMapController::class)
+    ->name('user.cinemas.map');
+
 Route::get('/cinemas/{cinema}', [CinemaController::class, 'show'])
     ->name('user.cinemas.show');
+
+/*
+|--------------------------------------------------------------------------
+| CINEMA API
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/api/cinemas', CinemaMapApiController::class)
+    ->name('api.cinemas.index');
 
 /*
 |--------------------------------------------------------------------------
@@ -152,7 +166,7 @@ Route::get('/dashboard', function () {
     }
 
     return redirect()->route('home');
-})->middleware(['auth'])->name('dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
