@@ -10,6 +10,7 @@
 
     {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
 
     {{-- ChartJS --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -112,7 +113,7 @@
                     <span>Đồ ăn</span>
                 </a>
 
-                <a href="{{ route('admin.food-orders.index') }}" class="{{ request()->routeIs('admin.food-orders.show') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                <a href="{{ route('admin.food-invoices.index') }}" class="{{ request()->routeIs('admin.food-invoices.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-receipt w-5"></i>
                     <span>Chi tiết hóa đơn đồ ăn</span>
                 </a>
@@ -167,6 +168,11 @@
                 <a href="{{ route('admin.reviews.index') }}" class="{{ request()->routeIs('admin.reviews.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-star w-5"></i>
                     <span>Đánh giá phim</span>
+                </a>
+
+                <a href="{{ route('admin.movie-reviews.index') }}" class="{{ request()->routeIs('admin.movie-reviews.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <i class="fa-solid fa-star-half-stroke w-5"></i>
+                    <span>Quản lý đánh giá phim</span>
                 </a>
 
                 <a href="{{ route('admin.settings.index') }}" class="{{ request()->routeIs('admin.settings.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">

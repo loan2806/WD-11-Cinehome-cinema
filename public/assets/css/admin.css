@@ -458,6 +458,48 @@ a {
     color: var(--brown-dark);
 }
 
+.admin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #e8d2bb;
+    padding: 12px 14px;
+    border-radius: 14px;
+    font-weight: 700;
+    transition: 0.25s ease;
+}
+
+.admin-nav-link i {
+    color: var(--gold-main);
+}
+
+.admin-nav-link:hover {
+    background: linear-gradient(135deg, var(--brown-soft), var(--gold-main));
+    color: var(--white);
+}
+
+.admin-nav-link:hover i {
+    color: var(--white);
+}
+
+.admin-input {
+    width: 100%;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    background: #1f1f1f;
+    color: var(--white);
+    padding: 11px 13px;
+    outline: none;
+}
+
+.admin-input:focus {
+    border-color: rgba(217, 154, 50, 0.75);
+}
+
+.admin-input::placeholder {
+    color: #888;
+}
+
 /* =========================
    TABLE
 ========================= */
