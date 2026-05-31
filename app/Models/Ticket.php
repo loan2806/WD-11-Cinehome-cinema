@@ -47,4 +47,9 @@ class Ticket extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function foodInvoices()
+    {
+        return $this->hasMany(FoodInvoice::class);
+    }
 }

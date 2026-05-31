@@ -2,35 +2,25 @@
 
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| ADMIN CONTROLLERS
-|--------------------------------------------------------------------------
-*/
-
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GenreController;
 use App\Http\Controllers\Admin\MovieController as AdminMovieController;
 use App\Http\Controllers\Admin\ShowtimeController as AdminShowtimeController;
+use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\FoodInvoiceController;
+use App\Http\Controllers\Admin\MovieReviewController as AdminMovieReviewController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\RevenueReportController;
+use App\Http\Controllers\Admin\SystemSettingController;
 
-/*
-|--------------------------------------------------------------------------
-| USER CONTROLLERS
-|--------------------------------------------------------------------------
-*/
-
-use App\Http\Controllers\User\BookingController;
+use App\Http\Controllers\User\MovieController;
 use App\Http\Controllers\User\CinemaController;
 use App\Http\Controllers\User\CinemaMapController;
-use App\Http\Controllers\User\MovieController;
 use App\Http\Controllers\User\ShowtimeController;
+use App\Http\Controllers\User\BookingController;
 use App\Http\Controllers\User\TicketController;
-
-/*
-|--------------------------------------------------------------------------
-| OTHER CONTROLLERS
-|--------------------------------------------------------------------------
-*/
+use App\Http\Controllers\User\MovieReviewController;
+use App\Http\Controllers\User\NotificationController as UserNotificationController;
 
 use App\Http\Controllers\Api\CinemaMapApiController;
 use App\Http\Controllers\ProfileController;
@@ -54,8 +44,12 @@ Route::get('/', [MovieController::class, 'home'])
 Route::get('/movies', [MovieController::class, 'index'])
     ->name('user.movies.index');
 
-Route::get('/movies/{movie:slug}', [MovieController::class, 'show'])
+Route::get('/movies/{movie}', [MovieController::class, 'show'])
     ->name('user.movies.show');
+
+Route::post('/movies/{movie}/reviews', [MovieReviewController::class, 'store'])
+    ->middleware('auth')
+    ->name('user.movies.reviews.store');
 
 /*
 |--------------------------------------------------------------------------
@@ -99,9 +93,9 @@ Route::get('/booking/{movie}', [BookingController::class, 'index'])
 Route::get('/showtimes/{movie}/{cinema}', [BookingController::class, 'showtimes'])
     ->name('booking.showtimes');
 
-Route::prefix('bookings')
+Route::middleware('auth')
+    ->prefix('bookings')
     ->name('user.bookings.')
-    ->middleware('auth')
     ->group(function () {
 
         Route::get('{showtime}/select-seats', [BookingController::class, 'selectSeats'])
@@ -113,68 +107,7 @@ Route::prefix('bookings')
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN ROUTES
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['auth', 'role:admin'])
-    ->prefix('admin')
-    ->name('admin.')
-    ->group(function () {
-
-        /*
-        |--------------------------------------------------------------------------
-        | DASHBOARD
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->name('dashboard');
-
-        /*
-        |--------------------------------------------------------------------------
-        | MOVIES CRUD
-        |--------------------------------------------------------------------------
-        */
-
-        Route::resource('movies', AdminMovieController::class);
-
-        /*
-        |--------------------------------------------------------------------------
-        | GENRES CRUD
-        |--------------------------------------------------------------------------
-        */
-
-        Route::resource('genres', GenreController::class);
-
-        /*
-        |--------------------------------------------------------------------------
-        | SHOWTIMES CRUD
-        |--------------------------------------------------------------------------
-        */
-
-        Route::get('/showtimes', [AdminShowtimeController::class, 'index'])
-            ->name('showtimes.index');
-
-        Route::get('/showtimes/create', [AdminShowtimeController::class, 'create'])
-            ->name('showtimes.create');
-
-        Route::post('/showtimes', [AdminShowtimeController::class, 'store'])
-            ->name('showtimes.store');
-
-        Route::get('/showtimes/{id}/edit', [AdminShowtimeController::class, 'edit'])
-            ->name('showtimes.edit');
-
-        Route::put('/showtimes/{id}', [AdminShowtimeController::class, 'update'])
-            ->name('showtimes.update');
-
-        Route::delete('/showtimes/{id}', [AdminShowtimeController::class, 'destroy'])
-            ->name('showtimes.destroy');
-    });
-
-/*
-|--------------------------------------------------------------------------
-| USER ROUTES
+| USER
 |--------------------------------------------------------------------------
 */
 
@@ -191,11 +124,14 @@ Route::middleware(['auth', 'role:user'])
 
         Route::patch('/tickets/{ticket}/cancel', [TicketController::class, 'cancel'])
             ->name('tickets.cancel');
+
+        Route::get('/notifications', [UserNotificationController::class, 'index'])
+            ->name('notifications.index');
     });
 
 /*
 |--------------------------------------------------------------------------
-| STAFF ROUTES
+| STAFF
 |--------------------------------------------------------------------------
 */
 
@@ -214,7 +150,64 @@ Route::middleware(['auth', 'role:staff'])
 
 /*
 |--------------------------------------------------------------------------
-| PROFILE ROUTES
+| ADMIN
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+
+        Route::get('/dashboard', [DashboardController::class, 'index'])
+            ->name('dashboard');
+
+        Route::resource('movies', AdminMovieController::class);
+
+        Route::resource('genres', GenreController::class);
+
+        Route::resource('showtimes', AdminShowtimeController::class);
+
+        Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])
+            ->name('food-invoices.index');
+
+        Route::post('/food-invoices', [FoodInvoiceController::class, 'store'])
+            ->name('food-invoices.store');
+
+        Route::delete('/food-invoices/{foodInvoice}', [FoodInvoiceController::class, 'destroy'])
+            ->name('food-invoices.destroy');
+
+        Route::resource('notifications', AdminNotificationController::class)
+            ->only(['index', 'create', 'store', 'destroy']);
+
+        Route::get('/movie-reviews', [AdminMovieReviewController::class, 'index'])
+            ->name('movie-reviews.index');
+
+        Route::post('/movie-reviews', [AdminMovieReviewController::class, 'store'])
+            ->name('movie-reviews.store');
+
+        Route::patch('/movie-reviews/{movieReview}', [AdminMovieReviewController::class, 'update'])
+            ->name('movie-reviews.update');
+
+        Route::delete('/movie-reviews/{movieReview}', [AdminMovieReviewController::class, 'destroy'])
+            ->name('movie-reviews.destroy');
+
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])
+            ->name('activity-logs.index');
+
+        Route::get('/revenue-reports', [RevenueReportController::class, 'index'])
+            ->name('revenue-reports.index');
+
+        Route::get('/system-settings', [SystemSettingController::class, 'index'])
+            ->name('system-settings.index');
+
+        Route::patch('/system-settings', [SystemSettingController::class, 'update'])
+            ->name('system-settings.update');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| PROFILE
 |--------------------------------------------------------------------------
 */
 
@@ -232,8 +225,8 @@ Route::middleware('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| AUTH ROUTES
+| AUTH
 |--------------------------------------------------------------------------
 */
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
