@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
-use App\Models\SystemNotification;
+use App\Models\AdminNotification;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
     public function index()
     {
-        $notifications = SystemNotification::with('user')->latest()->paginate(15);
+        $notifications = AdminNotification::latest()->paginate(15);
 
         return view('admin.notifications.index', compact('notifications'));
     }
@@ -27,10 +27,13 @@ class NotificationController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'message' => ['required', 'string'],
             'type' => ['required', 'in:info,success,warning,danger'],
-            'target_role' => ['nullable', 'in:user,staff,admin'],
+            'audience' => ['required', 'in:all,user,staff,admin'],
         ]);
 
-        $notification = SystemNotification::create($data);
+        $notification = AdminNotification::create([
+            ...$data,
+            'published_at' => now(),
+        ]);
 
         ActivityLog::create([
             'user_id' => $request->user()?->id,
@@ -45,7 +48,7 @@ class NotificationController extends Controller
         return redirect()->route('admin.notifications.index')->with('success', 'Da tao thong bao.');
     }
 
-    public function destroy(Request $request, SystemNotification $notification)
+    public function destroy(Request $request, AdminNotification $notification)
     {
         $title = $notification->title;
         $notification->delete();

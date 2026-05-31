@@ -48,8 +48,8 @@ class Ticket extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function foodOrders()
+    public function foodInvoices()
     {
-        return $this->hasMany(FoodOrder::class);
+        return $this->hasMany(FoodInvoice::class);
     }
 }
