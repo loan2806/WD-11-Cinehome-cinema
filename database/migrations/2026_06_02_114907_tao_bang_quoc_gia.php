@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('countries', function (Blueprint $table) {
+        Schema::create('quoc_gias', function (Blueprint $table) {
             $table->id();
             $table->string('ten_quoc_gia')->unique();
             $table->string('ma_quoc_gia', 2)->nullable();
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('quoc_gias');
     }
 };

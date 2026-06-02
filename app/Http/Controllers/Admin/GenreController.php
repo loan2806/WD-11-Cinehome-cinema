@@ -50,7 +50,7 @@ class GenreController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'ten_the_loai' => 'required|string|max:255|unique:genres',
+            'ten_the_loai' => 'required|string|max:255|unique:the_loais',
             'mo_ta' => 'nullable|string|max:500',
             'trang_thai' => 'required|boolean',
         ]);
@@ -80,7 +80,7 @@ class GenreController extends Controller
     public function update(Request $request, Genre $genre)
     {
         $request->validate([
-            'ten_the_loai' => 'required|string|max:255|unique:genres,ten_the_loai,' . $genre->id,
+            'ten_the_loai' => 'required|string|max:255|unique:the_loais,ten_the_loai,' . $genre->id,
             'mo_ta' => 'nullable|string|max:500',
             'trang_thai' => 'required|boolean',
         ]);
