@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('movies', function (Blueprint $table) {
+        Schema::create('phims', function (Blueprint $table) {
 
             $table->id();
 
@@ -54,7 +54,7 @@ return new class extends Migration
             */
             $table->foreignId('quoc_gia_id')
                 ->nullable()
-                ->constrained('countries')
+                ->constrained('quoc_gias')
                 ->onDelete('set null');
 
             /*
@@ -68,6 +68,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('movies');
+        Schema::dropIfExists('phims');
     }
 };

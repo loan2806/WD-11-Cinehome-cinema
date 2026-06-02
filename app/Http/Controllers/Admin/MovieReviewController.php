@@ -21,7 +21,7 @@ class MovieReviewController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'movie_id' => ['required', 'exists:movies,id'],
+            'movie_id' => ['required', 'exists:phims,id'],
             'reviewer_name' => ['required', 'string', 'max:255'],
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
             'content' => ['nullable', 'string'],

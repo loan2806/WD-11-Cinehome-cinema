@@ -43,8 +43,8 @@ class ShowtimeController extends Controller
                     STR_TO_DATE(CONCAT(show_date, ' ', show_time), '%Y-%m-%d %H:%i:%s'),
                     INTERVAL (
                         SELECT duration 
-                        FROM movies 
-                        WHERE movies.id = showtimes.movie_id
+                        FROM phims 
+                        WHERE phims.id = showtimes.movie_id
                     ) MINUTE
                 ) >= ?",
                 [$now->format('Y-m-d H:i:s')]

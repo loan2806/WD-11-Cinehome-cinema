@@ -25,13 +25,13 @@ class CinemaController extends Controller
             ->whereDate('show_date', $today)
 
             // Không lấy suất chiếu trước ngày khởi chiếu phim
-            ->whereRaw("
-                show_date >= (
+            ->whereRaw(
+                "show_date >= (
                     SELECT release_date
-                    FROM movies
-                    WHERE movies.id = showtimes.movie_id
-                )
-            ")
+                    FROM phims
+                    WHERE phims.id = showtimes.movie_id
+                )"
+            )
 
             // Chỉ lấy phim đã tới ngày khởi chiếu
             ->whereHas('movie', function ($query) use ($today) {
@@ -44,8 +44,8 @@ class CinemaController extends Controller
                     STR_TO_DATE(CONCAT(show_date, ' ', show_time), '%Y-%m-%d %H:%i:%s'),
                     INTERVAL (
                         SELECT duration
-                        FROM movies
-                        WHERE movies.id = showtimes.movie_id
+                        FROM phims
+                        WHERE phims.id = showtimes.movie_id
                     ) MINUTE
                 ) >= ?",
                 [$now->format('Y-m-d H:i:s')]
