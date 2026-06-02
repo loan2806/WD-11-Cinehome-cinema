@@ -4,7 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cinema;
-use App\Models\Movie;
+use App\Models\Phim;
 use App\Models\Showtime;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -19,7 +19,7 @@ class ShowtimeController extends Controller
 
         $cinemas = Cinema::orderBy('name')->get();
 
-        $movies = Movie::whereDate('release_date', '>=', $today)
+        $movies = Phim::whereDate('release_date', '>=', $today)
             ->whereDate('release_date', '<=', $limitDay)
             ->orderBy('title')
             ->get();

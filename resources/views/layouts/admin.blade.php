@@ -67,7 +67,7 @@
             </p>
 
             <nav class="space-y-2">
-                <a href="{{ route('admin.movies.index') }}" class="{{ request()->routeIs('admin.movies.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                <a href="{{ route('admin.phims.index') }}" class="{{ request()->routeIs('admin.phims.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-film w-5"></i>
                     <span>Quản lý phim</span>
                 </a>

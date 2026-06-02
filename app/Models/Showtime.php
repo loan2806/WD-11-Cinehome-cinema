@@ -69,7 +69,7 @@ class Showtime extends Model
     */
     public function movie()
     {
-        return $this->belongsTo(Movie::class);
+        return $this->belongsTo(Phim::class);
     }
 
     public function cinema()

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Movie;
+use App\Models\Phims;
 use App\Models\Showtime;
 
 class DashboardController extends Controller
@@ -11,7 +11,7 @@ class DashboardController extends Controller
     public function index()
     {
         // Lấy phim mới nhất
-        $latestMovies = Movie::with('showtimes')
+        $latestMovies = Phims::with('showtimes')
             ->orderBy('created_at', 'desc')
             ->get();
             

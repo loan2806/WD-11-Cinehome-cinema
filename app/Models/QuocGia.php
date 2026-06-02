@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Country extends Model
+class QuocGia extends Model
 {
     use HasFactory;
 
@@ -20,7 +20,7 @@ class Country extends Model
     public function movies()
     {
         return $this->hasMany(
-            Movie::class,
+            Phims::class,
             'quoc_gia_id'
         );
     }

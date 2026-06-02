@@ -3,10 +3,10 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Genre;
+use App\Models\TheLoai;
 use Illuminate\Support\Str;
 
-class GenresSeeder extends Seeder
+class TheLoaiSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -30,6 +30,6 @@ class GenresSeeder extends Seeder
             ];
         }, $names);
 
-        Genre::upsert($genres, ['ten_the_loai'], ['slug', 'trang_thai']);
+        TheLoai::upsert($genres, ['ten_the_loai'], ['slug', 'trang_thai']);
     }
 }

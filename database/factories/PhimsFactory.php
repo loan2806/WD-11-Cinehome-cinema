@@ -5,7 +5,7 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
-class MovieFactory extends Factory
+class PhimFactory extends Factory
 {
     public function definition(): array
     {

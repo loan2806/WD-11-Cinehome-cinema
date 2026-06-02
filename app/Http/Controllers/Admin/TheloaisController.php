@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Genre;
+use App\Models\TheLoai;
 use Illuminate\Http\Request;
 
-class GenreController extends Controller
+class TheloaisController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
@@ -15,7 +15,7 @@ class GenreController extends Controller
     */
     public function index(Request $request)
     {
-        $query = Genre::query();
+        $query = TheLoai::query();
 
         // Search
         if ($request->filled('search')) {
@@ -55,7 +55,7 @@ class GenreController extends Controller
             'trang_thai' => 'required|boolean',
         ]);
 
-        Genre::create($request->validated());
+        TheLoai::create($request->validated());
 
         return redirect()
             ->route('admin.genres.index')
@@ -67,7 +67,7 @@ class GenreController extends Controller
     | EDIT FORM
     |--------------------------------------------------------------------------
     */
-    public function edit(Genre $genre)
+    public function edit(TheLoai $genre)
     {
         return view('admin.genres.edit', compact('genre'));
     }
@@ -77,7 +77,7 @@ class GenreController extends Controller
     | UPDATE
     |--------------------------------------------------------------------------
     */
-    public function update(Request $request, Genre $genre)
+    public function update(Request $request, TheLoai $genre)
     {
         $request->validate([
             'ten_the_loai' => 'required|string|max:255|unique:the_loais,ten_the_loai,' . $genre->id,
@@ -97,7 +97,7 @@ class GenreController extends Controller
     | DELETE
     |--------------------------------------------------------------------------
     */
-    public function destroy(Genre $genre)
+    public function destroy(TheLoai $genre)
     {
         $genre->delete();
 

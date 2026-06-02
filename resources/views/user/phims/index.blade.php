@@ -15,7 +15,7 @@
                 Xem phim đang chiếu, sắp chiếu và đặt vé nhanh chóng tại CineHome.
             </p>
 
-            <form action="{{ route('user.movies.index') }}" method="GET"
+            <form action="{{ route('user.phims.index') }}" method="GET"
                 class="bg-[#151515] border border-white/10 rounded-2xl p-5 mb-8 grid grid-cols-1 md:grid-cols-5 gap-4">
 
                 <input type="text" name="keyword" value="{{ request('keyword') }}" placeholder="Tìm tên phim..."
@@ -64,7 +64,7 @@
                         <i class="fa-solid fa-magnifying-glass"></i>
                     </button>
 
-                    <a href="{{ route('user.movies.index') }}"
+                    <a href="{{ route('user.phims.index') }}"
                         class="w-[52px] flex items-center justify-center bg-white/10 text-white rounded-xl hover:bg-white/20 transition">
                         <i class="fa-solid fa-rotate-left"></i>
                     </a>
@@ -85,7 +85,7 @@
 
                             $buttonClass = 'border border-pink-500 text-pink-400 hover:bg-pink-500 hover:text-white';
 
-                            $buttonUrl = route('user.movies.show', $movie->slug);
+                            $buttonUrl = route('user.phims.show', $movie->slug);
 
                             $buttonIcon = 'fa-regular fa-heart';
                         }
@@ -98,7 +98,7 @@
 
                             $buttonClass = 'bg-[#f5a623] text-black hover:bg-[#ffc04d]';
 
-                            $buttonUrl = route('user.movies.bookings', $movie->slug) . '#showtimes';
+                            $buttonUrl = route('user.phims.bookings', $movie->slug) . '#showtimes';
 
                             $buttonIcon = 'fa-solid fa-ticket';
                         }
@@ -113,7 +113,7 @@
                     <div
                         class="bg-[#151515] border border-white/10 rounded-2xl overflow-hidden shadow-lg transition duration-300 hover:-translate-y-2 hover:shadow-2xl flex flex-col min-h-[430px]">
                         <div class="relative">
-                            <a href="{{ route('user.movies.show', $movie->id) }}">
+                            <a href="{{ route('user.phims.show', $movie->id) }}">
                                 <img src="{{ $movie->poster }}" alt="{{ $movie->title }}"
                                     class="w-full h-[250px] object-cover shrink-0 hover:opacity-80 transition cursor-pointer">
                             </a>
@@ -180,7 +180,7 @@
                                 @endif
 
                                 {{-- CHI TIẾT --}}
-                                <a href="{{ route('user.movies.show', $movie->slug) }}"
+                                <a href="{{ route('user.phims.show', $movie->slug) }}"
                                     class="flex-1 text-center bg-white/10 text-white font-bold py-2 rounded-xl hover:bg-white/20 transition text-sm">
 
                                     Chi tiết

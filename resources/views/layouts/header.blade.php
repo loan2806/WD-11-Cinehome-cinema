@@ -13,8 +13,8 @@
         Trang chủ
     </a>
 
-    <a href="{{ route('user.movies.index') }}"
-       class="{{ request()->routeIs('user.movies.*') ? 'active' : '' }}">
+    <a href="{{ route('user.phims.index') }}"
+       class="{{ request()->routeIs('user.phims.*') ? 'active' : '' }}">
         Phim
     </a>
 
@@ -132,7 +132,7 @@
                 @endif
 
                 <a 
-                    href="{{ route('user.movies.index') }}"
+                    href="{{ route('user.phims.index') }}"
                     class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]"
                 >
                     <i class="fa-solid fa-film w-4 text-xs"></i>

@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Cinema;
-use App\Models\Movie;
+use App\Models\Phim;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ShowtimeFactory extends Factory
@@ -11,7 +11,7 @@ class ShowtimeFactory extends Factory
     public function definition(): array
     {
         return [
-            'movie_id' => Movie::inRandomOrder()->value('id'),
+            'movie_id' => Phim::inRandomOrder()->value('id'),
             'cinema_id' => Cinema::inRandomOrder()->value('id'),
             'room_name' => fake()->randomElement(['Phòng 1', 'Phòng 2', 'Phòng 3', 'IMAX', 'VIP']),
             'show_date' => fake()->dateTimeBetween('now', '+7 days')->format('Y-m-d'),

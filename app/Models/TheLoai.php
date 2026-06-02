@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Genre extends Model
+class TheLoai extends Model
 {
     use HasFactory;
 
@@ -21,7 +21,7 @@ class Genre extends Model
     public function movies()
     {
         return $this->belongsToMany(
-            Movie::class,
+            Phims::class,
             'movie_genre',
             'genre_id',
             'movie_id'
