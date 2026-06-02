@@ -4,13 +4,13 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
-use App\Models\Movie;
+use App\Models\Phim;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class MovieReviewController extends Controller
 {
-    public function store(Request $request, Movie $movie)
+    public function store(Request $request, Phim $movie)
     {
         $data = $request->validate([
             'rating' => ['required', 'integer', 'min:1', 'max:5'],

@@ -3,15 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreMovieRequest;
+use App\Http\Requests\CapnhatPhims;
+use App\Http\Requests\ThemmoiPhimsRequest;
 use App\Http\Requests\UpdateMovieRequest;
-use App\Models\Movie;
-use App\Models\Genre;
-use App\Models\Country;
+use App\Models\Phims;
+use App\Models\QuocGia;
+use App\Models\TheLoai;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class MovieController extends Controller
+class PhimsController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
@@ -20,7 +21,7 @@ class MovieController extends Controller
     */
     public function index(Request $request)
     {
-        $query = Movie::with([
+        $query = Phims::with([
             'country',
             'genres',
             'showtimes'
@@ -83,7 +84,7 @@ class MovieController extends Controller
         | GET GENRES
         |--------------------------------------------------------------------------
         */
-        $genres = Genre::where(
+        $genres = TheLoai::where(
             'trang_thai',
             1
         )->get();
@@ -93,13 +94,13 @@ class MovieController extends Controller
         | GET COUNTRIES
         |--------------------------------------------------------------------------
         */
-        $countries = Country::where(
+        $countries = QuocGia::where(
             'trang_thai',
             1
         )->get();
 
         return view(
-            'admin.movies.index',
+            'admin.phims.index',
             compact(
                 'movies',
                 'genres',
@@ -115,18 +116,18 @@ class MovieController extends Controller
     */
     public function create()
     {
-        $genres = Genre::where(
+        $genres = TheLoai::where(
             'trang_thai',
             1
         )->get();
 
-        $countries = Country::where(
+        $countries = QuocGia::where(
             'trang_thai',
             1
         )->get();
 
         return view(
-            'admin.movies.create',
+            'admin.phims.create',
             compact(
                 'genres',
                 'countries'
@@ -139,7 +140,7 @@ class MovieController extends Controller
     | STORE
     |--------------------------------------------------------------------------
     */
-    public function store(StoreMovieRequest $request)
+    public function store(ThemmoiPhimsRequest $request)
     {
         $data = $request->validated();
 
@@ -168,7 +169,7 @@ class MovieController extends Controller
         | CREATE MOVIE
         |--------------------------------------------------------------------------
         */
-        $movie = Movie::create($data);
+        $movie = Phims::create($data);
 
         /*
         |--------------------------------------------------------------------------
@@ -182,7 +183,7 @@ class MovieController extends Controller
         }
 
         return redirect()
-            ->route('admin.movies.index')
+            ->route('admin.phims.index')
             ->with(
                 'success',
                 'Thêm phim thành công'
@@ -194,7 +195,7 @@ class MovieController extends Controller
     | SHOW DETAIL
     |--------------------------------------------------------------------------
     */
-    public function show(Movie $movie)
+    public function show(Phims $movie)
     {
         $movie->load([
             'country',
@@ -203,7 +204,7 @@ class MovieController extends Controller
         ]);
 
         return view(
-            'admin.movies.show',
+            'admin.phims.show',
             compact('movie')
         );
     }
@@ -213,14 +214,14 @@ class MovieController extends Controller
     | EDIT FORM
     |--------------------------------------------------------------------------
     */
-    public function edit(Movie $movie)
+    public function edit(Phims $movie)
     {
-        $genres = Genre::where(
+        $genres = TheLoai::where(
             'trang_thai',
             1
         )->get();
 
-        $countries = Country::where(
+        $countries = QuocGia::where(
             'trang_thai',
             1
         )->get();
@@ -230,7 +231,7 @@ class MovieController extends Controller
             ->toArray();
 
         return view(
-            'admin.movies.edit',
+            'admin.phims.edit',
             compact(
                 'movie',
                 'genres',
@@ -246,8 +247,8 @@ class MovieController extends Controller
     |--------------------------------------------------------------------------
     */
     public function update(
-        UpdateMovieRequest $request,
-        Movie $movie
+        CapnhatPhims $request,
+        Phims $movie
     ) {
         $data = $request->validated();
 
@@ -287,7 +288,7 @@ class MovieController extends Controller
         }
 
         return redirect()
-            ->route('admin.movies.index')
+            ->route('admin.phims.index')
             ->with(
                 'success',
                 'Cập nhật phim thành công'
@@ -299,7 +300,7 @@ class MovieController extends Controller
     | DELETE
     |--------------------------------------------------------------------------
     */
-    public function destroy(Movie $movie)
+    public function destroy(Phims $movie)
     {
         /*
         |--------------------------------------------------------------------------
@@ -316,7 +317,7 @@ class MovieController extends Controller
         $movie->delete();
 
         return redirect()
-            ->route('admin.movies.index')
+            ->route('admin.phims.index')
             ->with(
                 'success',
                 'Xóa phim thành công'

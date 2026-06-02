@@ -3,9 +3,9 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Country;
+use App\Models\QuocGia;
 
-class CountriesSeeder extends Seeder
+class QuocGiaSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -26,6 +26,6 @@ class CountriesSeeder extends Seeder
         ];
 
             // Use upsert to avoid duplicate key errors when seeding multiple times
-            Country::upsert($countries, ['ma_quoc_gia'], ['ten_quoc_gia', 'trang_thai']);
+            QuocGia::upsert($countries, ['ma_quoc_gia'], ['ten_quoc_gia', 'trang_thai']);
     }
 }

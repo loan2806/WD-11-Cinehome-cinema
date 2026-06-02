@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
-use App\Models\Movie;
+use App\Models\Phim;
 use App\Models\MovieReview;
 use Illuminate\Http\Request;
 
@@ -13,7 +13,7 @@ class MovieReviewController extends Controller
     public function index()
     {
         $reviews = MovieReview::with('movie', 'user')->latest()->paginate(12);
-        $movies = Movie::orderBy('title')->get(['id', 'title']);
+        $movies = Phim::orderBy('title')->get(['id', 'title']);
 
         return view('admin.movie-reviews.index', compact('reviews', 'movies'));
     }

@@ -4,11 +4,11 @@ namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
-use App\Models\Genre;
+use App\Models\TheLoai;
 
-class GenreFactory extends Factory
+class TheLoaiFactory extends Factory
 {
-    protected $model = Genre::class;
+    protected $model = TheLoai::class;
 
     public function definition(): array
     {

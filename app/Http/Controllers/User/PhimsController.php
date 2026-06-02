@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\Movie;
+use App\Models\Phims;
 use App\Models\Showtime;
-use App\Models\Genre;
-use App\Models\Country;
+use App\Models\TheLoai;
+use App\Models\QuocGia;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
-class MovieController extends Controller
+class PhimsController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
@@ -19,7 +19,7 @@ class MovieController extends Controller
     */
     public function home()
     {
-        $movies = Movie::with([
+        $movies = Phims::with([
             'showtimes',
             'genres',
             'country'
@@ -83,7 +83,7 @@ class MovieController extends Controller
     */
     public function index(Request $request)
     {
-        $query = Movie::with([
+        $query = Phims::with([
             'showtimes',
             'genres',
             'country'
@@ -98,7 +98,7 @@ class MovieController extends Controller
         if ($request->filled('keyword')) {
 
             $query->where(
-                'ten_phim',
+                'ten_Phims',
                 'like',
                 '%' . $request->keyword . '%'
             );
@@ -143,7 +143,10 @@ class MovieController extends Controller
         */
         $movies = $query
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->filter(
+                fn($movie) => $movie->schedule_status !== 'Đã kết thúc'
+            );
 
         /*
         |--------------------------------------------------------------------------
@@ -182,18 +185,18 @@ class MovieController extends Controller
         | DROPDOWN DATA
         |--------------------------------------------------------------------------
         */
-        $genres = Genre::where(
+        $genres = TheLoai::where(
             'trang_thai',
             1
         )->get();
 
-        $countries = Country::where(
+        $countries = QuocGia::where(
             'trang_thai',
             1
         )->get();
 
         return view(
-            'user.movies.index',
+            'user.phims.index',
             compact(
                 'movies',
                 'genres',
@@ -207,7 +210,7 @@ class MovieController extends Controller
     | MOVIE DETAIL
     |--------------------------------------------------------------------------
     */
-    public function show(Movie $movie)
+    public function show(Phims $movie)
     {
         $now = Carbon::now('Asia/Ho_Chi_Minh');
 
@@ -268,7 +271,7 @@ class MovieController extends Controller
         });
 
         return view(
-            'user.movies.show',
+            'user.phims.show',
             compact(
                 'movie',
                 'showtimes',

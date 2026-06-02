@@ -1,30 +1,27 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\GenreController;
-use App\Http\Controllers\Admin\MovieController as AdminMovieController;
-use App\Http\Controllers\Admin\ShowtimeController as AdminShowtimeController;
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FoodInvoiceController;
 use App\Http\Controllers\Admin\MovieReviewController as AdminMovieReviewController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\RevenueReportController;
+use App\Http\Controllers\Admin\ShowtimeController as AdminShowtimeController;
 use App\Http\Controllers\Admin\SystemSettingController;
-
-use App\Http\Controllers\User\MovieController;
-use App\Http\Controllers\User\CinemaController;
-use App\Http\Controllers\User\CinemaMapController;
-use App\Http\Controllers\User\ShowtimeController;
-use App\Http\Controllers\User\BookingController;
-use App\Http\Controllers\User\TicketController;
-use App\Http\Controllers\User\MovieReviewController;
-use App\Http\Controllers\User\NotificationController as UserNotificationController;
-
+use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Api\CinemaMapApiController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Staff\StaffDashboardController;
+use App\Http\Controllers\User\BookingController;
+use App\Http\Controllers\User\CinemaController;
+use App\Http\Controllers\User\CinemaMapController;
+use App\Http\Controllers\User\MovieReviewController;
+use App\Http\Controllers\User\NotificationController as UserNotificationController;
+use App\Http\Controllers\User\PhimsController;
+use App\Http\Controllers\User\ShowtimeController;
+use App\Http\Controllers\User\TicketController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,24 +29,24 @@ use App\Http\Controllers\Staff\StaffDashboardController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', [MovieController::class, 'home'])
+Route::get('/', [PhimsController::class, 'home'])
     ->name('home');
 
 /*
 |--------------------------------------------------------------------------
-| MOVIES
+| phims
 |--------------------------------------------------------------------------
 */
 
-Route::get('/movies', [MovieController::class, 'index'])
-    ->name('user.movies.index');
+Route::get('/phims', [PhimsController::class, 'index'])
+    ->name('user.phims.index');
 
-Route::get('/movies/{movie}', [MovieController::class, 'show'])
-    ->name('user.movies.show');
+Route::get('/phims/{movie}', [PhimsController::class, 'show'])
+    ->name('user.phims.show');
 
-Route::post('/movies/{movie}/reviews', [MovieReviewController::class, 'store'])
+Route::post('/phims/{movie}/reviews', [MovieReviewController::class, 'store'])
     ->middleware('auth')
-    ->name('user.movies.reviews.store');
+    ->name('user.phims.reviews.store');
 
 /*
 |--------------------------------------------------------------------------
@@ -162,9 +159,9 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
 
-        Route::resource('movies', AdminMovieController::class);
+        Route::resource('phims', AdminMovieController::class);
 
-        Route::resource('genres', GenreController::class);
+        Route::resource('genres', TheloaisController::class);
 
         Route::resource('showtimes', AdminShowtimeController::class);
 

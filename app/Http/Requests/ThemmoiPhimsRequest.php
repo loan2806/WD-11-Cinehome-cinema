@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreMovieRequest extends FormRequest
+class ThemmoiPhimsRequest extends FormRequest
 {
     public function authorize(): bool
     {

@@ -21,7 +21,7 @@
 
         </div>
 
-        <a href="{{ route('admin.movies.create') }}"
+        <a href="{{ route('admin.phims.create') }}"
             class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]">
 
             <i class="fa-solid fa-plus"></i>
@@ -34,7 +34,7 @@
 
     {{-- FILTER --}}
     <form method="GET"
-        action="{{ route('admin.movies.index') }}"
+        action="{{ route('admin.phims.index') }}"
         class="mt-6 flex flex-wrap items-center gap-3">
 
         {{-- SEARCH --}}
@@ -93,7 +93,7 @@
         </button>
 
         {{-- RESET BTN --}}
-        <a href="{{ route('admin.movies.index') }}"
+        <a href="{{ route('admin.phims.index') }}"
             class="flex h-12 items-center rounded-2xl border border-white/10 bg-white/5 px-5 text-sm font-bold text-white transition hover:bg-white/10">
 
             Reset
@@ -283,7 +283,7 @@
                                     </a>
 
                                     {{-- EDIT --}}
-                                    <a href="{{ route('admin.movies.edit', $movie) }}"
+                                    <a href="{{ route('admin.phims.edit', $movie) }}"
                                         class="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300 transition hover:bg-yellow-500/25">
 
                                         <i class="fa-solid fa-pen"></i>
@@ -291,7 +291,7 @@
                                     </a>
 
                                     {{-- DELETE --}}
-                                    <form action="{{ route('admin.movies.destroy', $movie) }}"
+                                    <form action="{{ route('admin.phims.destroy', $movie) }}"
                                         method="POST">
 
                                         @csrf

@@ -3,11 +3,11 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use App\Models\Country;
+use App\Models\QuocGia;
 
-class CountryFactory extends Factory
+class QuocGiaFactory extends Factory
 {
-    protected $model = Country::class;
+    protected $model = QuocGia::class;
 
     public function definition(): array
     {

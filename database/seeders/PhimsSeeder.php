@@ -2,17 +2,17 @@
 
 namespace Database\Seeders;
 
-use App\Models\Movie;
+use App\Models\Phims;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
-class MovieSeeder extends Seeder
+class PhimSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        Movie::factory(40)->create();
+        Phims::factory(40)->create();
     }
 }
