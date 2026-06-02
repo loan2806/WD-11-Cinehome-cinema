@@ -143,7 +143,10 @@ class MovieController extends Controller
         */
         $movies = $query
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->filter(
+                fn($movie) => $movie->schedule_status !== 'Đã kết thúc'
+            );
 
         /*
         |--------------------------------------------------------------------------

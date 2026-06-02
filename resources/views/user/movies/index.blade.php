@@ -21,22 +21,22 @@
                 <input type="text" name="keyword" value="{{ request('keyword') }}" placeholder="Tìm tên phim..."
                     class="bg-[#0b0705] border border-white/10 text-white placeholder:text-gray-500 rounded-xl px-4 py-3 outline-none focus:border-[#f5a623]">
 
-                <select name="genre"
+                <select name="genre_id"
                     class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-[#f5a623]">
                     <option value="">Thể loại</option>
                     @foreach ($genres as $genre)
-                        <option value="{{ $genre }}" {{ request('genre') == $genre ? 'selected' : '' }}>
-                            {{ $genre }}
+                        <option value="{{ $genre->id }}" {{ request('genre_id') == $genre->id ? 'selected' : '' }}>
+                            {{ $genre->ten_the_loai }}
                         </option>
                     @endforeach
                 </select>
 
-                <select name="country"
+                <select name="quoc_gia_id"
                     class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-[#f5a623]">
                     <option value="">Quốc gia</option>
                     @foreach ($countries as $country)
-                        <option value="{{ $country }}" {{ request('country') == $country ? 'selected' : '' }}>
-                            {{ $country }}
+                        <option value="{{ $country->id }}" {{ request('quoc_gia_id') == $country->id ? 'selected' : '' }}>
+                            {{ $country->ten_quoc_gia }}
                         </option>
                     @endforeach
                 </select>
