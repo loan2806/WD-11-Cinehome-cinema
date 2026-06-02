@@ -13,6 +13,7 @@ class Genre extends Model
 
     protected $fillable = [
         'ten_the_loai',
+        'slug',
         'mo_ta',
         'trang_thai',
     ];
