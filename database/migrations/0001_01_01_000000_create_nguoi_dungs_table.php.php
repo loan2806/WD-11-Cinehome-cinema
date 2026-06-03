@@ -11,12 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        // ĐÃ SỬA: Tạo bảng nguoi_dungs thay vì users
+        Schema::create('nguoi_dungs', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('ho_ten'); // Đã sửa từ 'name' thành 'ho_ten'
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('mat_khau'); // Đã sửa từ 'password' thành 'mat_khau'
             $table->rememberToken();
             $table->timestamps();
         });
@@ -29,7 +30,8 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+            // ĐÃ SỬA: Đổi khóa ngoại liên kết từ user_id sang nguoi_dung_id để đồng bộ
+            $table->foreignId('nguoi_dung_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
@@ -42,7 +44,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('nguoi_dungs');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
     }
