@@ -2,7 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\NguoiDung;
+
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -10,7 +11,7 @@ class AccountSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
+        NguoiDung::updateOrCreate(
             ['email' => 'admin@cinehome.vn'],
             [
                 'name' => 'Admin CineHome',
@@ -20,7 +21,7 @@ class AccountSeeder extends Seeder
             ]
         );
 
-        User::updateOrCreate(
+        NguoiDung::updateOrCreate(
             ['email' => 'staff@cinehome.vn'],
             [
                 'name' => 'Staff CineHome',
@@ -30,7 +31,7 @@ class AccountSeeder extends Seeder
             ]
         );
 
-        User::updateOrCreate(
+        NguoiDung::updateOrCreate(
             ['email' => 'user@cinehome.vn'],
             [
                 'name' => 'User CineHome',
