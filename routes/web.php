@@ -102,6 +102,19 @@ Route::middleware('auth')
             ->name('store');
     });
 
+use App\Http\Controllers\DatVe\DatVeController;
+
+/*
+|--------------------------------------------------------------------------
+| TÍNH NĂNG ĐẶT VÉ (TIẾNG VIỆT)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
+    Route::get('/chon-rap', [DatVeController::class, 'chonRap'])->name('chon_rap');
+    Route::get('/chon-phim/{rap_id}', [DatVeController::class, 'chonPhim'])->name('chon_phim');
+    Route::get('/chon-ghe/{suat_chieu_id}', [DatVeController::class, 'chonGhe'])->name('chon_ghe');
+});
+
 /*
 |--------------------------------------------------------------------------
 | USER
