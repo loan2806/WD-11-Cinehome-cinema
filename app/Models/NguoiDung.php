@@ -42,6 +42,14 @@ class NguoiDung extends Authenticatable
     ];
 
     /**
+     * Cho phép truy cập $user->role dưới dạng alias cho $user->vai_tro.
+     */
+    public function getRoleAttribute()
+    {
+        return $this->vai_tro;
+    }
+
+    /**
      * QUAN TRỌNG: Ghi đè phương thức lấy mật khẩu của Laravel Auth
      * để hệ thống hiểu cột mật khẩu của bạn tên là 'mat_khau' chứ không phải 'password'
      */

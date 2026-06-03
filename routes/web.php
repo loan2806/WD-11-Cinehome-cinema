@@ -108,7 +108,7 @@ Route::middleware('auth')
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:user'])
+Route::middleware(['auth', 'role:khach_hang'])
     ->prefix('user')
     ->name('user.')
     ->group(function () {
@@ -132,7 +132,7 @@ Route::middleware(['auth', 'role:user'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:staff'])
+Route::middleware(['auth', 'role:nhan_vien'])
     ->prefix('staff')
     ->name('staff.')
     ->group(function () {
@@ -151,7 +151,7 @@ Route::middleware(['auth', 'role:staff'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])
+Route::middleware(['auth', 'role:quan_tri_vien'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
