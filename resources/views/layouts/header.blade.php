@@ -112,7 +112,7 @@
                     Tài khoản
                 </a>
 
-                @if (Auth::user()->role === 'user')
+                @if (Auth::user()->role === 'khach_hang')
                 <a 
                     href="{{ route('user.tickets.index') }}"
                     class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]"
@@ -139,7 +139,7 @@
                     Danh sách phim
                 </a>
 
-                @if (Auth::user()->role === 'admin')
+                @if (Auth::user()->role === 'quan_tri_vien')
                     <a 
                         href="{{ route('admin.dashboard') }}"
                         class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]"
@@ -149,7 +149,7 @@
                     </a>
                 @endif
 
-                @if (Auth::user()->role === 'staff')
+                @if (Auth::user()->role === 'nhan_vien')
                     <a 
                         href="{{ route('staff.dashboard') }}"
                         class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]"
