@@ -11,13 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // ĐÃ SỬA: Tạo bảng nguoi_dungs thay vì users
+        // Bảng lưu trữ người dùng thuần Việt đầy đủ các trường thông tin
         Schema::create('nguoi_dungs', function (Blueprint $table) {
             $table->id();
-            $table->string('ho_ten'); // Đã sửa từ 'name' thành 'ho_ten'
+            $table->string('ho_ten'); 
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('mat_khau'); // Đã sửa từ 'password' thành 'mat_khau'
+            $table->string('mat_khau'); 
+            
+            // ĐÃ BỔ SUNG: Cột vai trò kiểu ENUM cấu hình chuẩn khớp 100% với TaiKhoanSeeder
+            $table->enum('vai_tro', ['admin', 'nhan_vien', 'khach_hang'])->default('khach_hang');
+            
+            // ĐÃ BỔ SUNG: Cột trạng thái hoạt động tài khoản (mặc định là true - đang hoạt động)
+            $table->boolean('trang_thai_hoat_dong')->default(true);
+            
             $table->rememberToken();
             $table->timestamps();
         });
@@ -30,8 +37,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
-            // ĐÃ SỬA: Đổi khóa ngoại liên kết từ user_id sang nguoi_dung_id để đồng bộ
-            $table->foreignId('nguoi_dung_id')->nullable()->index();
+            $table->foreignId('user_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');

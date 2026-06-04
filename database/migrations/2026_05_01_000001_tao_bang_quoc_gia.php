@@ -15,6 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('ten_quoc_gia')->unique();
             $table->string('ma_quoc_gia', 2)->nullable();
+            
+            // ĐÃ BỔ SUNG: Cột trạng thái danh mục để phục vụ bộ lọc từ Seeder
+            $table->tinyInteger('trang_thai')->default(1); 
+            
             $table->timestamps();
         });
     }

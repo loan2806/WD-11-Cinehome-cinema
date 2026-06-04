@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
-use App\Models\Showtime;
 
 class Phims extends Model
 {
@@ -25,6 +24,7 @@ class Phims extends Model
         'dien_vien',
         'ngon_ngu',
         'thoi_luong',
+        'ngay_khoi_chieu',
         'gioi_han_tuoi',
     ];
 
@@ -32,57 +32,48 @@ class Phims extends Model
         'schedule_status',
     ];
 
-    protected static function booted(): void
+    /**
+     * TỐI ƯU: Đổi sang hàm boot() tiêu chuẩn đảm bảo an toàn tuyệt đối
+     */
+    protected static function boot(): void
     {
+        parent::boot();
+
         static::creating(function ($movie) {
-
             if (empty($movie->slug)) {
-
                 $movie->slug = Str::slug($movie->ten_phim) . '-' . uniqid();
             }
         });
     }
 
-    /*
-    |---------------------------------------
-    | SHOWTIMES (FIX LỖI Ở ĐÂY)
-    |---------------------------------------
-    */
     public function showtimes()
     {
-        return $this->hasMany(Showtime::class, 'movie_id');
+        return $this->hasMany(SuatChieu::class, 'phim_id');
     }
 
-    /*
-    |---------------------------------------
-    | COUNTRY
-    |---------------------------------------
-    */
     public function country()
     {
         return $this->belongsTo(QuocGia::class, 'quoc_gia_id');
     }
 
     /*
-    |---------------------------------------
-    | GENRES
-    |---------------------------------------
-    */
+    |--------------------------------------------------------------------------
+    | CẢNH BÁO LỖI TƯƠNG LAI Ở ĐÂY:
+    |--------------------------------------------------------------------------
+    | Khi bạn tiến hành Việt hóa bảng liên kết nhiều-nhiều giữa Phim và Thể Loại,
+    | bạn bắt buộc phải sửa tên bảng trung gian 'movie_genre' thành tên bảng mới của bạn (Ví dụ: 'phim_the_loai')
+    | và đổi các khóa ngoại 'movie_id', 'genre_id' thành 'phim_id', 'the_loai_id'.
+    |*/
     public function genres()
     {
         return $this->belongsToMany(
             TheLoai::class,
-            'movie_genre',
-            'movie_id',
-            'genre_id'
+            'movie_genre', // Hãy nhớ đổi tên bảng này khi tiến hành việt hóa bảng trung gian!
+            'movie_id',    // Hãy nhớ đổi tên cột này thành 'phim_id'
+            'genre_id'     // Hãy nhớ đổi tên cột này thành 'the_loai_id'
         );
     }
 
-    /*
-    |---------------------------------------
-    | SCOPE
-    |---------------------------------------
-    */
     public function scopeVisibleToUsers($query)
     {
         return $query->whereHas('showtimes');
@@ -93,11 +84,6 @@ class Phims extends Model
         return $query->whereHas('showtimes');
     }
 
-    /*
-    |---------------------------------------
-    | STATUS PHIM
-    |---------------------------------------
-    */
     public function getScheduleStatusAttribute(): string
     {
         $now = now(config('app.timezone'));
@@ -112,15 +98,7 @@ class Phims extends Model
         $hasFutureBeyond10 = false;
 
         foreach ($showtimes as $showtime) {
-
-            $date = Carbon::parse($showtime->show_date)->format('Y-m-d');
-
-            $startTime = Carbon::createFromFormat(
-                'Y-m-d H:i:s',
-                $date . ' ' . $showtime->show_time,
-                config('app.timezone')
-            );
-
+            $startTime = $showtime->thoi_gian_chieu; 
             $endTime = $startTime->copy()->addMinutes($this->thoi_luong ?? 90);
 
             if ($now->between($startTime, $endTime)) {
@@ -128,7 +106,6 @@ class Phims extends Model
             }
 
             if ($startTime->gt($now)) {
-
                 $days = $now->diffInDays($startTime);
 
                 if ($days > 10) {

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Phims;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class PhimSeeder extends Seeder
@@ -13,6 +12,7 @@ class PhimSeeder extends Seeder
      */
     public function run(): void
     {
-        Phims::factory(40)->create();
+        // Ép buộc tạo 40 phim mẫu trực tiếp để giải quyết việc database bị trống dữ liệu
+        Phims::factory()->count(40)->create();
     }
 }

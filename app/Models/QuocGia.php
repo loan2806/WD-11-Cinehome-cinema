@@ -14,14 +14,11 @@ class QuocGia extends Model
     protected $fillable = [
         'ten_quoc_gia',
         'ma_quoc_gia',
-        'trang_thai',
+        'trang_thai', // ĐÃ BỔ SUNG: Cho phép chèn dữ liệu hàng loạt từ tầng seeder
     ];
 
-    public function movies()
+    public function phims()
     {
-        return $this->hasMany(
-            Phims::class,
-            'quoc_gia_id'
-        );
+        return $this->hasMany(Phims::class, 'quoc_gia_id');
     }
 }

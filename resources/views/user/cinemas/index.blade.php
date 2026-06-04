@@ -24,24 +24,24 @@
                     class="bg-[#151515] border border-white/10 rounded-2xl overflow-hidden shadow-lg transition duration-300 hover:-translate-y-2 hover:shadow-2xl flex flex-col min-h-[390px]">
 
                     <img
-                        src="{{ $cinema->image ?? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200' }}"
-                        alt="{{ $cinema->name }}"
+                        src="{{ $cinema->hinh_anh ?? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1200' }}"
+                        alt="{{ $cinema->ten_rap }}"
                         class="w-full h-[180px] object-cover shrink-0"
                     >
 
                     <div class="p-4 flex flex-col flex-1">
                         <h2 class="text-xl font-extrabold mb-3 text-[#f5a623] min-h-[52px]">
-                            {{ $cinema->name }}
+                            {{ $cinema->ten_rap }}
                         </h2>
 
                         <p class="text-gray-300 mb-2 text-sm">
                             <i class="fa-solid fa-location-dot text-[#f5a623] mr-1"></i>
-                            {{ $cinema->address }}
+                            {{ $cinema->dia_chi }}
                         </p>
 
                         <p class="text-gray-400 mb-4 text-sm">
                             <i class="fa-solid fa-phone text-[#f5a623] mr-1"></i>
-                            {{ $cinema->phone ?? 'Đang cập nhật' }}
+                            {{ $cinema->so_dien_thoai ?? 'Đang cập nhật' }}
                         </p>
 
                         <div class="flex gap-3 mt-auto">

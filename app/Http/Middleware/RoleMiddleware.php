@@ -16,7 +16,8 @@ class RoleMiddleware
 
         $user = auth()->user();
 
-        if (!$user->is_active) {
+        // 1. SỬA: Đổi từ is_active sang trang_thai_hoat_dong tiếng Việt
+        if (!$user->trang_thai_hoat_dong) {
             auth()->logout();
 
             $request->session()->invalidate();
@@ -26,7 +27,21 @@ class RoleMiddleware
                 ->with('error', 'Tài khoản của bạn đã bị khóa.');
         }
 
-        if (!in_array($user->role, $roles)) {
+        // Mẹo thông minh: Tạo mảng ánh xạ để nếu route gọi tiếng Anh cũ ('staff' hoặc 'user') 
+        // thì hệ thống tự hiểu sang tiếng Việt ('nhan_vien', 'khach_hang') mà bạn không cần sửa lại file route/web.php
+        $mappedRoles = [];
+        foreach ($roles as $role) {
+            if ($role === 'staff') {
+                $mappedRoles[] = 'nhan_vien';
+            } elseif ($role === 'user') {
+                $mappedRoles[] = 'khach_hang';
+            } else {
+                $mappedRoles[] = $role; // Giữ nguyên nếu là 'admin'
+            }
+        }
+
+        // 2. SỬA: Đổi từ $user->role sang $user->vai_tro và so khớp với mảng đã map tiếng Việt
+        if (!in_array($user->vai_tro, $mappedRoles)) {
             abort(403, 'Bạn không có quyền truy cập trang này.');
         }
 

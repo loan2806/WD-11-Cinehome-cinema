@@ -6,38 +6,35 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::create('food_invoices', function (Blueprint $table) {
+        // ĐÃ SỬA: Tạo bảng hoa_don_do_ans theo đúng tài liệu thiết kế số 25 của bạn
+        Schema::create('hoa_don_do_ans', function (Blueprint $table) {
             $table->id();
-            $table->string('invoice_code')->unique();
-            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('ticket_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('customer_name')->nullable();
-            $table->string('customer_phone')->nullable();
-            $table->decimal('subtotal', 12, 2)->default(0);
-            $table->decimal('discount', 12, 2)->default(0);
-            $table->decimal('total', 12, 2)->default(0);
-            $table->enum('payment_status', ['pending', 'paid', 'cancelled'])->default('pending');
-            $table->string('payment_method')->nullable();
-            $table->text('note')->nullable();
-            $table->timestamps();
-        });
-
-        Schema::create('food_invoice_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('food_invoice_id')->constrained()->cascadeOnDelete();
-            $table->string('food_name');
-            $table->unsignedInteger('quantity')->default(1);
-            $table->decimal('unit_price', 12, 2)->default(0);
-            $table->decimal('total_price', 12, 2)->default(0);
+            
+            // ĐÃ SỬA: Đổi khóa ngoại liên kết sang bảng nguoi_dungs thay vì users cũ
+            $table->foreignId('nguoi_dung_id')
+                  ->constrained('nguoi_dungs')
+                  ->cascadeOnDelete();
+                  
+            $table->decimal('tong_tien', 12, 2)->default(0); // Tổng tiền hóa đơn đồ ăn
+            
+            // Trạng thái thanh toán: chua_thanh_toan, da_thanh_toan, da_huy
+            $table->enum('trang_thai', ['chua_thanh_toan', 'da_thanh_toan', 'da_huy'])
+                  ->default('chua_thanh_toan'); 
+                  
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('food_invoice_items');
-        Schema::dropIfExists('food_invoices');
+        Schema::dropIfExists('hoa_don_do_ans');
     }
 };

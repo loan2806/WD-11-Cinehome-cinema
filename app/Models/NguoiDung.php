@@ -10,7 +10,6 @@ class NguoiDung extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    // Khai báo liên kết với bảng tiếng Việt của bạn
     protected $table = 'nguoi_dungs';
 
     /**
@@ -42,6 +41,23 @@ class NguoiDung extends Authenticatable
     ];
 
     /**
+/**
+     * Magic Accessor cho 'password' ảo
+     */
+    public function getPasswordAttribute()
+    {
+        return $this->mat_khau;
+    }
+
+    /**
+     * Magic Mutator cho 'password' ảo
+     */
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['mat_khau'] = $value;
+    }
+
+    /**
      * Cho phép truy cập $user->role dưới dạng alias cho $user->vai_tro.
      */
     public function getRoleAttribute()
@@ -51,7 +67,11 @@ class NguoiDung extends Authenticatable
 
     /**
      * QUAN TRỌNG: Ghi đè phương thức lấy mật khẩu của Laravel Auth
-     * để hệ thống hiểu cột mật khẩu của bạn tên là 'mat_khau' chứ không phải 'password'
+     */
+    public function getAuthPassword()
+    {
+        return $this->mat_khau;
+    }
      */
     public function getAuthPassword()
     {

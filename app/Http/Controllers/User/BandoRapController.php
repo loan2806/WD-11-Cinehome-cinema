@@ -4,10 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 
-/**
- * Trang bản đồ rạp: giao diện + Leaflet, dữ liệu lấy qua API JSON.
- */
-class CinemaMapController extends Controller
+class BandoRapController extends Controller
 {
     public function __invoke()
     {
