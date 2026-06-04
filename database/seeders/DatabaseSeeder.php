@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 // use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -21,10 +21,9 @@ class DatabaseSeeder extends Seeder
             PhimSeeder::class,
             TheLoaiSeeder::class,
             QuocGiaSeeder::class,
-            AccountSeeder::class,
-            CinemaSeeder::class,
-            AccountSeeder::class,
-            TicketSeeder::class,
+            TaiKhoanSeeder::class,
+            RapChieuPhimSeeder::class,
+            VeXemPhimSeeder::class,
         ]);
 
         // User::factory()->create([
@@ -33,10 +32,6 @@ class DatabaseSeeder extends Seeder
         // ]);
 
 
-        $this->call([
-            AccountSeeder::class,
-            TicketSeeder::class,
-            UserSeeder::class,
-        ]);
+        
     }
 }

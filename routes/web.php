@@ -1,26 +1,31 @@
 <?php
 
-use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\NhatKyHoatDongHeThongController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FoodInvoiceController;
-use App\Http\Controllers\Admin\MovieReviewController as AdminMovieReviewController;
+use App\Http\Controllers\User\DanhGiaPhimController;
+use App\Http\Controllers\Admin\DanhGiaPhimController as AdminDanhGiaPhimController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\ShowtimeController as AdminShowtimeController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\TheloaisController;
+use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\Api\CinemaMapApiController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Staff\StaffDashboardController;
+use App\Http\Controllers\User\BandoRapController;
 use App\Http\Controllers\User\BookingController;
 use App\Http\Controllers\User\CinemaController;
 use App\Http\Controllers\User\CinemaMapController;
 use App\Http\Controllers\User\MovieReviewController;
 use App\Http\Controllers\User\NotificationController as UserNotificationController;
 use App\Http\Controllers\User\PhimsController;
+use App\Http\Controllers\User\RapChieuPhimController;
 use App\Http\Controllers\User\ShowtimeController;
-use App\Http\Controllers\User\TicketController;
+use App\Http\Controllers\User\SuatChieuController;
+use App\Http\Controllers\User\VeXemPhimController; // ĐÃ SỬA: Thay thế TicketController bằng VeXemPhimController
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -44,7 +49,7 @@ Route::get('/phims', [PhimsController::class, 'index'])
 Route::get('/phims/{movie}', [PhimsController::class, 'show'])
     ->name('user.phims.show');
 
-Route::post('/phims/{movie}/reviews', [MovieReviewController::class, 'store'])
+Route::post('/phims/{movie}/reviews', [DanhGiaPhimController::class, 'store'])
     ->middleware('auth')
     ->name('user.phims.reviews.store');
 
@@ -54,16 +59,16 @@ Route::post('/phims/{movie}/reviews', [MovieReviewController::class, 'store'])
 |--------------------------------------------------------------------------
 */
 
-Route::get('/cinemas', [CinemaController::class, 'index'])
+Route::get('/cinemas', [RapChieuPhimController::class, 'index'])
     ->name('user.cinemas.index');
 
-Route::get('/cinemas/{cinema}', [CinemaController::class, 'show'])
+Route::get('/cinemas/{cinema}', [RapChieuPhimController::class, 'show'])
     ->name('user.cinemas.show');
 
-Route::get('/cinemas/map', CinemaMapController::class)
+Route::get('/cinemas/map', BandoRapController::class)
     ->name('user.cinemas.map');
 
-Route::get('/api/cinemas', CinemaMapApiController::class)
+Route::get('/api/cinemas', BandoRapApiController::class)
     ->name('api.cinemas.index');
 
 /*
@@ -72,10 +77,10 @@ Route::get('/api/cinemas', CinemaMapApiController::class)
 |--------------------------------------------------------------------------
 */
 
-Route::get('/showtime', [ShowtimeController::class, 'index'])
+Route::get('/showtime', [SuatChieuController::class, 'index'])
     ->name('user.showtimes.index');
 
-Route::get('/showtime/{showtime}', [ShowtimeController::class, 'show'])
+Route::get('/showtime/{showtime}', [SuatChieuController::class, 'show'])
     ->name('user.showtimes.show');
 
 /*
@@ -126,14 +131,15 @@ Route::middleware(['auth', 'role:user'])
     ->name('user.')
     ->group(function () {
 
-        Route::get('/tickets', [TicketController::class, 'index'])
-            ->name('tickets.index');
+        // ĐÃ SỬA: Đổi toàn bộ đường dẫn và tên định tuyến sang tiếng Việt đồng bộ với VeXemPhimController
+        Route::get('/ve-xem-phim', [VeXemPhimController::class, 'index'])
+            ->name('ve_xem_phim.index');
 
-        Route::get('/tickets/{ticket}', [TicketController::class, 'show'])
-            ->name('tickets.show');
+        Route::get('/ve-xem-phim/{veXemPhim}', [VeXemPhimController::class, 'show'])
+            ->name('ve_xem_phim.show');
 
-        Route::patch('/tickets/{ticket}/cancel', [TicketController::class, 'cancel'])
-            ->name('tickets.cancel');
+        Route::patch('/ve-xem-phim/{veXemPhim}/huy', [VeXemPhimController::class, 'cancel'])
+            ->name('ve_xem_phim.cancel');
 
         Route::get('/notifications', [UserNotificationController::class, 'index'])
             ->name('notifications.index');
@@ -190,19 +196,19 @@ Route::middleware(['auth', 'role:admin'])
         Route::resource('notifications', AdminNotificationController::class)
             ->only(['index', 'create', 'store', 'destroy']);
 
-        Route::get('/movie-reviews', [AdminMovieReviewController::class, 'index'])
+            Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])
             ->name('movie-reviews.index');
 
-        Route::post('/movie-reviews', [AdminMovieReviewController::class, 'store'])
+        Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])
             ->name('movie-reviews.store');
 
-        Route::patch('/movie-reviews/{movieReview}', [AdminMovieReviewController::class, 'update'])
+        Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])
             ->name('movie-reviews.update');
 
-        Route::delete('/movie-reviews/{movieReview}', [AdminMovieReviewController::class, 'destroy'])
+        Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])
             ->name('movie-reviews.destroy');
 
-        Route::get('/activity-logs', [ActivityLogController::class, 'index'])
+        Route::get('/activity-logs', [NhatKyHoatDongHeThongController::class, 'index'])
             ->name('activity-logs.index');
 
         Route::get('/revenue-reports', [RevenueReportController::class, 'index'])

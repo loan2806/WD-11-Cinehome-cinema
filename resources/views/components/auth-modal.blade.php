@@ -11,10 +11,10 @@
     <div id="authModalOverlay" class="absolute inset-0"></div>
 
     {{-- Modal box --}}
-   <div
-    id="authModalBox"
-    class="auth-modal-box auth-modal-scroll relative z-10 max-h-[92vh] w-full max-w-[420px] overflow-y-auto overflow-x-hidden rounded-[28px] border border-[#d99a32]/30 bg-[#121212] shadow-2xl"
->
+    <div
+        id="authModalBox"
+        class="auth-modal-box auth-modal-scroll relative z-10 max-h-[92vh] w-full max-w-[420px] overflow-y-auto overflow-x-hidden rounded-[28px] border border-[#d99a32]/30 bg-[#121212] shadow-2xl"
+    >
 
         {{-- Close --}}
         <button
@@ -27,26 +27,25 @@
 
         {{-- Header --}}
         <div class="px-7 pt-6 text-center">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg">
-            <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome" class="h-full w-full object-contain">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white p-1.5 shadow-lg">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome" class="h-full w-full object-contain">
+            </div>
+
+            <h2 class="mt-3 text-[22px] font-black leading-tight text-white">
+                Cine<span class="text-[#d99a32]">Home</span>
+            </h2>
+
+            <p class="mt-1 text-xs text-gray-400">
+                Đăng nhập để đặt vé và quản lý vé của bạn
+            </p>
         </div>
-
-        <h2 class="mt-3 text-[22px] font-black leading-tight text-white">
-            Cine<span class="text-[#d99a32]">Home</span>
-        </h2>
-
-        <p class="mt-1 text-xs text-gray-400">
-            Đăng nhập để đặt vé và quản lý vé của bạn
-        </p>
-    </div>
 
         {{-- Tabs --}}
         <div class="mx-7 mt-5 grid grid-cols-2 rounded-2xl bg-white/5 p-1">
             <button
                 type="button"
                 data-auth-tab="login"
-                class="auth-tab-btn rounded-xl px-4 py-2 text-sm font-bold transition ..."
-                {{ $activeAuthTab === 'login' ? 'bg-[#d99a32] text-[#2b1208]' : 'text-gray-300 hover:text-white' }}"
+                class="auth-tab-btn rounded-xl px-4 py-2 text-sm font-bold transition {{ $activeAuthTab === 'login' ? 'bg-[#d99a32] text-[#2b1208]' : 'text-gray-300 hover:text-white' }}"
             >
                 Đăng nhập
             </button>
@@ -54,8 +53,7 @@
             <button
                 type="button"
                 data-auth-tab="register"
-                class="auth-tab-btn rounded-xl px-4 py-2 text-sm font-bold transition ..."
-                {{ $activeAuthTab === 'register' ? 'bg-[#d99a32] text-[#2b1208]' : 'text-gray-300 hover:text-white' }}"
+                class="auth-tab-btn rounded-xl px-4 py-2 text-sm font-bold transition {{ $activeAuthTab === 'register' ? 'bg-[#d99a32] text-[#2b1208]' : 'text-gray-300 hover:text-white' }}"
             >
                 Đăng ký
             </button>
@@ -78,11 +76,11 @@
 
         {{-- LOGIN FORM --}}
         <form
-                id="loginForm"
-                method="POST"
-                action="{{ route('login') }}"
-                class="auth-form auth-form-animate px-7 pb-6 pt-5 {{ $activeAuthTab === 'login' ? 'block' : 'hidden' }}"
-            >
+            id="loginForm"
+            method="POST"
+            action="{{ route('login') }}"
+            class="auth-form auth-form-animate px-7 pb-6 pt-5 {{ $activeAuthTab === 'login' ? 'block' : 'hidden' }}"
+        >
             @csrf
 
             <input type="hidden" name="auth_modal" value="login">
@@ -91,13 +89,11 @@
                 <label class="mb-2 block text-sm font-bold text-gray-300">
                     Email
                 </label>
-
                 <input
                     type="email"
                     name="email"
                     value="{{ old('auth_modal') === 'login' ? old('email') : '' }}"
                     required
-                    autofocus
                     placeholder="Nhập email"
                     class="w-full rounded-2xl border border-[#d99a32]/20 bg-white/5 px-4 py-2.5 text-white outline-none transition placeholder:text-gray-500 focus:border-[#d99a32] focus:bg-white/10"
                 >
@@ -107,17 +103,15 @@
                 <label class="mb-2 block text-sm font-bold text-gray-300">
                     Mật khẩu
                 </label>
-
                 <div class="relative">
                     <input
                         type="password"
-                        name="password"
+                        name="mat_khau"
                         id="loginPassword"
                         required
                         placeholder="Nhập mật khẩu"
-                       class="w-full rounded-2xl border border-[#d99a32]/20 bg-white/5 px-4 py-2.5 pr-12 text-white outline-none transition placeholder:text-gray-500 focus:border-[#d99a32] focus:bg-white/10"
+                        class="w-full rounded-2xl border border-[#d99a32]/20 bg-white/5 px-4 py-2.5 pr-12 text-white outline-none transition placeholder:text-gray-500 focus:border-[#d99a32] focus:bg-white/10"
                     >
-
                     <button
                         type="button"
                         data-toggle-password="loginPassword"
@@ -129,7 +123,7 @@
             </div>
 
             <div class="mb-5 flex items-center justify-between">
-                <label class="flex items-center gap-2 text-sm text-gray-400">
+                <label class="flex items-center gap-2 text-sm text-gray-400 class-pointer">
                     <input
                         type="checkbox"
                         name="remember"
@@ -154,7 +148,7 @@
         </form>
 
         {{-- REGISTER FORM --}}
-       <form
+        <form
             id="registerForm"
             method="POST"
             action="{{ route('register') }}"
@@ -168,11 +162,10 @@
                 <label class="mb-2 block text-sm font-bold text-gray-300">
                     Họ tên
                 </label>
-
                 <input
                     type="text"
-                    name="name"
-                    value="{{ old('auth_modal') === 'register' ? old('name') : '' }}"
+                    name="ho_ten"
+                    value="{{ old('auth_modal') === 'register' ? old('ho_ten') : '' }}"
                     required
                     placeholder="Nhập họ tên"
                     class="w-full rounded-2xl border border-[#d99a32]/20 bg-white/5 px-4 py-2.5 text-white outline-none transition placeholder:text-gray-500 focus:border-[#d99a32] focus:bg-white/10"
@@ -183,14 +176,13 @@
                 <label class="mb-2 block text-sm font-bold text-gray-300">
                     Email
                 </label>
-
                 <input
                     type="email"
                     name="email"
                     value="{{ old('auth_modal') === 'register' ? old('email') : '' }}"
                     required
                     placeholder="Nhập email"
-                   class="w-full rounded-2xl border border-[#d99a32]/20 bg-white/5 px-4 py-2.5 text-white outline-none transition placeholder:text-gray-500 focus:border-[#d99a32] focus:bg-white/10"
+                    class="w-full rounded-2xl border border-[#d99a32]/20 bg-white/5 px-4 py-2.5 text-white outline-none transition placeholder:text-gray-500 focus:border-[#d99a32] focus:bg-white/10"
                 >
             </div>
 
@@ -198,17 +190,15 @@
                 <label class="mb-2 block text-sm font-bold text-gray-300">
                     Mật khẩu
                 </label>
-
                 <div class="relative">
                     <input
                         type="password"
-                        name="password"
+                        name="mat_khau"
                         id="registerPassword"
                         required
                         placeholder="Nhập mật khẩu"
                         class="w-full rounded-2xl border border-[#d99a32]/20 bg-white/5 px-4 py-2.5 pr-12 text-white outline-none transition placeholder:text-gray-500 focus:border-[#d99a32] focus:bg-white/10"
                     >
-
                     <button
                         type="button"
                         data-toggle-password="registerPassword"
@@ -223,17 +213,15 @@
                 <label class="mb-2 block text-sm font-bold text-gray-300">
                     Xác nhận mật khẩu
                 </label>
-
                 <div class="relative">
                     <input
                         type="password"
-                        name="password_confirmation"
+                        name="mat_khau_confirmation"
                         id="registerPasswordConfirm"
                         required
                         placeholder="Nhập lại mật khẩu"
-                        class="w-full rounded-2xl border border-[#d99a32]/20 bg-white/5 px-4 py-2.5 pr-12 text-white outline-none transition placeholder:text-gray-500 focus:border-[#d99a32] focus:bg-white/10"*
+                        class="w-full rounded-2xl border border-[#d99a32]/20 bg-white/5 px-4 py-2.5 pr-12 text-white outline-none transition placeholder:text-gray-500 focus:border-[#d99a32] focus:bg-white/10"
                     >
-
                     <button
                         type="button"
                         data-toggle-password="registerPasswordConfirm"

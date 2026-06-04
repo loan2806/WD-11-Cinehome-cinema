@@ -1,6 +1,6 @@
 @extends('layouts.user')
 
-@section('title', $cinema->name . ' - CineHome')
+@section('title', $cinema->ten_rap . ' - CineHome')
 
 @push('styles')
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -39,17 +39,17 @@
                             id="cinema-map"
                             class="cinema-map-canvas cinema-map-canvas--show"
                             role="application"
-                            aria-label="Bản đồ vị trí rạp {{ $cinema->name }}"
+                            aria-label="Bản đồ vị trí rạp {{ $cinema->ten_rap }}"
                         ></div>
                     </div>
                 </div>
 
                 <div id="cinema-detail-panel" class="cinema-map-detail" aria-live="polite">
-                    <h3 id="detail-name" class="!text-lg">{{ $cinema->name }}</h3>
-                    <p id="detail-address" class="cinema-map-detail-address">{{ $cinema->address }}@if($cinema->city) — {{ $cinema->city }}@endif</p>
+                    <h3 id="detail-name" class="!text-lg">{{ $cinema->ten_rap }}</h3>
+                    <p id="detail-address" class="cinema-map-detail-address">{{ $cinema->dia_chi }}@if($cinema->thanh_pho) — {{ $cinema->thanh_pho }}@endif</p>
                     <p id="detail-distance" class="cinema-map-detail-distance">Đang tính khoảng cách…</p>
-                    <a id="detail-directions" class="cinema-map-btn-directions @if(!$cinema->latitude || !$cinema->longitude) is-hidden @endif"
-                       href="@if($cinema->latitude && $cinema->longitude)https://www.google.com/maps/dir/?api=1&destination={{ $cinema->latitude }},{{ $cinema->longitude }}@else#@endif"
+                    <a id="detail-directions" class="cinema-map-btn-directions @if(!$cinema->vi_do || !$cinema->kinh_do) is-hidden @endif"
+                       href="@if($cinema->vi_do && $cinema->kinh_do)https://www.google.com/maps/dir/?api=1&destination={{ $cinema->vi_do }},{{ $cinema->kinh_do }}@else#@endif"
                        target="_blank" rel="noopener noreferrer">
                         <i class="fa-solid fa-diamond-turn-right"></i> Chỉ đường
                     </a>
@@ -62,7 +62,7 @@
                 </span>
 
                 <h1 class="text-5xl font-extrabold text-[#f5a623] mb-5">
-                    {{ $cinema->name }}
+                    {{ $cinema->ten_rap }}
                 </h1>
 
                 <p class="text-gray-400 mb-8 leading-relaxed">
@@ -75,7 +75,7 @@
                         <p class="text-gray-400 text-sm mb-1">Địa chỉ</p>
                         <p class="text-white font-bold">
                             <i class="fa-solid fa-location-dot text-[#f5a623] mr-2"></i>
-                            {{ $cinema->address }}
+                            {{ $cinema->dia_chi }}
                         </p>
                     </div>
 
@@ -90,7 +90,7 @@
                         <p class="text-gray-400 text-sm mb-1">Số điện thoại</p>
                         <p class="text-white font-bold">
                             <i class="fa-solid fa-phone text-[#f5a623] mr-2"></i>
-                            {{ $cinema->phone ?? 'Đang cập nhật' }}
+                            {{ $cinema->so_dien_thoai ?? 'Đang cập nhật' }}
                         </p>
                     </div>
 
@@ -98,7 +98,7 @@
                         <p class="text-gray-400 text-sm mb-1">Khu vực</p>
                         <p class="text-white font-bold">
                             <i class="fa-solid fa-map text-[#f5a623] mr-2"></i>
-                            {{ $cinema->city ?? 'Đang cập nhật' }}
+                            {{ $cinema->thanh_pho ?? 'Đang cập nhật' }}
                         </p>
                     </div>
                 </div>
@@ -152,11 +152,11 @@
     @php
         $cinemaForMap = [
             'id' => $cinema->id,
-            'name' => $cinema->name,
-            'address' => $cinema->address,
-            'city' => $cinema->city,
-            'latitude' => $cinema->latitude,
-            'longitude' => $cinema->longitude,
+            'name' => $cinema->ten_rap,
+            'address' => $cinema->dia_chi,
+            'city' => $cinema->thanh_pho,
+            'latitude' => $cinema->vi_do,
+            'longitude' => $cinema->kinh_do,
             'status' => $cinema->status ?? 'active',
         ];
     @endphp

@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Models\Showtime;
+use App\Models\SuatChieu;
 use Illuminate\Database\Seeder;
 
-class ShowtimeSeeder extends Seeder
+class SuatChieuSeeder extends Seeder
 {
     public function run(): void
     {
-        Showtime::factory()->count(30)->create();
+        SuatChieu::factory()->count(20)->create();
     }
 }

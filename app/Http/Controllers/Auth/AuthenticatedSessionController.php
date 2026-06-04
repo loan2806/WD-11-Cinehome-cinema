@@ -16,40 +16,32 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        return view('auth.login');
+        // Đã sửa: Gọi đúng file dang_nhap.blade.php tiếng Việt của bạn
+        return view('auth.dang_nhap');
     }
 
     /**
      * Handle an incoming authentication request.
      */
     public function store(LoginRequest $request): RedirectResponse
-{
-    $request->authenticate();
+    {
+        $request->authenticate();
 
-    $request->session()->regenerate();
+        $request->session()->regenerate();
 
-    $user = auth()->user();
+        $user = Auth::user();
 
-    if (!$user->is_active) {
-        auth()->logout();
+        // Điều hướng dựa trên vai_tro tiếng Việt chuẩn xác
+        if ($user->vai_tro === 'admin') {
+            return redirect()->intended(route('admin.dashboard'));
+        }
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        if ($user->vai_tro === 'nhan_vien') {
+            return redirect()->intended(route('staff.dashboard'));
+        }
 
-        return redirect()->route('login')
-            ->with('error', 'Tài khoản của bạn đã bị khóa.');
+        return redirect()->intended(route('home'));
     }
-
-    if ($user->role === 'admin') {
-        return redirect()->route('admin.dashboard');
-    }
-
-    if ($user->role === 'staff') {
-        return redirect()->route('staff.dashboard');
-    }
-
-    return redirect()->route('home');
-}
 
     /**
      * Destroy an authenticated session.

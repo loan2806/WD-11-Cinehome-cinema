@@ -9,49 +9,45 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('phims', function (Blueprint $table) {
-
             $table->id();
 
             /*
             |--------------------------------------------------------------------------
             | THÔNG TIN PHIM
             |--------------------------------------------------------------------------
-            */
+            |*/
             $table->string('ten_phim');
-
             $table->string('slug')->unique();
-
             $table->text('mo_ta')->nullable();
 
             /*
             |--------------------------------------------------------------------------
             | MEDIA
             |--------------------------------------------------------------------------
-            */
+            |*/
             $table->string('poster')->nullable();
-
             $table->string('trailer')->nullable();
 
             /*
             |--------------------------------------------------------------------------
             | THÔNG TIN BỔ SUNG
             |--------------------------------------------------------------------------
-            */
+            |*/
             $table->string('dao_dien')->nullable();
-
             $table->text('dien_vien')->nullable();
-
             $table->string('ngon_ngu')->nullable();
-
             $table->integer('thoi_luong')->default(90);
-
+            
+            // ĐÃ BỔ SUNG: Cột ngày khởi chiếu để phục vụ bộ lọc suất chiếu và tính trạng thái phim
+            $table->date('ngay_khoi_chieu')->nullable(); 
+            
             $table->string('gioi_han_tuoi')->nullable();
 
             /*
             |--------------------------------------------------------------------------
             | QUỐC GIA
             |--------------------------------------------------------------------------
-            */
+            |*/
             $table->foreignId('quoc_gia_id')
                 ->nullable()
                 ->constrained('quoc_gias')
@@ -61,7 +57,7 @@ return new class extends Migration
             |--------------------------------------------------------------------------
             | TIMESTAMPS
             |--------------------------------------------------------------------------
-            */
+            |*/
             $table->timestamps();
         });
     }
