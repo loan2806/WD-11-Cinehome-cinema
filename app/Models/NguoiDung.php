@@ -41,6 +41,7 @@ class NguoiDung extends Authenticatable
     ];
 
     /**
+/**
      * Magic Accessor cho 'password' ảo
      */
     public function getPasswordAttribute()
@@ -57,7 +58,20 @@ class NguoiDung extends Authenticatable
     }
 
     /**
-     * Ghi đè phương thức lấy mật khẩu tiêu chuẩn của Authenticatable
+     * Cho phép truy cập $user->role dưới dạng alias cho $user->vai_tro.
+     */
+    public function getRoleAttribute()
+    {
+        return $this->vai_tro;
+    }
+
+    /**
+     * QUAN TRỌNG: Ghi đè phương thức lấy mật khẩu của Laravel Auth
+     */
+    public function getAuthPassword()
+    {
+        return $this->mat_khau;
+    }
      */
     public function getAuthPassword()
     {

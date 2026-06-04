@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Phims; 
+use App\Models\Phims;
 use Illuminate\Database\Seeder;
 
 class PhimSeeder extends Seeder
