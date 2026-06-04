@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Phims; // Giữ nguyên tên Model Phims (có s) theo đúng bộ điều khiển của bạn
+use App\Models\Phims; 
 use Illuminate\Database\Seeder;
 
 class PhimSeeder extends Seeder
@@ -12,9 +12,7 @@ class PhimSeeder extends Seeder
      */
     public function run(): void
     {
-        // Kiểm tra xem Factory của Model Phims có tồn tại không trước khi gọi tạo dữ liệu mẫu
-        if (method_exists(Phims::class, 'factory')) {
-            Phims::factory(40)->create();
-        }
+        // Ép buộc tạo 40 phim mẫu trực tiếp để giải quyết việc database bị trống dữ liệu
+        Phims::factory()->count(40)->create();
     }
 }

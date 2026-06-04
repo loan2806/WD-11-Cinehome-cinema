@@ -41,9 +41,7 @@ class NguoiDung extends Authenticatable
     ];
 
     /**
-     * GIẢI PHÁP TRIỆT ĐỂ: Tạo hàm bắt thuộc tính ảo (Magic Accessor) cho 'password'
-     * Khi lõi Laravel Auth hoặc thư viện ngoài gọi $user->password, 
-     * hệ thống sẽ tự trả về giá trị của cột $user->mat_khau
+     * Magic Accessor cho 'password' ảo
      */
     public function getPasswordAttribute()
     {
@@ -51,7 +49,7 @@ class NguoiDung extends Authenticatable
     }
 
     /**
-     * Tạo hàm gán thuộc tính ảo (Magic Mutator) cho 'password'
+     * Magic Mutator cho 'password' ảo
      */
     public function setPasswordAttribute($value)
     {
