@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\ShowtimeController as AdminShowtimeController;
 use App\Http\Controllers\Admin\SystemSettingController;
+use App\Http\Controllers\Admin\SuatChieuController;
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\Api\CinemaMapApiController;
@@ -183,6 +184,9 @@ Route::middleware(['auth', 'role:quan_tri_vien'])
         Route::resource('genres', TheloaisController::class);
 
         Route::resource('showtimes', AdminShowtimeController::class);
+
+        Route::resource('suat-chieu', SuatChieuController::class)
+            ->only(['index', 'create', 'store']);
 
         Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])
             ->name('food-invoices.index');
