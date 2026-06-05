@@ -87,7 +87,7 @@
                     <span>Sơ đồ ghế</span>
                 </a>
 
-                <a href="#" class="admin-nav-link">
+                <a href="{{ route('admin.suat-chieu.index') }}" class="{{ request()->routeIs('admin.suat-chieu.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                     <i class="fa-solid fa-calendar-days w-5"></i>
                     <span>Lịch chiếu</span>
                 </a>

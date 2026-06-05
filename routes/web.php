@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\MovieReviewController as AdminMovieReviewControll
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\SystemSettingController;
+use App\Http\Controllers\Admin\SuatChieuController;
 use App\Http\Controllers\Api\CinemaMapApiController;
 use App\Http\Controllers\Staff\StaffDashboardController;
 
@@ -259,6 +260,9 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/movies', function () {
             return 'Trang quản lý phim';
         })->name('movies.index');
+
+        Route::resource('suat-chieu', SuatChieuController::class)
+            ->only(['index', 'create', 'store']);
 
         Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])
             ->name('food-invoices.index');
