@@ -1,47 +1,52 @@
 @extends('layouts.admin')
 
-@section('title', 'Nhat ky he thong')
-@section('page-title', 'Nhat ky hoat dong he thong')
-@section('page-subtitle', 'Theo doi thao tac nguoi dung va quan tri')
+@section('title', 'Nhật ký hệ thống')
+@section('page-title', 'Nhật ký hoạt động hệ thống')
+@section('page-subtitle', 'Theo dõi thao tác người dùng và quản trị')
 
 @section('content')
 <div class="admin-panel">
     <div class="panel-header">
-        <div><h5>Nhat ky</h5><small>{{ $logs->total() }} ban ghi</small></div>
+        <div><h5>Nhật ký</h5><small>{{ $logs->total() }} bản ghi</small></div>
     </div>
 
     <form class="mb-4 grid gap-3 md:grid-cols-3" method="GET">
-        <input name="keyword" value="{{ request('keyword') }}" class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white" placeholder="Hanh dong, mo ta">
-        <select name="module" class="rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-white">
-            <option value="">Tat ca module</option>
+        <input name="keyword" value="{{ request('keyword') }}" class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white" placeholder="Hành động, mô tả">
+        
+        <select name="chuc_nang" class="rounded-xl border border-white/10 bg-[#111] px-4 py-3 text-white">
+            <option value="">Tất cả chức năng</option>
             @foreach($modules as $module)
-                <option value="{{ $module }}" @selected(request('module') === $module)>{{ $module }}</option>
+                <option value="{{ $module }}" @selected(request('chuc_nang') === $module)>{{ $module }}</option>
             @endforeach
         </select>
-        <button class="btn-admin"><i class="fa-solid fa-filter"></i> Loc</button>
+        <button class="btn-admin"><i class="fa-solid fa-filter"></i> Lọc</button>
     </form>
 
     <table class="admin-table">
         <thead>
             <tr>
-                <th>Thoi gian</th>
-                <th>Nguoi dung</th>
-                <th>Module</th>
-                <th>Hanh dong</th>
-                <th>IP</th>
+                <th>Thời gian</th>
+                <th>Người dùng</th>
+                <th>Chức năng</th>
+                <th>Hành động / Mô tả</th>
+                <th>Địa chỉ IP</th>
             </tr>
         </thead>
         <tbody>
             @forelse($logs as $log)
                 <tr>
                     <td>{{ $log->created_at->format('d/m/Y H:i:s') }}</td>
-                    <td>{{ $log->user?->name ?? 'He thong' }}</td>
-                    <td>{{ $log->module ?? '-' }}</td>
-                    <td><strong>{{ $log->action }}</strong><br><small>{{ $log->description }}</small></td>
-                    <td>{{ $log->ip_address }}</td>
+                    
+                    <td>{{ $log->nguoiDung?->ho_ten ?? 'Hệ thống' }}</td>
+                    
+                    <td>{{ $log->chuc_nang ?? '-' }}</td>
+                    
+                    <td><strong>{{ $log->hanh_dong }}</strong><br><small>{{ $log->mo_ta }}</small></td>
+                    
+                    <td>{{ $log->dia_chi_ip }}</td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="text-center text-gray-400">Chua co nhat ky.</td></tr>
+                <tr><td colspan="5" class="text-center text-gray-400">Chưa có nhật ký hoạt động.</td></tr>
             @endforelse
         </tbody>
     </table>

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\DatVe;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cinema;
-use App\Models\Movie;
+use App\Models\Phims;
 use App\Models\Showtime;
 use Illuminate\Http\Request;
 

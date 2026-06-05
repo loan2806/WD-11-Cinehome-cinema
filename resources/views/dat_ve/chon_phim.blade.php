@@ -20,9 +20,9 @@
                         </div>
                         <div class="col-md-9">
                             <div class="card-body">
-                                <h4 class="card-title text-warning font-bold">{{ $phim->title }}</h4>
-                                <p class="card-text text-gray-300 mb-2"><strong>Thời lượng:</strong> {{ $phim->duration }} phút</p>
-                                <p class="card-text text-gray-300 mb-4">{{ Str::limit($phim->description, 150) }}</p>
+                                <h4 class="card-title text-warning font-bold">{{ $phim->ten_phim }}</h4>
+                                <p class="card-text text-gray-300 mb-2"><strong>Thời lượng:</strong> {{ $phim->thoi_luong }} phút</p>
+                                <p class="card-text text-gray-300 mb-4">{{ Str::limit($phim->mo_ta, 150) }}</p>
                                 
                                 <h5 class="text-white mb-3 border-bottom border-secondary pb-2">Các suất chiếu:</h5>
                                 @php
