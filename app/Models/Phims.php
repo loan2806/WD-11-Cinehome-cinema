@@ -24,7 +24,6 @@ class Phims extends Model
         'dien_vien',
         'ngon_ngu',
         'thoi_luong',
-        'ngay_khoi_chieu',
         'gioi_han_tuoi',
     ];
 
@@ -68,9 +67,9 @@ class Phims extends Model
     {
         return $this->belongsToMany(
             TheLoai::class,
-            'movie_genre', // Hãy nhớ đổi tên bảng này khi tiến hành việt hóa bảng trung gian!
-            'movie_id',    // Hãy nhớ đổi tên cột này thành 'phim_id'
-            'genre_id'     // Hãy nhớ đổi tên cột này thành 'the_loai_id'
+            'phim_the_loai',
+            'phim_id',
+            'the_loai_id'
         );
     }
 
@@ -98,7 +97,11 @@ class Phims extends Model
         $hasFutureBeyond10 = false;
 
         foreach ($showtimes as $showtime) {
-            $startTime = $showtime->thoi_gian_chieu; 
+
+            $startTime = Carbon::parse(
+                $showtime->ngay_chieu . ' ' . $showtime->gio_chieu
+            );
+
             $endTime = $startTime->copy()->addMinutes($this->thoi_luong ?? 90);
 
             if ($now->between($startTime, $endTime)) {
@@ -129,5 +132,9 @@ class Phims extends Model
         }
 
         return 'Đã kết thúc';
+    }
+    public function getRouteKeyName()
+    {
+        return 'slug';
     }
 }

@@ -32,12 +32,12 @@ class AuthenticatedSessionController extends Controller
         $user = Auth::user();
 
         // Điều hướng dựa trên vai_tro tiếng Việt chuẩn xác
-        if ($user->vai_tro === 'admin') {
-            return redirect()->intended(route('admin.dashboard'));
+        if ($user->vai_tro === 'quan_tri_vien') {
+            return redirect()->route('admin.dashboard');
         }
 
         if ($user->vai_tro === 'nhan_vien') {
-            return redirect()->intended(route('staff.dashboard'));
+            return redirect()->route('staff.dashboard');
         }
 
         return redirect()->intended(route('home'));
