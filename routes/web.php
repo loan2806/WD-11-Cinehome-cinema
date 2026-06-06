@@ -165,7 +165,7 @@ Route::middleware(['auth', 'role:nhan_vien'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:quan_tri_vien'])
+Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {

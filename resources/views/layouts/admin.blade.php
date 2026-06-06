@@ -1,44 +1,45 @@
-    <!DOCTYPE html>
-    <html lang="vi">
+<!DOCTYPE html>
+<html lang="vi">
 
-    <head>
-        <meta charset="UTF-8">
-        <title>@yield('title', 'Admin - CineHome')</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <meta charset="UTF-8">
+    <title>@yield('title', 'Admin - CineHome')</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        {{-- Tailwind / Vite --}}
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Tailwind / Vite --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
 
-        {{-- ChartJS --}}
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    </head>
+    {{-- ChartJS --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
 
-    <body class="overflow-x-hidden bg-[#080808] text-white">
-        @include('components.preloader')
+<body class="overflow-x-hidden bg-[#080808] text-white">
+    @include('components.preloader')
 
     <div id="adminLayout" data-sidebar="open" class="min-h-screen overflow-x-hidden bg-[#080808] text-white">
 
-            {{-- SIDEBAR --}}
-            <aside id="adminSidebar"
-                class="admin-scrollbar fixed left-0 top-0 z-[60] h-screen w-[280px] overflow-y-auto overflow-x-hidden border-r border-[#d99a32]/20 bg-gradient-to-b from-[#1a0b04] to-[#2b1208] transition-transform duration-300">
-                {{-- LOGO --}}
-                <div class="flex items-center gap-3 px-5 py-6">
-                    <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome Logo"
-                        class="h-16 w-16 rounded-2xl bg-white object-contain p-1">
+        {{-- SIDEBAR --}}
+        <aside id="adminSidebar"
+            class="admin-scrollbar fixed left-0 top-0 z-[60] h-screen w-[280px] overflow-y-auto overflow-x-hidden border-r border-[#d99a32]/20 bg-gradient-to-b from-[#1a0b04] to-[#2b1208] transition-transform duration-300">
+            {{-- LOGO --}}
+            <div class="flex items-center gap-3 px-5 py-6">
+                <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome Logo"
+                    class="h-16 w-16 rounded-2xl bg-white object-contain p-1">
 
-                    <div>
-                        <h3 class="text-2xl font-black text-white">
-                            Cine<span class="text-[#d99a32]">Home</span>
-                        </h3>
+                <div>
+                    <h3 class="text-2xl font-black text-white">
+                        Cine<span class="text-[#d99a32]">Home</span>
+                    </h3>
 
                     <p class="text-sm font-bold text-[#f4c56a]">
                         Admin Panel
                     </p>
                 </div>
+            </div>
 
             {{-- MENU --}}
             <div class="mt-4 px-3 pb-8">
@@ -282,18 +283,10 @@
 
     </div>
 
-                    <nav class="space-y-2">
-                        <a
-                            href="{{ route('admin.dashboard') }}"
-                            class="{{ request()->routeIs('admin.dashboard') ? 'admin-nav-link active' : 'admin-nav-link' }}"
-                        >
-                            <i class="fa-solid fa-chart-line w-5"></i>
-                            Dashboard
-                        </a>
-                    </nav>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ asset('assets/js/admin.js') }}"></script>
 
-                    <p class="mb-3 mt-7 px-3 text-xs font-black uppercase tracking-widest text-[#d7a767]">
-                        Quản lý nội dung
-                    </p>
+    @yield('scripts')
+</body>
 
 </html>
