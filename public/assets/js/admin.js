@@ -15,9 +15,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Toggle admin dropdown
+    // Toggle admin dropdown (Chuẩn hóa duy nhất tại đây, chặn xung đột tuyệt đối)
     if (adminDropdownBtn && adminDropdownMenu && adminDropdownBox) {
         adminDropdownBtn.addEventListener("click", function (event) {
+            event.preventDefault();
             event.stopPropagation();
             adminDropdownMenu.classList.toggle("hidden");
         });
