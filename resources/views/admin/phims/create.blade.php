@@ -59,21 +59,35 @@
                                 Thể loại
                             </label>
 
-                            <div class="mt-3 grid grid-cols-2 gap-3">
+                            <div
+                                class="space-y-2 max-h-64 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-4 scrollbar scrollbar-w-2 scrollbar-track-zinc-950 scrollbar-thumb-zinc-700 hover:scrollbar-thumb-zinc-600">
 
-                                @foreach ($genres as $genre)
+                                @forelse($genres as $genre)
                                     <label
-                                        class="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3">
+                                        class="flex items-center cursor-pointer hover:bg-zinc-900 p-2 rounded transition">
 
                                         <input type="checkbox" name="genre_ids[]" value="{{ $genre->id }}"
-                                            class="h-4 w-4">
+                                            {{ in_array($genre->id, old('genre_ids', [])) ? 'checked' : '' }}
+                                            class="w-4 h-4 rounded">
 
-                                        <span>
+                                        <span class="ml-3 flex-1">
                                             {{ $genre->ten_the_loai }}
                                         </span>
 
                                     </label>
-                                @endforeach
+
+                                @empty
+
+                                    <p class="text-zinc-500 text-sm text-center py-6">
+                                        Chưa có thể loại nào.
+
+                                        <a href="{{ route('admin.genres.create') }}" class="text-amber-500 hover:underline">
+
+                                            Tạo ngay
+
+                                        </a>
+                                    </p>
+                                @endforelse
 
                             </div>
 

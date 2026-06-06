@@ -4,9 +4,9 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Phims;
-use App\Models\Showtime;
 use App\Models\TheLoai;
 use App\Models\QuocGia;
+use App\Models\SuatChieu;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -219,7 +219,7 @@ class PhimsController extends Controller
         | SHOWTIMES
         |--------------------------------------------------------------------------
         */
-        $showtimes = Showtime::with([
+        $showtimes = SuatChieu::with([
             'cinema',
             'movie'
         ])

@@ -16,12 +16,12 @@
                 </h1>
 
                 <p class="text-zinc-400 mt-2">
-                    {{ $movie->ten_phim }}
+                    {{ $phim->ten_phim }}
                 </p>
 
             </div>
 
-            <form action="{{ route('admin.phims.update', $movie) }}" method="POST" enctype="multipart/form-data"
+            <form action="{{ route('admin.phims.update', $phim) }}" method="POST" enctype="multipart/form-data"
                 class="space-y-8">
 
                 @csrf
@@ -40,7 +40,7 @@
                                 Tên phim <span class="text-red-500">*</span>
                             </label>
 
-                            <input type="text" name="ten_phim" value="{{ old('ten_phim', $movie->ten_phim) }}"
+                            <input type="text" name="ten_phim" value="{{ old('ten_phim', $phim->ten_phim) }}"
                                 placeholder="Nhập tên phim..."
                                 class="w-full mt-2 bg-zinc-950 border rounded-2xl px-4 py-3
                                focus:outline-none transition
@@ -63,7 +63,8 @@
                             </label>
 
                             <div
-                                class="space-y-2 max-h-64 overflow-y-auto bg-zinc-950 border border-zinc-800 rounded-2xl p-4">
+                                class="space-y-2 max-h-64 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-4 scrollbar scrollbar-w-2 scrollbar-track-zinc-950 scrollbar-thumb-zinc-700 hover:scrollbar-thumb-zinc-600">
+
 
                                 @forelse($genres as $genre)
                                     <label
@@ -114,7 +115,7 @@
 
                                 @foreach ($countries as $country)
                                     <option value="{{ $country->id }}"
-                                        {{ old('quoc_gia_id', $movie->quoc_gia_id) == $country->id ? 'selected' : '' }}>
+                                        {{ old('quoc_gia_id', $phim->quoc_gia_id) == $country->id ? 'selected' : '' }}>
                                         {{ $country->ten_quoc_gia }}
                                     </option>
                                 @endforeach
@@ -137,7 +138,7 @@
                                 Đạo diễn <span class="text-red-500">*</span>
                             </label>
 
-                            <input type="text" name="dao_dien" value="{{ old('dao_dien', $movie->dao_dien) }}"
+                            <input type="text" name="dao_dien" value="{{ old('dao_dien', $phim->dao_dien) }}"
                                 placeholder="Christopher Nolan..."
                                 class="w-full mt-2 bg-zinc-950 border rounded-2xl px-4 py-3
            focus:outline-none transition
@@ -159,7 +160,7 @@
                                 Diễn viên <span class="text-red-500">*</span>
                             </label>
 
-                            <input type="text" name="dien_vien" value="{{ old('dien_vien', $movie->dien_vien) }}"
+                            <input type="text" name="dien_vien" value="{{ old('dien_vien', $phim->dien_vien) }}"
                                 placeholder="Robert Downey Jr..."
                                 class="w-full mt-2 bg-zinc-950 border rounded-2xl px-4 py-3
            focus:outline-none transition
@@ -181,7 +182,7 @@
                                 Ngôn ngữ <span class="text-red-500">*</span>
                             </label>
 
-                            <input type="text" name="ngon_ngu" value="{{ old('ngon_ngu', $movie->ngon_ngu) }}"
+                            <input type="text" name="ngon_ngu" value="{{ old('ngon_ngu', $phim->ngon_ngu) }}"
                                 placeholder="Tiếng Anh..."
                                 class="w-full mt-2 bg-zinc-950 border rounded-2xl px-4 py-3
            focus:outline-none transition
@@ -204,7 +205,7 @@
                             </label>
 
                             <input type="text" name="gioi_han_tuoi"
-                                value="{{ old('gioi_han_tuoi', $movie->gioi_han_tuoi) }}" placeholder="P, C13, C16..."
+                                value="{{ old('gioi_han_tuoi', $phim->gioi_han_tuoi) }}" placeholder="P, C13, C16..."
                                 class="w-full mt-2 bg-zinc-950 border rounded-2xl px-4 py-3
            focus:outline-none transition
            {{ $errors->has('gioi_han_tuoi') ? 'border-red-500' : 'border-zinc-800' }}
@@ -224,7 +225,7 @@
                                 Thời lượng (phút) <span class="text-red-500">*</span>
                             </label>
 
-                            <input type="number" name="thoi_luong" value="{{ old('thoi_luong', $movie->thoi_luong) }}"
+                            <input type="number" name="thoi_luong" value="{{ old('thoi_luong', $phim->thoi_luong) }}"
                                 placeholder="120"
                                 class="w-full mt-2 bg-zinc-950 border rounded-2xl px-4 py-3
                                focus:outline-none transition
@@ -247,7 +248,7 @@
                             </label>
 
                             <input type="url" id="trailer" name="trailer"
-                                value="{{ old('trailer', $movie->trailer) }}" placeholder="https://youtube.com/..."
+                                value="{{ old('trailer', $phim->trailer) }}" placeholder="https://youtube.com/..."
                                 class="w-full mt-2 bg-zinc-950 border rounded-2xl px-4 py-3
                                focus:outline-none transition
                                {{ $errors->has('trailer') ? 'border-red-500' : 'border-zinc-800' }}
@@ -301,8 +302,8 @@
 
                                     </div>
 
-                                    <img id="preview" src="{{ asset('storage/' . $movie->poster) }}"
-                                        class="absolute inset-0 w-full h-full object-cover {{ $movie->poster ? '' : 'hidden' }}" />
+                                    <img id="preview" src="{{ asset('storage/' . $phim->poster) }}"
+                                        class="absolute inset-0 w-full h-full object-cover {{ $phim->poster ? '' : 'hidden' }}" />
 
                                 </label>
 
@@ -330,7 +331,7 @@
                                 class="w-full mt-2 bg-zinc-900 border rounded-3xl px-5 py-4
                                   focus:outline-none transition
                                   {{ $errors->has('mo_ta') ? 'border-red-500' : 'border-zinc-800' }}
-                                  focus:border-red-500 min-h-[220px]">{{ old('mo_ta', $movie->mo_ta) }}</textarea>
+                                  focus:border-red-500 min-h-[220px]">{{ old('mo_ta', $phim->mo_ta) }}</textarea>
 
                             @error('mo_ta')
                                 <p class="text-red-500 text-sm mt-2">

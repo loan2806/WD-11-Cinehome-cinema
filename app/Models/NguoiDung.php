@@ -72,9 +72,4 @@ class NguoiDung extends Authenticatable
     {
         return $this->mat_khau;
     }
-     */
-    public function getAuthPassword()
-    {
-        return $this->mat_khau;
-    }
 }
