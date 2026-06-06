@@ -25,9 +25,9 @@ class TheLoai extends Model
     {
         return $this->belongsToMany(
             Phims::class,
-            'movie_genre',
-            'genre_id',
-            'movie_id'
+            'phim_the_loai',
+            'ma_the_loai',
+            'ma_phim'
         );
     }
 }
