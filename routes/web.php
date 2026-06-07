@@ -24,6 +24,7 @@ use App\Http\Controllers\User\PhimsController;
 use App\Http\Controllers\User\RapChieuPhimController;
 use App\Http\Controllers\User\SuatChieuController as UserSuatChieuController;
 use App\Http\Controllers\User\VeXemPhimController; // ĐÃ SỬA: Thay thế TicketController bằng VeXemPhimController
+use App\Http\Controllers\Admin\NhanVienController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -43,15 +44,15 @@ Route::get('/', [PhimsController::class, 'home'])
 
 Route::get('/dashboard', function () {
     $user = auth()->user();
-    
+
     if ($user->vai_tro === 'admin') {
         return redirect()->route('admin.dashboard');
     }
-    
+
     if ($user->vai_tro === 'nhan_vien') {
         return redirect()->route('staff.dashboard');
     }
-    
+
     return redirect()->route('home');
 })->name('dashboard');
 
@@ -139,6 +140,7 @@ use App\Http\Controllers\DatVe\DatVeController;
 | TÍNH NĂNG ĐẶT VÉ (TIẾNG VIỆT)
 |--------------------------------------------------------------------------
 */
+
 Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
     Route::get('/chon-rap', [DatVeController::class, 'chonRap'])->name('chon_rap');
     Route::get('/chon-phim/{rap_id}', [DatVeController::class, 'chonPhim'])->name('chon_phim');
@@ -235,7 +237,7 @@ Route::middleware(['auth', 'role:admin'])
         Route::resource('notifications', AdminNotificationController::class)
             ->only(['index', 'create', 'store', 'destroy']);
 
-            Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])
+        Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])
             ->name('movie-reviews.index');
 
         Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])
@@ -258,6 +260,16 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::patch('/system-settings', [SystemSettingController::class, 'update'])
             ->name('system-settings.update');
+
+        Route::resource(
+            'nhanviens',
+            NhanVienController::class
+        );
+
+        Route::patch(
+            'nhanviens/{nhanvien}/toggle-status',
+            [NhanVienController::class, 'toggleStatus']
+        )->name('nhanviens.toggle-status');
     });
 
 /*
@@ -284,4 +296,4 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

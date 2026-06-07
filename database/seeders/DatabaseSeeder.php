@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             PhongChieuSeeder::class,
             SuatChieuSeeder::class,
             VeXemPhimSeeder::class,
+            NhanVienSeeder::class,
         ]);
     }
 }

@@ -144,9 +144,10 @@
                         <span>Người dùng</span>
                     </a>
 
-                    <a href="#" class="admin-nav-link">
-                        <i class="fa-solid fa-user-tie w-5"></i>
-                        <span>Nhân viên</span>
+                    <a href="{{ route('admin.nhanviens.index') }}"
+                        class="{{ request()->routeIs('admin.nhanviens.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                        <i class="fa-solid fa-users"></i>
+                        <span>Quản lý nhân viên</span>
                     </a>
 
                     <a href="#" class="admin-nav-link">
