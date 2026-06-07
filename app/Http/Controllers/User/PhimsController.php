@@ -24,9 +24,9 @@ class PhimsController extends Controller
             'genres',
             'country'
         ])
-        ->visibleToUsers()
-        ->orderBy('created_at', 'desc')
-        ->get();
+            ->visibleToUsers()
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         /*
         |--------------------------------------------------------------------------
@@ -35,7 +35,7 @@ class PhimsController extends Controller
         */
         $nowShowingMovies = $movies->filter(
             fn($movie)
-                => $movie->schedule_status === 'Đang chiếu'
+            => $movie->schedule_status === 'Đang chiếu'
         );
 
         /*
@@ -45,7 +45,7 @@ class PhimsController extends Controller
         */
         $comingSoonMovies = $movies->filter(
             fn($movie)
-                => $movie->schedule_status === 'Sắp chiếu'
+            => $movie->schedule_status === 'Sắp chiếu'
         );
 
         /*
@@ -55,7 +55,7 @@ class PhimsController extends Controller
         */
         $comingLaterMovies = $movies->filter(
             fn($movie)
-                => $movie->schedule_status === 'Sắp ra mắt'
+            => $movie->schedule_status === 'Sắp ra mắt'
         );
 
         /*
@@ -87,122 +87,55 @@ class PhimsController extends Controller
             'showtimes',
             'genres',
             'country'
-        ])
-        ->visibleToUsers();
+        ])->visibleToUsers();
 
-        /*
-        |--------------------------------------------------------------------------
-        | SEARCH
-        |--------------------------------------------------------------------------
-        */
-        if ($request->filled('keyword')) {
+        // SEARCH
+        if ($request->filled('tim_kiem')) {
 
             $query->where(
-                'ten_Phims',
+                'ten_phim',
                 'like',
-                '%' . $request->keyword . '%'
+                '%' . $request->tim_kiem . '%'
             );
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | FILTER GENRE
-        |--------------------------------------------------------------------------
-        */
-        if ($request->filled('genre_id')) {
 
-            $query->whereHas(
-                'genres',
-                function ($q) use ($request) {
+        if ($request->filled('the_loai')) {
 
-                    $q->where(
-                        'genre_id',
-                        $request->genre_id
-                    );
-                }
-            );
+            $query->whereHas('genres', function ($q) use ($request) {
+
+                $q->where(
+                    'ten_the_loai',
+                    $request->the_loai
+                );
+            });
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | FILTER COUNTRY
-        |--------------------------------------------------------------------------
-        */
-        if ($request->filled('quoc_gia_id')) {
 
-            $query->where(
-                'quoc_gia_id',
-                $request->quoc_gia_id
-            );
+        if ($request->filled('quoc_gia')) {
+
+            $query->whereHas('country', function ($q) use ($request) {
+
+                $q->where(
+                    'ten_quoc_gia',
+                    $request->quoc_gia
+                );
+            });
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | GET MOVIES
-        |--------------------------------------------------------------------------
-        */
         $movies = $query
+            ->where('schedule_status', '!=', 'Đã kết thúc')
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->filter(
-                fn($movie) => $movie->schedule_status !== 'Đã kết thúc'
-            );
+            ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | FILTER STATUS
-        |--------------------------------------------------------------------------
-        */
-        if ($request->filled('status')) {
+        $genres = TheLoai::where('trang_thai', 1)->get();
+        $countries = QuocGia::where('trang_thai', 1)->get();
 
-            if ($request->status === 'now_showing') {
-
-                $movies = $movies->filter(
-                    fn($movie)
-                        => $movie->schedule_status === 'Đang chiếu'
-                );
-            }
-
-            elseif ($request->status === 'coming_soon') {
-
-                $movies = $movies->filter(
-                    fn($movie)
-                        => $movie->schedule_status === 'Sắp chiếu'
-                );
-            }
-
-            elseif ($request->status === 'coming_later') {
-
-                $movies = $movies->filter(
-                    fn($movie)
-                        => $movie->schedule_status === 'Sắp ra mắt'
-                );
-            }
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | DROPDOWN DATA
-        |--------------------------------------------------------------------------
-        */
-        $genres = TheLoai::where(
-            'trang_thai',
-            1
-        )->get();
-
-        $countries = QuocGia::where(
-            'trang_thai',
-            1
-        )->get();
-
-        return view(
-            'user.phims.index',
-            compact(
-                'movies',
-                'genres',
-                'countries'
-            )
-        );
+        return view('user.phims.index', compact(
+            'movies',
+            'genres',
+            'countries'
+        ));
     }
 
     /*
@@ -223,52 +156,52 @@ class PhimsController extends Controller
             'cinema',
             'movie'
         ])
-        ->where('movie_id', $movie->id)
-        ->orderBy('show_date')
-        ->orderBy('show_time')
-        ->get()
-        ->filter(function ($showtime) use (
-            $movie,
-            $now
-        ) {
+            ->where('movie_id', $movie->id)
+            ->orderBy('show_date')
+            ->orderBy('show_time')
+            ->get()
+            ->filter(function ($showtime) use (
+                $movie,
+                $now
+            ) {
 
-            /*
+                /*
             |--------------------------------------------------------------------------
             | FIX DATE + TIME
             |--------------------------------------------------------------------------
             */
-            $date = Carbon::parse(
-                $showtime->show_date
-            )->format('Y-m-d');
+                $date = Carbon::parse(
+                    $showtime->show_date
+                )->format('Y-m-d');
 
-            /*
+                /*
             |--------------------------------------------------------------------------
             | START TIME
             |--------------------------------------------------------------------------
             */
-            $start = Carbon::createFromFormat(
-                'Y-m-d H:i:s',
-                $date . ' ' . $showtime->show_time
-            );
+                $start = Carbon::createFromFormat(
+                    'Y-m-d H:i:s',
+                    $date . ' ' . $showtime->show_time
+                );
 
-            /*
+                /*
             |--------------------------------------------------------------------------
             | END TIME
             |--------------------------------------------------------------------------
             */
-            $end = $start
-                ->copy()
-                ->addMinutes(
-                    (int) $movie->thoi_luong
-                );
+                $end = $start
+                    ->copy()
+                    ->addMinutes(
+                        (int) $movie->thoi_luong
+                    );
 
-            /*
+                /*
             |--------------------------------------------------------------------------
             | ONLY SHOW NOT ENDED
             |--------------------------------------------------------------------------
             */
-            return $end->gte($now);
-        });
+                return $end->gte($now);
+            });
 
         return view(
             'user.phims.show',

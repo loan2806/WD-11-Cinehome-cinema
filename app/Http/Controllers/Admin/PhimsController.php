@@ -178,10 +178,10 @@ class PhimsController extends Controller
         | SYNC GENRES
         |--------------------------------------------------------------------------
         */
-        if (!empty($data['genre_ids'])) {
+        if (!empty($data['the_loai_id'])) {
 
             $movie->genres()
-                ->sync($data['genre_ids']);
+                ->sync($data['the_loai_id']);
         }
 
         return redirect()
@@ -256,8 +256,8 @@ class PhimsController extends Controller
 
         $phim->update($data);
 
-        if (!empty($data['genre_ids'])) {
-            $phim->genres()->sync($data['genre_ids']);
+        if (!empty($data['the_loai_id'])) {
+            $phim->genres()->sync($data['the_loai_id']);
         } else {
             $phim->genres()->detach();
         }

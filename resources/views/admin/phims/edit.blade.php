@@ -70,8 +70,8 @@
                                     <label
                                         class="flex items-center cursor-pointer hover:bg-zinc-900 p-2 rounded transition">
 
-                                        <input type="checkbox" name="genre_ids[]" value="{{ $genre->id }}"
-                                            {{ in_array($genre->id, old('genre_ids', $selectedGenreIds)) ? 'checked' : '' }}
+                                        <input type="checkbox" name="the_loai_id[]" value="{{ $genre->id }}"
+                                            {{ in_array($genre->id, old('the_loai_id', $selectedGenreIds)) ? 'checked' : '' }}
                                             class="w-4 h-4 rounded">
 
                                         <span class="ml-3 flex-1">
@@ -90,7 +90,7 @@
 
                             </div>
 
-                            @error('genre_ids')
+                            @error('the_loai_id')
                                 <p class="text-red-500 text-sm mt-2">
                                     {{ $message }}
                                 </p>
