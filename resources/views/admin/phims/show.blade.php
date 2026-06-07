@@ -1,160 +1,144 @@
 @extends('layouts.admin')
 
-@section('title', 'Chi tiết phim')
+@section('page-title', 'Chi tiết phim')
 
 @section('content')
 
-<div class="min-h-screen bg-black text-white px-6 xl:px-10 py-10">
+<div class="admin-panel">
 
-    <div class="w-full max-w-[1600px] mx-auto">
+    <div class="panel-header flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
 
-        {{-- HEADER --}}
-        <div class="mb-10">
+        <div>
 
-            <h1 class="text-4xl font-bold tracking-wide">
-                🎬 Chi tiết phim
-            </h1>
+            <h5 class="text-2xl font-black text-white">
+                Chi tiết phim: {{ $phim->ten_phim }}
+            </h5>
 
-            <p class="text-zinc-400 mt-2">
-                {{ $phim->ten_phim }}
-            </p>
+            <small class="text-gray-400">
+                Thông tin chi tiết phim
+            </small>
 
         </div>
 
-        {{-- FORM (CHỈ HIỂN THỊ, KHÔNG EDIT) --}}
-        <div class="space-y-8">
+        <div class="flex gap-3">
 
-            {{-- GRID --}}
-            <div class="grid grid-cols-1 xl:grid-cols-2 gap-10 items-start">
+            <a href="{{ route('admin.phims.edit', $phim) }}"
+                class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]">
 
-                {{-- LEFT SIDE --}}
-                <div class="space-y-6">
+                <i class="fa-solid fa-pen"></i>
 
-                    {{-- TÊN PHIM --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Tên phim</label>
+                Sửa
 
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
-                            {{ $phim->ten_phim }}
-                        </div>
-                    </div>
+            </a>
 
-                    {{-- THỂ LOẠI --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Thể loại</label>
+            <a href="{{ route('admin.phims.index') }}"
+                class="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10">
 
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
-                            @forelse($phim->genres as $genre)
-                                <span class="bg-white/10 px-3 py-1 rounded-full text-sm">
-                                    {{ $genre->ten_the_loai }}
-                                </span>
-                            @empty
-                                <span class="text-zinc-500">Chưa cập nhật</span>
-                            @endforelse
-                        </div>
-                    </div>
+                <i class="fa-solid fa-arrow-left"></i>
 
-                    {{-- QUỐC GIA --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Quốc gia</label>
+                Quay lại
 
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
-                            {{ $phim->country->ten_quoc_gia ?? 'Chưa cập nhật' }}
-                        </div>
-                    </div>
+            </a>
 
-                    {{-- ĐẠO DIỄN --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Đạo diễn</label>
+        </div>
 
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
-                            {{ $phim->dao_dien ?? 'Chưa cập nhật' }}
-                        </div>
-                    </div>
+    </div>
 
-                    {{-- DIỄN VIÊN --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Diễn viên</label>
+    <div class="mt-6 grid gap-5 lg:grid-cols-3">
 
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
-                            {{ $phim->dien_vien ?? 'Chưa cập nhật' }}
-                        </div>
-                    </div>
+        {{-- LEFT: INFO --}}
+        <div class="rounded-2xl border border-white/10 bg-[#0f0f0f] p-5">
 
-                    {{-- NGÔN NGỮ --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Ngôn ngữ</label>
+            <h6 class="mb-4 text-sm font-bold uppercase tracking-wider text-gray-400">
+                Thông tin phim
+            </h6>
 
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
-                            {{ $phim->ngon_ngu ?? 'Chưa cập nhật' }}
-                        </div>
-                    </div>
+            <div class="space-y-3">
 
-                    {{-- GIỚI HẠN TUỔI --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Giới hạn tuổi</label>
-
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
-                            {{ $phim->gioi_han_tuoi ?? 'P' }}
-                        </div>
-                    </div>
-
-                    {{-- THỜI LƯỢNG --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Thời lượng</label>
-
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3">
-                            {{ $phim->thoi_luong }} phút
-                        </div>
-                    </div>
-
-                    {{-- TRAILER --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Trailer</label>
-
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 break-all">
-                            {{ $phim->trailer }}
-                        </div>
-                    </div>
-
+                <div class="flex justify-between border-b border-white/5 pb-3">
+                    <span class="text-gray-400">Tên Phim</span>
+                    <span class="text-white font-bold text-right max-w-[200px]">{{ $phim->ten_phim }}</span>
                 </div>
 
-                {{-- RIGHT SIDE --}}
-                <div class="space-y-6 sticky top-10">
+                <div class="flex justify-between border-b border-white/5 pb-3">
+                    <span class="text-gray-400">Quốc gia</span>
+                    <span class="text-white">{{ $phim->country->ten_quoc_gia ?? 'Chưa cập nhật' }}</span>
+                </div>
 
-                    {{-- POSTER --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Poster</label>
-
-                        <div class="mt-2 border border-zinc-800 rounded-3xl overflow-hidden bg-zinc-950">
-                            <img src="{{ asset('storage/' . $phim->poster) }}"
-                                 class="w-full h-[520px] object-cover">
-                        </div>
+                <div class="flex justify-between border-b border-white/5 pb-3">
+                    <span class="text-gray-400">Thể loại</span>
+                    <div class="flex flex-wrap gap-1 justify-end">
+                        @forelse($phim->genres as $genre)
+                            <span class="rounded-full bg-white/10 px-2 py-0.5 text-xs">{{ $genre->ten_the_loai }}</span>
+                        @empty
+                            <span class="text-gray-500">Chưa cập nhật</span>
+                        @endforelse
                     </div>
+                </div>
 
-                    {{-- MÔ TẢ --}}
-                    <div>
-                        <label class="text-sm text-zinc-400">Mô tả</label>
+                <div class="flex justify-between border-b border-white/5 pb-3">
+                    <span class="text-gray-400">Đạo diễn</span>
+                    <span class="text-white">{{ $phim->dao_dien ?? 'Chưa cập nhật' }}</span>
+                </div>
 
-                        <div class="w-full mt-2 bg-zinc-900 border border-zinc-800 rounded-3xl px-5 py-4 min-h-[220px]">
-                            {{ $phim->mo_ta }}
-                        </div>
-                    </div>
+                <div class="flex justify-between border-b border-white/5 pb-3">
+                    <span class="text-gray-400">Diễn viên</span>
+                    <span class="text-white text-right max-w-[200px]">{{ $phim->dien_vien ?? 'Chưa cập nhật' }}</span>
+                </div>
 
+                <div class="flex justify-between border-b border-white/5 pb-3">
+                    <span class="text-gray-400">Ngôn ngữ</span>
+                    <span class="text-white">{{ $phim->ngon_ngu ?? 'Chưa cập nhật' }}</span>
+                </div>
+
+                <div class="flex justify-between border-b border-white/5 pb-3">
+                    <span class="text-gray-400">Giới hạn tuổi</span>
+                    <span class="rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-400">
+                        {{ $phim->gioi_han_tuoi ?? 'P' }}
+                    </span>
+                </div>
+
+                <div class="flex justify-between border-b border-white/5 pb-3">
+                    <span class="text-gray-400">Thời lượng</span>
+                    <span class="text-white">{{ $phim->thoi_luong }} phút</span>
+                </div>
+
+                <div class="flex justify-between pt-1">
+                    <span class="text-gray-400">Trailer</span>
+                    <span class="text-white text-right max-w-[200px] truncate">{{ $phim->trailer ?? '-' }}</span>
                 </div>
 
             </div>
 
-            {{-- BUTTON --}}
-            <div class="flex justify-end pt-4">
+        </div>
 
-                <a href="{{ route('admin.phims.index') }}"
-                   class="px-6 py-3 rounded-2xl bg-zinc-800 hover:bg-zinc-700 transition font-medium">
+        {{-- MIDDLE: POSTER --}}
+        <div class="space-y-5">
 
-                    ← Quay lại
+            <div class="rounded-2xl border border-white/10 bg-[#0f0f0f] p-5 overflow-hidden">
 
-                </a>
+                <h6 class="mb-4 text-sm font-bold uppercase tracking-wider text-gray-400">
+                    Poster
+                </h6>
 
+                <img src="{{ asset('storage/' . $phim->poster) }}"
+                    alt="{{ $phim->ten_phim }}"
+                    class="w-full rounded-2xl object-cover shadow-lg"
+                    style="height: 420px;">
+
+            </div>
+
+        </div>
+
+        {{-- RIGHT: MO TA --}}
+        <div class="rounded-2xl border border-white/10 bg-[#0f0f0f] p-5">
+
+            <h6 class="mb-4 text-sm font-bold uppercase tracking-wider text-gray-400">
+                Mô tả
+            </h6>
+
+            <div class="text-gray-300 leading-relaxed">
+                {{ $phim->mo_ta ?? 'Chưa có mô tả.' }}
             </div>
 
         </div>

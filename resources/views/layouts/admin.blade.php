@@ -20,6 +20,20 @@
 <body class="overflow-x-hidden bg-[#080808] text-white">
     @include('components.preloader')
 
+    {{-- GLOBAL TOAST NOTIFICATIONS --}}
+    @if (session('success'))
+        <x-toast type="success" :message="session('success')" />
+    @endif
+    @if (session('error'))
+        <x-toast type="error" :message="session('error')" />
+    @endif
+    @if (session('warning'))
+        <x-toast type="warning" :message="session('warning')" />
+    @endif
+
+    {{-- GLOBAL CONFIRM MODAL --}}
+    <x-modal-confirm />
+
     <div id="adminLayout" data-sidebar="open" class="min-h-screen overflow-x-hidden bg-[#080808] text-white">
 
         {{-- SIDEBAR --}}
@@ -68,24 +82,34 @@
                         <span>Quản lý phim</span>
                     </a>
 
-                    <a href="#" class="admin-nav-link">
-                        <i class="fa-solid fa-clapperboard w-5"></i>
-                        <span>Trailer / Poster</span>
+                    <a href="{{ route('admin.phong-chieus.index') }}" class="{{ request()->routeIs('admin.phong-chieus.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                        <i class="fa-solid fa-door-open w-5"></i>
+                        <span>Phòng chiếu</span>
                     </a>
 
-                    <a href="#" class="admin-nav-link">
-                        <i class="fa-solid fa-building w-5"></i>
-                        <span>Quản lý rạp</span>
+                    <a href="{{ route('admin.hang-ghes.index') }}" class="{{ request()->routeIs('admin.hang-ghes.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                        <i class="fa-solid fa-bars w-5"></i>
+                        <span>Hàng ghế</span>
                     </a>
 
-                    <a href="#" class="admin-nav-link">
+                    <a href="{{ route('admin.loai-ghes.index') }}" class="{{ request()->routeIs('admin.loai-ghes.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-chair w-5"></i>
-                        <span>Sơ đồ ghế</span>
+                        <span>Loại ghế</span>
                     </a>
 
-                    <a href="#" class="admin-nav-link">
+                    <a href="{{ route('admin.ghe-ngois.index') }}" class="{{ request()->routeIs('admin.ghe-ngois.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                        <i class="fa-solid fa-couch w-5"></i>
+                        <span>Ghế ngồi</span>
+                    </a>
+
+                    <a href="{{ route('admin.suat-chieus.index') }}" class="{{ request()->routeIs('admin.suat-chieus.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-calendar-days w-5"></i>
-                        <span>Lịch chiếu</span>
+                        <span>Suất chiếu</span>
+                    </a>
+
+                    <a href="{{ route('admin.genres.index') }}" class="{{ request()->routeIs('admin.genres.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                        <i class="fa-solid fa-tags w-5"></i>
+                        <span>Thể loại phim</span>
                     </a>
                 </nav>
 
@@ -172,12 +196,12 @@
 
         {{-- MAIN CONTENT AREA --}}
         <main id="adminMain" class="min-h-screen overflow-x-hidden bg-[#080808] ml-[280px]">
-            
+
             {{-- TOPBAR NAVBAR --}}
             <header class="sticky top-0 z-50 border-b border-white/10 bg-[#101010]/95 backdrop-blur-xl">
                 <div class="flex h-[76px] items-center justify-between gap-4 px-5">
 
-                    {{-- LEFT: TIÊU ĐỀ VÀ PHỤ ĐỀ HỆ THỐNG (GIỮ NGUYÊN HOÀN TOÀN THEO YÊU CẦU) --}}
+                    {{-- LEFT: TIÊU ĐỀ VÀ PHỤ ĐỀ HỆ THỐNG --}}
                     <div class="flex min-w-0 items-center gap-4">
                         <button
                             id="sidebarToggle"
@@ -208,11 +232,11 @@
                         >
                     </div>
 
-                    {{-- RIGHT: THÔNG TIN TÀI KHOẢN VÀ Ô DROPDOWN THẢ XUỐNG --}}
+                    {{-- RIGHT: THÔNG TIN TÀI KHOẢN --}}
                     <div class="flex items-center gap-3">
                         @auth
                             <div class="relative" id="adminDropdownBox">
-                                
+
                                 <button type="button" id="adminDropdownBtn" class="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2 transition hover:bg-white/15">
                                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white shadow-md">
                                         <i class="fa-solid fa-user-shield"></i>
@@ -231,7 +255,7 @@
                                 </button>
 
                                 <div id="adminDropdownMenu" class="absolute right-0 top-[125%] z-[9999] hidden w-60 overflow-hidden rounded-xl border border-[#d99a32]/30 bg-[#151515]/95 shadow-2xl backdrop-blur-md">
-                                    
+
                                     <div class="flex items-center gap-3 border-b border-white/10 px-4 py-3 bg-white/5">
                                         <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white">
                                             <i class="fa-solid fa-user text-sm"></i>
@@ -286,7 +310,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ asset('assets/js/admin.js') }}"></script>
 
-    @yield('scripts')
+    @stack('scripts')
 </body>
 
 </html>

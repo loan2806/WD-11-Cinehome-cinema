@@ -9,7 +9,10 @@ use App\Http\Controllers\Admin\NotificationController as AdminNotificationContro
 use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\SystemSettingController;
-use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
+use App\Http\Controllers\Admin\PhongChieuController;
+use App\Http\Controllers\Admin\HangGheController;
+use App\Http\Controllers\Admin\LoaiGheController;
+use App\Http\Controllers\Admin\GheNgoiController;
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\ProfileController;
@@ -34,6 +37,26 @@ Route::get('/', [PhimsController::class, 'home'])
 
 /*
 |--------------------------------------------------------------------------
+| DASHBOARD - Chuyển hướng đến dashboard phù hợp
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/dashboard', function () {
+    $user = auth()->user();
+    
+    if ($user->vai_tro === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+    
+    if ($user->vai_tro === 'nhan_vien') {
+        return redirect()->route('staff.dashboard');
+    }
+    
+    return redirect()->route('home');
+})->name('dashboard');
+
+/*
+|--------------------------------------------------------------------------
 | phims
 |--------------------------------------------------------------------------
 */
@@ -43,6 +66,9 @@ Route::get('/phims', [PhimsController::class, 'index'])
 
 Route::get('/phims/{movie}', [PhimsController::class, 'show'])
     ->name('user.phims.show');
+
+Route::get('/movies/{movie}', [PhimsController::class, 'show'])
+    ->name('user.movies.show');
 
 Route::post('/phims/{movie}/reviews', [DanhGiaPhimController::class, 'store'])
     ->middleware('auth')
@@ -94,6 +120,10 @@ Route::middleware('auth')
     ->prefix('bookings')
     ->name('user.bookings.')
     ->group(function () {
+
+        Route::get('/', function () {
+            return redirect()->route('user.ve_xem_phim.index');
+        })->name('index');
 
         Route::get('{showtime}/select-seats', [BookingController::class, 'selectSeats'])
             ->name('selectSeats');
@@ -177,8 +207,21 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::resource('genres', TheloaisController::class);
 
-        Route::resource('suat-chieu', AdminSuatChieuController::class)
-            ->only(['index', 'create', 'store']);
+        Route::resource('suat-chieus', \App\Http\Controllers\Admin\SuatChieuController::class);
+
+        Route::resource('phong-chieus', PhongChieuController::class);
+        Route::post('phong-chieus/{phong_chieu}/generate-seats', [PhongChieuController::class, 'generateSeats'])
+            ->name('phong-chieus.generate-seats');
+
+        Route::resource('hang-ghes', HangGheController::class);
+        Route::post('hang-ghes/{hang_ghe}/update-row-type', [HangGheController::class, 'updateRowType'])
+            ->name('hang-ghes.update-row-type');
+
+        Route::resource('loai-ghes', LoaiGheController::class);
+
+        Route::resource('ghe-ngois', GheNgoiController::class);
+        Route::post('ghe-ngois/{ghe_ngoi}/toggle-maintenance', [GheNgoiController::class, 'toggleMaintenance'])
+            ->name('ghe-ngois.toggle-maintenance');
 
         Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])
             ->name('food-invoices.index');

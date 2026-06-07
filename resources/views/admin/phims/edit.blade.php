@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Sửa phim')
+@section('page-title', 'Sửa phim')
 
 @section('content')
 
@@ -440,3 +440,4 @@
     </script>
 
 @endsection
+

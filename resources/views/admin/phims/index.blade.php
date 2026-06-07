@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Quản lý phim')
+@section('page-title', 'Quản lý phim')
 
 @section('content')
 
@@ -91,24 +91,6 @@
             </a>
 
         </form>
-
-        @if (session('success'))
-            <div id="toast-success"
-                class="fixed top-5 right-5 z-50 rounded-xl border border-green-500/30 bg-green-500 px-5 py-3 text-white shadow-lg transition-all duration-500">
-
-                {{ session('success') }}
-
-            </div>
-        @endif
-
-        @if (session('error'))
-            <div id="toast-error"
-                class="fixed top-5 right-5 z-50 rounded-xl border border-red-500/30 bg-red-500 px-5 py-3 text-white shadow-lg transition-all duration-500">
-
-                {{ session('error') }}
-
-            </div>
-        @endif
 
         {{-- TABLE --}}
         <div class="mt-6 overflow-hidden rounded-3xl border border-white/10">
@@ -271,23 +253,22 @@
                                 {{-- STATUS --}}
 
                                 {{-- ACTION --}}
-                                <td class="px-5 py-5">
-
-                                    <div class="flex justify-end gap-2">
+                                <td class="px-5 py-5 align-middle">
+                                    <div class="flex items-center justify-center gap-3 whitespace-nowrap">
 
                                         {{-- XEM CHI TIẾT --}}
                                         <a href="{{ route('admin.phims.show', $movie) }}"
-                                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 transition hover:bg-blue-500/25">
+                                            class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 transition hover:bg-blue-500/25">
 
-                                            <i class="fa-solid fa-eye"></i>
+                                            <i class="fa-solid fa-eye text-base leading-none"></i>
 
                                         </a>
 
                                         {{-- EDIT --}}
                                         <a href="{{ route('admin.phims.edit', $movie) }}"
-                                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300 transition hover:bg-yellow-500/25">
+                                            class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300 transition hover:bg-yellow-500/25">
 
-                                            <i class="fa-solid fa-pen"></i>
+                                            <i class="fa-solid fa-pen text-base leading-none"></i>
 
                                         </a>
 
@@ -300,9 +281,9 @@
 
                                             <button type="submit"
                                                 onclick="return confirm('Bạn có chắc muốn xóa phim này?')"
-                                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25">
+                                                class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25">
 
-                                                <i class="fa-solid fa-trash"></i>
+                                                <i class="fa-solid fa-trash text-base leading-none"></i>
 
                                             </button>
 
@@ -339,22 +320,3 @@
     </div>
 
 @endsection
-
-<script>
-    setTimeout(() => {
-        const success = document.getElementById('toast-success');
-        const error = document.getElementById('toast-error');
-
-        if (success) {
-            success.classList.add('opacity-0', 'translate-x-10');
-
-            setTimeout(() => success.remove(), 500);
-        }
-
-        if (error) {
-            error.classList.add('opacity-0', 'translate-x-10');
-
-            setTimeout(() => error.remove(), 500);
-        }
-    }, 4000);
-</script>
