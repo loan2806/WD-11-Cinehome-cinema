@@ -100,17 +100,10 @@
                     class="w-full h-full object-cover"
                 >
 
-                {{-- STATUS --}}
-                <div class="absolute top-3 left-3 z-10 px-4 py-2 rounded-full text-xs font-bold shadow-lg {{ $badgeClass }}">
-
-                    {{ $status }}
-
-                </div>
-
                 {{-- AGE --}}
                 <div class="absolute top-3 right-3 z-10 px-3 py-2 rounded-full bg-black/70 text-white text-xs font-bold shadow-lg">
 
-                    {{ $movie->gioi_han_tuoi ?? 'P' }}
+                    {{ $movie->gioi_han_tuoi}}
 
                 </div>
 
@@ -138,7 +131,6 @@
                             $movie->genres
                                 ->pluck('ten_the_loai')
                                 ->join(', ')
-                            ?: '—'
                         }}
 
                     </p>
@@ -150,7 +142,6 @@
 
                         {{
                             $movie->country?->ten_quoc_gia
-                            ?? '—'
                         }}
 
                     </p>
@@ -164,27 +155,12 @@
 
                     </p>
 
-                    {{-- RELEASE DATE --}}
-                    <p class="mb-0 text-xs text-gray-400">
-
-                        <i class="fa-solid fa-calendar mr-2"></i>
-
-                        {{
-                            $movie->ngay_khoi_chieu
-                            ? \Carbon\Carbon::parse(
-                                $movie->ngay_khoi_chieu
-                              )->format('d/m/Y')
-                            : '—'
-                        }}
-
-                    </p>
-
                     {{-- AGE --}}
                     <p class="mb-0 text-xs text-gray-400">
 
                         <i class="fa-solid fa-user-shield mr-2"></i>
 
-                        {{ $movie->gioi_han_tuoi ?? 'P' }}
+                        {{ $movie->gioi_han_tuoi}}
 
                     </p>
 

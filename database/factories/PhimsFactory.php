@@ -23,7 +23,6 @@ class PhimsFactory extends Factory
             'slug'            => Str::slug($tenPhim) . '-' . uniqid(), 
             'mo_ta'           => fake()->paragraph(),
             'thoi_luong'      => fake()->randomElement([90, 120, 145, 160]),
-            'ngay_khoi_chieu' => now()->subDays(rand(1, 15)),
             'gioi_han_tuoi'   => fake()->randomElement(['P', 'T13', 'T16', 'T18']),
             'ngon_ngu'        => 'Tiếng Việt / Phụ đề',
             'dao_dien'        => fake()->name(),

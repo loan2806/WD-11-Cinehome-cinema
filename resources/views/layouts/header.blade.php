@@ -15,13 +15,8 @@
                     Phim
                 </a>
 
-<a href="{{ route('user.cinemas.index') }}" class="{{ request()->routeIs('user.cinemas.index', 'user.cinemas.show') ? 'active' : '' }}">
-                    Rạp
-                </a>
-                </a>
-
-                <a href="{{ route('user.cinemas.map') }}" class="{{ request()->routeIs('user.cinemas.map') ? 'active' : '' }}">
-                    Bản đồ rạp
+                <a href="{{ route('user.cinemas.index') }}" class="{{ request()->routeIs('user.cinemas.*') ? 'active' : '' }}">
+                    Giới thiệu rạp
                 </a>
 
                 <a href="{{ route('user.showtimes.index') }}" class="{{ request()->routeIs('user.showtimes.*') ? 'active' : '' }}">
@@ -37,7 +32,7 @@
                 </a>
             </nav>
 
-<div class="nav-action">
+            <div class="nav-action">
                 <input type="text" class="search-box" placeholder="Tìm phim...">
 
                 @guest

@@ -12,7 +12,7 @@
                 $status = $movie->schedule_status;
             @endphp
             <div class="hero-slide {{ $index === 0 ? 'active' : '' }}"
-                style="background-image: url('{{ $movie->cover_image }}');">
+                style="background-image: url('{{ $movie->poster }}');">
                 <div class="container-fluid px-5 hero-content">
                     <div class="hero-info">
 
@@ -22,18 +22,17 @@
                         </div>
 
                         <h1 class="hero-title">
-                            {{ $movie->title }}
+                            {{ $movie->ten_phim }}
                         </h1>
 
                         <p class="hero-desc">
-                            {{ $movie->description }}
+                            {{ $movie->mo_ta }}
                         </p>
 
                         <div class="hero-meta">
-                            <span><i class="fa-solid fa-film"></i> {{ $movie->genre }}</span>
-                            <span><i class="fa-solid fa-clock"></i> {{ $movie->duration }} phút</span>
-                            <span><i class="fa-solid fa-user-shield"></i> {{ $movie->age_rating }}</span>
-                            <span><i class="fa-solid fa-calendar"></i> {{ $movie->release_date?->format('d/m/Y') }}</span>
+                            <span><i class="fa-solid fa-film"></i> {{ $movie->ten_the_loai }}</span>
+                            <span><i class="fa-solid fa-clock"></i> {{ $movie->thoi_luong }} phút</span>
+                            <span><i class="fa-solid fa-user-shield"></i> {{ $movie->gioi_han_tuoi }}</span>
                         </div>
 
                         <div class="hero-buttons">
@@ -77,8 +76,8 @@
                 @foreach ($bannerMovies as $index => $movie)
                     <div class="hot-item {{ $index === 0 ? 'active' : '' }}" data-slide="{{ $index }}">
                         <div class="hot-rank">{{ $index + 1 }}</div>
-                        <img src="{{ $movie->poster }}" alt="{{ $movie->title }}">
-                        <p>{{ $movie->title }}</p>
+                        <img src="{{ $movie->poster }}" alt="{{ $movie->ten_phim }}">
+                        <p>{{ $movie->ten_phim }}</p>
                     </div>
                 @endforeach
             </div>

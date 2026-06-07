@@ -123,10 +123,9 @@ class PhimsController extends Controller
             });
         }
 
-        $movies = $query
-            ->where('schedule_status', '!=', 'Đã kết thúc')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $movies = $query->orderBy('created_at', 'desc')
+            ->get()
+            ->filter(fn($movie) => $movie->schedule_status !== 'Đã kết thúc');
 
         $genres = TheLoai::where('trang_thai', 1)->get();
         $countries = QuocGia::where('trang_thai', 1)->get();

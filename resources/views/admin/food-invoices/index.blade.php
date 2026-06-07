@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Chi tiết hóa đơn đồ ăn')
+@section('page-title', 'Chi tiết hóa đơn đồ ăn')
 @section('page-title', 'Chi tiết hóa đơn đồ ăn')
 @section('page-subtitle', 'Tạo và theo dõi hóa đơn bắp nước, combo đồ ăn')
 
@@ -67,3 +67,4 @@
     </div>
 </div>
 @endsection
+

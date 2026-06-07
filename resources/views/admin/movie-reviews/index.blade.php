@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Đánh giá phim')
+@section('page-title', 'Đánh giá phim')
 @section('page-title', 'Đánh giá phim')
 @section('page-subtitle', 'Quản lý đánh giá, điểm sao và trạng thái hiển thị')
 
@@ -71,3 +71,4 @@
     </div>
 </div>
 @endsection
+

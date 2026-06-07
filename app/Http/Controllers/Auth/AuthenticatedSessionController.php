@@ -16,7 +16,7 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        // Đã sửa: Gọi đúng file dang_nhap.blade.php tiếng Việt của bạn
+        // Gọi đúng file dang_nhap.blade.php tiếng Việt của bạn
         return view('auth.dang_nhap');
     }
 
@@ -31,12 +31,13 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        // Điều hướng dựa trên vai_tro tiếng Việt chuẩn xác
-        if ($user->vai_tro === 'quan_tri_vien') {
+        // GIẢI PHÁP ĐA NĂNG: Kiểm tra song song cả 'admin' và 'quan_tri_vien' để không bao giờ bị lệch dữ liệu nhóm
+        if ($user->vai_tro === 'admin' || $user->vai_tro === 'quan_tri_vien') {
             return redirect()->route('admin.dashboard');
         }
 
-        if ($user->vai_tro === 'nhan_vien') {
+        // Kiểm tra song song cả 'nhan_vien' và 'staff' cho phân hệ nhân viên
+        if ($user->vai_tro === 'nhan_vien' || $user->vai_tro === 'staff') {
             return redirect()->route('staff.dashboard');
         }
 

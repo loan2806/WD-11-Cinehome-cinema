@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Báo cáo doanh thu')
+@section('page-title', 'Báo cáo doanh thu')
 @section('page-title', 'Báo cáo doanh thu')
 @section('page-subtitle', 'Tổng hợp doanh thu vé và đồ ăn theo khoảng ngày')
 
@@ -53,3 +53,4 @@
     </div>
 </div>
 @endsection
+
