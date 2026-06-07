@@ -1,208 +1,136 @@
 @extends('layouts.user')
 
-@section('title', 'Danh sách phim - CineHome')
+@section('title', 'Danh sách phim')
 
 @section('content')
 
-    <section class="min-h-screen bg-[#0b0705] text-white pt-32 pb-10">
-        <div class="max-w-[1800px] mx-auto px-8">
+<section class="min-h-screen bg-[#0b0705] text-white pt-32 pb-10">
+    <div class="max-w-[1800px] mx-auto px-8">
 
-            <h1 class="text-4xl font-extrabold mb-2">
-                Danh sách <span class="text-[#f5a623]">phim</span>
-            </h1>
+        {{-- FILTER --}}
+        <form action="{{ route('user.phims.index') }}" method="GET"
+            class="bg-[#151515] border border-white/10 rounded-2xl p-5 mb-8 grid grid-cols-1 md:grid-cols-5 gap-4">
 
-            <p class="text-gray-400 mb-8">
-                Xem phim đang chiếu, sắp chiếu và đặt vé nhanh chóng tại CineHome.
-            </p>
+            {{-- SEARCH --}}
+            <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}"
+                placeholder="Tìm tên phim..."
+                class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3">
 
-            <form action="{{ route('user.phims.index') }}" method="GET"
-                class="bg-[#151515] border border-white/10 rounded-2xl p-5 mb-8 grid grid-cols-1 md:grid-cols-5 gap-4">
+            {{-- GENRE --}}
+            <select name="the_loai"
+                class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3">
 
-                <input type="text" name="keyword" value="{{ request('keyword') }}" placeholder="Tìm tên phim..."
-                    class="bg-[#0b0705] border border-white/10 text-white placeholder:text-gray-500 rounded-xl px-4 py-3 outline-none focus:border-[#f5a623]">
+                <option value="">Thể loại</option>
 
-                <select name="genre_id"
-                    class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-[#f5a623]">
-                    <option value="">Thể loại</option>
-                    @foreach ($genres as $genre)
-                        <option value="{{ $genre->id }}" {{ request('genre_id') == $genre->id ? 'selected' : '' }}>
-                            {{ $genre->ten_the_loai }}
-                        </option>
-                    @endforeach
-                </select>
+                @foreach ($genres as $genre)
+                    <option value="{{ $genre->ten_the_loai }}"
+                        {{ request('the_loai') == $genre->ten_the_loai ? 'selected' : '' }}>
 
-                <select name="quoc_gia_id"
-                    class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-[#f5a623]">
-                    <option value="">Quốc gia</option>
-                    @foreach ($countries as $country)
-                        <option value="{{ $country->id }}" {{ request('quoc_gia_id') == $country->id ? 'selected' : '' }}>
-                            {{ $country->ten_quoc_gia }}
-                        </option>
-                    @endforeach
-                </select>
+                        {{ $genre->ten_the_loai }}
 
-                <select name="status"
-                    class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3 outline-none focus:border-[#f5a623]">
-                    <option value="">Trạng thái</option>
-
-                    <option value="now_showing" {{ request('status') == 'now_showing' ? 'selected' : '' }}>
-                        Đang chiếu
                     </option>
+                @endforeach
+            </select>
 
-                    <option value="coming_soon" {{ request('status') == 'coming_soon' ? 'selected' : '' }}>
-                        Sắp chiếu
+            {{-- COUNTRY --}}
+            <select name="quoc_gia"
+                class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3">
+
+                <option value="">Quốc gia</option>
+
+                @foreach ($countries as $country)
+                    <option value="{{ $country->ten_quoc_gia }}"
+                        {{ request('quoc_gia') == $country->ten_quoc_gia ? 'selected' : '' }}>
+
+                        {{ $country->ten_quoc_gia }}
+
                     </option>
+                @endforeach
+            </select>
 
-                    <option value="coming_later" {{ request('status') == 'coming_later' ? 'selected' : '' }}>
-                        Sắp ra mắt
-                    </option>
-                </select>
+            {{-- STATUS --}}
+            <select name="status"
+                class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3">
 
-                <div class="flex gap-3">
-                    <button type="submit"
-                        class="flex-1 bg-[#f5a623] text-black font-extrabold rounded-xl hover:bg-[#ffc04d] transition">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                    </button>
+                <option value="">Trạng thái</option>
+                <option value="dang_chieu" {{ request('status') == 'dang_chieu' ? 'selected' : '' }}>Đang chiếu</option>
+                <option value="sap_chieu" {{ request('status') == 'sap_chieu' ? 'selected' : '' }}>Sắp chiếu</option>
+                <option value="sap_ra_mat" {{ request('status') == 'sap_ra_mat' ? 'selected' : '' }}>Sắp ra mắt</option>
 
-                    <a href="{{ route('user.phims.index') }}"
-                        class="w-[52px] flex items-center justify-center bg-white/10 text-white rounded-xl hover:bg-white/20 transition">
-                        <i class="fa-solid fa-rotate-left"></i>
-                    </a>
-                </div>
-            </form>
+            </select>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-                @forelse ($movies as $movie)
-                    @php
+            {{-- BUTTON --}}
+            <div class="flex gap-3">
+                <button class="flex-1 bg-[#f5a623] text-black font-bold rounded-xl">
+                    Tìm
+                </button>
 
-                        $badgeText = $movie->schedule_status;
-
-                        // SẮP RA MẮT
-                        if ($badgeText === 'Sắp ra mắt') {
-                            $badgeClass = 'bg-pink-600 text-white';
-
-                            $buttonText = 'Quan tâm';
-
-                            $buttonClass = 'border border-pink-500 text-pink-400 hover:bg-pink-500 hover:text-white';
-
-                            $buttonUrl = route('user.phims.show', $movie->slug);
-
-                            $buttonIcon = 'fa-regular fa-heart';
-                        }
-
-                        // SẮP CHIẾU
-                        elseif ($badgeText === 'Sắp chiếu') {
-                            $badgeClass = 'bg-blue-500 text-white';
-
-                            $buttonText = 'Đặt vé';
-
-                            $buttonClass = 'bg-[#f5a623] text-black hover:bg-[#ffc04d]';
-
-                            $buttonUrl = route('user.phims.bookings', $movie->slug) . '#showtimes';
-
-                            $buttonIcon = 'fa-solid fa-ticket';
-                        }
-
-                        // ĐANG CHIẾU
-                        else {
-                            $badgeClass = 'bg-[#f5a623] text-black';
-                        }
-
-                    @endphp
-
-                    <div
-                        class="bg-[#151515] border border-white/10 rounded-2xl overflow-hidden shadow-lg transition duration-300 hover:-translate-y-2 hover:shadow-2xl flex flex-col min-h-[430px]">
-                        <div class="relative">
-                            <a href="{{ route('user.phims.show', $movie->id) }}">
-                                <img src="{{ $movie->poster }}" alt="{{ $movie->title }}"
-                                    class="w-full h-[250px] object-cover shrink-0 hover:opacity-80 transition cursor-pointer">
-                            </a>
-
-                            <div
-                                class="absolute top-3 left-3 z-10 min-w-[95px] text-center text-xs font-extrabold px-3 py-2 rounded-full shadow-lg {{ $badgeClass }}">
-                                {{ $badgeText }}
-                            </div>
-
-                            <div
-                                class="absolute top-3 right-3 bg-black/70 text-white text-xs font-extrabold px-3 py-1 rounded-full">
-                                {{ $movie->age_rating }}
-                            </div>
-                        </div>
-
-                        <div class="p-4 flex flex-col flex-1">
-                            <h2 class="text-lg font-extrabold text-white mb-3 min-h-[48px]">
-                                {{ $movie->title }}
-                            </h2>
-
-                            <p class="text-gray-300 mb-1 text-sm">
-                                <i class="fa-solid fa-film text-[#f5a623] mr-1"></i>
-                                {{ $movie->genre }}
-                            </p>
-
-                            <p class="text-gray-400 mb-1 text-sm">
-                                <i class="fa-solid fa-location-dot text-[#f5a623] mr-1"></i>
-                                {{ $movie->country }}
-                            </p>
-
-                            <p class="text-gray-400 mb-1 text-sm">
-                                <i class="fa-solid fa-clock text-[#f5a623] mr-1"></i>
-                                {{ $movie->duration }} phút
-                            </p>
-
-                            <p class="text-gray-400 mb-4 text-sm">
-                                <i class="fa-solid fa-calendar-days text-[#f5a623] mr-1"></i>
-                                {{ $movie->release_date?->format('d/m/Y') }}
-                            </p>
-
-                            <div class="flex gap-3 mt-auto">
-
-                                {{-- SẮP CHIẾU --}}
-                                @if ($badgeText === 'Sắp chiếu')
-                                    <a href="{{ $buttonUrl }}"
-                                        class="flex-1 text-center font-extrabold py-2 rounded-xl transition text-sm {{ $buttonClass }}">
-
-                                        <i class="{{ $buttonIcon }} mr-1"></i>
-
-                                        {{ $buttonText }}
-
-                                    </a>
-
-                                    {{-- SẮP RA MẮT --}}
-                                @elseif ($badgeText === 'Sắp ra mắt')
-                                    <a href="{{ $buttonUrl }}"
-                                        class="flex-1 text-center font-extrabold py-2 rounded-xl transition text-sm {{ $buttonClass }}">
-
-                                        <i class="{{ $buttonIcon }} mr-1"></i>
-
-                                        {{ $buttonText }}
-
-                                    </a>
-                                @endif
-
-                                {{-- CHI TIẾT --}}
-                                <a href="{{ route('user.phims.show', $movie->slug) }}"
-                                    class="flex-1 text-center bg-white/10 text-white font-bold py-2 rounded-xl hover:bg-white/20 transition text-sm">
-
-                                    Chi tiết
-
-                                </a>
-
-                            </div>
-                        </div>
-                    </div>
-                @empty
-                    <div
-                        class="xl:col-span-5 text-center py-20 text-gray-400 bg-[#151515] rounded-2xl border border-white/10">
-                        Không tìm thấy phim.
-                    </div>
-                @endforelse
+                <a href="{{ route('user.phims.index') }}"
+                    class="w-[52px] flex items-center justify-center bg-white/10 rounded-xl">
+                    ⟳
+                </a>
             </div>
 
-            {{-- <div class="mt-8">
-                {{ $movies->links('pagination::bootstrap-5') }}
-            </div> --}}
+        </form>
+
+        {{-- MOVIES --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+            @forelse ($movies as $movie)
+
+                <div class="bg-[#151515] border border-white/10 rounded-2xl overflow-hidden">
+
+                    {{-- POSTER --}}
+                    <a href="{{ route('user.phims.show', $movie->slug) }}">
+                        <img src="{{ asset('storage/' . $movie->poster) }}"
+                            class="w-full h-[250px] object-cover">
+                    </a>
+
+                    <div class="p-4">
+
+                        {{-- TITLE --}}
+                        <h2 class="font-bold text-lg mb-2">
+                            {{ $movie->ten_phim }}
+                        </h2>
+
+                        {{-- GENRE NAME --}}
+                        <p class="text-sm text-gray-400">
+                            🎬
+                            {{ $movie->genres->pluck('ten_the_loai')->join(', ') }}
+                        </p>
+
+                        {{-- COUNTRY NAME --}}
+                        <p class="text-sm text-gray-400">
+                            🌍 {{ $movie->country->ten_quoc_gia}}
+                        </p>
+
+                        {{-- DURATION --}}
+                        <p class="text-sm text-gray-400">
+                            ⏱ {{ $movie->thoi_luong }} phút
+                        </p>
+
+                        {{-- BUTTON --}}
+                        <a href="{{ route('user.phims.show', $movie->slug) }}"
+                            class="block mt-3 text-center bg-[#f5a623] text-black font-bold py-2 rounded-xl">
+
+                            Chi tiết
+
+                        </a>
+
+                    </div>
+                </div>
+
+            @empty
+
+                <div class="col-span-full text-center text-gray-400 py-20">
+                    Không tìm thấy phim
+                </div>
+
+            @endforelse
 
         </div>
-    </section>
+
+    </div>
+</section>
 
 @endsection

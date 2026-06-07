@@ -216,15 +216,11 @@
                                 {{-- GENRE --}}
                                 <td class="px-5 py-5 text-gray-300">
 
-                                    @forelse ($movie->genres as $genre)
+                                    @foreach  ($movie->genres as $genre)
                                         <span class="inline-block rounded-full bg-white/10 px-3 py-1 text-xs mr-1 mb-1">
                                             {{ $genre->ten_the_loai }}
                                         </span>
-
-                                    @empty
-
-                                        Chưa cập nhật
-                                    @endforelse
+                                    @endforeach
 
                                 </td>
 
