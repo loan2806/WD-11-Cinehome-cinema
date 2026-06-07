@@ -9,7 +9,10 @@ use App\Http\Controllers\Admin\NotificationController as AdminNotificationContro
 use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\SystemSettingController;
-use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
+use App\Http\Controllers\Admin\PhongChieuController;
+use App\Http\Controllers\Admin\HangGheController;
+use App\Http\Controllers\Admin\LoaiGheController;
+use App\Http\Controllers\Admin\GheNgoiController;
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\ProfileController;
@@ -21,6 +24,7 @@ use App\Http\Controllers\User\PhimsController;
 use App\Http\Controllers\User\RapChieuPhimController;
 use App\Http\Controllers\User\SuatChieuController as UserSuatChieuController;
 use App\Http\Controllers\User\VeXemPhimController; // ĐÃ SỬA: Thay thế TicketController bằng VeXemPhimController
+use App\Http\Controllers\Admin\NhanVienController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,6 +38,26 @@ Route::get('/', [PhimsController::class, 'home'])
 
 /*
 |--------------------------------------------------------------------------
+| DASHBOARD - Chuyển hướng đến dashboard phù hợp
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/dashboard', function () {
+    $user = auth()->user();
+
+    if ($user->vai_tro === 'admin') {
+        return redirect()->route('admin.dashboard');
+    }
+
+    if ($user->vai_tro === 'nhan_vien') {
+        return redirect()->route('staff.dashboard');
+    }
+
+    return redirect()->route('home');
+})->name('dashboard');
+
+/*
+|--------------------------------------------------------------------------
 | phims
 |--------------------------------------------------------------------------
 */
@@ -43,6 +67,9 @@ Route::get('/phims', [PhimsController::class, 'index'])
 
 Route::get('/phims/{movie}', [PhimsController::class, 'show'])
     ->name('user.phims.show');
+
+Route::get('/movies/{movie}', [PhimsController::class, 'show'])
+    ->name('user.movies.show');
 
 Route::post('/phims/{movie}/reviews', [DanhGiaPhimController::class, 'store'])
     ->middleware('auth')
@@ -95,6 +122,10 @@ Route::middleware('auth')
     ->name('user.bookings.')
     ->group(function () {
 
+        Route::get('/', function () {
+            return redirect()->route('user.ve_xem_phim.index');
+        })->name('index');
+
         Route::get('{showtime}/select-seats', [BookingController::class, 'selectSeats'])
             ->name('selectSeats');
 
@@ -109,6 +140,7 @@ use App\Http\Controllers\DatVe\DatVeController;
 | TÍNH NĂNG ĐẶT VÉ (TIẾNG VIỆT)
 |--------------------------------------------------------------------------
 */
+
 Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
     Route::get('/chon-rap', [DatVeController::class, 'chonRap'])->name('chon_rap');
     Route::get('/chon-phim/{rap_id}', [DatVeController::class, 'chonPhim'])->name('chon_phim');
@@ -165,7 +197,7 @@ Route::middleware(['auth', 'role:nhan_vien'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:quan_tri_vien'])
+Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -177,8 +209,21 @@ Route::middleware(['auth', 'role:quan_tri_vien'])
 
         Route::resource('genres', TheloaisController::class);
 
-        Route::resource('suat-chieu', AdminSuatChieuController::class)
-            ->only(['index', 'create', 'store']);
+        Route::resource('suat-chieus', \App\Http\Controllers\Admin\SuatChieuController::class);
+
+        Route::resource('phong-chieus', PhongChieuController::class);
+        Route::post('phong-chieus/{phong_chieu}/generate-seats', [PhongChieuController::class, 'generateSeats'])
+            ->name('phong-chieus.generate-seats');
+
+        Route::resource('hang-ghes', HangGheController::class);
+        Route::post('hang-ghes/{hang_ghe}/update-row-type', [HangGheController::class, 'updateRowType'])
+            ->name('hang-ghes.update-row-type');
+
+        Route::resource('loai-ghes', LoaiGheController::class);
+
+        Route::resource('ghe-ngois', GheNgoiController::class);
+        Route::post('ghe-ngois/{ghe_ngoi}/toggle-maintenance', [GheNgoiController::class, 'toggleMaintenance'])
+            ->name('ghe-ngois.toggle-maintenance');
 
         Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])
             ->name('food-invoices.index');
@@ -192,7 +237,7 @@ Route::middleware(['auth', 'role:quan_tri_vien'])
         Route::resource('notifications', AdminNotificationController::class)
             ->only(['index', 'create', 'store', 'destroy']);
 
-            Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])
+        Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])
             ->name('movie-reviews.index');
 
         Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])
@@ -215,6 +260,16 @@ Route::middleware(['auth', 'role:quan_tri_vien'])
 
         Route::patch('/system-settings', [SystemSettingController::class, 'update'])
             ->name('system-settings.update');
+
+        Route::resource(
+            'nhanviens',
+            NhanVienController::class
+        );
+
+        Route::patch(
+            'nhanviens/{nhanvien}/toggle-status',
+            [NhanVienController::class, 'toggleStatus']
+        )->name('nhanviens.toggle-status');
     });
 
 /*
@@ -241,4 +296,4 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

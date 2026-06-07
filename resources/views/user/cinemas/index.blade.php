@@ -4,20 +4,20 @@
 
 @section('content')
 @php
-    $cinemaName = $rapChieuPhim->ten_rap ?? 'CineHome';
-    $cinemaAddress = $rapChieuPhim->dia_chi ?? '12 Nguyễn Văn Linh, Trung tâm thành phố';
-    $cinemaCity = $rapChieuPhim->thanh_pho ?? 'Hưng Yên';
-    $cinemaPhone = $rapChieuPhim->so_dien_thoai ?? '1900 6868';
-    $cinemaImage = $rapChieuPhim->hinh_anh ?? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1600';
-    $mapLat = $rapChieuPhim->vi_do ?? '20.852571';
-    $mapLng = $rapChieuPhim->kinh_do ?? '106.016998';
+    $cinemaName = 'CineHome Cinema';
+    $cinemaAddress = '123 Đường ABC, Phường XYZ, Thành phố Hưng Yên';
+    $cinemaCity = 'Hưng Yên';
+    $cinemaPhone = '1900 1234';
+    $cinemaImage = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1600';
+    $mapLat = '20.852571';
+    $mapLng = '106.016998';
     $mapDirectionUrl = "https://www.google.com/maps/dir/?api=1&destination={$mapLat},{$mapLng}";
     $mapEmbedUrl = "https://www.google.com/maps?q={$mapLat},{$mapLng}&z=15&output=embed";
 
     $stats = [
-        ['icon' => 'fa-solid fa-door-open', 'value' => '08+', 'label' => 'Phòng chiếu'],
-        ['icon' => 'fa-solid fa-couch', 'value' => '1200+', 'label' => 'Ghế ngồi'],
-        ['icon' => 'fa-solid fa-ticket', 'value' => $showtimeCount > 0 ? $showtimeCount . '+' : '35+', 'label' => 'Suất chiếu/ngày'],
+        ['icon' => 'fa-solid fa-door-open', 'value' => '5', 'label' => 'Phòng chiếu'],
+        ['icon' => 'fa-solid fa-couch', 'value' => '300+', 'label' => 'Ghế ngồi'],
+        ['icon' => 'fa-solid fa-ticket', 'value' => $showtimeCount > 0 ? $showtimeCount . '+' : '20+', 'label' => 'Suất chiếu/ngày'],
         ['icon' => 'fa-solid fa-award', 'value' => '2018', 'label' => 'Năm hoạt động'],
     ];
 

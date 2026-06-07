@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Nhật ký hệ thống')
+@section('page-title', 'Nhật ký hệ thống')
 @section('page-title', 'Nhật ký hoạt động hệ thống')
 @section('page-subtitle', 'Theo dõi thao tác người dùng và quản trị')
 

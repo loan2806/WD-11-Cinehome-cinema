@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Cấu hình hệ thống')
+@section('page-title', 'Cấu hình hệ thống')
 @section('page-title', 'Cấu hình hệ thống')
 @section('page-subtitle', 'Thiết lập thông tin chung, đặt vé và vận hành')
 
@@ -32,3 +32,4 @@
     <button class="btn-admin" type="submit">Lưu cấu hình</button>
 </form>
 @endsection
+
