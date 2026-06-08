@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StorePhongChieuRequest;
 use App\Http\Requests\Admin\UpdatePhongChieuRequest;
+use App\Models\LoaiGhe;
 use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Services\SeatGeneratorService;
@@ -192,5 +193,180 @@ class PhongChieuController extends Controller
                 ->route('admin.phong-chieus.show', $phongChieu)
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Toggle maintenance status for a single seat (AJAX).
+     */
+    public function toggleSeatMaintenance(Request $request, PhongChieu $phongChieu)
+    {
+        $request->validate([
+            'ghe_id' => 'required|exists:ghe_ngois,id',
+        ]);
+
+        $ghe = $phongChieu->gheNgois()->findOrFail($request->ghe_id);
+        $isMaintenance = $ghe->trang_thai !== 'bao_tri';
+
+        $ghe->update([
+            'trang_thai' => $isMaintenance ? 'bao_tri' : 'hoat_dong',
+        ]);
+
+        $ghe->load('loaiGhe');
+
+        return response()->json([
+            'success' => true,
+            'message' => $isMaintenance ? 'Ghế đã được đưa vào bảo trì.' : 'Ghế đã được kích hoạt trở lại.',
+            'trang_thai' => $ghe->fresh()->trang_thai,
+        ]);
+    }
+
+    /**
+     * Update seat type for a single seat (AJAX).
+     */
+    public function updateSeatType(Request $request, PhongChieu $phongChieu)
+    {
+        $request->validate([
+            'ghe_id' => 'required|exists:ghe_ngois,id',
+            'loai_ghe_id' => 'required|exists:loai_ghes,id',
+        ]);
+
+        $ghe = $phongChieu->gheNgois()->findOrFail($request->ghe_id);
+        $loaiGhe = LoaiGhe::findOrFail($request->loai_ghe_id);
+
+        $ghe->update([
+            'loai_ghe_id' => $loaiGhe->id,
+        ]);
+        $ghe->load('loaiGhe');
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã đổi ghế sang loại {$loaiGhe->ten_loai}.",
+            'loai_ghe' => $loaiGhe->ten_loai,
+            'loai_ghe_id' => $loaiGhe->id,
+            'mau_sac' => $loaiGhe->mau_sac ?? '#666666',
+            'phu_thu' => $loaiGhe->phu_thu,
+            'trang_thai' => $ghe->fresh()->trang_thai,
+        ]);
+    }
+
+    /**
+     * Update all seats in a row (AJAX).
+     */
+    public function updateRowSeats(Request $request, PhongChieu $phongChieu)
+    {
+        $request->validate([
+            'hang_ghe_id' => 'required|exists:hang_ghes,id',
+            'loai_ghe_id' => 'required|exists:loai_ghes,id',
+        ]);
+
+        $hangGhe = $phongChieu->hangGhes()->findOrFail($request->hang_ghe_id);
+        $loaiGhe = LoaiGhe::findOrFail($request->loai_ghe_id);
+
+        $ghes = $hangGhe->gheNgois()->with('loaiGhe')->get();
+
+        $hangGhe->gheNgois()->update([
+            'loai_ghe_id' => $loaiGhe->id,
+        ]);
+
+        $updatedSeats = $ghes->map(function ($g) use ($loaiGhe) {
+            return [
+                'id' => $g->id,
+                'loai_ghe' => $loaiGhe->ten_loai,
+                'loai_ghe_id' => $loaiGhe->id,
+                'mau_sac' => $loaiGhe->mau_sac ?? '#666666',
+                'phu_thu' => $loaiGhe->phu_thu,
+                'trang_thai' => $g->trang_thai,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã cập nhật {$ghes->count()} ghế trong hàng {$hangGhe->ten_hang} thành loại {$loaiGhe->ten_loai}.",
+            'updated_seats' => $updatedSeats->toArray(),
+        ]);
+    }
+
+    /**
+     * Bulk update seats (AJAX).
+     */
+    public function bulkUpdateSeats(Request $request, PhongChieu $phongChieu)
+    {
+        $request->validate([
+            'ghe_ids' => 'required|array',
+            'ghe_ids.*' => 'exists:ghe_ngois,id',
+            'action' => 'required|in:update_type,toggle_maintenance,delete',
+            'loai_ghe_id' => 'nullable|exists:loai_ghes,id',
+        ]);
+
+        $gheIds = $request->ghe_ids;
+        $action = $request->action;
+        $updatedSeats = [];
+
+        if ($action === 'update_type') {
+            $loaiGhe = LoaiGhe::findOrFail($request->loai_ghe_id);
+            $ghes = $phongChieu->gheNgois()->whereIn('id', $gheIds)->with('loaiGhe')->get();
+            $phongChieu->gheNgois()
+                ->whereIn('id', $gheIds)
+                ->update(['loai_ghe_id' => $loaiGhe->id]);
+
+            foreach ($ghes as $g) {
+                $updatedSeats[] = [
+                    'id' => $g->id,
+                    'loai_ghe' => $loaiGhe->ten_loai,
+                    'loai_ghe_id' => $loaiGhe->id,
+                    'mau_sac' => $loaiGhe->mau_sac ?? '#666666',
+                    'phu_thu' => $loaiGhe->phu_thu,
+                    'trang_thai' => $g->trang_thai,
+                ];
+            }
+        } elseif ($action === 'toggle_maintenance') {
+            $firstGhe = $phongChieu->gheNgois()->whereIn('id', $gheIds)->first();
+            $currentStatus = $firstGhe->trang_thai ?? 'hoat_dong';
+            $newStatus = $currentStatus === 'bao_tri' ? 'hoat_dong' : 'bao_tri';
+            $ghes = $phongChieu->gheNgois()->whereIn('id', $gheIds)->with('loaiGhe')->get();
+            $phongChieu->gheNgois()
+                ->whereIn('id', $gheIds)
+                ->update(['trang_thai' => $newStatus]);
+
+            foreach ($ghes as $g) {
+                $updatedSeats[] = [
+                    'id' => $g->id,
+                    'loai_ghe' => $g->loaiGhe->ten_loai ?? 'Thường',
+                    'loai_ghe_id' => $g->loai_ghe_id,
+                    'mau_sac' => $g->loaiGhe->mau_sac ?? '#666666',
+                    'phu_thu' => $g->loaiGhe->phu_thu ?? 0,
+                    'trang_thai' => $newStatus,
+                ];
+            }
+        } elseif ($action === 'delete') {
+            $phongChieu->gheNgois()
+                ->whereIn('id', $gheIds)
+                ->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã cập nhật " . count($updatedSeats) . " ghế.",
+            'updated_seats' => $updatedSeats,
+        ]);
+    }
+
+    /**
+     * Delete all seats in a row (AJAX).
+     */
+    public function deleteRowSeats(Request $request, PhongChieu $phongChieu)
+    {
+        $request->validate([
+            'hang_ghe_id' => 'required|exists:hang_ghes,id',
+        ]);
+
+        $hangGhe = $phongChieu->hangGhes()->findOrFail($request->hang_ghe_id);
+        $deleted = $hangGhe->gheNgois()->delete();
+        $hangGhe->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã xóa hàng {$hangGhe->ten_hang} và {$deleted} ghế.",
+        ]);
     }
 }

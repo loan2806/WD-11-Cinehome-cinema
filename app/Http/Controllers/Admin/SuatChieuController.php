@@ -50,9 +50,8 @@ class SuatChieuController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $phims = Phims::whereDate('ngay_khoi_chieu', '<=', now())
-            ->orderBy('ten_phim')
-            ->get();
+        // Lấy tất cả phim để filter (kể cả phim chưa có suất chiếu)
+        $phims = Phims::orderBy('ten_phim')->get();
 
         $phongChieus = PhongChieu::with('rapChieuPhim')
             ->orderBy('ten_phong')
@@ -70,9 +69,8 @@ class SuatChieuController extends Controller
      */
     public function create(Request $request): View
     {
-        $phims = Phims::whereDate('ngay_khoi_chieu', '<=', now())
-            ->orderBy('ten_phim')
-            ->get();
+        // Lấy tất cả phim để tạo suất chiếu (kể cả phim chưa có suất chiếu)
+        $phims = Phims::orderBy('ten_phim')->get();
 
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
 

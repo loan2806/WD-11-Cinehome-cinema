@@ -86,22 +86,34 @@ class Phims extends Model
     public function getScheduleStatusAttribute(): string
     {
         $now = now(config('app.timezone'));
-        $showtimes = $this->showtimes;
 
-        if ($showtimes->isEmpty()) {
+        if ($this->showtimes->isEmpty()) {
             return 'Sắp ra mắt';
         }
 
+        $minThoiGianChieu = $this->showtimes->min('thoi_gian_chieu');
+
+        if (!$minThoiGianChieu) {
+            return 'Sắp ra mắt';
+        }
+
+        $releaseDate = Carbon::parse($minThoiGianChieu)->startOfDay();
+        $nowDate = $now->copy()->startOfDay();
+        $daysUntilRelease = $nowDate->diffInDays($releaseDate, false);
+
+        if ($daysUntilRelease > 10) {
+            return 'Sắp ra mắt';
+        }
+
+        if ($daysUntilRelease > 0) {
+            return 'Sắp chiếu';
+        }
+
         $hasNowShowing = false;
-        $hasFutureWithin10 = false;
-        $hasFutureBeyond10 = false;
+        $hasFuture = false;
 
-        foreach ($showtimes as $showtime) {
-
-            $startTime = Carbon::parse(
-                $showtime->ngay_chieu . ' ' . $showtime->gio_chieu
-            );
-
+        foreach ($this->showtimes as $showtime) {
+            $startTime = Carbon::parse($showtime->thoi_gian_chieu);
             $endTime = $startTime->copy()->addMinutes($this->thoi_luong ?? 90);
 
             if ($now->between($startTime, $endTime)) {
@@ -109,13 +121,7 @@ class Phims extends Model
             }
 
             if ($startTime->gt($now)) {
-                $days = $now->diffInDays($startTime);
-
-                if ($days > 10) {
-                    $hasFutureBeyond10 = true;
-                } else {
-                    $hasFutureWithin10 = true;
-                }
+                $hasFuture = true;
             }
         }
 
@@ -123,11 +129,7 @@ class Phims extends Model
             return 'Đang chiếu';
         }
 
-        if ($hasFutureBeyond10) {
-            return 'Sắp ra mắt';
-        }
-
-        if ($hasFutureWithin10) {
+        if ($hasFuture) {
             return 'Sắp chiếu';
         }
 
@@ -136,5 +138,11 @@ class Phims extends Model
     public function getRouteKeyName()
     {
         return 'slug';
+    }
+
+    public function getNgayKhoiChieuAttribute()
+    {
+        $firstShowtime = $this->showtimes()->min('thoi_gian_chieu');
+        return $firstShowtime ? Carbon::parse($firstShowtime)->toDateString() : null;
     }
 }

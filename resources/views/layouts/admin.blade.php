@@ -87,20 +87,26 @@
                         <span>Phòng chiếu</span>
                     </a>
 
+                    {{-- Ẩn menu Hàng ghế - đã gộp vào Phòng chiếu --}}
+                    {{--
                     <a href="{{ route('admin.hang-ghes.index') }}" class="{{ request()->routeIs('admin.hang-ghes.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-bars w-5"></i>
                         <span>Hàng ghế</span>
                     </a>
+                    --}}
 
                     <a href="{{ route('admin.loai-ghes.index') }}" class="{{ request()->routeIs('admin.loai-ghes.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-chair w-5"></i>
                         <span>Loại ghế</span>
                     </a>
 
+                    {{-- Ẩn menu Ghế ngồi - đã gộp vào Phòng chiếu --}}
+                    {{--
                     <a href="{{ route('admin.ghe-ngois.index') }}" class="{{ request()->routeIs('admin.ghe-ngois.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-couch w-5"></i>
                         <span>Ghế ngồi</span>
                     </a>
+                    --}}
 
                     <a href="{{ route('admin.suat-chieus.index') }}" class="{{ request()->routeIs('admin.suat-chieus.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-calendar-days w-5"></i>

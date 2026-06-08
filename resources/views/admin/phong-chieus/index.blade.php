@@ -201,15 +201,17 @@
                                 <td class="px-5 py-5 align-middle">
                                     <div class="flex items-center justify-center gap-3 whitespace-nowrap">
 
+                                        {{-- Nút Quản lý ghế --}}
                                         <a href="{{ route('admin.phong-chieus.show', $phongChieu) }}"
-                                            class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 transition hover:bg-blue-500/25">
-
-                                            <i class="fa-solid fa-eye text-base leading-none"></i>
-
+                                            class="flex items-center gap-1.5 rounded-xl bg-[#d99a32]/15 px-3 py-2 text-sm text-[#d99a32] transition hover:bg-[#d99a32]/25"
+                                            title="Quản lý ghế">
+                                            <i class="fa-solid fa-couch"></i>
+                                            <span class="hidden sm:inline">Ghế</span>
                                         </a>
 
                                         <a href="{{ route('admin.phong-chieus.edit', $phongChieu) }}"
-                                            class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300 transition hover:bg-yellow-500/25">
+                                            class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300 transition hover:bg-yellow-500/25"
+                                            title="Sửa phòng chiếu">
 
                                             <i class="fa-solid fa-pen text-base leading-none"></i>
 
@@ -223,7 +225,8 @@
 
                                             <button type="submit"
                                                 onclick="return confirm('Bạn có chắc muốn xóa phòng chiếu này?')"
-                                                class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25">
+                                                class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25"
+                                                title="Xóa phòng chiếu">
 
                                                 <i class="fa-solid fa-trash text-base leading-none"></i>
 

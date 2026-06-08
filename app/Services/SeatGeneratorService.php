@@ -272,20 +272,28 @@ class SeatGeneratorService
                     $maGhe = $rowLabel . $start . '-' . $rowLabel . $end;
 
                     if ($ghe) {
-                        $loai = $ghe->loaiGhe->ten_loai;
-                        $phuThu = $ghe->loaiGhe->phu_thu;
+                        $loai = $ghe->loaiGhe->ten_loai ?? 'Thường';
+                        $phuThu = $ghe->loaiGhe->phu_thu ?? 0;
+                        $loaiGheId = $ghe->loai_ghe_id;
+                        $mauSac = $ghe->loaiGhe->mau_sac ?? '#666666';
                         $trangThai = $ghe->trang_thai;
                         $maGhe = $ghe->ma_ghe ?: $maGhe;
+                    } else {
+                        $loaiGheId = null;
+                        $mauSac = '#666666';
                     }
 
                     $cols[$start] = [
                         'id' => $ghe->id ?? null,
                         'ma_ghe' => $maGhe,
                         'loai_ghe' => $loai,
+                        'loai_ghe_id' => $loaiGheId,
+                        'mau_sac' => $mauSac,
                         'phu_thu' => $phuThu,
                         'trang_thai' => $trangThai,
                         'is_couple' => true,
                         'cot_end' => $end,
+                        'display_number' => $end,
                     ];
                 }
             } elseif ($isRegular) {
@@ -293,11 +301,14 @@ class SeatGeneratorService
                     $cols[$cot] = [
                         'id' => $ghe->id,
                         'ma_ghe' => $ghe->ma_ghe,
-                        'loai_ghe' => $ghe->loaiGhe->ten_loai,
-                        'phu_thu' => $ghe->loaiGhe->phu_thu,
+                        'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
+                        'loai_ghe_id' => $ghe->loai_ghe_id,
+                        'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#666666',
+                        'phu_thu' => $ghe->loaiGhe->phu_thu ?? 0,
                         'trang_thai' => $ghe->trang_thai,
                         'is_couple' => false,
                         'cot_end' => null,
+                        'display_number' => $cot,
                     ];
                 }
             } else {
@@ -308,8 +319,10 @@ class SeatGeneratorService
                         $cols[$j] = [
                             'id' => $ghe->id,
                             'ma_ghe' => $ghe->ma_ghe,
-                            'loai_ghe' => $ghe->loaiGhe->ten_loai,
-                            'phu_thu' => $ghe->loaiGhe->phu_thu,
+                            'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
+                            'loai_ghe_id' => $ghe->loai_ghe_id,
+                            'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#666666',
+                            'phu_thu' => $ghe->loaiGhe->phu_thu ?? 0,
                             'trang_thai' => $ghe->trang_thai,
                             'is_couple' => false,
                             'cot_end' => null,

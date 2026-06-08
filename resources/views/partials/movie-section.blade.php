@@ -171,9 +171,7 @@
 
                         {{
                             $movie->ngay_khoi_chieu
-                            ? \Carbon\Carbon::parse(
-                                $movie->ngay_khoi_chieu
-                              )->format('d/m/Y')
+                            ? \Carbon\Carbon::parse($movie->ngay_khoi_chieu)->format('d/m/Y')
                             : '—'
                         }}
 
