@@ -113,7 +113,7 @@
                         <span>Suất chiếu</span>
                     </a>
 
-                    <a href="{{ route('admin.genres.index') }}" class="{{ request()->routeIs('admin.genres.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.the-loais.index') }}" class="{{ request()->routeIs('admin.the-loais.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-tags w-5"></i>
                         <span>Thể loại phim</span>
                     </a>

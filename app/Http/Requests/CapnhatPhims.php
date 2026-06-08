@@ -17,8 +17,8 @@ class CapnhatPhims extends FormRequest
 
             'ten_phim' => 'required|string|max:255',
 
-            'genre_ids' => 'required|array|min:1',
-            'genre_ids.*' => 'required|integer|exists:the_loais,id',
+            'the_loai_id' => 'required|array|min:1',
+            'the_loai_id.*' => 'required|integer|exists:the_loais,id',
 
             'quoc_gia_id' => 'required|integer|exists:quoc_gias,id',
 
@@ -49,9 +49,9 @@ class CapnhatPhims extends FormRequest
 
             'ten_phim.required' => 'Vui lòng nhập tên phim',
 
-            'genre_ids.required' => 'Vui lòng chọn ít nhất một thể loại',
-            'genre_ids.array' => 'Dữ liệu thể loại không hợp lệ',
-            'genre_ids.min' => 'Vui lòng chọn ít nhất một thể loại',
+            'the_loai_id.required' => 'Vui lòng chọn ít nhất một thể loại',
+            'the_loai_id.array' => 'Dữ liệu thể loại không hợp lệ',
+            'the_loai_id.min' => 'Vui lòng chọn ít nhất một thể loại',
 
             'quoc_gia_id.required' => 'Vui lòng chọn quốc gia',
 

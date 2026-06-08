@@ -18,6 +18,7 @@ class SuatChieuController extends Controller
 {
     private const THOI_GIAN_DON_PHONG = 15;
 
+    private const TRANG_THAI_SAP_RA_MAT = 'sap_ra_mat';
     private const TRANG_THAI_SAP_CHIEU = 'sap_chieu';
     private const TRANG_THAI_DANG_CHIEU = 'dang_chieu';
     private const TRANG_THAI_DA_CHIEU = 'da_chieu';
@@ -246,11 +247,17 @@ class SuatChieuController extends Controller
     {
         $now = Carbon::now();
 
-        if ($now < $thoiGianChieu) {
+        if ($now->lt($thoiGianChieu)) {
+            $daysUntilShow = $now->diffInDays($thoiGianChieu, false);
+
+            if ($daysUntilShow > 10) {
+                return self::TRANG_THAI_SAP_RA_MAT;
+            }
+
             return self::TRANG_THAI_SAP_CHIEU;
         }
 
-        if ($now >= $thoiGianChieu && $now < $thoiGianKetThuc) {
+        if ($now->gte($thoiGianChieu) && $now->lt($thoiGianKetThuc)) {
             return self::TRANG_THAI_DANG_CHIEU;
         }
 

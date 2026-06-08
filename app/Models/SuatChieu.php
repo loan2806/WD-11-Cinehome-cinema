@@ -31,12 +31,14 @@ class SuatChieu extends Model
         'trang_thai' => 'string',
     ];
 
+    public const TRANG_THAI_SAP_RA_MAT = 'sap_ra_mat';
     public const TRANG_THAI_SAP_CHIEU = 'sap_chieu';
     public const TRANG_THAI_DANG_CHIEU = 'dang_chieu';
     public const TRANG_THAI_DA_CHIEU = 'da_chieu';
     public const TRANG_THAI_HUY = 'huy';
 
     public const TRANG_THAI_LIST = [
+        self::TRANG_THAI_SAP_RA_MAT => 'Sắp ra mắt',
         self::TRANG_THAI_SAP_CHIEU => 'Sắp chiếu',
         self::TRANG_THAI_DANG_CHIEU => 'Đang chiếu',
         self::TRANG_THAI_DA_CHIEU => 'Đã chiếu',

@@ -8,9 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('phims', function (Blueprint $table) {
-            $table->dropColumn('ngay_khoi_chieu');
-        });
     }
 
     public function down(): void
