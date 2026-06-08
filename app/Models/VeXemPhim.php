@@ -14,6 +14,8 @@ class VeXemPhim extends Model
 
     protected $fillable = [
         'nguoi_dung_id',
+        'nhan_vien_id',
+        'suat_chieu_id',
         'ma_ve',
         'ten_phim',
         'ten_rap',
@@ -43,5 +45,15 @@ class VeXemPhim extends Model
     public function nguoiDung(): BelongsTo
     {
         return $this->belongsTo(NguoiDung::class, 'nguoi_dung_id');
+    }
+
+    public function nhanVien(): BelongsTo
+    {
+        return $this->belongsTo(NguoiDung::class, 'nhan_vien_id');
+    }
+
+    public function suatChieu(): BelongsTo
+    {
+        return $this->belongsTo(SuatChieu::class, 'suat_chieu_id');
     }
 }
