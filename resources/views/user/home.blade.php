@@ -37,7 +37,7 @@
 
                         <div class="hero-buttons">
                             @if ($status === 'Sắp chiếu')
-                                <a href="{{ route('user.bookings.index', $movie) }}" class="btn-book">
+                                <a href="{{ route('booking', $movie) }}" class="btn-book">
                                     <i class="fa-solid fa-ticket"></i> Đặt vé ngay
                                 </a>
                             @else

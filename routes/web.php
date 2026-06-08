@@ -207,7 +207,7 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::resource('phims', AdminMovieController::class);
 
-        Route::resource('genres', TheloaisController::class);
+        Route::resource('the-loais', TheloaisController::class);
 
         Route::resource('suat-chieus', \App\Http\Controllers\Admin\SuatChieuController::class);
 

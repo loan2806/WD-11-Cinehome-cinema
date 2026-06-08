@@ -2,8 +2,7 @@
 
 @forelse ($movies as $movie)
 
-    {{-- BỎ PHIM ĐÃ KẾT THÚC --}}
-    @if ($movie->schedule_status === 'Đã kết thúc')
+    @if ($movie->schedule_status === 'Đã chiếu')
         @continue
     @endif
 
@@ -17,6 +16,7 @@
         $buttonClass = '';
         $buttonUrl = '';
         $buttonIcon = '';
+        $buttonStyle = '';
 
         /*
         |--------------------------------------------------------------------------
@@ -56,7 +56,7 @@
                 'bg-[#f5a623] text-black hover:bg-[#ffc04d]';
 
             $buttonUrl =
-                route('user.bookings.index', $movie);
+                route('booking', $movie);
 
             $buttonIcon =
                 'fa-solid fa-ticket';
@@ -83,6 +83,9 @@
 
             $buttonIcon =
                 'fa-solid fa-circle-info';
+
+            $buttonStyle =
+                'background: #ffffff; color: #000000; border: 1px solid rgba(255,255,255,0.14);';
         }
 
     @endphp
@@ -171,7 +174,8 @@
 
                     {{-- MAIN BUTTON --}}
                     <a href="{{ $buttonUrl }}"
-                       class="btn-small-book {{ $buttonClass }}">
+                       class="btn-small-book {{ $buttonClass }}"
+                       style="{{ $buttonStyle }}">
 
                         <i class="{{ $buttonIcon }} mr-1"></i>
 
@@ -180,15 +184,13 @@
                     </a>
 
                     {{-- DETAIL --}}
-                    @if ($status !== 'Đang chiếu')
-
+                    @if ($buttonText !== 'Chi tiết')
                         <a href="{{ route('user.movies.show', $movie->slug) }}"
                            class="btn-small-detail">
 
                             Chi tiết
 
                         </a>
-
                     @endif
 
                 </div>

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Models\SuatChieu;
 use Carbon\Carbon;
 
 class Phims extends Model
@@ -50,6 +51,11 @@ class Phims extends Model
         return $this->hasMany(SuatChieu::class, 'phim_id');
     }
 
+    public function hasShowtimeStatus(string $status): bool
+    {
+        return $this->showtimes->contains('trang_thai', $status);
+    }
+
     public function country()
     {
         return $this->belongsTo(QuocGia::class, 'quoc_gia_id');
@@ -85,55 +91,29 @@ class Phims extends Model
 
     public function getScheduleStatusAttribute(): string
     {
-        $now = now(config('app.timezone'));
-
         if ($this->showtimes->isEmpty()) {
-            return 'Sắp ra mắt';
+            return 'Chưa có suất chiếu';
         }
 
-        $minThoiGianChieu = $this->showtimes->min('thoi_gian_chieu');
+        $showtimeStatuses = $this->showtimes->pluck('trang_thai')->unique();
 
-        if (!$minThoiGianChieu) {
-            return 'Sắp ra mắt';
-        }
-
-        $releaseDate = Carbon::parse($minThoiGianChieu)->startOfDay();
-        $nowDate = $now->copy()->startOfDay();
-        $daysUntilRelease = $nowDate->diffInDays($releaseDate, false);
-
-        if ($daysUntilRelease > 10) {
-            return 'Sắp ra mắt';
-        }
-
-        if ($daysUntilRelease > 0) {
-            return 'Sắp chiếu';
-        }
-
-        $hasNowShowing = false;
-        $hasFuture = false;
-
-        foreach ($this->showtimes as $showtime) {
-            $startTime = Carbon::parse($showtime->thoi_gian_chieu);
-            $endTime = $startTime->copy()->addMinutes($this->thoi_luong ?? 90);
-
-            if ($now->between($startTime, $endTime)) {
-                $hasNowShowing = true;
-            }
-
-            if ($startTime->gt($now)) {
-                $hasFuture = true;
-            }
-        }
-
-        if ($hasNowShowing) {
+        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_DANG_CHIEU)) {
             return 'Đang chiếu';
         }
 
-        if ($hasFuture) {
+        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_SAP_CHIEU)) {
             return 'Sắp chiếu';
         }
 
-        return 'Đã kết thúc';
+        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_SAP_RA_MAT)) {
+            return 'Sắp ra mắt';
+        }
+
+        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_DA_CHIEU)) {
+            return 'Đã chiếu';
+        }
+
+        return 'Không xác định';
     }
     public function getRouteKeyName()
     {

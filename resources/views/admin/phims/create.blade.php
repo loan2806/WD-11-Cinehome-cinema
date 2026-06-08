@@ -81,7 +81,7 @@
                                     <p class="text-zinc-500 text-sm text-center py-6">
                                         Chưa có thể loại nào.
 
-                                        <a href="{{ route('admin.genres.create') }}" class="text-amber-500 hover:underline">
+                                        <a href="{{ route('admin.the-loais.create') }}" class="text-amber-500 hover:underline">
 
                                             Tạo ngay
 

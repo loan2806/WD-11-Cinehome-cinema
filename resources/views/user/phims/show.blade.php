@@ -101,12 +101,12 @@
 
                         <div class="bg-white/10 rounded-2xl p-4">
                             <p class="text-gray-400 text-sm mb-1">Thể loại</p>
-                            <p class="font-bold">{{ $movie->ten_the_loai }}</p>
+                            <p class="font-bold">{{ $movie->genres->pluck('ten_the_loai')->join(', ') }}</p>
                         </div>
 
                         <div class="bg-white/10 rounded-2xl p-4">
                             <p class="text-gray-400 text-sm mb-1">Quốc gia</p>
-                            <p class="font-bold">{{ $movie->ten_quoc_gia }}</p>
+                            <p class="font-bold">{{ $movie->country?->ten_quoc_gia }}</p>
                         </div>
 
                         <div class="bg-white/10 rounded-2xl p-4">
@@ -132,6 +132,9 @@
 
                         <div class="bg-white/10 rounded-2xl p-4 md:col-span-2">
                             <p class="text-gray-400 text-sm mb-1">Ngày khởi chiếu</p>
+                            <p class="font-bold">
+                                {{ $movie->ngay_khoi_chieu ? \Carbon\Carbon::parse($movie->ngay_khoi_chieu)->format('d/m/Y') : 'Chưa có' }}
+                            </p>
                         </div>
 
                     </div>
@@ -139,6 +142,24 @@
                 </div>
             </div>
 
+        </div>
+    </section>
+
+    <section class="bg-[#0b0705] text-white py-20">
+        <div class="container-fluid px-8">
+            <div class="section-title-wrap mb-8">
+                <h2 class="section-title">
+                    Phim <span>liên quan</span>
+                </h2>
+            </div>
+
+            @if(isset($relatedMovies) && $relatedMovies->isNotEmpty())
+                @include('partials.movie-section', ['movies' => $relatedMovies])
+            @else
+                <div class="text-center text-gray-400 py-14">
+                    Không tìm thấy phim liên quan.
+                </div>
+            @endif
         </div>
     </section>
 
