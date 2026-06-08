@@ -19,6 +19,6 @@ class FoodInvoiceItem extends Model
 
     public function invoice()
     {
-        return $this->belongsTo(FoodInvoice::class, 'food_invoice_id');
+        return $this->belongsTo(FoodInvoiceItem::class, 'food_invoice_id');
     }
 }

@@ -29,5 +29,10 @@ class Cinema extends Model
             'longitude' => 'float',
         ];
     }
+
+    public function showtimes()
+    {
+        return $this->hasMany(Showtime::class);
+    }
     
 }

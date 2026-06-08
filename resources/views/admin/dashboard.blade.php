@@ -96,20 +96,20 @@
                                 <td>
                                     <div class="table-movie">
 
-                                        <img src="{{ $movie->poster }}" alt="{{ $movie->title }}">
+                                        <img src="{{ $movie->poster }}" alt="{{ $movie->ten_phim }}">
 
                                         <div>
-                                            <strong>{{ $movie->title }}</strong>
+                                            <strong>{{ $movie->ten_phim }}</strong>
                                             <small>{{ $movie->genre }}</small>
                                         </div>
 
                                     </div>
                                 </td>
 
-                                <td>{{ $movie->duration }} phút</td>
+                                <td>{{ $movie->thoi_luong }} phút</td>
 
                                 <td>
-                                    @if ($movie->release_date > now())
+                                    @if ($movie->ngay_khoi_chieu > now())
                                         <span class="status-badge status-coming">
                                             Sắp chiếu
                                         </span>
@@ -174,20 +174,19 @@
 
                                 <td>
                                     <strong>
-                                        {{ $schedule->movie->title }}
+                                        {{ $schedule->phim->ten_phim }}
                                     </strong>
 
                                     <br>
 
                                     <small class="text-muted">
-                                        {{ $schedule->cinema->name }}
-                                        - {{ $schedule->room_name }}
+                                        {{ $schedule->ten_phong ?? 'Phòng chiếu' }}
                                     </small>
                                 </td>
 
                                 <td>
                                     <span class="status-badge status-coming">
-                                        {{ $schedule->show_time }}
+                                        {{ $schedule->thoi_gian_chieu->format('H:i') }}
                                     </span>
                                 </td>
 

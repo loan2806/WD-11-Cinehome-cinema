@@ -16,40 +16,33 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
-        return view('auth.login');
+        // Gọi đúng file dang_nhap.blade.php tiếng Việt của bạn
+        return view('auth.dang_nhap');
     }
 
     /**
      * Handle an incoming authentication request.
      */
     public function store(LoginRequest $request): RedirectResponse
-{
-    $request->authenticate();
+    {
+        $request->authenticate();
 
-    $request->session()->regenerate();
+        $request->session()->regenerate();
 
-    $user = auth()->user();
+        $user = Auth::user();
 
-    if (!$user->is_active) {
-        auth()->logout();
+        // GIẢI PHÁP ĐA NĂNG: Kiểm tra song song cả 'admin' và 'quan_tri_vien' để không bao giờ bị lệch dữ liệu nhóm
+        if ($user->vai_tro === 'admin' || $user->vai_tro === 'quan_tri_vien') {
+            return redirect()->route('admin.dashboard');
+        }
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // Kiểm tra song song cả 'nhan_vien' và 'staff' cho phân hệ nhân viên
+        if ($user->vai_tro === 'nhan_vien' || $user->vai_tro === 'staff') {
+            return redirect()->route('staff.dashboard');
+        }
 
-        return redirect()->route('login')
-            ->with('error', 'Tài khoản của bạn đã bị khóa.');
+        return redirect()->intended(route('home'));
     }
-
-    if ($user->role === 'admin') {
-        return redirect()->route('admin.dashboard');
-    }
-
-    if ($user->role === 'staff') {
-        return redirect()->route('staff.dashboard');
-    }
-
-    return redirect()->route('home');
-}
 
     /**
      * Destroy an authenticated session.

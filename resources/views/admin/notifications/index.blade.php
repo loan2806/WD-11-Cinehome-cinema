@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Thong bao')
+@section('page-title', 'Thong bao')
 @section('page-title', 'Thong bao')
 @section('page-subtitle', 'Tao va quan ly thong bao gui den nguoi dung')
 
@@ -45,3 +45,4 @@
     <div class="mt-4">{{ $notifications->links() }}</div>
 </div>
 @endsection
+

@@ -13,18 +13,21 @@ class TheLoai extends Model
 
     protected $fillable = [
         'ten_the_loai',
-        'slug',
+        'slug', // ĐÃ BỔ SUNG: Cho phép điền dữ liệu slug từ tầng seeder/factory
         'mo_ta',
         'trang_thai',
     ];
 
-    public function movies()
+    /**
+     * Mối quan hệ nhiều-nhiều với bảng Phims
+     */
+    public function phims()
     {
         return $this->belongsToMany(
             Phims::class,
-            'movie_genre',
-            'genre_id',
-            'movie_id'
+            'phim_the_loai',
+            'ma_the_loai',
+            'ma_phim'
         );
     }
 }

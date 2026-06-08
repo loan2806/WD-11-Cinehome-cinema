@@ -4,197 +4,81 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SuatChieu extends Model
 {
     use HasFactory;
 
+    protected $table = 'suat_chieus';
+
     protected $fillable = [
-        'movie_id',
-        'cinema_id',
-        'room_name',
-        'show_date',
-        'show_time',
-        'price',
-        'slug',
+        'phim_id',
+        'rap_chieu_phim_id',
+        'phong_chieu_id',
+        'thoi_gian_chieu',
+        'thoi_luong',
+        'thoi_gian_ket_thuc',
+        'gia_ve',
+        'trang_thai',
     ];
 
     protected $casts = [
-        'show_date' => 'date',
+        'thoi_gian_chieu' => 'datetime',
+        'thoi_gian_ket_thuc' => 'datetime',
+        'thoi_luong' => 'integer',
+        'gia_ve' => 'decimal:2',
+        'trang_thai' => 'string',
     ];
 
-    /*
-    |--------------------------------------------------------------------------
-    | AUTO SLUG
-    |--------------------------------------------------------------------------
-    */
-    protected static function booted(): void
+    public const TRANG_THAI_SAP_CHIEU = 'sap_chieu';
+    public const TRANG_THAI_DANG_CHIEU = 'dang_chieu';
+    public const TRANG_THAI_DA_CHIEU = 'da_chieu';
+    public const TRANG_THAI_HUY = 'huy';
+
+    public const TRANG_THAI_LIST = [
+        self::TRANG_THAI_SAP_CHIEU => 'Sắp chiếu',
+        self::TRANG_THAI_DANG_CHIEU => 'Đang chiếu',
+        self::TRANG_THAI_DA_CHIEU => 'Đã chiếu',
+        self::TRANG_THAI_HUY => 'Hủy',
+    ];
+
+    public function phim(): BelongsTo
     {
-        static::creating(function ($showtime) {
-
-            if (empty($showtime->slug)) {
-
-                $showtime->slug =
-                    Str::slug($showtime->movie->ten_phim)
-                    . '-'
-                    . strtolower(
-                        str_replace(
-                            ' ',
-                            '-',
-                            $showtime->room_name
-                        )
-                    )
-                    . '-'
-                    . uniqid();
-            }
-        });
+        return $this->belongsTo(Phims::class, 'phim_id');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | ROUTE KEY
-    |--------------------------------------------------------------------------
-    */
-    public function getRouteKeyName(): string
+    public function rapChieuPhim(): BelongsTo
     {
-        return 'slug';
+        return $this->belongsTo(RapChieuPhim::class, 'rap_chieu_phim_id');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | RELATION
-    |--------------------------------------------------------------------------
-    */
-    public function movie()
+    public function phongChieu(): BelongsTo
     {
-        return $this->belongsTo(Phim::class);
+        return $this->belongsTo(PhongChieu::class, 'phong_chieu_id');
     }
 
-    public function cinema()
+    /**
+     * Tự động tính thời gian kết thúc dựa trên thời gian bắt đầu và thời lượng phim
+     */
+    public function tinhThoiGianKetThuc(): void
     {
-        return $this->belongsTo(Cinema::class);
+        if ($this->thoi_gian_chieu && $this->thoi_luong) {
+            $this->thoi_gian_ket_thuc = $this->thoi_gian_chieu->copy()->addMinutes($this->thoi_luong);
+        }
     }
 
-    // public function seats()
-    // {
-    //     return $this->hasMany(Seat::class);
-    // }
-
-    public function bookings()
+    /**
+     * Kiểm tra xem suất chiếu này có chồng lấn với suất chiếu khác không
+     */
+    public function kiemTraChongLan(SuatChieu $suatChieuKhac): bool
     {
-        return $this->hasMany(Booking::class);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | START DATETIME
-    |--------------------------------------------------------------------------
-    */
-    public function getStartDateTimeAttribute()
-    {
-        return Carbon::parse($this->show_date)
-            ->setTimeFromTimeString($this->show_time);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | END DATETIME
-    |--------------------------------------------------------------------------
-    */
-    public function getEndTimeAttribute()
-    {
-        return $this->start_date_time
-            ->copy()
-            ->addMinutes(
-                $this->movie->thoi_luong ?? 90
-            );
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECK ENDED
-    |--------------------------------------------------------------------------
-    */
-    public function getIsEndedAttribute()
-    {
-        return now(config('app.timezone'))
-            ->greaterThan($this->end_time);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | HELPERS
-    |--------------------------------------------------------------------------
-    */
-
-    // Đang chiếu
-    public function isNowShowing(): bool
-    {
-        $now = now(config('app.timezone'));
-
-        return $now->between(
-            $this->start_date_time,
-            $this->end_time
-        );
-    }
-
-    // Sắp chiếu (< 10 ngày)
-    public function isUpcoming(): bool
-    {
-        return $this->start_date_time->isFuture()
-            && $this->start_date_time
-                ->diffInDays(now()) <= 10;
-    }
-
-    // Sắp ra mắt (> 10 ngày)
-    public function isComingLater(): bool
-    {
-        return $this->start_date_time->isFuture()
-            && $this->start_date_time
-                ->diffInDays(now()) > 10;
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | STATUS
-    |--------------------------------------------------------------------------
-    */
-    public function getStatusAttribute(): string
-    {
-        $now = now(config('app.timezone'));
-
-        // Đang chiếu
-        if ($now->between(
-            $this->start_date_time,
-            $this->end_time
-        )) {
-
-            return 'Đang chiếu';
+        if (!$this->thoi_gian_chieu || !$this->thoi_gian_ket_thuc || 
+            !$suatChieuKhac->thoi_gian_chieu || !$suatChieuKhac->thoi_gian_ket_thuc) {
+            return false;
         }
 
-        // Đã kết thúc
-        if ($now->greaterThan($this->end_time)) {
-
-            return 'Đã kết thúc';
-        }
-
-        // Sắp chiếu / Sắp ra mắt
-        if ($this->start_date_time->gt($now)) {
-
-            $days = $now->diffInDays(
-                $this->start_date_time
-            );
-
-            if ($days > 10) {
-
-                return 'Sắp ra mắt';
-            }
-
-            return 'Sắp chiếu';
-        }
-
-        return 'Sắp ra mắt';
+        return $this->thoi_gian_chieu < $suatChieuKhac->thoi_gian_ket_thuc 
+            && $this->thoi_gian_ket_thuc > $suatChieuKhac->thoi_gian_chieu;
     }
 }

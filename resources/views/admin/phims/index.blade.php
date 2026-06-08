@@ -1,341 +1,322 @@
 @extends('layouts.admin')
 
-@section('title', 'Quản lý phim')
+@section('page-title', 'Quản lý phim')
 
 @section('content')
 
-<div class="admin-panel">
+    <div class="admin-panel">
 
-    {{-- HEADER --}}
-    <div class="panel-header flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        {{-- HEADER --}}
+        <div class="panel-header flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
 
-        <div>
+            <div>
 
-            <h5 class="text-2xl font-black text-white">
-                Danh sách phim
-            </h5>
+                <h5 class="text-2xl font-black text-white">
+                    Danh sách phim
+                </h5>
 
-            <small class="text-gray-400">
-                Quản lý toàn bộ phim trong hệ thống
-            </small>
+                <small class="text-gray-400">
+                    Quản lý toàn bộ phim trong hệ thống
+                </small>
 
-        </div>
+            </div>
 
-        <a href="{{ route('admin.phims.create') }}"
-            class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]">
+            <a href="{{ route('admin.phims.create') }}"
+                class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]">
 
-            <i class="fa-solid fa-plus"></i>
+                <i class="fa-solid fa-plus"></i>
 
-            Thêm phim
+                Thêm phim
 
-        </a>
-
-    </div>
-
-    {{-- FILTER --}}
-    <form method="GET"
-        action="{{ route('admin.phims.index') }}"
-        class="mt-6 flex flex-wrap items-center gap-3">
-
-        {{-- SEARCH --}}
-        <input type="text"
-            name="search"
-            value="{{ request('search') }}"
-            placeholder="Tìm tên phim..."
-            class="h-12 min-w-[220px] flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 text-white outline-none transition focus:border-[#d99a32]">
-
-        {{-- GENRE --}}
-        <select name="genre_id"
-            class="h-12 rounded-2xl border border-white/10 bg-[#151515] px-4 text-white outline-none focus:border-[#d99a32]">
-
-            <option value="">Thể loại</option>
-
-            @foreach ($genres as $genre)
-
-                <option value="{{ $genre->id }}"
-                    {{ request('genre_id') == $genre->id ? 'selected' : '' }}>
-
-                    {{ $genre->ten_the_loai }}
-
-                </option>
-
-            @endforeach
-
-        </select>
-
-        {{-- COUNTRY --}}
-        <select name="quoc_gia_id"
-            class="h-12 rounded-2xl border border-white/10 bg-[#151515] px-4 text-white outline-none focus:border-[#d99a32]">
-
-            <option value="">Quốc gia</option>
-
-            @foreach ($countries as $country)
-
-                <option value="{{ $country->id }}"
-                    {{ request('quoc_gia_id') == $country->id ? 'selected' : '' }}>
-
-                    {{ $country->ten_quoc_gia }}
-
-                </option>
-
-            @endforeach
-
-        </select>
-
-        {{-- FILTER BTN --}}
-        <button type="submit"
-            class="h-12 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 text-sm font-bold text-white shadow-lg transition hover:opacity-90">
-
-            <i class="fa-solid fa-filter mr-1"></i>
-
-            Lọc
-
-        </button>
-
-        {{-- RESET BTN --}}
-        <a href="{{ route('admin.phims.index') }}"
-            class="flex h-12 items-center rounded-2xl border border-white/10 bg-white/5 px-5 text-sm font-bold text-white transition hover:bg-white/10">
-
-            Reset
-
-        </a>
-
-    </form>
-
-    {{-- SUCCESS --}}
-    @if (session('success'))
-
-        <div class="mt-5 rounded-2xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-green-300">
-
-            {{ session('success') }}
+            </a>
 
         </div>
 
-    @endif
+        {{-- FILTER --}}
+        <form method="GET" action="{{ route('admin.phims.index') }}" class="mt-6 flex flex-wrap items-center gap-3">
 
-    {{-- TABLE --}}
-    <div class="mt-6 overflow-hidden rounded-3xl border border-white/10">
+            {{-- SEARCH --}}
+            <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}" placeholder="Tìm tên phim..."
+                class="h-12 min-w-[220px] flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 text-white outline-none transition focus:border-[#d99a32]">
 
-        <div class="overflow-x-auto">
+            {{-- GENRE --}}
+            <select name="the_loai"
+                class="h-12 rounded-2xl border border-white/10 bg-[#151515] px-4 text-white outline-none focus:border-[#d99a32]">
 
-            <table class="w-full min-w-[1200px] text-left">
+                <option value="">Thể loại</option>
 
-                {{-- HEAD --}}
-                <thead class="bg-white/5 text-xs uppercase tracking-wider text-gray-400">
+                @foreach ($genres as $genre)
+                    <option value="{{ $genre->ten_the_loai }}"
+                        {{ request('the_loai') == $genre->ten_the_loai ? 'selected' : '' }}>
 
-                    <tr>
+                        {{ $genre->ten_the_loai }}
 
-                        <th class="px-5 py-4">
-                            ID
-                        </th>
+                    </option>
+                @endforeach
+            </select>
 
-                        <th class="px-5 py-4">
-                            Phim
-                        </th>
+            {{-- COUNTRY --}}
+            <select name="quoc_gia"
+                class="h-12 rounded-2xl border border-white/10 bg-[#151515] px-4 text-white outline-none focus:border-[#d99a32]">
 
-                        <th class="px-5 py-4">
-                            Quốc gia
-                        </th>
+                <option value="">Quốc gia</option>
 
-                        <th class="px-5 py-4">
-                            Thể loại
-                        </th>
+                @foreach ($countries as $country)
+                    <option value="{{ $country->ten_quoc_gia }}"
+                        {{ request('quoc_gia') == $country->ten_quoc_gia ? 'selected' : '' }}>
 
-                        <th class="px-5 py-4">
-                            Đạo diễn
-                        </th>
+                        {{ $country->ten_quoc_gia }}
 
-                        <th class="px-5 py-4">
-                            Diễn viên
-                        </th>
+                    </option>
+                @endforeach
 
-                        <th class="px-5 py-4">
-                            Ngôn ngữ
-                        </th>
+            </select>
 
-                        <th class="px-5 py-4">
-                            Thời lượng
-                        </th>
+            {{-- FILTER BTN --}}
+            <button type="submit"
+                class="h-12 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 text-sm font-bold text-white shadow-lg transition hover:opacity-90">
 
-                        <th class="px-5 py-4">
-                            Giới hạn tuổi
-                        </th>
+                <i class="fa-solid fa-filter mr-1"></i>
+
+                Lọc
+
+            </button>
+
+            {{-- RESET BTN --}}
+            <a href="{{ route('admin.phims.index') }}"
+                class="flex h-12 items-center rounded-2xl border border-white/10 bg-white/5 px-5 text-sm font-bold text-white transition hover:bg-white/10">
+
+                Reset
+
+            </a>
+
+        </form>
+
+        {{-- TABLE --}}
+        <div class="mt-6 overflow-hidden rounded-3xl border border-white/10">
+
+            <div class="overflow-x-auto">
+
+                <table class="w-full min-w-[1200px] text-left">
+
+                    {{-- HEAD --}}
+                    <thead class="bg-white/5 text-xs uppercase tracking-wider text-gray-400">
+
+                        <tr>
+
+                            <th class="px-5 py-4">
+                                ID
+                            </th>
+
+                            <th class="px-5 py-4">
+                                Phim
+                            </th>
+
+                            <th class="px-5 py-4">
+                                Quốc gia
+                            </th>
+
+                            <th class="px-5 py-4">
+                                Thể loại
+                            </th>
+
+                            <th class="px-5 py-4">
+                                Đạo diễn
+                            </th>
+
+                            <th class="px-5 py-4">
+                                Diễn viên
+                            </th>
+
+                            <th class="px-5 py-4">
+                                Ngôn ngữ
+                            </th>
+
+                            <th class="px-5 py-4">
+                                Thời lượng
+                            </th>
+
+                            <th class="px-5 py-4">
+                                Giới hạn tuổi
+                            </th>
+                            <th class="px-5 py-4">
+                                Mô tả
+                            </th>
 
 
+                            <th class="px-5 py-4 text-right">
+                                Hành động
+                            </th>
 
-                        <th class="px-5 py-4 text-right">
-                            Hành động
-                        </th>
+                        </tr>
 
-                    </tr>
+                    </thead>
 
-                </thead>
+                    {{-- BODY --}}
+                    <tbody class="divide-y divide-white/5">
 
-                {{-- BODY --}}
-                <tbody class="divide-y divide-white/5">
+                        @forelse ($movies as $movie)
 
-                    @forelse ($movies as $movie)
+                            <tr class="bg-[#0f0f0f] transition hover:bg-white/5">
 
-                        <tr class="bg-[#0f0f0f] transition hover:bg-white/5">
+                                {{-- ID --}}
+                                <td class="px-5 py-5 text-gray-400">
 
-                            {{-- ID --}}
-                            <td class="px-5 py-5 text-gray-400">
+                                    #{{ $movie->id }}
 
-                                #{{ $movie->id }}
+                                </td>
 
-                            </td>
+                                {{-- MOVIE --}}
+                                <td class="px-5 py-5">
 
-                            {{-- MOVIE --}}
-                            <td class="px-5 py-5">
+                                    <div class="flex items-center gap-4">
 
-                                <div class="flex items-center gap-4">
+                                        <img src="{{ asset('storage/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}"
+                                            class="h-20 w-14 rounded-xl object-cover shadow-lg">
 
-                                    <img src="{{ asset('storage/' . $movie->poster) }}"
-                                        alt="{{ $movie->ten_phim }}"
-                                        class="h-20 w-14 rounded-xl object-cover shadow-lg">
+                                        <div>
 
-                                    <div>
+                                            <div class="font-bold text-white">
 
-                                        <div class="font-bold text-white">
+                                                {{ $movie->ten_phim }}
 
-                                            {{ $movie->ten_phim }}
+                                            </div>
 
                                         </div>
 
                                     </div>
 
-                                </div>
+                                </td>
 
-                            </td>
+                                {{-- COUNTRY --}}
+                                <td class="px-5 py-5 text-gray-300">
 
-                            {{-- COUNTRY --}}
-                            <td class="px-5 py-5 text-gray-300">
+                                    {{ $movie->country->ten_quoc_gia ?? 'Chưa cập nhật' }}
 
-                                {{ $movie->country->ten_quoc_gia ?? 'Chưa cập nhật' }}
+                                </td>
 
-                            </td>
+                                {{-- GENRE --}}
+                                <td class="px-5 py-5 text-gray-300">
 
-                            {{-- GENRE --}}
-                            <td class="px-5 py-5 text-gray-300">
+                                    @forelse ($movie->genres as $genre)
+                                        <span class="inline-block rounded-full bg-white/10 px-3 py-1 text-xs mr-1 mb-1">
+                                            {{ $genre->ten_the_loai }}
+                                        </span>
 
-                                @forelse ($movie->genres as $genre)
+                                    @empty
 
-                                    <span class="inline-block rounded-full bg-white/10 px-3 py-1 text-xs mr-1 mb-1">
-                                        {{ $genre->ten_the_loai }}
-                                    </span>
+                                        Chưa cập nhật
+                                    @endforelse
 
-                                @empty
+                                </td>
 
-                                    Chưa cập nhật
+                                {{-- DIRECTOR --}}
+                                <td class="px-5 py-5 text-gray-300">
 
-                                @endforelse
+                                    {{ $movie->dao_dien ?? 'Chưa cập nhật' }}
 
-                            </td>
+                                </td>
 
-                            {{-- DIRECTOR --}}
-                            <td class="px-5 py-5 text-gray-300">
+                                {{-- ACTORS --}}
+                                <td class="px-5 py-5 text-gray-300">
 
-                                {{ $movie->dao_dien ?? 'Chưa cập nhật' }}
+                                    {{ \Illuminate\Support\Str::limit($movie->dien_vien ?? 'Chưa cập nhật', 40) }}
 
-                            </td>
+                                </td>
 
-                            {{-- ACTORS --}}
-                            <td class="px-5 py-5 text-gray-300">
+                                {{-- LANGUAGE --}}
+                                <td class="px-5 py-5 text-gray-300">
 
-                                {{ \Illuminate\Support\Str::limit($movie->dien_vien ?? 'Chưa cập nhật', 40) }}
+                                    {{ $movie->ngon_ngu ?? 'Chưa cập nhật' }}
 
-                            </td>
+                                </td>
 
-                            {{-- LANGUAGE --}}
-                            <td class="px-5 py-5 text-gray-300">
+                                {{-- DURATION --}}
+                                <td class="px-5 py-5 text-gray-300">
 
-                                {{ $movie->ngon_ngu ?? 'Chưa cập nhật' }}
+                                    {{ $movie->thoi_luong }} phút
 
-                            </td>
+                                </td>
 
-                            {{-- DURATION --}}
-                            <td class="px-5 py-5 text-gray-300">
+                                {{-- AGE --}}
+                                <td class="px-5 py-5 text-gray-300">
 
-                                {{ $movie->thoi_luong }} phút
+                                    {{ $movie->gioi_han_tuoi ?? 'P' }}
 
-                            </td>
+                                </td>
+                                <td class="px-5 py-5 text-gray-300 max-w-[300px]">
+                                    <div class="truncate">
+                                        {{ $movie->mo_ta ?? 'Chưa cập nhật' }}
+                                    </div>
+                                </td>
 
-                            {{-- AGE --}}
-                            <td class="px-5 py-5 text-gray-300">
+                                {{-- STATUS --}}
 
-                                {{ $movie->gioi_han_tuoi ?? 'P' }}
+                                {{-- ACTION --}}
+                                <td class="px-5 py-5 align-middle">
+                                    <div class="flex items-center justify-center gap-3 whitespace-nowrap">
 
-                            </td>
+                                        {{-- XEM CHI TIẾT --}}
+                                        <a href="{{ route('admin.phims.show', $movie) }}"
+                                            class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 transition hover:bg-blue-500/25">
 
-                            {{-- STATUS --}}
+                                            <i class="fa-solid fa-eye text-base leading-none"></i>
 
-                            {{-- ACTION --}}
-                            <td class="px-5 py-5">
+                                        </a>
 
-                                <div class="flex justify-end gap-2">
+                                        {{-- EDIT --}}
+                                        <a href="{{ route('admin.phims.edit', $movie) }}"
+                                            class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300 transition hover:bg-yellow-500/25">
 
-                                    {{-- CREATE SHOWTIME --}}
-                                    <a href="{{ route('admin.showtimes.create', ['movie_id' => $movie->id]) }}"
-                                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 transition hover:bg-blue-500/25">
+                                            <i class="fa-solid fa-pen text-base leading-none"></i>
 
-                                        <i class="fa-solid fa-calendar-plus"></i>
+                                        </a>
 
-                                    </a>
 
-                                    {{-- EDIT --}}
-                                    <a href="{{ route('admin.phims.edit', $movie) }}"
-                                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300 transition hover:bg-yellow-500/25">
+                                        {{-- DELETE --}}
+                                        <form action="{{ route('admin.phims.destroy', $movie) }}" method="POST">
 
-                                        <i class="fa-solid fa-pen"></i>
+                                            @csrf
+                                            @method('DELETE')
 
-                                    </a>
+                                            <button type="submit"
+                                                onclick="return confirm('Bạn có chắc muốn xóa phim này?')"
+                                                class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25">
 
-                                    {{-- DELETE --}}
-                                    <form action="{{ route('admin.phims.destroy', $movie) }}"
-                                        method="POST">
+                                                <i class="fa-solid fa-trash text-base leading-none"></i>
 
-                                        @csrf
-                                        @method('DELETE')
+                                            </button>
 
-                                        <button type="submit"
-                                            onclick="return confirm('Bạn có chắc muốn xóa phim này?')"
-                                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25">
+                                        </form>
 
-                                            <i class="fa-solid fa-trash"></i>
+                                    </div>
 
-                                        </button>
+                                </td>
 
-                                    </form>
+                            </tr>
 
-                                </div>
+                        @empty
 
-                            </td>
+                            <tr>
 
-                        </tr>
+                                <td colspan="10" class="px-5 py-16 text-center text-gray-500">
 
-                    @empty
+                                    Chưa có phim nào trong hệ thống
 
-                        <tr>
+                                </td>
 
-                            <td colspan="10"
-                                class="px-5 py-16 text-center text-gray-500">
+                            </tr>
 
-                                Chưa có phim nào trong hệ thống
+                        @endforelse
 
-                            </td>
+                    </tbody>
 
-                        </tr>
+                </table>
 
-                    @endforelse
-
-                </tbody>
-
-            </table>
+            </div>
 
         </div>
 
     </div>
-
-</div>
 
 @endsection

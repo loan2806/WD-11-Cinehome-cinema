@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Tao thong bao')
+@section('page-title', 'Tao thong bao')
 @section('page-title', 'Tao thong bao')
 @section('page-subtitle', 'Gui thong bao chung theo vai tro')
 
@@ -43,3 +43,4 @@
     </div>
 </form>
 @endsection
+

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\NguoiDung;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -24,7 +25,7 @@ class ProfileUpdateRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->ignore($this->user()->id),
+                Rule::unique(NguoiDung::class)->ignore($this->user()->id),
             ],
         ];
     }
