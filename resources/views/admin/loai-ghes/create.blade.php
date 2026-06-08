@@ -72,6 +72,24 @@
 
                 </div>
 
+                <div class="space-y-2">
+
+                    <label class="text-sm text-gray-400">
+                        Màu sắc hiển thị
+                    </label>
+
+                    <div class="flex items-center gap-3">
+                        <input type="color" name="mau_sac" id="mau_sac" value="{{ old('mau_sac', '#666666') }}"
+                            class="h-12 w-20 cursor-pointer rounded-xl border border-white/10 bg-transparent">
+                        <input type="text" id="mau_sac_hex" value="{{ old('mau_sac', '#666666') }}"
+                            placeholder="#666666" maxlength="7"
+                            class="flex-1 rounded-2xl border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+                    </div>
+
+                    <small class="text-xs text-gray-500">Màu hiển thị trên sơ đồ ghế</small>
+
+                </div>
+
             </div>
 
             <div class="space-y-2">

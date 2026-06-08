@@ -727,8 +727,12 @@ a {
 }
 
 .seat-row__label {
-    width: 24px;
-    text-align: center;
+    width: 42px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
     font-size: 13px;
     font-weight: 800;
     color: #9aa7b4;
@@ -751,7 +755,7 @@ a {
     font-size: 11px;
     font-weight: 800;
     color: transparent;
-    background: #4b5563;
+    /* background động từ inline style */
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 10px 18px rgba(15, 23, 42, 0.35);
     transform: translateY(0);
@@ -765,7 +769,7 @@ a {
 }
 
 .seat-chip--regular {
-    background: #4b5563;
+    background: #4b5563 !important;
     color: #e5e7eb;
 }
 
@@ -795,6 +799,23 @@ a {
     pointer-events: none;
 }
 
+.seat-chip--custom {
+    /* Dynamic color from inline style */
+}
+
+.seat-chip--selected {
+    outline: 3px solid #d99a32 !important;
+    outline-offset: 2px;
+}
+
+.seat-chip--legend {
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 10px !important;
+    cursor: default !important;
+    transform: none !important;
+}
+
 .seat-legend {
     display: flex;
     flex-wrap: wrap;
@@ -812,4 +833,22 @@ a {
     gap: 8px;
     font-size: 13px;
     color: #cbd5e1;
+}
+
+/* Column number header */
+.seat-row__seats--header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+}
+.seat-col-num {
+    width: 34px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #555;
 }

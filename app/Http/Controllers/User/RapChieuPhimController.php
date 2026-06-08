@@ -19,19 +19,11 @@ class RapChieuPhimController extends Controller
         $now = Carbon::now('Asia/Ho_Chi_Minh');
         $today = $now->toDateString();
 
+        // Lấy suất chiếu hôm nay (dựa trên thoi_gian_chieu thay vì ngay_khoi_chieu)
         $suatChieusHomNay = SuatChieu::query()
             ->where('rap_chieu_phim_id', $rapChieuPhim->id)
             ->whereDate('thoi_gian_chieu', $today)
-            ->whereRaw(
-                "thoi_gian_chieu >= (
-                    SELECT ngay_khoi_chieu
-                    FROM phims
-                    WHERE phims.id = suat_chieus.phim_id
-                )"
-            )
-            ->whereHas('phim', function ($query) use ($today) {
-                $query->whereDate('ngay_khoi_chieu', '<=', $today);
-            })
+            ->where('thoi_gian_chieu', '>=', $now->format('Y-m-d H:i:s'))
             ->whereRaw(
                 "DATE_ADD(thoi_gian_chieu, INTERVAL (
                     SELECT thoi_luong

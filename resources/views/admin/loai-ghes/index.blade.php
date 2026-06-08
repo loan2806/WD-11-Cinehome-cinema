@@ -43,6 +43,8 @@
 
                             <th class="px-5 py-4">STT</th>
 
+                            <th class="px-5 py-4">Màu</th>
+
                             <th class="px-5 py-4">Tên Loại</th>
 
                             <th class="px-5 py-4">Mô tả</th>
@@ -65,6 +67,12 @@
                                 <td class="px-5 py-5 text-gray-400">
 
                                     #{{ $key + 1 }}
+
+                                </td>
+
+                                <td class="px-5 py-5">
+
+                                    <span class="inline-block h-7 w-7 rounded-lg border border-white/15 shadow-sm" style="background-color: {{ $loai->mau_sac ?? '#666666' }};"></span>
 
                                 </td>
 

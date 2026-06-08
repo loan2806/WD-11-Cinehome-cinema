@@ -13,7 +13,16 @@ class SuatChieuSeeder extends Seeder
     public function run(): void
     {
         $phongChieus = PhongChieu::all();
-        $phims = Phims::whereDate('ngay_khoi_chieu', '<=', now())->get();
+        // Lấy phim dựa trên thoi_gian_chieu trong bảng suất chiếu
+        $phims = Phims::whereHas('showtimes', function ($q) {
+                $q->whereDate('thoi_gian_chieu', '<=', now());
+            })
+            ->get();
+
+        // Nếu không có phim đủ điều kiện, lấy tất cả phim
+        if ($phims->isEmpty()) {
+            $phims = Phims::all();
+        }
 
         if ($phongChieus->isEmpty() || $phims->isEmpty()) {
             $this->command->warn('Không đủ dữ liệu để tạo suất chiếu.');

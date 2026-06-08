@@ -109,7 +109,12 @@
                                 <td>{{ $movie->thoi_luong }} phút</td>
 
                                 <td>
-                                    @if ($movie->ngay_khoi_chieu > now())
+                                    @php
+                                        $releaseDate = $movie->ngay_khoi_chieu;
+                                        $isComingSoon = $releaseDate && \Carbon\Carbon::parse($releaseDate)->gt(now());
+                                    @endphp
+
+                                    @if ($isComingSoon)
                                         <span class="status-badge status-coming">
                                             Sắp chiếu
                                         </span>
