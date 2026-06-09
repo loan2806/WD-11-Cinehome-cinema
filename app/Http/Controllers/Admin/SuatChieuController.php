@@ -18,6 +18,7 @@ class SuatChieuController extends Controller
 {
     private const THOI_GIAN_DON_PHONG = 15;
 
+    private const TRANG_THAI_SAP_RA_MAT = 'sap_ra_mat';
     private const TRANG_THAI_SAP_CHIEU = 'sap_chieu';
     private const TRANG_THAI_DANG_CHIEU = 'dang_chieu';
     private const TRANG_THAI_DA_CHIEU = 'da_chieu';
@@ -50,9 +51,8 @@ class SuatChieuController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $phims = Phims::whereDate('ngay_khoi_chieu', '<=', now())
-            ->orderBy('ten_phim')
-            ->get();
+        // Lấy tất cả phim để filter (kể cả phim chưa có suất chiếu)
+        $phims = Phims::orderBy('ten_phim')->get();
 
         $phongChieus = PhongChieu::with('rapChieuPhim')
             ->orderBy('ten_phong')
@@ -70,9 +70,8 @@ class SuatChieuController extends Controller
      */
     public function create(Request $request): View
     {
-        $phims = Phims::whereDate('ngay_khoi_chieu', '<=', now())
-            ->orderBy('ten_phim')
-            ->get();
+        // Lấy tất cả phim để tạo suất chiếu (kể cả phim chưa có suất chiếu)
+        $phims = Phims::orderBy('ten_phim')->get();
 
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
 
@@ -82,7 +81,7 @@ class SuatChieuController extends Controller
 
         $phongChieuId = $request->phong_chieu_id;
 
-        return view('admin.suat-chieus.create', compact(
+        return view('admin.suat-chieus.create', compact(git status
             'phims',
             'rapChieuPhims',
             'phongChieus',
@@ -248,11 +247,25 @@ class SuatChieuController extends Controller
     {
         $now = Carbon::now();
 
+<<<<<<< HEAD
         if ($now < $thoiGianChieu) {
             return self::TRANG_THAI_SAP_CHIEU;
         }
 
         if ($now >= $thoiGianChieu && $now < $thoiGianKetThuc) {
+=======
+        if ($now->lt($thoiGianChieu)) {
+            $daysUntilShow = $now->diffInDays($thoiGianChieu, false);
+
+            if ($daysUntilShow > 10) {
+                return self::TRANG_THAI_SAP_RA_MAT;
+            }
+
+            return self::TRANG_THAI_SAP_CHIEU;
+        }
+
+        if ($now->gte($thoiGianChieu) && $now->lt($thoiGianKetThuc)) {
+>>>>>>> origin/main
             return self::TRANG_THAI_DANG_CHIEU;
         }
 

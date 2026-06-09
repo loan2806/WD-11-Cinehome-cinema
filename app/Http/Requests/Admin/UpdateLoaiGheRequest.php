@@ -34,6 +34,12 @@ class UpdateLoaiGheRequest extends FormRequest
                 'min:0',
                 'max:999999.99',
             ],
+            'mau_sac' => [
+                'nullable',
+                'string',
+                'max:7',
+                'regex:/^#[0-9A-Fa-f]{6}$/',
+            ],
         ];
     }
 

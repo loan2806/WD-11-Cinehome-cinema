@@ -38,8 +38,6 @@ return new class extends Migration
             $table->string('ngon_ngu')->nullable();
             $table->integer('thoi_luong')->default(90);
             
-            // ĐÃ BỔ SUNG: Cột ngày khởi chiếu để phục vụ bộ lọc suất chiếu và tính trạng thái phim
-            $table->date('ngay_khoi_chieu')->nullable(); 
             
             $table->string('gioi_han_tuoi')->nullable();
 

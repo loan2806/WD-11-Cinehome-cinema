@@ -213,13 +213,23 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::resource('phims', AdminMovieController::class);
 
-        Route::resource('genres', TheloaisController::class);
+        Route::resource('the-loais', TheloaisController::class);
 
         Route::resource('suat-chieus', \App\Http\Controllers\Admin\SuatChieuController::class);
 
         Route::resource('phong-chieus', PhongChieuController::class);
         Route::post('phong-chieus/{phong_chieu}/generate-seats', [PhongChieuController::class, 'generateSeats'])
             ->name('phong-chieus.generate-seats');
+        Route::post('phong-chieus/{phong_chieu}/toggle-seat-maintenance', [PhongChieuController::class, 'toggleSeatMaintenance'])
+            ->name('phong-chieus.toggle-seat-maintenance');
+        Route::post('phong-chieus/{phong_chieu}/update-seat-type', [PhongChieuController::class, 'updateSeatType'])
+            ->name('phong-chieus.update-seat-type');
+        Route::post('phong-chieus/{phong_chieu}/update-row-seats', [PhongChieuController::class, 'updateRowSeats'])
+            ->name('phong-chieus.update-row-seats');
+        Route::post('phong-chieus/{phong_chieu}/bulk-update-seats', [PhongChieuController::class, 'bulkUpdateSeats'])
+            ->name('phong-chieus.bulk-update-seats');
+        Route::post('phong-chieus/{phong_chieu}/delete-row-seats', [PhongChieuController::class, 'deleteRowSeats'])
+            ->name('phong-chieus.delete-row-seats');
 
         Route::resource('hang-ghes', HangGheController::class);
         Route::post('hang-ghes/{hang_ghe}/update-row-type', [HangGheController::class, 'updateRowType'])

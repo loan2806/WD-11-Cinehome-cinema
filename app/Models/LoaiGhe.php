@@ -16,6 +16,7 @@ class LoaiGhe extends Model
         'ten_loai',
         'mo_ta',
         'phu_thu',
+        'mau_sac',
     ];
 
     protected $casts = [

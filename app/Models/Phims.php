@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Models\SuatChieu;
 use Carbon\Carbon;
 
 class Phims extends Model
@@ -50,6 +51,11 @@ class Phims extends Model
         return $this->hasMany(SuatChieu::class, 'phim_id');
     }
 
+    public function hasShowtimeStatus(string $status): bool
+    {
+        return $this->showtimes->contains('trang_thai', $status);
+    }
+
     public function country()
     {
         return $this->belongsTo(QuocGia::class, 'quoc_gia_id');
@@ -85,56 +91,38 @@ class Phims extends Model
 
     public function getScheduleStatusAttribute(): string
     {
-        $now = now(config('app.timezone'));
-        $showtimes = $this->showtimes;
-
-        if ($showtimes->isEmpty()) {
-            return 'Sắp ra mắt';
+        if ($this->showtimes->isEmpty()) {
+            return 'Chưa có suất chiếu';
         }
 
-        $hasNowShowing = false;
-        $hasFutureWithin10 = false;
-        $hasFutureBeyond10 = false;
+        $showtimeStatuses = $this->showtimes->pluck('trang_thai')->unique();
 
-        foreach ($showtimes as $showtime) {
-
-            $startTime = Carbon::parse(
-                $showtime->ngay_chieu . ' ' . $showtime->gio_chieu
-            );
-
-            $endTime = $startTime->copy()->addMinutes($this->thoi_luong ?? 90);
-
-            if ($now->between($startTime, $endTime)) {
-                $hasNowShowing = true;
-            }
-
-            if ($startTime->gt($now)) {
-                $days = $now->diffInDays($startTime);
-
-                if ($days > 10) {
-                    $hasFutureBeyond10 = true;
-                } else {
-                    $hasFutureWithin10 = true;
-                }
-            }
-        }
-
-        if ($hasNowShowing) {
+        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_DANG_CHIEU)) {
             return 'Đang chiếu';
         }
 
-        if ($hasFutureBeyond10) {
-            return 'Sắp ra mắt';
-        }
-
-        if ($hasFutureWithin10) {
+        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_SAP_CHIEU)) {
             return 'Sắp chiếu';
         }
 
-        return 'Đã kết thúc';
+        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_SAP_RA_MAT)) {
+            return 'Sắp ra mắt';
+        }
+
+        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_DA_CHIEU)) {
+            return 'Đã chiếu';
+        }
+
+        return 'Không xác định';
     }
     public function getRouteKeyName()
     {
         return 'slug';
+    }
+
+    public function getNgayKhoiChieuAttribute()
+    {
+        $firstShowtime = $this->showtimes()->min('thoi_gian_chieu');
+        return $firstShowtime ? Carbon::parse($firstShowtime)->toDateString() : null;
     }
 }

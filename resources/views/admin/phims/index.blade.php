@@ -162,7 +162,7 @@
                                 {{-- ID --}}
                                 <td class="px-5 py-5 text-gray-400">
 
-                                    #{{ $movie->id }}
+                                    {{ $movie->id }}
 
                                 </td>
 
@@ -191,43 +191,39 @@
                                 {{-- COUNTRY --}}
                                 <td class="px-5 py-5 text-gray-300">
 
-                                    {{ $movie->country->ten_quoc_gia ?? 'Chưa cập nhật' }}
+                                    {{ $movie->country->ten_quoc_gia  }}
 
                                 </td>
 
                                 {{-- GENRE --}}
                                 <td class="px-5 py-5 text-gray-300">
 
-                                    @forelse ($movie->genres as $genre)
+                                    @foreach  ($movie->genres as $genre)
                                         <span class="inline-block rounded-full bg-white/10 px-3 py-1 text-xs mr-1 mb-1">
                                             {{ $genre->ten_the_loai }}
                                         </span>
-
-                                    @empty
-
-                                        Chưa cập nhật
-                                    @endforelse
+                                    @endforeach
 
                                 </td>
 
                                 {{-- DIRECTOR --}}
                                 <td class="px-5 py-5 text-gray-300">
 
-                                    {{ $movie->dao_dien ?? 'Chưa cập nhật' }}
+                                    {{ $movie->dao_dien  }}
 
                                 </td>
 
                                 {{-- ACTORS --}}
                                 <td class="px-5 py-5 text-gray-300">
 
-                                    {{ \Illuminate\Support\Str::limit($movie->dien_vien ?? 'Chưa cập nhật', 40) }}
+                                    {{ \Illuminate\Support\Str::limit($movie->dien_vien , 40) }}
 
                                 </td>
 
                                 {{-- LANGUAGE --}}
                                 <td class="px-5 py-5 text-gray-300">
 
-                                    {{ $movie->ngon_ngu ?? 'Chưa cập nhật' }}
+                                    {{ $movie->ngon_ngu  }}
 
                                 </td>
 
@@ -241,12 +237,12 @@
                                 {{-- AGE --}}
                                 <td class="px-5 py-5 text-gray-300">
 
-                                    {{ $movie->gioi_han_tuoi ?? 'P' }}
+                                    {{ $movie->gioi_han_tuoi  }}
 
                                 </td>
                                 <td class="px-5 py-5 text-gray-300 max-w-[300px]">
                                     <div class="truncate">
-                                        {{ $movie->mo_ta ?? 'Chưa cập nhật' }}
+                                        {{ $movie->mo_ta  }}
                                     </div>
                                 </td>
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class TheLoai extends Model
 {
@@ -19,6 +20,28 @@ class TheLoai extends Model
     ];
 
     /**
+     * Boot the model
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Auto-generate slug from ten_the_loai when creating
+        static::creating(function ($model) {
+            if (!$model->slug) {
+                $model->slug = Str::slug($model->ten_the_loai, '-');
+            }
+        });
+
+        // Auto-generate slug from ten_the_loai when updating
+        static::updating(function ($model) {
+            if ($model->isDirty('ten_the_loai') && !$model->isDirty('slug')) {
+                $model->slug = Str::slug($model->ten_the_loai, '-');
+            }
+        });
+    }
+
+    /**
      * Mối quan hệ nhiều-nhiều với bảng Phims
      */
     public function phims()
@@ -26,8 +49,8 @@ class TheLoai extends Model
         return $this->belongsToMany(
             Phims::class,
             'phim_the_loai',
-            'ma_the_loai',
-            'ma_phim'
+            'the_loai_id',
+            'phim_id'
         );
     }
 }

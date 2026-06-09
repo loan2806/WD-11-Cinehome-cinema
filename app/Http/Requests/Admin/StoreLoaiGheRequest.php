@@ -31,6 +31,12 @@ class StoreLoaiGheRequest extends FormRequest
                 'min:0',
                 'max:999999.99',
             ],
+            'mau_sac' => [
+                'nullable',
+                'string',
+                'max:7',
+                'regex:/^#[0-9A-Fa-f]{6}$/',
+            ],
         ];
     }
 
@@ -42,6 +48,7 @@ class StoreLoaiGheRequest extends FormRequest
             'phu_thu.required' => 'Phụ thu không được để trống.',
             'phu_thu.numeric' => 'Phụ thu phải là số.',
             'phu_thu.min' => 'Phụ thu không được nhỏ hơn 0.',
+            'mau_sac.regex' => 'Màu sắc phải là mã hex (VD: #FF5733).',
         ];
     }
 }
