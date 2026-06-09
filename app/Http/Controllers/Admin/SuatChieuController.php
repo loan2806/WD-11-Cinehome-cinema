@@ -81,7 +81,7 @@ class SuatChieuController extends Controller
 
         $phongChieuId = $request->phong_chieu_id;
 
-        return view('admin.suat-chieus.create', compact(
+        return view('admin.suat-chieus.create', compact(git status
             'phims',
             'rapChieuPhims',
             'phongChieus',
@@ -247,6 +247,13 @@ class SuatChieuController extends Controller
     {
         $now = Carbon::now();
 
+<<<<<<< HEAD
+        if ($now < $thoiGianChieu) {
+            return self::TRANG_THAI_SAP_CHIEU;
+        }
+
+        if ($now >= $thoiGianChieu && $now < $thoiGianKetThuc) {
+=======
         if ($now->lt($thoiGianChieu)) {
             $daysUntilShow = $now->diffInDays($thoiGianChieu, false);
 
@@ -258,6 +265,7 @@ class SuatChieuController extends Controller
         }
 
         if ($now->gte($thoiGianChieu) && $now->lt($thoiGianKetThuc)) {
+>>>>>>> origin/main
             return self::TRANG_THAI_DANG_CHIEU;
         }
 

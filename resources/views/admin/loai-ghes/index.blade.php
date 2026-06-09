@@ -70,12 +70,15 @@
 
                                 </td>
 
+<<<<<<< HEAD
+=======
                                 <td class="px-5 py-5">
 
                                     <span class="inline-block h-7 w-7 rounded-lg border border-white/15 shadow-sm" style="background-color: {{ $loai->mau_sac ?? '#666666' }};"></span>
 
                                 </td>
 
+>>>>>>> origin/main
                                 <td class="px-5 py-5 text-white font-bold">
 
                                     {{ $loai->ten_loai }}

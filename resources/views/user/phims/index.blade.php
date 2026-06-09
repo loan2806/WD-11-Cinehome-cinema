@@ -4,8 +4,8 @@
 
 @section('content')
 
-    <section class="min-h-screen bg-[#0b0705] text-white pt-32 pb-10">
-        <div class="max-w-[1800px] mx-auto px-8">
+<section class="min-h-screen bg-[#0b0705] text-white pt-32 pb-10">
+    <div class="max-w-[1800px] mx-auto px-8">
 
             {{-- FILTER --}}
             <form action="{{ route('user.phims.index') }}" method="GET"
@@ -136,6 +136,8 @@
             </div>
 
         </div>
-    </section>
+
+    </div>
+</section>
 
 @endsection

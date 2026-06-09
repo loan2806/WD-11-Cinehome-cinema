@@ -26,6 +26,10 @@ use App\Http\Controllers\User\SuatChieuController as UserSuatChieuController;
 use App\Http\Controllers\User\VeXemPhimController; // ĐÃ SỬA: Thay thế TicketController bằng VeXemPhimController
 use App\Http\Controllers\Admin\NhanVienController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Staff\SoatVeController;
+use App\Http\Controllers\Staff\BanVeController;
+use App\Http\Controllers\Staff\LichSuVeController;
+use App\Http\Controllers\Staff\ChonGheController;
 
 /*
 |--------------------------------------------------------------------------
@@ -183,12 +187,14 @@ Route::middleware(['auth', 'role:nhan_vien'])
     ->name('staff.')
     ->group(function () {
 
-        Route::get('/dashboard', [StaffDashboardController::class, 'index'])
-            ->name('dashboard');
+        Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
+        Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
 
-        Route::get('/tickets/scan', function () {
-            return 'Trang soát vé QR';
-        })->name('tickets.scan');
+        Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
+        Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
+        Route::post('/ban-ve/{suatChieu}', [BanVeController::class, 'store'])->name('ban-ve.store');
+        Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
     });
 
 /*
