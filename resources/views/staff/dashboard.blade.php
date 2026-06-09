@@ -6,7 +6,7 @@
 @section('content')
 
 {{-- STATS --}}
-<div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+<div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
 
     {{-- TOTAL MOVIES --}}
     <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md">
@@ -53,6 +53,56 @@
         </div>
     </div>
 
+    {{-- TICKETS SOLD TODAY --}}
+    <div
+        class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md transition hover:-translate-y-1 hover:border-[#d99a32]/50 hover:bg-white/10">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-400">Vé bán hôm nay</p>
+                <h2 class="mt-2 text-4xl font-black text-white">
+                    {{ $todaySoldTickets ?? 0 }}
+                </h2>
+            </div>
+            <div
+                class="flex h-16 w-16 items-center justify-center rounded-2xl bg-yellow-500/20 text-3xl text-yellow-400">
+                <i class="fa-solid fa-ticket"></i>
+            </div>
+        </div>
+    </div>
+
+    {{-- REVENUE TODAY --}}
+    <div
+        class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md transition hover:-translate-y-1 hover:border-[#d99a32]/50 hover:bg-white/10">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-400">Doanh thu hôm nay</p>
+                <h2 class="mt-2 text-3xl font-black text-[#d99a32]">
+                    {{ number_format($todayRevenue ?? 0, 0, ',', '.') }}đ
+                </h2>
+            </div>
+            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#d99a32]/20 text-3xl text-[#d99a32]">
+                <i class="fa-solid fa-money-bill-wave"></i>
+            </div>
+        </div>
+    </div>
+
+    {{-- CHECKED TICKETS TODAY --}}
+    <div
+        class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md transition hover:-translate-y-1 hover:border-[#d99a32]/50 hover:bg-white/10">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-400">Vé đã soát hôm nay</p>
+                <h2 class="mt-2 text-4xl font-black text-white">
+                    {{ $todayCheckedTickets ?? 0 }}
+                </h2>
+            </div>
+            <div
+                class="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-500/20 text-3xl text-purple-400">
+                <i class="fa-solid fa-qrcode"></i>
+            </div>
+        </div>
+    </div>
+
     {{-- STAFF STATUS --}}
     <div class="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur-md">
         <div class="flex items-center justify-between">
@@ -93,39 +143,39 @@
 
             <tbody class="divide-y divide-white/5">
                 @forelse($upcomingShowtimes ?? [] as $showtime)
-                    <tr class="transition hover:bg-white/5">
-                        
-                        <td class="py-4 font-bold text-white">
-                            {{ $showtime->phim->ten_phim ?? 'Không có phim' }}
-                        </td>
+                <tr class="transition hover:bg-white/5">
 
-                        <td class="py-4 text-gray-300">
-                            {{ $showtime->cinema->name ?? 'CineHome Thường Tín' }}
-                        </td>
+                    <td class="py-4 font-bold text-white">
+                        {{ $showtime->phim->ten_phim ?? 'Không có phim' }}
+                    </td>
 
-                        <td class="py-4 text-gray-300">
-                            {{ $showtime->ten_phong ?? 'Phòng chiếu' }}
-                        </td>
+                    <td class="py-4 text-gray-300">
+                        {{ $showtime->rapChieuPhim->ten_rap ?? 'Chưa có rạp' }}
+                    </td>
 
-                        <td class="py-4 text-gray-300">
-                            {{ $showtime->thoi_gian_chieu ? $showtime->thoi_gian_chieu->format('d/m/Y') : '---' }}
-                        </td>
+                    <td class="py-4 text-gray-300">
+                        {{ $showtime->phongChieu->ten_phong ?? 'Phòng chiếu' }}
+                    </td>
 
-                        <td class="py-4 text-gray-300">
-                            {{ $showtime->thoi_gian_chieu ? $showtime->thoi_gian_chieu->format('H:i') : '---' }}
-                        </td>
+                    <td class="py-4 text-gray-300">
+                        {{ $showtime->thoi_gian_chieu ? $showtime->thoi_gian_chieu->format('d/m/Y') : '---' }}
+                    </td>
 
-                        <td class="py-4 font-bold text-[#d99a32]">
-                            {{ number_format($showtime->gia_ve ?? 60000) }}đ
-                        </td>
+                    <td class="py-4 text-gray-300">
+                        {{ $showtime->thoi_gian_chieu ? $showtime->thoi_gian_chieu->format('H:i') : '---' }}
+                    </td>
 
-                    </tr>
+                    <td class="py-4 font-bold text-[#d99a32]">
+                        {{ number_format($showtime->gia_ve ?? 60000) }}đ
+                    </td>
+
+                </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="py-10 text-center text-gray-500">
-                            Chưa có suất chiếu sắp tới.
-                        </td>
-                    </tr>
+                <tr>
+                    <td colspan="6" class="py-10 text-center text-gray-500">
+                        Chưa có suất chiếu sắp tới.
+                    </td>
+                </tr>
                 @endforelse
             </tbody>
         </table>
