@@ -12,7 +12,7 @@
             <div class="relative min-h-screen flex items-center justify-center overflow-hidden px-8 py-24 bg-black">
 
                 <div class="absolute inset-0 bg-cover bg-center scale-110 opacity-25 blur-md"
-                    style="background-image: url('{{  $movie->poster }}');">
+                    style="background-image: url('{{ $movie->poster }}');">
                 </div>
 
                 <div class="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-[#0b0705]"></div>
@@ -23,7 +23,7 @@
                     <img src="{{ $movie->poster }}" alt="{{ $movie->ten_phim }}"
                         class="poster-pop-left relative z-10 w-[320px] md:w-[410px] lg:w-[450px] h-[520px] md:h-[620px] object-cover rounded-3xl shadow-2xl border border-white/10">
 
-                    {{-- BUTTONS UNDER POSTER --}}
+                    {{-- BUTTONS --}}
                     <div class="relative z-10 mt-6 w-[320px] md:w-[410px] lg:w-[450px] space-y-3">
 
                         {{-- TRAILER --}}
@@ -33,14 +33,12 @@
                             Xem trailer
                         </a>
 
-                        {{-- BOOKING / INTEREST --}}
-                        {{-- BUTTON ACTION --}}
                         @php
-                            $status = $movie->schedule_status;
+                            $status = optional($movie->showtimes->sortBy('thoi_gian_chieu')->first())?->trang_thai;
                         @endphp
 
                         {{-- SẮP RA MẮT --}}
-                        @if ($status === 'Sắp ra mắt')
+                        @if ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT)
                             <button
                                 class="w-full flex items-center justify-center gap-2 bg-pink-500 text-white font-extrabold px-6 py-3 rounded-xl hover:bg-pink-400 transition">
                                 <i class="fa-regular fa-heart"></i>
@@ -48,19 +46,24 @@
                             </button>
 
                             {{-- SẮP CHIẾU --}}
-                        @elseif ($status === 'Sắp chiếu')
-                            <a href="#showtimes"
+                        @elseif ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
+                            <a href="{{ route('booking', $movie) }}"
                                 class="w-full flex items-center justify-center gap-2 bg-[#f5a623] text-black font-extrabold px-6 py-3 rounded-xl hover:bg-[#ffc04d] transition">
                                 <i class="fa-solid fa-ticket"></i>
                                 Đặt vé ngay
                             </a>
 
                             {{-- ĐANG CHIẾU --}}
-                        @else
+                        @elseif ($status === \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU)
                             <div
                                 class="w-full flex items-center justify-center gap-2 bg-white/10 text-white font-extrabold px-6 py-3 rounded-xl border border-white/10">
                                 <i class="fa-solid fa-film"></i>
                                 Đang chiếu
+                            </div>
+                        @else
+                            <div
+                                class="w-full flex items-center justify-center gap-2 bg-gray-700 text-white font-extrabold px-6 py-3 rounded-xl">
+                                Không xác định
                             </div>
                         @endif
 
@@ -106,7 +109,7 @@
 
                         <div class="bg-white/10 rounded-2xl p-4">
                             <p class="text-gray-400 text-sm mb-1">Quốc gia</p>
-                            <p class="font-bold">{{ $movie->country?->ten_quoc_gia }}</p>
+                            <p class="font-bold">{{ $movie->country->ten_quoc_gia }}</p>
                         </div>
 
                         <div class="bg-white/10 rounded-2xl p-4">
@@ -122,8 +125,8 @@
                         <div class="bg-white/10 rounded-2xl p-4 md:col-span-2">
                             <p class="text-gray-400 text-sm mb-1">Diễn viên</p>
                             <p class="font-bold">
-                                @if (is_array($movie->dien_vien ))
-                                    {{ implode(', ', $movie->dien_vien) }}
+                                @if (is_array($movie->dien_vien) || is_object($movie->dien_vien))
+                                    {{ implode(', ', (array) $movie->dien_vien) }}
                                 @else
                                     {{ $movie->dien_vien }}
                                 @endif
@@ -143,48 +146,28 @@
             </div>
 
         </div>
+
     </section>
 
+    {{-- RELATED MOVIES --}}
     <section class="bg-[#0b0705] text-white py-20">
         <div class="container-fluid px-8">
+
             <div class="section-title-wrap mb-8">
                 <h2 class="section-title">
                     Phim <span>liên quan</span>
                 </h2>
             </div>
 
-            @if(isset($relatedMovies) && $relatedMovies->isNotEmpty())
+            @if (isset($relatedMovies) && $relatedMovies->isNotEmpty())
                 @include('partials.movie-section', ['movies' => $relatedMovies])
             @else
                 <div class="text-center text-gray-400 py-14">
                     Không tìm thấy phim liên quan.
                 </div>
             @endif
+
         </div>
     </section>
-
-    <script>
-        function backWithAnimation(url) {
-            const poster = document.querySelector('.poster-pop-left');
-            const content = document.querySelector('.content-fade-right');
-
-            if (!poster || !content) {
-                window.location.href = url;
-                return;
-            }
-
-            poster.classList.remove('poster-pop-left');
-            content.classList.remove('content-fade-right');
-
-            void poster.offsetWidth;
-
-            poster.classList.add('poster-back');
-            content.classList.add('content-back');
-
-            setTimeout(function() {
-                window.location.href = url;
-            }, 600);
-        }
-    </script>
 
 @endsection

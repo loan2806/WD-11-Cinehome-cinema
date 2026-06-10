@@ -28,9 +28,7 @@ class Phims extends Model
         'gioi_han_tuoi',
     ];
 
-    protected $appends = [
-        'schedule_status',
-    ];
+
 
     /**
      * TỐI ƯU: Đổi sang hàm boot() tiêu chuẩn đảm bảo an toàn tuyệt đối
@@ -89,32 +87,32 @@ class Phims extends Model
         return $query->whereHas('showtimes');
     }
 
-    public function getScheduleStatusAttribute(): string
-    {
-        if ($this->showtimes->isEmpty()) {
-            return 'Chưa có suất chiếu';
-        }
+    // public function getScheduleStatusAttribute(): string
+    // {
+    //     if ($this->showtimes->isEmpty()) {
+    //         return 'Chưa có suất chiếu';
+    //     }
 
-        $showtimeStatuses = $this->showtimes->pluck('trang_thai')->unique();
+    //     $showtimeStatuses = $this->showtimes->pluck('trang_thai')->unique();
 
-        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_DANG_CHIEU)) {
-            return 'Đang chiếu';
-        }
+    //     if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_DANG_CHIEU)) {
+    //         return 'Đang chiếu';
+    //     }
 
-        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_SAP_CHIEU)) {
-            return 'Sắp chiếu';
-        }
+    //     if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_SAP_CHIEU)) {
+    //         return 'Sắp chiếu';
+    //     }
 
-        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_SAP_RA_MAT)) {
-            return 'Sắp ra mắt';
-        }
+    //     if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_SAP_RA_MAT)) {
+    //         return 'Sắp ra mắt';
+    //     }
 
-        if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_DA_CHIEU)) {
-            return 'Đã chiếu';
-        }
+    //     if ($showtimeStatuses->contains(SuatChieu::TRANG_THAI_DA_CHIEU)) {
+    //         return 'Đã chiếu';
+    //     }
 
-        return 'Không xác định';
-    }
+    //     return 'Không xác định';
+    // }
     public function getRouteKeyName()
     {
         return 'slug';

@@ -91,6 +91,24 @@
 
                         @forelse ($latestMovies as $movie)
 
+                            @php
+                                $statuses = $movie->showtimes->pluck('trang_thai');
+
+                                if ($statuses->contains(\App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU)) {
+                                    $statusText = 'Đang chiếu';
+                                    $statusClass = 'status-showing';
+                                } elseif ($statuses->contains(\App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)) {
+                                    $statusText = 'Sắp chiếu';
+                                    $statusClass = 'status-coming';
+                                } elseif ($statuses->contains(\App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT)) {
+                                    $statusText = 'Sắp ra mắt';
+                                    $statusClass = 'status-coming';
+                                } else {
+                                    $statusText = 'Không có suất';
+                                    $statusClass = 'status-coming';
+                                }
+                            @endphp
+
                             <tr>
 
                                 <td>
@@ -100,7 +118,7 @@
 
                                         <div>
                                             <strong>{{ $movie->ten_phim }}</strong>
-                                            <small>{{ $movie->genre }}</small>
+                                            <small>{{ $movie->genres->pluck('ten_the_loai')->join(', ') }}</small>
                                         </div>
 
                                     </div>
@@ -109,20 +127,9 @@
                                 <td>{{ $movie->thoi_luong }} phút</td>
 
                                 <td>
-                                    @php
-                                        $releaseDate = $movie->ngay_khoi_chieu;
-                                        $isComingSoon = $releaseDate && \Carbon\Carbon::parse($releaseDate)->gt(now());
-                                    @endphp
-
-                                    @if ($isComingSoon)
-                                        <span class="status-badge status-coming">
-                                            Sắp chiếu
-                                        </span>
-                                    @else
-                                        <span class="status-badge status-showing">
-                                            Đang chiếu
-                                        </span>
-                                    @endif
+                                    <span class="status-badge {{ $statusClass }}">
+                                        {{ $statusText }}
+                                    </span>
                                 </td>
 
                             </tr>
@@ -185,18 +192,18 @@
                                     <br>
 
                                     <small class="text-muted">
-                                        {{ $schedule->ten_phong ?? 'Phòng chiếu' }}
+                                        {{ $schedule->phongChieu->ten_phong ?? 'Phòng chiếu' }}
                                     </small>
                                 </td>
 
                                 <td>
                                     <span class="status-badge status-coming">
-                                        {{ $schedule->thoi_gian_chieu->format('H:i') }}
+                                        {{ \Carbon\Carbon::parse($schedule->thoi_gian_chieu)->format('H:i') }}
                                     </span>
                                 </td>
 
                                 <td>
-                                    {{ $schedule->price }}đ
+                                    {{ $schedule->price ?? 0 }}đ
                                 </td>
 
                             </tr>

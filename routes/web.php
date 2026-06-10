@@ -134,6 +134,7 @@ Route::middleware('auth')
     });
 
 use App\Http\Controllers\DatVe\DatVeController;
+use App\Http\Controllers\Admin\QuocGiaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -206,6 +207,8 @@ Route::middleware(['auth', 'role:admin'])
             ->name('dashboard');
 
         Route::resource('phims', AdminMovieController::class);
+
+        Route::resource('quoc-gias', QuocGiaController::class);
 
         Route::resource('the-loais', TheloaisController::class);
 
