@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\SuatChieu;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
-use App\Models\SuatChieu;
-use Carbon\Carbon;
 
 class Phims extends Model
 {
@@ -28,13 +28,63 @@ class Phims extends Model
         'gioi_han_tuoi',
     ];
 
+    protected $casts = [
+        'ngay_khoi_chieu' => 'date',
+    ];
+
     protected $appends = [
         'schedule_status',
     ];
 
-    /**
-     * TỐI ƯU: Đổi sang hàm boot() tiêu chuẩn đảm bảo an toàn tuyệt đối
-     */
+    public function getTitleAttribute()
+    {
+        return $this->ten_phim;
+    }
+
+    public function getDescriptionAttribute()
+    {
+        return $this->mo_ta;
+    }
+
+    public function getTrailerUrlAttribute()
+    {
+        return $this->trailer;
+    }
+
+    public function getDurationAttribute()
+    {
+        return $this->thoi_luong;
+    }
+
+    public function getAgeRatingAttribute()
+    {
+        return $this->gioi_han_tuoi;
+    }
+
+    public function getReleaseDateAttribute()
+    {
+        return $this->ngay_khoi_chieu;
+    }
+
+    public function getCastAttribute()
+    {
+        return $this->dien_vien;
+    }
+
+    public function getGenreAttribute()
+    {
+        if (! $this->relationLoaded('genres')) {
+            return 'Đang cập nhật';
+        }
+
+        return $this->genres->pluck('ten_the_loai')->filter()->join(', ');
+    }
+
+    public function getCountryAttribute()
+    {
+        return $this->country?->ten_quoc_gia;
+    }
+
     protected static function boot(): void
     {
         parent::boot();
@@ -61,14 +111,6 @@ class Phims extends Model
         return $this->belongsTo(QuocGia::class, 'quoc_gia_id');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | CẢNH BÁO LỖI TƯƠNG LAI Ở ĐÂY:
-    |--------------------------------------------------------------------------
-    | Khi bạn tiến hành Việt hóa bảng liên kết nhiều-nhiều giữa Phim và Thể Loại,
-    | bạn bắt buộc phải sửa tên bảng trung gian 'movie_genre' thành tên bảng mới của bạn (Ví dụ: 'phim_the_loai')
-    | và đổi các khóa ngoại 'movie_id', 'genre_id' thành 'phim_id', 'the_loai_id'.
-    |*/
     public function genres()
     {
         return $this->belongsToMany(
@@ -91,6 +133,10 @@ class Phims extends Model
 
     public function getScheduleStatusAttribute(): string
     {
+        if (! $this->relationLoaded('showtimes')) {
+            $this->load('showtimes');
+        }
+
         if ($this->showtimes->isEmpty()) {
             return 'Chưa có suất chiếu';
         }
@@ -115,6 +161,7 @@ class Phims extends Model
 
         return 'Không xác định';
     }
+
     public function getRouteKeyName()
     {
         return 'slug';
@@ -123,6 +170,7 @@ class Phims extends Model
     public function getNgayKhoiChieuAttribute()
     {
         $firstShowtime = $this->showtimes()->min('thoi_gian_chieu');
+
         return $firstShowtime ? Carbon::parse($firstShowtime)->toDateString() : null;
     }
 }

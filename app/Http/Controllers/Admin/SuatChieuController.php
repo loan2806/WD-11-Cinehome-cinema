@@ -31,19 +31,19 @@ class SuatChieuController extends Controller
     {
         $query = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu']);
 
-        if ($request->has('phim_id') && $request->phim_id) {
+        if ($request->filled('phim_id')) {
             $query->where('phim_id', $request->phim_id);
         }
 
-        if ($request->has('trang_thai') && $request->trang_thai) {
+        if ($request->filled('trang_thai')) {
             $query->where('trang_thai', $request->trang_thai);
         }
 
-        if ($request->has('phong_chieu_id') && $request->phong_chieu_id) {
+        if ($request->filled('phong_chieu_id')) {
             $query->where('phong_chieu_id', $request->phong_chieu_id);
         }
 
-        if ($request->has('ngay_chieu') && $request->ngay_chieu) {
+        if ($request->filled('ngay_chieu')) {
             $query->whereDate('thoi_gian_chieu', $request->ngay_chieu);
         }
 
@@ -51,7 +51,6 @@ class SuatChieuController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        // Lấy tất cả phim để filter (kể cả phim chưa có suất chiếu)
         $phims = Phims::orderBy('ten_phim')->get();
 
         $phongChieus = PhongChieu::with('rapChieuPhim')
@@ -70,7 +69,6 @@ class SuatChieuController extends Controller
      */
     public function create(Request $request): View
     {
-        // Lấy tất cả phim để tạo suất chiếu (kể cả phim chưa có suất chiếu)
         $phims = Phims::orderBy('ten_phim')->get();
 
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
@@ -81,7 +79,7 @@ class SuatChieuController extends Controller
 
         $phongChieuId = $request->phong_chieu_id;
 
-        return view('admin.suat-chieus.create', compact(git status
+        return view('admin.suat-chieus.create', compact(
             'phims',
             'rapChieuPhims',
             'phongChieus',
@@ -97,7 +95,6 @@ class SuatChieuController extends Controller
         $data = $request->validated();
 
         $phim = Phims::findOrFail($data['phim_id']);
-        $phongChieu = PhongChieu::findOrFail($data['phong_chieu_id']);
 
         $thoiGianChieu = Carbon::parse($data['thoi_gian_chieu']);
         $thoiLuong = $phim->thoi_luong ?? 120;
@@ -105,11 +102,9 @@ class SuatChieuController extends Controller
 
         $data['thoi_luong'] = $thoiLuong;
         $data['thoi_gian_ket_thuc'] = $thoiGianKetThuc;
+        $data['trang_thai'] = $data['trang_thai'] ?? $this->xacDinhTrangThai($thoiGianChieu, $thoiGianKetThuc);
 
-        $trangThai = $this->xacDinhTrangThai($thoiGianChieu, $thoiGianKetThuc);
-        $data['trang_thai'] = $data['trang_thai'] ?? $trangThai;
-
-        $suatChieu = SuatChieu::create($data);
+        SuatChieu::create($data);
 
         return redirect()
             ->route('admin.suat-chieus.index')
@@ -247,13 +242,6 @@ class SuatChieuController extends Controller
     {
         $now = Carbon::now();
 
-<<<<<<< HEAD
-        if ($now < $thoiGianChieu) {
-            return self::TRANG_THAI_SAP_CHIEU;
-        }
-
-        if ($now >= $thoiGianChieu && $now < $thoiGianKetThuc) {
-=======
         if ($now->lt($thoiGianChieu)) {
             $daysUntilShow = $now->diffInDays($thoiGianChieu, false);
 
@@ -265,7 +253,6 @@ class SuatChieuController extends Controller
         }
 
         if ($now->gte($thoiGianChieu) && $now->lt($thoiGianKetThuc)) {
->>>>>>> origin/main
             return self::TRANG_THAI_DANG_CHIEU;
         }
 

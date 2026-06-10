@@ -1,53 +1,40 @@
 @extends('layouts.user')
 
-@section('title', 'Chi tiết lịch chiếu - CineHome')
+@section('title', 'Chi tiet lich chieu - CineHome')
 
 @section('content')
-
-<section class="min-h-screen bg-[#0b0705] text-white pt-32 pb-10">
-    <div class="max-w-6xl mx-auto px-6">
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 bg-[#151515] border border-white/10 rounded-3xl p-6">
-
-            <img 
-                src="{{ $showtime->movie->poster }}"
-                alt="{{ $showtime->movie->title }}"
+<section class="min-h-screen bg-[#0b0705] px-6 pt-32 pb-12 text-white">
+    <div class="mx-auto max-w-5xl rounded-3xl border border-white/10 bg-[#151515] p-6">
+        <div class="grid gap-8 md:grid-cols-[320px_1fr]">
+            <img
+                src="{{ $suatChieu->phim->poster ?? 'https://via.placeholder.com/300x450?text=Poster' }}"
+                alt="{{ $suatChieu->phim->ten_phim }}"
                 class="w-full rounded-2xl object-cover"
             >
 
-            <div class="md:col-span-2">
-                <h1 class="text-4xl font-extrabold text-[#f5a623] mb-4">
-                    {{ $showtime->movie->title }}
-                </h1>
+            <div>
+                <h1 class="text-4xl font-black text-[#f5a623]">{{ $suatChieu->phim->ten_phim }}</h1>
+                <p class="mt-4 text-gray-300">{{ $suatChieu->phim->mo_ta }}</p>
 
-                <p class="text-gray-300 mb-5">
-                    {{ $showtime->movie->description }}
-                </p>
-
-                <div class="space-y-3 text-gray-300">
-                    <p><i class="fa-solid fa-building text-[#f5a623] mr-2"></i>{{ $showtime->cinema->name }}</p>
-                    <p><i class="fa-solid fa-location-dot text-[#f5a623] mr-2"></i>{{ $showtime->cinema->address }}</p>
-                    <p><i class="fa-solid fa-door-open text-[#f5a623] mr-2"></i>{{ $showtime->room_name }}</p>
-                    <p><i class="fa-solid fa-calendar text-[#f5a623] mr-2"></i>{{ \Carbon\Carbon::parse($showtime->show_date)->format('d/m/Y') }}</p>
-                    <p><i class="fa-solid fa-clock text-[#f5a623] mr-2"></i>{{ \Carbon\Carbon::parse($showtime->show_time)->format('H:i') }}</p>
-                    <p><i class="fa-solid fa-ticket text-[#f5a623] mr-2"></i>{{ number_format($showtime->price) }}đ</p>
+                <div class="mt-6 space-y-3 text-gray-300">
+                    <p><i class="fa-solid fa-building text-[#f5a623]"></i> {{ $suatChieu->rapChieuPhim->ten_rap }}</p>
+                    <p><i class="fa-solid fa-location-dot text-[#f5a623]"></i> {{ $suatChieu->rapChieuPhim->dia_chi }}</p>
+                    <p><i class="fa-solid fa-calendar text-[#f5a623]"></i> {{ $suatChieu->thoi_gian_chieu->format('d/m/Y') }}</p>
+                    <p><i class="fa-solid fa-clock text-[#f5a623]"></i> {{ $suatChieu->thoi_gian_chieu->format('H:i') }}</p>
+                    <p><i class="fa-solid fa-ticket text-[#f5a623]"></i> {{ number_format($suatChieu->gia_ve, 0, ',', '.') }} VND</p>
                 </div>
 
-                <div class="mt-8 flex gap-4">
-                    <a href="#" class="bg-[#f5a623] text-black font-extrabold px-8 py-3 rounded-xl">
-                        Đặt vé
+                <div class="mt-8 flex flex-wrap gap-4">
+                    <a href="{{ route('dat_ve.chon_ghe', ['suat_chieu_id' => $suatChieu->id]) }}" class="rounded-xl bg-[#f5a623] px-8 py-3 font-black text-black">
+                        Dat ve
                     </a>
 
-                    <a href="{{ route('user.showtimes.index', ['cinema_id' => $showtime->cinema_id]) }}"
-                       class="bg-white/10 text-white font-bold px-8 py-3 rounded-xl">
-                        Quay lại
+                    <a href="{{ route('user.showtimes.index', ['rap_chieu_phim_id' => $suatChieu->rap_chieu_phim_id]) }}" class="rounded-xl bg-white/10 px-8 py-3 font-bold text-white">
+                        Quay lai
                     </a>
                 </div>
             </div>
-
         </div>
-
     </div>
 </section>
-
 @endsection

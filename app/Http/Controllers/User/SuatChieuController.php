@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\RapChieuPhim;
 use App\Models\Phims;
+use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -19,20 +19,19 @@ class SuatChieuController extends Controller
 
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
 
-        // Lấy phim dựa trên thoi_gian_chieu trong bảng suất chiếu
+        // Danh sách phim có suất chiếu trong 10 ngày tới
         $movies = Phims::whereHas('showtimes', function ($q) use ($today, $limitDay) {
                 $q->whereDate('thoi_gian_chieu', '>=', $today)
-                  ->whereDate('thoi_gian_chieu', '<=', $limitDay);
+                    ->whereDate('thoi_gian_chieu', '<=', $limitDay);
             })
             ->orderBy('ten_phim')
             ->get();
 
-        // Truy vấn danh sách suất chiếu theo các tham số đầu vào
         $suatChieusQuery = SuatChieu::with(['phim', 'rapChieuPhim'])
-            ->whereHas('phim', function ($movieQuery) use ($today, $limitDay, $request) {
+            ->whereHas('phim', function ($movieQuery) use ($today, $limitDay) {
                 $movieQuery->whereHas('showtimes', function ($q) use ($today, $limitDay) {
                     $q->whereDate('thoi_gian_chieu', '>=', $today)
-                      ->whereDate('thoi_gian_chieu', '<=', $limitDay);
+                        ->whereDate('thoi_gian_chieu', '<=', $limitDay);
                 });
             })
             ->whereRaw(
@@ -53,15 +52,16 @@ class SuatChieuController extends Controller
                 $query->whereDate('thoi_gian_chieu', $request->ngay_chieu);
             });
 
-        // Lọc theo trạng thái: đang chiếu hoặc sắp chiếu
+        // Lọc theo trạng thái
         if ($request->trang_thai === 'dang_chieu') {
             $suatChieusQuery->whereDate('thoi_gian_chieu', $today);
         } elseif ($request->trang_thai === 'sap_chieu') {
             $suatChieusQuery->whereDate('thoi_gian_chieu', '>', $today)
-                           ->whereDate('thoi_gian_chieu', '<=', $limitDay);
+                ->whereDate('thoi_gian_chieu', '<=', $limitDay);
         }
 
-        $suatChieus = $suatChieusQuery->orderBy('thoi_gian_chieu')
+        $suatChieus = $suatChieusQuery
+            ->orderBy('thoi_gian_chieu')
             ->get();
 
         return view('user.showtimes.index', compact(

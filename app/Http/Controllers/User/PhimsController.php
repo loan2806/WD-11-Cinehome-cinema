@@ -4,128 +4,55 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Phims;
-use App\Models\TheLoai;
 use App\Models\QuocGia;
 use App\Models\SuatChieu;
-use Illuminate\Http\Request;
+use App\Models\TheLoai;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class PhimsController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | HOME PAGE
-    |--------------------------------------------------------------------------
-    */
     public function home()
     {
-        $movies = Phims::with([
-            'showtimes',
-            'genres',
-            'country'
-        ])
+        $movies = Phims::with(['showtimes', 'country'])
             ->visibleToUsers()
             ->orderBy('created_at', 'desc')
             ->get();
 
-        /*
-        |--------------------------------------------------------------------------
-        | NOW SHOWING
-        |--------------------------------------------------------------------------
-        */
-        $nowShowingMovies = $movies->filter(
-            fn($movie)
-            => $movie->schedule_status === 'Đang chiếu'
-        );
+        $nowShowingMovies = $movies->filter(fn($movie) => $movie->schedule_status === 'Đang chiếu');
+        $comingSoonMovies = $movies->filter(fn($movie) => $movie->schedule_status === 'Sắp chiếu');
+        $comingLaterMovies = $movies->filter(fn($movie) => $movie->schedule_status === 'Sắp ra mắt');
 
-        /*
-        |--------------------------------------------------------------------------
-        | COMING SOON
-        |--------------------------------------------------------------------------
-        */
-        $comingSoonMovies = $movies->filter(
-            fn($movie)
-            => $movie->schedule_status === 'Sắp chiếu'
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | COMING LATER
-        |--------------------------------------------------------------------------
-        */
-        $comingLaterMovies = $movies->filter(
-            fn($movie)
-            => $movie->schedule_status === 'Sắp ra mắt'
-        );
-
-        /*
-        |--------------------------------------------------------------------------
-        | BANNER
-        |--------------------------------------------------------------------------
-        */
         $bannerMovies = $nowShowingMovies->take(5);
 
-        return view(
-            'user.home',
-            compact(
-                'bannerMovies',
-                'nowShowingMovies',
-                'comingSoonMovies',
-                'comingLaterMovies'
-            )
-        );
+        return view('user.home', compact(
+            'bannerMovies',
+            'nowShowingMovies',
+            'comingSoonMovies',
+            'comingLaterMovies'
+        ));
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | MOVIE LIST
-    |--------------------------------------------------------------------------
-    */
     public function index(Request $request)
     {
-        $query = Phims::with([
-            'showtimes',
-            'genres',
-            'country'
-        ])->visibleToUsers();
+        $query = Phims::with(['showtimes', 'country', 'genres'])
+            ->visibleToUsers();
 
-        // SEARCH
         if ($request->filled('tim_kiem')) {
-
-            $query->where(
-                'ten_phim',
-                'like',
-                '%' . $request->tim_kiem . '%'
-            );
+            $query->where('ten_phim', 'like', '%' . $request->tim_kiem . '%');
         }
-
 
         if ($request->filled('the_loai')) {
-
             $query->whereHas('genres', function ($q) use ($request) {
-
-                $q->where(
-                    'ten_the_loai',
-                    $request->the_loai
-                );
+                $q->where('ten_the_loai', $request->the_loai);
             });
         }
-
 
         if ($request->filled('quoc_gia')) {
-
             $query->whereHas('country', function ($q) use ($request) {
-
-                $q->where(
-                    'ten_quoc_gia',
-                    $request->quoc_gia
-                );
+                $q->where('ten_quoc_gia', $request->quoc_gia);
             });
         }
-
-        $movies = $query->orderBy('created_at', 'desc')
-            ->get()
-            ->filter(fn($movie) => $movie->schedule_status !== 'Đã chiếu');
 
         if ($request->filled('status')) {
             if (in_array($request->status, [
@@ -136,12 +63,12 @@ class PhimsController extends Controller
                 $query->whereHas('showtimes', function ($q) use ($request) {
                     $q->where('trang_thai', $request->status);
                 });
-
-                $movies = $query->orderBy('created_at', 'desc')
-                    ->get()
-                    ->filter(fn($movie) => $movie->schedule_status !== 'Đã chiếu');
             }
         }
+
+        $movies = $query->orderBy('created_at', 'desc')
+            ->get()
+            ->filter(fn($movie) => $movie->schedule_status !== 'Đã chiếu');
 
         $genres = TheLoai::where('trang_thai', 1)->get();
         $countries = QuocGia::where('trang_thai', 1)->get();
@@ -153,56 +80,44 @@ class PhimsController extends Controller
         ));
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | MOVIE DETAIL
-    |--------------------------------------------------------------------------
-    */
-public function show(Phims $movie)
-{
-    $now = Carbon::now('Asia/Ho_Chi_Minh');
+    public function show(Phims $movie)
+    {
+        $now = Carbon::now('Asia/Ho_Chi_Minh');
 
-    $showtimes = SuatChieu::with([
+        $showtimes = SuatChieu::with([
             'rapChieuPhim',
             'phongChieu',
             'phim'
         ])
-        ->where('phim_id', $movie->id)
-        ->orderBy('thoi_gian_chieu')
-        ->get()
-        ->filter(function ($showtime) use ($movie, $now) {
+            ->where('phim_id', $movie->id)
+            ->orderBy('thoi_gian_chieu')
+            ->get()
+            ->filter(function ($showtime) use ($movie, $now) {
+                if (!$showtime->thoi_gian_chieu) {
+                    return false;
+                }
 
-            // đảm bảo dữ liệu không null
-            if (!$showtime->thoi_gian_chieu) {
-                return false;
-            }
+                $start = Carbon::parse($showtime->thoi_gian_chieu);
+                $end = $start->copy()->addMinutes((int) $movie->thoi_luong);
 
-            // start time từ DB (datetime)
-            $start = Carbon::parse($showtime->thoi_gian_chieu);
+                return $end->gte($now);
+            });
 
-            // end time = start + thời lượng phim
-            $end = $start->copy()
-                ->addMinutes((int) $movie->thoi_luong);
+        $relatedMovies = Phims::with(['genres', 'country', 'showtimes'])
+            ->where('id', '!=', $movie->id)
+            ->whereHas('genres', function ($query) use ($movie) {
+                $query->whereIn('id', $movie->genres->pluck('id'));
+            })
+            ->visibleToUsers()
+            ->distinct()
+            ->take(6)
+            ->get();
 
-            // chỉ lấy suất chưa kết thúc
-            return $end->gte($now);
-        });
-
-    $relatedMovies = Phims::with(['genres', 'country', 'showtimes'])
-        ->where('id', '!=', $movie->id)
-        ->whereHas('genres', function ($query) use ($movie) {
-            $query->whereIn('id', $movie->genres->pluck('id'));
-        })
-        ->visibleToUsers()
-        ->distinct()
-        ->take(6)
-        ->get();
-
-    return view('user.phims.show', compact(
-        'movie',
-        'showtimes',
-        'now',
-        'relatedMovies'
-    ));
-}
+        return view('user.phims.show', compact(
+            'movie',
+            'showtimes',
+            'now',
+            'relatedMovies'
+        ));
+    }
 }
