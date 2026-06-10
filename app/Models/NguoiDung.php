@@ -31,6 +31,9 @@ class NguoiDung extends Authenticatable
         'trang_thai_hoat_dong' => 'boolean',
     ];
 
+    /**
+     * Magic Accessor cho 'password' ảo
+     */
     public function getPasswordAttribute()
     {
         return $this->mat_khau;

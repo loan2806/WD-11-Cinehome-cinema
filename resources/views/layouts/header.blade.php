@@ -15,8 +15,8 @@
                     Phim
                 </a>
 
-                <a href="{{ route('user.cinemas.index') }}" class="{{ request()->routeIs('user.cinemas.index', 'user.cinemas.show') ? 'active' : '' }}">
-                    Rạp
+                <a href="{{ route('user.cinemas.index') }}" class="{{ request()->routeIs('user.cinemas.*') ? 'active' : '' }}">
+                    Giới thiệu rạp
                 </a>
 
                 <a href="{{ route('user.cinemas.map') }}" class="{{ request()->routeIs('user.cinemas.map') ? 'active' : '' }}">
@@ -26,9 +26,9 @@
                 <a href="{{ route('user.showtimes.index') }}" class="{{ request()->routeIs('user.showtimes.*') ? 'active' : '' }}">
                     Lịch chiếu
                 </a>
-                
+
                 <a href="{{ route('dat_ve.chon_rap') }}" class="{{ request()->routeIs('dat_ve.*') ? 'active' : '' }}">
-                    Äáº·t vÃ©
+                    Đặt vé
                 </a>
 
                 <a href="#" class="{{ request()->is('khuyen-mai*') ? 'active' : '' }}">
@@ -40,7 +40,7 @@
                 </a>
             </nav>
 
-<div class="nav-action">
+            <div class="nav-action">
                 <input type="text" class="search-box" placeholder="Tìm phim...">
 
                 @guest
@@ -64,7 +64,7 @@
                         </button>
 
                         <div id="userDropdownMenu" class="absolute right-0 top-[120%] z-[9999] hidden w-56 overflow-hidden rounded-xl border border-[#d99a32]/30 bg-[#151515]/95 shadow-2xl backdrop-blur-md">
-                            
+
                             {{-- USER INFO --}}
                             <div class="flex items-center gap-3 border-b border-white/10 px-3 py-3">
                                 <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white">
@@ -106,7 +106,7 @@
                                     Danh sách phim
                                 </a>
 
-                                @if (Auth::user()->role === 'quan_tri_vien' || Auth::user()->vai_tro === 'quan_tri_vien')
+                                @if (Auth::user()->role === 'admin' || Auth::user()->vai_tro === 'admin')
                                     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-user-shield w-4 text-xs"></i>
                                         Trang quản lý

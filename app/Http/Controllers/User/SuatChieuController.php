@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Models\RapChieuPhim;
 use App\Models\Phims;
+use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -19,23 +19,20 @@ class SuatChieuController extends Controller
 
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
 
-        $movies = Phims::whereHas('showtimes', function ($query) use ($now) {
-                $query->where('thoi_gian_chieu', '>=', $now);
+        // Danh sách phim có suất chiếu trong 10 ngày tới
+        $movies = Phims::whereHas('showtimes', function ($q) use ($today, $limitDay) {
+                $q->whereDate('thoi_gian_chieu', '>=', $today)
+                    ->whereDate('thoi_gian_chieu', '<=', $limitDay);
             })
             ->orderBy('ten_phim')
             ->get();
 
-        // Truy vấn danh sách suất chiếu theo các tham số đầu vào thuần Việt
-        $suatChieus = SuatChieu::with(['phim', 'rapChieuPhim'])
-            ->whereHas('phim', function ($movieQuery) use ($today, $limitDay, $request) {
-                if ($request->trang_thai === 'dang_chieu') {
-                    $movieQuery->whereDate('ngay_khoi_chieu', '<=', $today);
-                }
-
-                if ($request->trang_thai === 'sap_chieu') {
-                    $movieQuery->whereDate('ngay_khoi_chieu', '>', $today)
-                        ->whereDate('ngay_khoi_chieu', '<=', $limitDay);
-                }
+        $suatChieusQuery = SuatChieu::with(['phim', 'rapChieuPhim'])
+            ->whereHas('phim', function ($movieQuery) use ($today, $limitDay) {
+                $movieQuery->whereHas('showtimes', function ($q) use ($today, $limitDay) {
+                    $q->whereDate('thoi_gian_chieu', '>=', $today)
+                        ->whereDate('thoi_gian_chieu', '<=', $limitDay);
+                });
             })
             ->whereRaw(
                 "DATE_ADD(thoi_gian_chieu, INTERVAL (
@@ -53,7 +50,17 @@ class SuatChieuController extends Controller
             })
             ->when($request->ngay_chieu, function ($query) use ($request) {
                 $query->whereDate('thoi_gian_chieu', $request->ngay_chieu);
-            })
+            });
+
+        // Lọc theo trạng thái
+        if ($request->trang_thai === 'dang_chieu') {
+            $suatChieusQuery->whereDate('thoi_gian_chieu', $today);
+        } elseif ($request->trang_thai === 'sap_chieu') {
+            $suatChieusQuery->whereDate('thoi_gian_chieu', '>', $today)
+                ->whereDate('thoi_gian_chieu', '<=', $limitDay);
+        }
+
+        $suatChieus = $suatChieusQuery
             ->orderBy('thoi_gian_chieu')
             ->get();
 

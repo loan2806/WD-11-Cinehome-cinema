@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
-use App\Models\FoodInvoice;
+use App\Models\FoodInvoiceItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -12,7 +12,7 @@ class FoodInvoiceController extends Controller
 {
     public function index()
     {
-        $invoices = FoodInvoice::with('items', 'user')->latest()->paginate(10);
+        $invoices = FoodInvoiceItem::with('items', 'user')->latest()->paginate(10);
 
         return view('admin.food-invoices.index', compact('invoices'));
     }
@@ -35,7 +35,7 @@ class FoodInvoiceController extends Controller
         $subtotal = collect($data['items'])->sum(fn ($item) => $item['quantity'] * $item['unit_price']);
         $discount = $data['discount'] ?? 0;
 
-        $invoice = FoodInvoice::create([
+        $invoice = FoodInvoiceItem::create([
             'invoice_code' => 'FD-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
             'customer_name' => $data['customer_name'] ?? null,
             'customer_phone' => $data['customer_phone'] ?? null,
@@ -68,7 +68,7 @@ class FoodInvoiceController extends Controller
         return back()->with('success', 'Da tao hoa don do an.');
     }
 
-    public function destroy(Request $request, FoodInvoice $foodInvoice)
+    public function destroy(Request $request, FoodInvoiceItem $foodInvoice)
     {
         $code = $foodInvoice->invoice_code;
         $foodInvoice->delete();

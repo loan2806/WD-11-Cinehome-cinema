@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CapnhatPhims;
 use App\Http\Requests\ThemmoiPhimsRequest;
-use App\Http\Requests\UpdateMovieRequest;
 use App\Models\Phims;
 use App\Models\QuocGia;
 use App\Models\TheLoai;
@@ -32,12 +31,12 @@ class PhimsController extends Controller
         | SEARCH
         |--------------------------------------------------------------------------
         */
-        if ($request->filled('search')) {
+        if ($request->filled('tim_kiem')) {
 
             $query->where(
                 'ten_phim',
                 'like',
-                '%' . $request->search . '%'
+                '%' . $request->tim_kiem . '%'
             );
         }
 
@@ -46,13 +45,13 @@ class PhimsController extends Controller
         | FILTER GENRE
         |--------------------------------------------------------------------------
         */
-        if ($request->filled('genre_id')) {
+        if ($request->filled('the_loai')) {
 
             $query->whereHas('genres', function ($q) use ($request) {
 
                 $q->where(
-                    'genres.id',
-                    $request->genre_id
+                    'ten_the_loai',
+                    $request->the_loai
                 );
             });
         }
@@ -62,12 +61,15 @@ class PhimsController extends Controller
         | FILTER COUNTRY
         |--------------------------------------------------------------------------
         */
-        if ($request->filled('quoc_gia_id')) {
+        if ($request->filled('quoc_gia')) {
 
-            $query->where(
-                'quoc_gia_id',
-                $request->quoc_gia_id
-            );
+            $query->whereHas('country', function ($q) use ($request) {
+
+                $q->where(
+                    'ten_quoc_gia',
+                    $request->quoc_gia
+                );
+            });
         }
 
         /*
@@ -176,10 +178,10 @@ class PhimsController extends Controller
         | SYNC GENRES
         |--------------------------------------------------------------------------
         */
-        if (!empty($data['genre_ids'])) {
+        if (!empty($data['the_loai_id'])) {
 
             $movie->genres()
-                ->sync($data['genre_ids']);
+                ->sync($data['the_loai_id']);
         }
 
         return redirect()
@@ -195,9 +197,9 @@ class PhimsController extends Controller
     | SHOW DETAIL
     |--------------------------------------------------------------------------
     */
-    public function show(Phims $movie)
+    public function show(Phims $phim)
     {
-        $movie->load([
+        $phim->load([
             'country',
             'genres',
             'showtimes'
@@ -205,7 +207,7 @@ class PhimsController extends Controller
 
         return view(
             'admin.phims.show',
-            compact('movie')
+            compact('phim')
         );
     }
 
@@ -214,26 +216,20 @@ class PhimsController extends Controller
     | EDIT FORM
     |--------------------------------------------------------------------------
     */
-    public function edit(Phims $movie)
+    public function edit(Phims $phim)
     {
-        $genres = TheLoai::where(
-            'trang_thai',
-            1
-        )->get();
+        $genres = TheLoai::where('trang_thai', 1)->get();
 
-        $countries = QuocGia::where(
-            'trang_thai',
-            1
-        )->get();
+        $countries = QuocGia::where('trang_thai', 1)->get();
 
-        $selectedGenreIds = $movie->genres()
-            ->pluck('genres.id')
+        $selectedGenreIds = $phim->genres()
+            ->pluck('the_loais.id')
             ->toArray();
 
         return view(
             'admin.phims.edit',
             compact(
-                'movie',
+                'phim',
                 'genres',
                 'countries',
                 'selectedGenreIds'
@@ -248,43 +244,22 @@ class PhimsController extends Controller
     */
     public function update(
         CapnhatPhims $request,
-        Phims $movie
+        Phims $phim
     ) {
         $data = $request->validated();
 
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE POSTER
-        |--------------------------------------------------------------------------
-        */
         if ($request->hasFile('poster')) {
-
             $data['poster'] = $request
                 ->file('poster')
                 ->store('movies', 'public');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE MOVIE
-        |--------------------------------------------------------------------------
-        */
-        $movie->update($data);
+        $phim->update($data);
 
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE GENRES
-        |--------------------------------------------------------------------------
-        */
-        if (!empty($data['genre_ids'])) {
-
-            $movie->genres()
-                ->sync($data['genre_ids']);
-
+        if (!empty($data['the_loai_id'])) {
+            $phim->genres()->sync($data['the_loai_id']);
         } else {
-
-            $movie->genres()
-                ->detach();
+            $phim->genres()->detach();
         }
 
         return redirect()
@@ -300,21 +275,20 @@ class PhimsController extends Controller
     | DELETE
     |--------------------------------------------------------------------------
     */
-    public function destroy(Phims $movie)
+    public function destroy(Phims $phim)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | DELETE GENRES
-        |--------------------------------------------------------------------------
-        */
-        $movie->genres()->detach();
+        if ($phim->showtimes()->exists()) {
+            return redirect()
+                ->route('admin.phims.index')
+                ->with(
+                    'error',
+                    'Không thể xóa phim đã có suất chiếu'
+                );
+        }
 
-        /*
-        |--------------------------------------------------------------------------
-        | DELETE MOVIE
-        |--------------------------------------------------------------------------
-        */
-        $movie->delete();
+        $phim->genres()->detach();
+
+        $phim->delete();
 
         return redirect()
             ->route('admin.phims.index')
