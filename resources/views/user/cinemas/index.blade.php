@@ -46,7 +46,7 @@
 
                         <div class="flex gap-3 mt-auto">
                             <a
-                                href="{{ route('user.showtimes.index', ['cinema_id' => $cinema->id]) }}"
+                                href="{{ route('user.showtimes.index', ['rap_chieu_phim_id' => $cinema->id]) }}"
                                 class="flex-1 text-center bg-[#f5a623] text-black font-extrabold py-2 rounded-xl hover:bg-[#ffc04d] transition text-sm"
                             >
                                 Xem lịch chiếu

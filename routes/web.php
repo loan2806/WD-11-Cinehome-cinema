@@ -8,9 +8,8 @@ use App\Http\Controllers\Admin\DanhGiaPhimController as AdminDanhGiaPhimControll
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\RevenueReportController;
-use App\Http\Controllers\Admin\ShowtimeController as AdminShowtimeController;
 use App\Http\Controllers\Admin\SystemSettingController;
-use App\Http\Controllers\Admin\SuatChieuController;
+use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\Api\CinemaMapApiController;
@@ -24,8 +23,7 @@ use App\Http\Controllers\User\MovieReviewController;
 use App\Http\Controllers\User\NotificationController as UserNotificationController;
 use App\Http\Controllers\User\PhimsController;
 use App\Http\Controllers\User\RapChieuPhimController;
-use App\Http\Controllers\User\ShowtimeController;
-use App\Http\Controllers\User\SuatChieuController;
+use App\Http\Controllers\User\SuatChieuController as UserSuatChieuController;
 use App\Http\Controllers\User\VeXemPhimController; // ĐÃ SỬA: Thay thế TicketController bằng VeXemPhimController
 use Illuminate\Support\Facades\Route;
 
@@ -63,7 +61,7 @@ Route::post('/phims/{movie}/reviews', [DanhGiaPhimController::class, 'store'])
 Route::get('/cinemas', [RapChieuPhimController::class, 'index'])
     ->name('user.cinemas.index');
 
-Route::get('/cinemas/{cinema}', [RapChieuPhimController::class, 'show'])
+Route::get('/cinemas/{rapChieuPhim}', [RapChieuPhimController::class, 'show'])
     ->name('user.cinemas.show');
 
 Route::get('/cinemas/map', BandoRapController::class)
@@ -78,10 +76,10 @@ Route::get('/api/cinemas', BandoRapApiController::class)
 |--------------------------------------------------------------------------
 */
 
-Route::get('/showtime', [SuatChieuController::class, 'index'])
+Route::get('/showtime', [UserSuatChieuController::class, 'index'])
     ->name('user.showtimes.index');
 
-Route::get('/showtime/{showtime}', [SuatChieuController::class, 'show'])
+Route::get('/showtime/{suatChieu}', [UserSuatChieuController::class, 'show'])
     ->name('user.showtimes.show');
 
 /*
@@ -183,9 +181,7 @@ Route::middleware(['auth', 'role:quan_tri_vien'])
 
         Route::resource('genres', TheloaisController::class);
 
-        Route::resource('showtimes', AdminShowtimeController::class);
-
-        Route::resource('suat-chieu', SuatChieuController::class)
+        Route::resource('suat-chieu', AdminSuatChieuController::class)
             ->only(['index', 'create', 'store']);
 
         Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])

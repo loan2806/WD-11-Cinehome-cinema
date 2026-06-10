@@ -150,6 +150,54 @@
         </div>
     </section>
 
+    <section id="showtimes" class="bg-[#080808] px-6 py-14 text-white">
+        <div class="mx-auto max-w-7xl">
+            <h2 class="mb-8 text-3xl font-black">
+                Suat <span class="text-[#f5a623]">chieu</span>
+            </h2>
+
+            @php
+                $showtimesByCinema = $showtimes->groupBy('rap_chieu_phim_id');
+            @endphp
+
+            <div class="space-y-5">
+                @forelse($showtimesByCinema as $cinemaShowtimes)
+                    @php
+                        $rap = $cinemaShowtimes->first()->rapChieuPhim;
+                        $showtimesByDate = $cinemaShowtimes->groupBy(fn ($suat) => $suat->thoi_gian_chieu->format('Y-m-d'));
+                    @endphp
+
+                    <div class="rounded-2xl border border-white/10 bg-[#121212] p-6">
+                        <h3 class="text-xl font-black text-[#f5a623]">{{ $rap->ten_rap }}</h3>
+                        <p class="mt-1 text-sm text-gray-400">{{ $rap->dia_chi }}</p>
+
+                        <div class="mt-5 space-y-4">
+                            @foreach($showtimesByDate as $date => $items)
+                                <div>
+                                    <div class="mb-3 text-sm font-bold text-gray-300">
+                                        {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}
+                                    </div>
+                                    <div class="flex flex-wrap gap-3">
+                                        @foreach($items as $suat)
+                                            <a href="{{ route('dat_ve.chon_ghe', ['suat_chieu_id' => $suat->id]) }}"
+                                               class="rounded-xl border border-[#f5a623]/50 px-4 py-2 font-bold text-[#f5a623] transition hover:bg-[#f5a623] hover:text-black">
+                                                {{ $suat->thoi_gian_chieu->format('H:i') }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @empty
+                    <div class="rounded-2xl border border-white/10 bg-[#121212] p-8 text-center text-gray-400">
+                        Hien chua co suat chieu phu hop.
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </section>
+
     <script>
         function backWithAnimation(url) {
             const poster = document.querySelector('.poster-pop-left');

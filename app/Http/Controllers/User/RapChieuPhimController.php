@@ -12,8 +12,9 @@ class RapChieuPhimController extends Controller
     public function index()
     {
         $rapChieuPhims = RapChieuPhim::latest()->get();
+        $cinemas = $rapChieuPhims;
 
-        return view('user.cinemas.index', compact('rapChieuPhims'));
+        return view('user.cinemas.index', compact('rapChieuPhims', 'cinemas'));
     }
 
     public function show(RapChieuPhim $rapChieuPhim)

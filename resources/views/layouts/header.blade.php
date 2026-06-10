@@ -15,9 +15,8 @@
                     Phim
                 </a>
 
-<a href="{{ route('user.cinemas.index') }}" class="{{ request()->routeIs('user.cinemas.index', 'user.cinemas.show') ? 'active' : '' }}">
+                <a href="{{ route('user.cinemas.index') }}" class="{{ request()->routeIs('user.cinemas.index', 'user.cinemas.show') ? 'active' : '' }}">
                     Rạp
-                </a>
                 </a>
 
                 <a href="{{ route('user.cinemas.map') }}" class="{{ request()->routeIs('user.cinemas.map') ? 'active' : '' }}">
@@ -28,6 +27,10 @@
                     Lịch chiếu
                 </a>
                 
+                <a href="{{ route('dat_ve.chon_rap') }}" class="{{ request()->routeIs('dat_ve.*') ? 'active' : '' }}">
+                    Äáº·t vÃ©
+                </a>
+
                 <a href="#" class="{{ request()->is('khuyen-mai*') ? 'active' : '' }}">
                     Khuyến mãi
                 </a>
@@ -86,7 +89,7 @@
                                     Tài khoản
                                 </a>
 
-                                @if (Auth::user()->role === 'user' || Auth::user()->vai_tro === 'khach_hang')
+                                @if (Auth::user()->role === 'khach_hang' || Auth::user()->vai_tro === 'khach_hang')
                                     <a href="{{ route('user.ve_xem_phim.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-ticket w-4 text-xs"></i>
                                         Vé của tôi
@@ -103,14 +106,14 @@
                                     Danh sách phim
                                 </a>
 
-                                @if (Auth::user()->role === 'admin' || Auth::user()->vai_tro === 'admin')
+                                @if (Auth::user()->role === 'quan_tri_vien' || Auth::user()->vai_tro === 'quan_tri_vien')
                                     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-user-shield w-4 text-xs"></i>
                                         Trang quản lý
                                     </a>
                                 @endif
 
-                                @if (Auth::user()->role === 'staff' || Auth::user()->vai_tro === 'nhan_vien')
+                                @if (Auth::user()->role === 'nhan_vien' || Auth::user()->vai_tro === 'nhan_vien')
                                     <a href="{{ route('staff.dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-user-tie w-4 text-xs"></i>
                                         Trang nhân viên

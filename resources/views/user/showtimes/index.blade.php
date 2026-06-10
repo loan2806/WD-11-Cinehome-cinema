@@ -1,158 +1,78 @@
 @extends('layouts.user')
 
-@section('title', 'Lịch chiếu - CineHome')
+@section('title', 'Lich chieu - CineHome')
 
 @section('content')
+<section class="min-h-screen bg-[#0b0705] px-6 pt-32 pb-12 text-white">
+    <div class="mx-auto max-w-7xl">
+        <h1 class="text-4xl font-black">Lich <span class="text-[#f5a623]">chieu phim</span></h1>
+        <p class="mt-2 text-gray-400">Tim lich chieu theo phim, rap va ngay chieu.</p>
 
-<section class="min-h-screen bg-[#0b0705] text-white pt-32 pb-10">
-    <div class="max-w-[1800px] mx-auto px-8">
-
-        <h1 class="text-4xl font-extrabold mb-2">
-            Lịch <span class="text-[#f5a623]">chiếu phim</span>
-        </h1>
-
-        <p class="text-gray-400 mb-8">
-            Tìm lịch chiếu theo phim, rạp, ngày chiếu và trạng thái.
-        </p>
-
-        <form method="GET" action="{{ route('user.showtimes.index') }}"
-            class="bg-[#151515] border border-white/10 rounded-2xl p-5 mb-8 grid grid-cols-1 md:grid-cols-5 gap-4">
-
-            <select name="movie_id"
-                class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3 outline-none">
-                <option value="">Tất cả phim</option>
-                @foreach ($movies as $movie)
-                    <option value="{{ $movie->id }}" {{ request('movie_id') == $movie->id ? 'selected' : '' }}>
-                        {{ $movie->title }}
-                    </option>
+        <form method="GET" action="{{ route('user.showtimes.index') }}" class="mt-8 grid gap-4 rounded-2xl border border-white/10 bg-[#151515] p-5 md:grid-cols-5">
+            <select name="phim_id" class="rounded-xl border border-white/10 bg-[#0b0705] px-4 py-3 text-white">
+                <option value="">Tat ca phim</option>
+                @foreach($movies as $movie)
+                    <option value="{{ $movie->id }}" @selected(request('phim_id') == $movie->id)>{{ $movie->ten_phim }}</option>
                 @endforeach
             </select>
 
-            <select name="cinema_id"
-                class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3 outline-none">
-                <option value="">Tất cả rạp</option>
-                @foreach ($cinemas as $cinema)
-                    <option value="{{ $cinema->id }}" {{ request('cinema_id') == $cinema->id ? 'selected' : '' }}>
-                        {{ $cinema->name }}
-                    </option>
+            <select name="rap_chieu_phim_id" class="rounded-xl border border-white/10 bg-[#0b0705] px-4 py-3 text-white">
+                <option value="">Tat ca rap</option>
+                @foreach($rapChieuPhims as $rap)
+                    <option value="{{ $rap->id }}" @selected(request('rap_chieu_phim_id') == $rap->id)>{{ $rap->ten_rap }}</option>
                 @endforeach
             </select>
 
-            <input type="date"
-                name="show_date"
-                value="{{ request('show_date') }}"
-                class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3 outline-none">
+            <input type="date" name="ngay_chieu" value="{{ request('ngay_chieu') }}" class="rounded-xl border border-white/10 bg-[#0b0705] px-4 py-3 text-white">
 
-            <select name="status"
-                class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3 outline-none">
-                <option value="">Trạng thái</option>
-
-                <option value="now_showing" {{ request('status') == 'now_showing' ? 'selected' : '' }}>
-                    Đang chiếu
-                </option>
-
-                <option value="coming_soon" {{ request('status') == 'coming_soon' ? 'selected' : '' }}>
-                    Sắp chiếu
-                </option>
+            <select name="trang_thai" class="rounded-xl border border-white/10 bg-[#0b0705] px-4 py-3 text-white">
+                <option value="">Trang thai</option>
+                <option value="dang_chieu" @selected(request('trang_thai') === 'dang_chieu')>Dang chieu</option>
+                <option value="sap_chieu" @selected(request('trang_thai') === 'sap_chieu')>Sap chieu</option>
             </select>
 
             <div class="flex gap-3">
-                <button type="submit"
-                    class="flex-1 bg-[#f5a623] text-black font-extrabold rounded-xl hover:bg-[#ffc04d] transition">
+                <button class="flex-1 rounded-xl bg-[#f5a623] font-black text-black hover:bg-[#ffc04d]">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
-
-                <a href="{{ route('user.showtimes.index') }}"
-                    class="w-[52px] flex items-center justify-center bg-white/10 text-white rounded-xl hover:bg-white/20 transition">
+                <a href="{{ route('user.showtimes.index') }}" class="flex w-14 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/20">
                     <i class="fa-solid fa-rotate-left"></i>
                 </a>
             </div>
         </form>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
-            @forelse ($showtimes ?? [] as $showtime)
-                @php
-                    $badgeText = $showtime->movie->schedule_status;
+        <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            @forelse($suatChieus as $suatChieu)
+                <article class="flex min-h-[430px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#151515]">
+                    <img
+                        src="{{ $suatChieu->phim->poster ?? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800' }}"
+                        alt="{{ $suatChieu->phim->ten_phim }}"
+                        class="h-52 w-full object-cover"
+                    >
 
-                    if ($badgeText === 'Sắp chiếu') {
-                        $badgeClass = 'bg-blue-500 text-white';
-                    } else {
-                        $badgeClass = 'bg-[#f5a623] text-black';
-                    }
-                @endphp
+                    <div class="flex flex-1 flex-col p-4">
+                        <h2 class="min-h-[52px] text-lg font-black text-[#f5a623]">{{ $suatChieu->phim->ten_phim }}</h2>
+                        <p class="mt-3 text-sm text-gray-300"><i class="fa-solid fa-building text-[#f5a623]"></i> {{ $suatChieu->rapChieuPhim->ten_rap }}</p>
+                        <p class="mt-2 text-sm text-gray-400"><i class="fa-solid fa-calendar-days text-[#f5a623]"></i> {{ $suatChieu->thoi_gian_chieu->format('d/m/Y') }}</p>
+                        <p class="mt-2 text-sm text-gray-400"><i class="fa-solid fa-clock text-[#f5a623]"></i> {{ $suatChieu->thoi_gian_chieu->format('H:i') }}</p>
+                        <p class="mt-2 text-sm text-gray-400"><i class="fa-solid fa-ticket text-[#f5a623]"></i> {{ number_format($suatChieu->gia_ve, 0, ',', '.') }} VND</p>
 
-                <div
-                    class="bg-[#151515] border border-white/10 rounded-2xl overflow-hidden shadow-lg transition duration-300 hover:-translate-y-2 hover:shadow-2xl flex flex-col min-h-[430px]">
-
-                    <div class="relative">
-                        <img
-                            src="{{ $showtime->movie->poster ?? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800' }}"
-                            alt="{{ $showtime->movie->title }}"
-                            class="w-full h-[190px] object-cover shrink-0">
-
-                        <div
-                            class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold {{ $badgeClass }}">
-                            {{ $badgeText }}
-                        </div>
-
-                        <div
-                            class="absolute top-3 right-3 bg-black/70 text-white text-xs font-extrabold px-3 py-1 rounded-full">
-                            {{ $showtime->movie->age_rating }}
-                        </div>
-                    </div>
-
-                    <div class="p-4 flex flex-col flex-1">
-                        <h2 class="text-lg font-extrabold text-[#f5a623] mb-3 min-h-[48px]">
-                            {{ $showtime->movie->title }}
-                        </h2>
-
-                        <p class="text-gray-300 mb-1 text-sm">
-                            <i class="fa-solid fa-building text-[#f5a623] mr-1"></i>
-                            {{ $showtime->cinema->name }}
-                        </p>
-
-                        <p class="text-gray-400 mb-1 text-sm">
-                            <i class="fa-solid fa-door-open text-[#f5a623] mr-1"></i>
-                            {{ $showtime->room_name }}
-                        </p>
-
-                        <p class="text-gray-400 mb-1 text-sm">
-                            <i class="fa-solid fa-calendar-days text-[#f5a623] mr-1"></i>
-                            {{ \Carbon\Carbon::parse($showtime->show_date)->format('d/m/Y') }}
-                        </p>
-
-                        <p class="text-gray-400 mb-1 text-sm">
-                            <i class="fa-solid fa-clock text-[#f5a623] mr-1"></i>
-                            {{ \Carbon\Carbon::parse($showtime->show_time)->format('H:i') }}
-                        </p>
-
-                        <p class="text-gray-400 mb-4 text-sm">
-                            <i class="fa-solid fa-money-bill text-[#f5a623] mr-1"></i>
-                            {{ number_format($showtime->price) }}đ
-                        </p>
-
-                        <div class="flex gap-3 mt-auto">
-                            <a href="#"
-                                class="flex-1 text-center bg-[#f5a623] text-black font-extrabold py-2 rounded-xl hover:bg-[#ffc04d] transition text-sm">
-                                Đặt vé
+                        <div class="mt-auto flex gap-3 pt-5">
+                            <a href="{{ route('dat_ve.chon_ghe', ['suat_chieu_id' => $suatChieu->id]) }}" class="flex-1 rounded-xl bg-[#f5a623] py-2 text-center text-sm font-black text-black hover:bg-[#ffc04d]">
+                                Dat ve
                             </a>
-
-                            <a href="{{ route('user.showtimes.show', $showtime->id) }}"
-                                class="flex-1 text-center bg-white/10 text-white font-bold py-2 rounded-xl hover:bg-white/20 transition text-sm">
-                                Chi tiết
+                            <a href="{{ route('user.showtimes.show', $suatChieu) }}" class="flex-1 rounded-xl bg-white/10 py-2 text-center text-sm font-bold text-white hover:bg-white/20">
+                                Chi tiet
                             </a>
                         </div>
                     </div>
-                </div>
+                </article>
             @empty
-                <div
-                    class="xl:col-span-5 text-center py-20 text-gray-400 bg-[#151515] rounded-2xl border border-white/10">
-                    Không có lịch chiếu phù hợp.
+                <div class="rounded-2xl border border-white/10 bg-[#151515] p-10 text-center text-gray-400 lg:col-span-4">
+                    Khong co lich chieu phu hop.
                 </div>
             @endforelse
         </div>
-
     </div>
 </section>
-
 @endsection

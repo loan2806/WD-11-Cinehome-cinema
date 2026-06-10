@@ -4,7 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Phims;
-use App\Models\Showtime;
+use App\Models\SuatChieu;
 use App\Models\TheLoai;
 use App\Models\QuocGia;
 use Illuminate\Http\Request;
@@ -21,7 +21,6 @@ class PhimsController extends Controller
     {
         $movies = Phims::with([
             'showtimes',
-            'genres',
             'country'
         ])
         ->visibleToUsers()
@@ -85,7 +84,6 @@ class PhimsController extends Controller
     {
         $query = Phims::with([
             'showtimes',
-            'genres',
             'country'
         ])
         ->visibleToUsers();
@@ -98,7 +96,7 @@ class PhimsController extends Controller
         if ($request->filled('keyword')) {
 
             $query->where(
-                'ten_Phims',
+                'ten_phim',
                 'like',
                 '%' . $request->keyword . '%'
             );
@@ -111,16 +109,7 @@ class PhimsController extends Controller
         */
         if ($request->filled('genre_id')) {
 
-            $query->whereHas(
-                'genres',
-                function ($q) use ($request) {
-
-                    $q->where(
-                        'genre_id',
-                        $request->genre_id
-                    );
-                }
-            );
+            // Tam thoi bo loc the loai vi bang trung gian movie_genre chua co migration.
         }
 
         /*
@@ -219,56 +208,14 @@ class PhimsController extends Controller
         | SHOWTIMES
         |--------------------------------------------------------------------------
         */
-        $showtimes = Showtime::with([
-            'cinema',
-            'movie'
-        ])
-        ->where('movie_id', $movie->id)
-        ->orderBy('show_date')
-        ->orderBy('show_time')
-        ->get()
-        ->filter(function ($showtime) use (
-            $movie,
-            $now
-        ) {
-
-            /*
-            |--------------------------------------------------------------------------
-            | FIX DATE + TIME
-            |--------------------------------------------------------------------------
-            */
-            $date = Carbon::parse(
-                $showtime->show_date
-            )->format('Y-m-d');
-
-            /*
-            |--------------------------------------------------------------------------
-            | START TIME
-            |--------------------------------------------------------------------------
-            */
-            $start = Carbon::createFromFormat(
-                'Y-m-d H:i:s',
-                $date . ' ' . $showtime->show_time
-            );
-
-            /*
-            |--------------------------------------------------------------------------
-            | END TIME
-            |--------------------------------------------------------------------------
-            */
-            $end = $start
-                ->copy()
-                ->addMinutes(
-                    (int) $movie->thoi_luong
-                );
-
-            /*
-            |--------------------------------------------------------------------------
-            | ONLY SHOW NOT ENDED
-            |--------------------------------------------------------------------------
-            */
-            return $end->gte($now);
-        });
+        $showtimes = SuatChieu::with(['phim', 'rapChieuPhim'])
+            ->where('phim_id', $movie->id)
+            ->whereRaw(
+                "DATE_ADD(thoi_gian_chieu, INTERVAL ? MINUTE) >= ?",
+                [(int) $movie->thoi_luong, $now->format('Y-m-d H:i:s')]
+            )
+            ->orderBy('thoi_gian_chieu')
+            ->get();
 
         return view(
             'user.phims.show',

@@ -28,9 +28,62 @@ class Phims extends Model
         'gioi_han_tuoi',
     ];
 
+    protected $casts = [
+        'ngay_khoi_chieu' => 'date',
+    ];
+
     protected $appends = [
         'schedule_status',
     ];
+
+    public function getTitleAttribute()
+    {
+        return $this->ten_phim;
+    }
+
+    public function getDescriptionAttribute()
+    {
+        return $this->mo_ta;
+    }
+
+    public function getTrailerUrlAttribute()
+    {
+        return $this->trailer;
+    }
+
+    public function getDurationAttribute()
+    {
+        return $this->thoi_luong;
+    }
+
+    public function getAgeRatingAttribute()
+    {
+        return $this->gioi_han_tuoi;
+    }
+
+    public function getReleaseDateAttribute()
+    {
+        return $this->ngay_khoi_chieu;
+    }
+
+    public function getCastAttribute()
+    {
+        return $this->dien_vien;
+    }
+
+    public function getGenreAttribute()
+    {
+        if (! $this->relationLoaded('genres')) {
+            return 'Dang cap nhat';
+        }
+
+        return $this->genres->pluck('ten_the_loai')->filter()->join(', ');
+    }
+
+    public function getCountryAttribute()
+    {
+        return $this->country?->ten_quoc_gia;
+    }
 
     /**
      * TỐI ƯU: Đổi sang hàm boot() tiêu chuẩn đảm bảo an toàn tuyệt đối

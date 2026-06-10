@@ -19,19 +19,17 @@ class SuatChieuController extends Controller
 
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
 
-        $movies = Phims::whereDate('ngay_khoi_chieu', '>=', $today)
-            ->whereDate('ngay_khoi_chieu', '<=', $limitDay)
+        $movies = Phims::whereHas('showtimes', function ($query) use ($now) {
+                $query->where('thoi_gian_chieu', '>=', $now);
+            })
             ->orderBy('ten_phim')
             ->get();
 
         // Truy vấn danh sách suất chiếu theo các tham số đầu vào thuần Việt
         $suatChieus = SuatChieu::with(['phim', 'rapChieuPhim'])
             ->whereHas('phim', function ($movieQuery) use ($today, $limitDay, $request) {
-                $movieQuery->whereDate('ngay_khoi_chieu', '>=', $today)
-                    ->whereDate('ngay_khoi_chieu', '<=', $limitDay);
-
                 if ($request->trang_thai === 'dang_chieu') {
-                    $movieQuery->whereDate('ngay_khoi_chieu', $today);
+                    $movieQuery->whereDate('ngay_khoi_chieu', '<=', $today);
                 }
 
                 if ($request->trang_thai === 'sap_chieu') {
