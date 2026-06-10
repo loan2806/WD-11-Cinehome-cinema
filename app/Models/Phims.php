@@ -80,11 +80,6 @@ class Phims extends Model
         return $this->genres->pluck('ten_the_loai')->filter()->join(', ');
     }
 
-    public function getCountryAttribute()
-    {
-        return $this->country?->ten_quoc_gia;
-    }
-
     protected static function boot(): void
     {
         parent::boot();
