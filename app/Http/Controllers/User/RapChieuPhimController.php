@@ -19,7 +19,6 @@ class RapChieuPhimController extends Controller
         $now = Carbon::now('Asia/Ho_Chi_Minh');
         $today = $now->toDateString();
 
-        // Lấy suất chiếu hôm nay (dựa trên thoi_gian_chieu thay vì ngay_khoi_chieu)
         $suatChieusHomNay = SuatChieu::query()
             ->where('rap_chieu_phim_id', $rapChieuPhim->id)
             ->whereDate('thoi_gian_chieu', $today)

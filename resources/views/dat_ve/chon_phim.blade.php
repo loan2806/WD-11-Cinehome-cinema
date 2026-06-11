@@ -1,41 +1,48 @@
 @extends('layouts.user')
 
-@section('title', 'Chọn Phim và Suất Chiếu')
+@section('title', 'Chon phim va suat chieu')
 
 @section('content')
-<div class="container py-5 mt-5">
-    <h2 class="text-center text-white mb-2 font-bold text-3xl">PHIM ĐANG CHIẾU TẠI RẠP</h2>
-    <h4 class="text-center text-warning mb-5">{{ mb_strtoupper($rap->name) }}</h4>
-    
-    <div class="row">
-        @forelse($suatChieuTheoPhim as $movieId => $suatChieus)
-            @php 
-                $phim = $suatChieus->first()->movie; 
-            @endphp
-            <div class="col-12 mb-5">
-                <div class="card bg-dark text-white border-secondary">
-                    <div class="row g-0">
-                        <div class="col-md-3">
-                            <img src="{{ $phim->poster ?? 'https://via.placeholder.com/300x450?text=Poster' }}" class="img-fluid rounded-start h-100" alt="{{ $phim->title }}" style="object-fit: cover;">
-                        </div>
-                        <div class="col-md-9">
-                            <div class="card-body">
-                                <h4 class="card-title text-warning font-bold">{{ $phim->ten_phim }}</h4>
-                                <p class="card-text text-gray-300 mb-2"><strong>Thời lượng:</strong> {{ $phim->thoi_luong }} phút</p>
-                                <p class="card-text text-gray-300 mb-4">{{ Str::limit($phim->mo_ta, 150) }}</p>
-                                
-                                <h5 class="text-white mb-3 border-bottom border-secondary pb-2">Các suất chiếu:</h5>
-                                @php
-                                    $suatChieuTheoNgay = $suatChieus->groupBy('show_date');
-                                @endphp
-                                
-                                @foreach($suatChieuTheoNgay as $ngay => $cacSuatChieu)
-                                    <div class="mb-3">
-                                        <strong class="d-block mb-2 text-info">{{ \Carbon\Carbon::parse($ngay)->format('d/m/Y') }}</strong>
-                                        <div class="d-flex flex-wrap gap-2">
-                                            @foreach($cacSuatChieu as $sc)
-                                                <a href="{{ route('dat_ve.chon_ghe', ['suat_chieu_id' => $sc->id]) }}" class="btn btn-outline-light">
-                                                    {{ \Carbon\Carbon::parse($sc->show_time)->format('H:i') }}
+<div class="min-h-screen bg-[#080808] px-6 pt-28 pb-12 text-white">
+    <div class="mx-auto max-w-7xl">
+        <div class="mb-8 text-center">
+            <h1 class="text-3xl font-black">Phim dang chieu tai <span class="text-[#d99a32]">{{ $rap->ten_rap }}</span></h1>
+            <p class="mt-2 text-gray-400">{{ $rap->dia_chi }}</p>
+        </div>
+
+        <div class="space-y-6">
+            @forelse($suatChieuTheoPhim as $suatChieus)
+                @php
+                    $phim = $suatChieus->first()->phim;
+                    $suatTheoNgay = $suatChieus->groupBy(fn ($suat) => $suat->thoi_gian_chieu->format('Y-m-d'));
+                @endphp
+
+                <div class="overflow-hidden rounded-2xl border border-white/10 bg-[#121212]">
+                    <div class="grid gap-0 md:grid-cols-[220px_1fr]">
+                        <img
+                            src="{{ $phim->poster ?? 'https://via.placeholder.com/300x450?text=Poster' }}"
+                            class="h-full min-h-[320px] w-full object-cover"
+                            alt="{{ $phim->ten_phim }}"
+                        >
+
+                        <div class="p-6">
+                            <h2 class="text-2xl font-black text-[#d99a32]">{{ $phim->ten_phim }}</h2>
+                            <p class="mt-2 text-sm text-gray-400">{{ $phim->thoi_luong }} phut</p>
+                            <p class="mt-4 max-w-3xl text-gray-300">{{ \Illuminate\Support\Str::limit($phim->mo_ta, 180) }}</p>
+
+                            <div class="mt-6 space-y-5">
+                                @foreach($suatTheoNgay as $ngay => $cacSuat)
+                                    <div>
+                                        <div class="mb-3 text-sm font-bold text-gray-300">
+                                            {{ \Carbon\Carbon::parse($ngay)->format('d/m/Y') }}
+                                        </div>
+                                        <div class="flex flex-wrap gap-3">
+                                            @foreach($cacSuat as $suat)
+                                                <a
+                                                    href="{{ route('dat_ve.chon_ghe', ['suat_chieu_id' => $suat->id]) }}"
+                                                    class="rounded-xl border border-[#d99a32]/50 px-4 py-2 font-bold text-[#f4c56a] transition hover:bg-[#d99a32] hover:text-[#2b1208]"
+                                                >
+                                                    {{ $suat->thoi_gian_chieu->format('H:i') }}
                                                 </a>
                                             @endforeach
                                         </div>
@@ -45,16 +52,18 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        @empty
-            <div class="col-12">
-                <p class="text-white text-center">Hiện chưa có lịch chiếu phim nào tại rạp này.</p>
-            </div>
-        @endforelse
-    </div>
-    
-    <div class="mt-4 text-center">
-        <a href="{{ route('dat_ve.chon_rap') }}" class="btn btn-secondary"><i class="fa fa-arrow-left"></i> Quay lại Chọn Rạp</a>
+            @empty
+                <div class="rounded-2xl border border-white/10 bg-[#121212] p-10 text-center text-gray-400">
+                    Hien chua co suat chieu nao tai rap nay.
+                </div>
+            @endforelse
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="{{ route('dat_ve.chon_rap') }}" class="inline-flex rounded-xl bg-white/10 px-5 py-3 font-bold text-white hover:bg-white/15">
+                Quay lai chon rap
+            </a>
+        </div>
     </div>
 </div>
 @endsection

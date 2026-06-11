@@ -14,6 +14,8 @@ class VeXemPhim extends Model
 
     protected $fillable = [
         'nguoi_dung_id',
+        'nhan_vien_id',
+        'suat_chieu_id',
         'ma_ve',
         'ten_phim',
         'ten_rap',
@@ -32,9 +34,6 @@ class VeXemPhim extends Model
         'tien_hoan' => 'decimal:2',
     ];
 
-    /**
-     * MỚI: Kiểm tra xem vé có được phép hủy hay không (Trong vòng 5 phút kể từ lúc tạo)
-     */
     public function canCancel(): bool
     {
         return $this->created_at->diffInMinutes(now()) <= 5;
@@ -43,5 +42,15 @@ class VeXemPhim extends Model
     public function nguoiDung(): BelongsTo
     {
         return $this->belongsTo(NguoiDung::class, 'nguoi_dung_id');
+    }
+
+    public function nhanVien(): BelongsTo
+    {
+        return $this->belongsTo(NguoiDung::class, 'nhan_vien_id');
+    }
+
+    public function suatChieu(): BelongsTo
+    {
+        return $this->belongsTo(SuatChieu::class, 'suat_chieu_id');
     }
 }
