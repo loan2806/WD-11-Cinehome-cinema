@@ -31,6 +31,8 @@ use App\Http\Controllers\User\RapChieuPhimController;
 use App\Http\Controllers\User\SuatChieuController as UserSuatChieuController;
 use App\Http\Controllers\User\VeXemPhimController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\QuocGiaController;
+
 
 Route::get('/', [PhimsController::class, 'home'])->name('home');
 
@@ -75,6 +77,13 @@ Route::middleware('auth')
         Route::post('{showtime}/store', [BookingController::class, 'store'])->name('store');
     });
 
+
+/*
+|--------------------------------------------------------------------------
+| TÍNH NĂNG ĐẶT VÉ (TIẾNG VIỆT)
+|--------------------------------------------------------------------------
+*/
+
 Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
     Route::get('/chon-rap', [DatVeController::class, 'chonRap'])->name('chon_rap');
     Route::get('/chon-phim/{rap_id}', [DatVeController::class, 'chonPhim'])->name('chon_phim');
@@ -111,6 +120,9 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('phims', AdminMovieController::class);
+
+        Route::resource('quoc-gias', QuocGiaController::class);
+
         Route::resource('the-loais', TheloaisController::class);
         Route::resource('suat-chieus', AdminSuatChieuController::class);
 

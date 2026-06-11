@@ -63,10 +63,8 @@
                 </p>
 
                 <nav class="space-y-2">
-                    <a
-                        href="{{ route('admin.dashboard') }}"
-                        class="{{ request()->routeIs('admin.dashboard') ? 'admin-nav-link active' : 'admin-nav-link' }}"
-                    >
+                    <a href="{{ route('admin.dashboard') }}"
+                        class="{{ request()->routeIs('admin.dashboard') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-chart-line w-5"></i>
                         Dashboard
                     </a>
@@ -77,12 +75,14 @@
                 </p>
 
                 <nav class="space-y-2">
-                    <a href="{{ route('admin.phims.index') }}" class="{{ request()->routeIs('admin.phims.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.phims.index') }}"
+                        class="{{ request()->routeIs('admin.phims.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-film w-5"></i>
                         <span>Quản lý phim</span>
                     </a>
 
-                    <a href="{{ route('admin.phong-chieus.index') }}" class="{{ request()->routeIs('admin.phong-chieus.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.phong-chieus.index') }}"
+                        class="{{ request()->routeIs('admin.phong-chieus.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-door-open w-5"></i>
                         <span>Phòng chiếu</span>
                     </a>
@@ -95,7 +95,8 @@
                     </a>
                     --}}
 
-                    <a href="{{ route('admin.loai-ghes.index') }}" class="{{ request()->routeIs('admin.loai-ghes.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.loai-ghes.index') }}"
+                        class="{{ request()->routeIs('admin.loai-ghes.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-chair w-5"></i>
                         <span>Loại ghế</span>
                     </a>
@@ -108,14 +109,21 @@
                     </a>
                     --}}
 
-                    <a href="{{ route('admin.suat-chieus.index') }}" class="{{ request()->routeIs('admin.suat-chieus.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.suat-chieus.index') }}"
+                        class="{{ request()->routeIs('admin.suat-chieus.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-calendar-days w-5"></i>
                         <span>Suất chiếu</span>
                     </a>
 
-                    <a href="{{ route('admin.the-loais.index') }}" class="{{ request()->routeIs('admin.the-loais.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.the-loais.index') }}"
+                        class="{{ request()->routeIs('admin.the-loais.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-tags w-5"></i>
                         <span>Thể loại phim</span>
+                    </a>
+                    <a href="{{ route('admin.quoc-gias.index') }}"
+                        class="{{ request()->routeIs('admin.quoc-gias.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                        <i class="fa-solid fa-globe w-5"></i>
+                        <span>Quốc gia</span>
                     </a>
                 </nav>
 
@@ -134,7 +142,8 @@
                         <span>Thanh toán QR</span>
                     </a>
 
-                    <a href="{{ route('admin.food-invoices.index') }}" class="{{ request()->routeIs('admin.food-invoices.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.food-invoices.index') }}"
+                        class="{{ request()->routeIs('admin.food-invoices.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-burger w-5"></i>
                         <span>Đồ ăn</span>
                     </a>
@@ -167,12 +176,14 @@
                 </p>
 
                 <nav class="space-y-2">
-                    <a href="{{ route('admin.revenue-reports.index') }}" class="{{ request()->routeIs('admin.revenue-reports.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.revenue-reports.index') }}"
+                        class="{{ request()->routeIs('admin.revenue-reports.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-chart-pie w-5"></i>
                         <span>Báo cáo doanh thu</span>
                     </a>
 
-                    <a href="{{ route('admin.activity-logs.index') }}" class="{{ request()->routeIs('admin.activity-logs.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.activity-logs.index') }}"
+                        class="{{ request()->routeIs('admin.activity-logs.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-clock-rotate-left w-5"></i>
                         <span>Nhật ký hoạt động hệ thống</span>
                     </a>
@@ -183,17 +194,20 @@
                 </p>
 
                 <nav class="space-y-2">
-                    <a href="{{ route('admin.notifications.index') }}" class="{{ request()->routeIs('admin.notifications.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.notifications.index') }}"
+                        class="{{ request()->routeIs('admin.notifications.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-bell w-5"></i>
                         <span>Thông báo</span>
                     </a>
 
-                    <a href="{{ route('admin.movie-reviews.index') }}" class="{{ request()->routeIs('admin.movie-reviews.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.movie-reviews.index') }}"
+                        class="{{ request()->routeIs('admin.movie-reviews.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-star w-5"></i>
                         <span>Đánh giá phim</span>
                     </a>
 
-                    <a href="{{ route('admin.system-settings.index') }}" class="{{ request()->routeIs('admin.system-settings.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
+                    <a href="{{ route('admin.system-settings.index') }}"
+                        class="{{ request()->routeIs('admin.system-settings.*') ? 'admin-nav-link active' : 'admin-nav-link' }}">
                         <i class="fa-solid fa-gear w-5"></i>
                         <span>Cấu hình hệ thống</span>
                     </a>
@@ -210,11 +224,8 @@
 
                     {{-- LEFT: TIÊU ĐỀ VÀ PHỤ ĐỀ HỆ THỐNG --}}
                     <div class="flex min-w-0 items-center gap-4">
-                        <button
-                            id="sidebarToggle"
-                            type="button"
-                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white transition hover:bg-[#d99a32] hover:text-[#2b1208]"
-                        >
+                        <button id="sidebarToggle" type="button"
+                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                             <i class="fa-solid fa-bars text-lg"></i>
                         </button>
 
@@ -230,13 +241,11 @@
                     </div>
 
                     {{-- CENTER: THANH TÌM KIẾM CHỨC NĂNG --}}
-                    <div class="hidden md:flex h-11 w-full max-w-[280px] lg:max-w-[360px] items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4">
+                    <div
+                        class="hidden md:flex h-11 w-full max-w-[280px] lg:max-w-[360px] items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4">
                         <i class="fa-solid fa-magnifying-glass text-[#d99a32] text-sm"></i>
-                        <input
-                            type="text"
-                            placeholder="Tìm nhanh chức năng hệ thống..."
-                            class="h-full w-full bg-transparent text-sm text-white outline-none placeholder-gray-500"
-                        >
+                        <input type="text" placeholder="Tìm nhanh chức năng hệ thống..."
+                            class="h-full w-full bg-transparent text-sm text-white outline-none placeholder-gray-500">
                     </div>
 
                     {{-- RIGHT: THÔNG TIN TÀI KHOẢN --}}
@@ -244,8 +253,10 @@
                         @auth
                             <div class="relative" id="adminDropdownBox">
 
-                                <button type="button" id="adminDropdownBtn" class="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2 transition hover:bg-white/15">
-                                    <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white shadow-md">
+                                <button type="button" id="adminDropdownBtn"
+                                    class="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2 transition hover:bg-white/15">
+                                    <div
+                                        class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white shadow-md">
                                         <i class="fa-solid fa-user-shield"></i>
                                     </div>
 
@@ -261,10 +272,12 @@
                                     <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
                                 </button>
 
-                                <div id="adminDropdownMenu" class="absolute right-0 top-[125%] z-[9999] hidden w-60 overflow-hidden rounded-xl border border-[#d99a32]/30 bg-[#151515]/95 shadow-2xl backdrop-blur-md">
+                                <div id="adminDropdownMenu"
+                                    class="absolute right-0 top-[125%] z-[9999] hidden w-60 overflow-hidden rounded-xl border border-[#d99a32]/30 bg-[#151515]/95 shadow-2xl backdrop-blur-md">
 
                                     <div class="flex items-center gap-3 border-b border-white/10 px-4 py-3 bg-white/5">
-                                        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white">
+                                        <div
+                                            class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white">
                                             <i class="fa-solid fa-user text-sm"></i>
                                         </div>
                                         <div class="min-w-0">
@@ -278,11 +291,13 @@
                                     </div>
 
                                     <div class="p-1.5 border-b border-white/10">
-                                        <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
+                                        <a href="{{ route('profile.edit') }}"
+                                            class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                             <i class="fa-solid fa-user-gear w-4 text-xs text-center"></i>
                                             Hồ sơ cá nhân
                                         </a>
-                                        <a href="{{ route('home') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
+                                        <a href="{{ route('home') }}"
+                                            class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                             <i class="fa-solid fa-house w-4 text-xs text-center"></i>
                                             Xem trang chủ
                                         </a>
@@ -291,7 +306,8 @@
                                     <div class="p-1.5 bg-[#1a1a1a]/30">
                                         <form method="POST" action="{{ route('logout') }}" class="m-0">
                                             @csrf
-                                            <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/15">
+                                            <button type="submit"
+                                                class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/15">
                                                 <i class="fa-solid fa-right-from-bracket w-4 text-xs text-center"></i>
                                                 Đăng xuất Admin
                                             </button>
