@@ -37,8 +37,8 @@ return new class extends Migration
             $table->text('dien_vien')->nullable();
             $table->string('ngon_ngu')->nullable();
             $table->integer('thoi_luong')->default(90);
-            
-            
+
+
             $table->string('gioi_han_tuoi')->nullable();
 
             /*
@@ -47,9 +47,8 @@ return new class extends Migration
             |--------------------------------------------------------------------------
             |*/
             $table->foreignId('quoc_gia_id')
-                ->nullable()
                 ->constrained('quoc_gias')
-                ->onDelete('set null');
+                ->restrictOnDelete();
 
             /*
             |--------------------------------------------------------------------------
