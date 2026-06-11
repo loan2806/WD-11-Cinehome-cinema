@@ -174,7 +174,7 @@
 
         </div>
     </div>
-@include('layouts.admin-pagination', ['paginator' => $movies])
+@include('components.admin-pagination', ['paginator' => $movies])
 
 </div>
 
