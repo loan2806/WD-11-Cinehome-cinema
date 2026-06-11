@@ -18,6 +18,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
+
+        // CHUẨN HÓA LARAVEL 12: Đưa vào mảng cấu hình nhóm web bằng Class tham chiếu
+        // Giúp bộ xóa cache chạy ngay sau khi Session đã được thiết lập an toàn
+        $middleware->web(append: [
+            \App\Http\Middleware\ClearBrowserCache::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
