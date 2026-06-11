@@ -44,7 +44,7 @@
                 <input type="text" class="search-box" placeholder="Tìm phim...">
 
                 @guest
-                    <button type="button" data-auth-open="login" class="font-bold text-white transition hover:text-[#d99a32]">
+                        <button type="button" data-auth-open="login" class="font-bold text-white transition hover:text-[#d99a32]">
                         Đăng nhập
                     </button>
 
