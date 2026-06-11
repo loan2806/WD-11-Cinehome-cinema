@@ -195,12 +195,7 @@
 
         </div>
 
-        {{-- PAGINATION --}}
-        <div class="mt-6">
-
-            {{ $theLoais->links() }}
-
-        </div>
+       @include('components.admin-pagination', ['paginator' => $theLoais])
 
     </div>
 
