@@ -23,9 +23,10 @@ use App\Http\Controllers\User\NotificationController as UserNotificationControll
 use App\Http\Controllers\User\PhimsController;
 use App\Http\Controllers\User\RapChieuPhimController;
 use App\Http\Controllers\User\SuatChieuController as UserSuatChieuController;
-use App\Http\Controllers\User\VeXemPhimController; // ĐÃ SỬA: Thay thế TicketController bằng VeXemPhimController
+use App\Http\Controllers\User\VeXemPhimController;
 use App\Http\Controllers\Admin\NhanVienController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,7 +44,7 @@ Route::get('/', [PhimsController::class, 'home'])
 */
 
 Route::get('/dashboard', function () {
-    $user = auth()->user();
+    $user = Auth::user();
 
     if ($user->vai_tro === 'admin') {
         return redirect()->route('admin.dashboard');

@@ -5,20 +5,21 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
 
 class RoleMiddleware
 {
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!auth()->check()) {
+        if (!Auth::check()) {
             return redirect()->route('login');
         }
 
-        $user = auth()->user();
+        $user = Auth::user();
 
         // 1. SỬA: Đổi từ is_active sang trang_thai_hoat_dong tiếng Việt
         if (!$user->trang_thai_hoat_dong) {
-            auth()->logout();
+            Auth::logout();
 
             $request->session()->invalidate();
             $request->session()->regenerateToken();
