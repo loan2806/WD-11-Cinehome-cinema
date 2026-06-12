@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NguoiDung;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class NhanVienController extends Controller
 {
@@ -44,9 +45,11 @@ class NhanVienController extends Controller
             'mat_khau' => 'required|min:6',
         ]);
 
+        $email = strtolower(trim($request->email));
+
         NguoiDung::create([
-            'ho_ten' => $request->ho_ten,
-            'email' => $request->email,
+            'ho_ten' => trim($request->ho_ten),
+            'email' => $email,
             'mat_khau' => Hash::make($request->mat_khau),
             'vai_tro' => 'nhan_vien',
             'trang_thai_hoat_dong' => true,
@@ -59,6 +62,9 @@ class NhanVienController extends Controller
 
     public function edit(NguoiDung $nhanvien)
     {
+        if ($nhanvien->vai_tro !== 'nhan_vien') {
+            abort(404);
+        }
         return view(
             'admin.nhanviens.edit',
             compact('nhanvien')
@@ -69,6 +75,9 @@ class NhanVienController extends Controller
         Request $request,
         NguoiDung $nhanvien
     ) {
+        if ($nhanvien->vai_tro !== 'nhan_vien') {
+            abort(404);
+        }
         $request->validate([
             'ho_ten' => 'required|max:255',
             'email' => 'required|email|unique:nguoi_dungs,email,' . $nhanvien->id,
@@ -76,7 +85,7 @@ class NhanVienController extends Controller
 
         $nhanvien->update([
             'ho_ten' => $request->ho_ten,
-            'email' => $request->email,
+            'email' => strtolower(trim($request->email)),
         ]);
 
         return redirect()
@@ -86,19 +95,38 @@ class NhanVienController extends Controller
 
     public function destroy(NguoiDung $nhanvien)
     {
+        if ($nhanvien->vai_tro !== 'nhan_vien') {
+            abort(404);
+        }
+
+        if ($nhanvien->id == Auth::id()) {
+            return back()
+                ->with('error', 'Không thể xóa chính tài khoản của bạn');
+        }
+
         $nhanvien->delete();
 
         return back()
-            ->with('success', 'Đã xóa');
+            ->with('success', 'Đã xóa nhân viên');
     }
 
     public function toggleStatus(NguoiDung $nhanvien)
     {
+        if ($nhanvien->vai_tro !== 'nhan_vien') {
+            abort(404);
+        }
+
+        if ($nhanvien->id == Auth::id()) {
+            return back()
+                ->with('error', 'Không thể khóa chính tài khoản của bạn');
+        }
+
         $nhanvien->update([
             'trang_thai_hoat_dong'
             => !$nhanvien->trang_thai_hoat_dong
         ]);
 
-        return back();
+        return back()
+            ->with('success', 'Cập nhật trạng thái thành công');
     }
 }
