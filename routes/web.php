@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\NhatKyHoatDongHeThongController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\PhongChieuController;
+use App\Http\Controllers\Admin\QuocGiaController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
 use App\Http\Controllers\Admin\SystemSettingController;
@@ -31,13 +32,13 @@ use App\Http\Controllers\User\RapChieuPhimController;
 use App\Http\Controllers\User\SuatChieuController as UserSuatChieuController;
 use App\Http\Controllers\User\VeXemPhimController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\QuocGiaController;
+use Illuminate\Support\Facades\Auth;
 
 
 Route::get('/', [PhimsController::class, 'home'])->name('home');
 
 Route::get('/dashboard', function () {
-    $user = auth()->user();
+    $user = Auth::user();
 
     if ($user->vai_tro === 'admin') {
         return redirect()->route('admin.dashboard');
@@ -72,7 +73,7 @@ Route::middleware('auth')
     ->prefix('bookings')
     ->name('user.bookings.')
     ->group(function () {
-        Route::get('/', fn () => redirect()->route('user.ve_xem_phim.index'))->name('index');
+        Route::get('/', fn() => redirect()->route('user.ve_xem_phim.index'))->name('index');
         Route::get('{showtime}/select-seats', [BookingController::class, 'selectSeats'])->name('selectSeats');
         Route::post('{showtime}/store', [BookingController::class, 'store'])->name('store');
     });
