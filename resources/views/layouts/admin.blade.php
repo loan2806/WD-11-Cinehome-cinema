@@ -22,13 +22,13 @@
 
     {{-- GLOBAL TOAST NOTIFICATIONS --}}
     @if (session('success'))
-        <x-toast type="success" :message="session('success')" />
+    <x-toast type="success" :message="session('success')" />
     @endif
     @if (session('error'))
-        <x-toast type="error" :message="session('error')" />
+    <x-toast type="error" :message="session('error')" />
     @endif
     @if (session('warning'))
-        <x-toast type="warning" :message="session('warning')" />
+    <x-toast type="warning" :message="session('warning')" />
     @endif
 
     {{-- GLOBAL CONFIRM MODAL --}}
@@ -208,7 +208,7 @@
                                     <span>Đồ ăn & Combo</span>
                                 </a>
                             @endcan
-                    </nav>
+                        </nav>
                     @endif
 
                     {{-- NHÓM TÀI KHOẢN & BẢO MẬT --}}
@@ -344,70 +344,70 @@
                     {{-- RIGHT: THÔNG TIN TÀI KHOẢN ĐỘNG SPATIE --}}
                     <div class="flex items-center gap-3">
                         @auth
-                            <div class="relative" id="adminDropdownBox">
+                        <div class="relative" id="adminDropdownBox">
 
-                                <button type="button" id="adminDropdownBtn"
-                                    class="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2 transition hover:bg-white/15 border-0">
-                                    <div
-                                        class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white shadow-md">
-                                        <i class="fa-solid fa-user-shield"></i>
+                            <button type="button" id="adminDropdownBtn"
+                                class="inline-flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-2 transition hover:bg-white/15 border-0">
+                                <div
+                                    class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white shadow-md">
+                                    <i class="fa-solid fa-user-shield"></i>
+                                </div>
+
+                                <div class="hidden sm:block text-left">
+                                    <div class="text-sm font-bold text-white max-w-[120px] truncate">
+                                        {{ Auth::user()->ho_ten }}
                                     </div>
+                                    <div class="text-xs text-[#d99a32] font-semibold mt-0.5">
+                                        {{ Auth::user()->roles->pluck('name')->first() ?? 'Khách hàng' }}
+                                    </div>
+                                </div>
 
-                                    <div class="hidden sm:block text-left">
-                                        <div class="text-sm font-bold text-white max-w-[120px] truncate">
+                                <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
+                            </button>
+
+                            <div id="adminDropdownMenu"
+                                class="absolute right-0 top-[125%] z-[9999] hidden w-60 overflow-hidden rounded-xl border border-[#d99a32]/30 bg-[#151515]/95 shadow-2xl backdrop-blur-md">
+
+                                <div class="flex items-center gap-3 border-b border-white/10 px-4 py-3 bg-white/5">
+                                    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white">
+                                        <i class="fa-solid fa-user text-sm"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="truncate text-sm font-bold text-white">
                                             {{ Auth::user()->ho_ten }}
                                         </div>
-                                        <div class="text-xs text-[#d99a32] font-semibold mt-0.5">
-                                            {{ Auth::user()->roles->pluck('name')->first() ?? 'Khách hàng' }}
+                                        <div class="truncate text-[11px] text-gray-400">
+                                            {{ Auth::user()->email }}
                                         </div>
                                     </div>
-
-                                    <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
-                                </button>
-
-                                <div id="adminDropdownMenu"
-                                    class="absolute right-0 top-[125%] z-[9999] hidden w-60 overflow-hidden rounded-xl border border-[#d99a32]/30 bg-[#151515]/95 shadow-2xl backdrop-blur-md">
-
-                                    <div class="flex items-center gap-3 border-b border-white/10 px-4 py-3 bg-white/5">
-                                        <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white">
-                                            <i class="fa-solid fa-user text-sm"></i>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="truncate text-sm font-bold text-white">
-                                                {{ Auth::user()->ho_ten }}
-                                            </div>
-                                            <div class="truncate text-[11px] text-gray-400">
-                                                {{ Auth::user()->email }}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="p-1.5 border-b border-white/10">
-                                        <a href="{{ route('profile.edit') }}"
-                                            class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
-                                            <i class="fa-solid fa-user-gear w-4 text-xs text-center"></i>
-                                            Hồ sơ cá nhân
-                                        </a>
-                                        <a href="{{ route('home') }}"
-                                            class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
-                                            <i class="fa-solid fa-house w-4 text-xs text-center"></i>
-                                            Xem trang chủ
-                                        </a>
-                                    </div>
-
-                                    <div class="p-1.5 bg-[#1a1a1a]/30">
-                                        <form method="POST" action="{{ route('logout') }}" class="m-0">
-                                            @csrf
-                                            <button type="submit"
-                                                class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/15 border-0 bg-transparent text-left">
-                                                <i class="fa-solid fa-right-from-bracket w-4 text-xs text-center"></i>
-                                                Đăng xuất Hệ thống
-                                            </button>
-                                        </form>
-                                    </div>
-
                                 </div>
+
+                                <div class="p-1.5 border-b border-white/10">
+                                    <a href="{{ route('profile.edit') }}"
+                                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
+                                        <i class="fa-solid fa-user-gear w-4 text-xs text-center"></i>
+                                        Hồ sơ cá nhân
+                                    </a>
+                                    <a href="{{ route('home') }}"
+                                        class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
+                                        <i class="fa-solid fa-house w-4 text-xs text-center"></i>
+                                        Xem trang chủ
+                                    </a>
+                                </div>
+
+                                <div class="p-1.5 bg-[#1a1a1a]/30">
+                                    <form method="POST" action="{{ route('logout') }}" class="m-0">
+                                        @csrf
+                                        <button type="submit"
+                                            class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/15 border-0 bg-transparent text-left">
+                                            <i class="fa-solid fa-right-from-bracket w-4 text-xs text-center"></i>
+                                            Đăng xuất Hệ thống
+                                        </button>
+                                    </form>
+                                </div>
+
                             </div>
+                        </div>
                         @endauth
                     </div>
 
@@ -424,8 +424,9 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="{{ asset('assets/js/admin.js') }}"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @stack('scripts')
+
 </body>
 
 </html>
