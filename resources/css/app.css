@@ -1,6 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* --- KHU VỰC ĐỊNH NGHĨA COMPONENTS COMPILER --- */
 @layer components {
     .admin-nav-link {
         @apply flex items-center gap-3 rounded-2xl px-4 py-3 font-bold text-[#e8d2bb] transition hover:bg-[#d99a32] hover:text-[#2b1208];
@@ -11,6 +13,7 @@
     }
 }
 
+/* --- KHU VỰC ĐỊNH NGHĨA UTILITIES TIỆN ÍCH CHUẨN (ĐÃ PHẲNG HÓA 100%) --- */
 @layer utilities {
     html,
     body {
@@ -64,7 +67,7 @@
         scrollbar-width: thin;
         scrollbar-color: rgba(217, 154, 50, 0.45) transparent;
     }
-    @layer utilities {
+
     /* Auth modal overlay */
     .auth-modal-overlay {
         animation: authOverlayFade 0.25s ease forwards;
@@ -76,23 +79,27 @@
         box-shadow:
             0 24px 80px rgba(0, 0, 0, 0.65),
             0 0 0 1px rgba(217, 154, 50, 0.08),
-            0 0 45px rgba(217, 154, 50, 0.12);
+            0 0 45px rgba(217, 154, 50, 0.12) !important;
     }
 
     .auth-modal-box::before {
         content: "";
         position: absolute;
-        inset: -1px;
-        border-radius: 24px;
+        inset: 0;
+        border-radius: 28px;
+        padding: 1px;
         background: linear-gradient(
-            135deg,
-            rgba(217, 154, 50, 0.35),
-            transparent 35%,
-            rgba(138, 74, 33, 0.25)
+            145deg,
+            rgba(217, 154, 50, 0.45),
+            rgba(185, 130, 69, 0.22),
+            rgba(90, 45, 20, 0.18)
         );
-        opacity: 0.45;
+        -webkit-mask:
+            linear-gradient(#000 0 0) content-box,
+            linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
         pointer-events: none;
-        z-index: -1;
     }
 
     /* Closing animation */
@@ -114,45 +121,14 @@
         animation: authFieldFadeUp 0.35s ease both;
     }
 
-    .auth-form-animate > *:nth-child(1) {
-        animation-delay: 0.03s;
-    }
+    .auth-form-animate > *:nth-child(1) { animation-delay: 0.03s; }
+    .auth-form-animate > *:nth-child(2) { animation-delay: 0.06s; }
+    .auth-form-animate > *:nth-child(3) { animation-delay: 0.09s; }
+    .auth-form-animate > *:nth-child(4) { animation-delay: 0.12s; }
+    .auth-form-animate > *:nth-child(5) { animation-delay: 0.15s; }
 
-    .auth-form-animate > *:nth-child(2) {
-        animation-delay: 0.06s;
-    }
-
-    .auth-form-animate > *:nth-child(3) {
-        animation-delay: 0.09s;
-    }
-
-    .auth-form-animate > *:nth-child(4) {
-        animation-delay: 0.12s;
-    }
-
-    .auth-form-animate > *:nth-child(5) {
-        animation-delay: 0.15s;
-    }
-
-    @keyframes authOverlayFade {
-        from {
-            opacity: 0;
-        }
-
-        to {
-            opacity: 1;
-        }
-    }
-
-    @keyframes authOverlayLeave {
-        from {
-            opacity: 1;
-        }
-
-        to {
-            opacity: 0;
-        }
-    }
+    @keyframes authOverlayFade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes authOverlayLeave { from { opacity: 1; } to { opacity: 0; } }
 
     @keyframes authModalEnter {
         from {
@@ -160,7 +136,6 @@
             transform: translateY(28px) scale(0.94);
             filter: blur(8px);
         }
-
         to {
             opacity: 1;
             transform: translateY(0) scale(1);
@@ -174,7 +149,6 @@
             transform: translateY(0) scale(1);
             filter: blur(0);
         }
-
         to {
             opacity: 0;
             transform: translateY(18px) scale(0.96);
@@ -183,56 +157,13 @@
     }
 
     @keyframes authFormFadeUp {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes authFieldFadeUp {
-        from {
-            opacity: 0;
-            transform: translateY(8px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-}
-
-@layer utilities {
-    .auth-modal-box {
-        box-shadow:
-            0 24px 80px rgba(0, 0, 0, 0.7),
-            0 0 0 1px rgba(217, 154, 50, 0.22),
-            0 0 42px rgba(217, 154, 50, 0.16);
-    }
-
-    .auth-modal-box::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 28px;
-        padding: 1px;
-        background: linear-gradient(
-            145deg,
-            rgba(217, 154, 50, 0.55),
-            rgba(138, 74, 33, 0.12),
-            rgba(244, 197, 106, 0.25)
-        );
-        -webkit-mask:
-            linear-gradient(#000 0 0) content-box,
-            linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        pointer-events: none;
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
     .auth-modal-scroll::-webkit-scrollbar {
@@ -255,36 +186,6 @@
     .auth-modal-scroll {
         scrollbar-width: thin;
         scrollbar-color: rgba(217, 154, 50, 0.45) transparent;
-    }
-}
-@layer utilities {
-    /* Khung viền ngoài của modal auth */
-    .auth-modal-box {
-        border-color: rgba(185, 130, 69, 0.42) !important;
-        box-shadow:
-            0 28px 90px rgba(0, 0, 0, 0.72),
-            0 0 0 1px rgba(185, 130, 69, 0.28),
-            0 0 45px rgba(217, 154, 50, 0.12) !important;
-    }
-
-    .auth-modal-box::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: 28px;
-        padding: 1px;
-        background: linear-gradient(
-            145deg,
-            rgba(217, 154, 50, 0.45),
-            rgba(185, 130, 69, 0.22),
-            rgba(90, 45, 20, 0.18)
-        );
-        -webkit-mask:
-            linear-gradient(#000 0 0) content-box,
-            linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        pointer-events: none;
     }
 
     /* Input trong form login/register */
@@ -319,5 +220,3 @@
         accent-color: #d99a32;
     }
 }
-}
-
