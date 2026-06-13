@@ -33,6 +33,8 @@ use App\Http\Controllers\User\SuatChieuController as UserSuatChieuController;
 use App\Http\Controllers\User\VeXemPhimController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
+
 
 
 Route::get('/', [PhimsController::class, 'home'])->name('home');
@@ -170,6 +172,12 @@ Route::middleware(['auth', 'role:admin'])
         Route::resource('nhanviens', NhanVienController::class);
         Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])
             ->name('nhanviens.toggle-status');
+
+        //Quản lý vé
+        Route::resource('ve-xem-phims', AdminVeXemPhimController::class)->only(['index', 'show', 'edit', 'update'])->names('ve-xem-phims');
+        Route::patch('ve-xem-phims/{veXemPhim}/huy',[AdminVeXemPhimController::class, 'huy'])->name('ve-xem-phims.huy');
+        Route::patch('ve-xem-phims/{veXemPhim}/su-dung', [AdminVeXemPhimController::class, 'suDung'])->name('ve-xem-phims.su-dung');
+        Route::patch('ve-xem-phims/{veXemPhim}/cap-nhat-trang-thai',[AdminVeXemPhimController::class, 'capNhatTrangThai'])->name('ve-xem-phims.cap-nhat-trang-thai');
     });
 
 Route::middleware('auth')->group(function () {
