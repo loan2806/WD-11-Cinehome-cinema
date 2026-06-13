@@ -43,16 +43,22 @@ use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
 */
 Route::get('/', [PhimsController::class, 'home'])->name('home');
 
-// Điều phối trung tâm khi người dùng click vào mục Dashboard chung hệ thống
+// Điều phối trung tâm dựa trên vai trò tài khoản khi đăng nhập
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
-    if ($user->hasRole('Quản trị viên') || $user->vai_tro === 'admin' || $user->hasRole('Quản lý hệ thống')) {
+    // 1. Chuyển hướng sang phân hệ Quản lý hệ thống tối cao
+    if ($user->hasRole('Quản lý hệ thống') || $user->vai_tro === 'quan_ly_he_thong') {
+        return redirect()->route('system.dashboard');
+    }
+
+    // 2. Chuyển hướng sang phân hệ Sub-Admin / Quản lý rạp thông thường
+    if ($user->hasRole('Quản trị viên') || $user->vai_tro === 'admin') {
         return redirect()->route('admin.dashboard');
     }
 
     if ($user->hasRole('Quản lý') || $user->hasRole('Nhân viên') || $user->vai_tro === 'nhan_vien') {
-        return redirect()->route('admin.dashboard'); // Controller tự động nhận diện vai trò để trả về đúng View thư mục con
+        return redirect()->route('admin.dashboard');
     }
 
     return redirect()->route('home');
@@ -173,7 +179,6 @@ Route::middleware(['auth'])
             Route::post('/food-invoices', [FoodInvoiceController::class, 'store'])->name('food-invoices.store');
             Route::delete('/food-invoices/{foodInvoice}', [FoodInvoiceController::class, 'destroy'])->name('food-invoices.destroy');
 
-            // ĐỒNG BỘ BẢO MẬT: Nhúng Phân hệ Quản lý vé nâng cao từ nhánh main vào đây
             Route::resource('ve-xem-phims', AdminVeXemPhimController::class)->only(['index', 'show', 'edit', 'update'])->names('ve-xem-phims');
             Route::patch('ve-xem-phims/{veXemPhim}/huy',[AdminVeXemPhimController::class, 'huy'])->name('ve-xem-phims.huy');
             Route::patch('ve-xem-phims/{veXemPhim}/su-dung', [AdminVeXemPhimController::class, 'suDung'])->name('ve-xem-phims.su-dung');
@@ -197,10 +202,10 @@ Route::middleware(['auth'])
             Route::get('/activity-logs', [NhatKyHoatDongHeThongController::class, 'index'])->name('activity-logs.index');
         });
 
-        // Khóa bảo vệ Module: Cấu Hình Hệ Thống Chung
+        // Khóa bảo vệ Module: Cấu Hinh Hệ Thống Chung
         Route::middleware(['permission:quan_ly_cau_hinh_he_thong'])->group(function () {
             Route::resource('notifications', AdminNotificationController::class)->only(['index', 'create', 'store', 'destroy']);
-            @get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])->name('movie-reviews.index');
+            Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])->name('movie-reviews.index');
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
             Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
@@ -214,6 +219,27 @@ Route::middleware(['auth'])
             Route::post('/phan-quyen/vai-tro', [PhanQuyenController::class, 'storeRole'])->name('phan-quyen.storeRole');
             Route::put('/phan-quyen/cap-nhat/{id}', [PhanQuyenController::class, 'updateMatrix'])->name('phan-quyen.updateMatrix');
         });
+    });
+
+/*
+|--------------------------------------------------------------------------
+| PHÂN HỆ ĐỊNH TUYẾN RIÊNG BIỆT CHO QUẢN LÝ HỆ THỐNG (SYSTEM PANEL)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth'])
+    ->prefix('system')
+    ->name('system.')
+    ->group(function () {
+        
+        // Trang chủ Dashboard đầu não hệ thống
+        Route::get('/dashboard', function() {
+            return view('system.dashboard'); // Trả về view độc lập sử dụng layout system.blade.php
+        })->name('dashboard');
+
+        // Các đặc quyền hạ tầng kỹ thuật gốc (Độc lập 100%)
+        Route::get('/cai-dat-thanh-toan', function() { return 'Cấu hình cổng API MoMo, VNPAY'; })->name('payments');
+        Route::get('/sao-luu-du-lieu', function() { return 'Quản trị sao lưu cơ sở dữ liệu MySQL hạt nhân'; })->name('backups');
+        Route::get('/giam-sat-loi', function() { return 'Nhật ký lỗi hệ thống tập trung'; })->name('logs');
     });
 
 /*
