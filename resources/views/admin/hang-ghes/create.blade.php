@@ -81,6 +81,51 @@
 
             </div>
 
+            <div class="space-y-2">
+
+                <label class="text-sm text-gray-400">
+                    Loại ghế mặc định cho hàng
+                </label>
+
+                <select name="loai_ghe_mac_dinh_id" id="loai_ghe_mac_dinh_id"
+                    class="w-full rounded-2xl border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+
+                    <option value="">-- Không đặt (chọn khi tạo ghế) --</option>
+
+                    @foreach ($loaiGhes as $loai)
+                        <option value="{{ $loai->id }}"
+                            {{ old('loai_ghe_mac_dinh_id') == $loai->id ? 'selected' : '' }}>
+                            {{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)
+                        </option>
+                    @endforeach
+
+                </select>
+
+                <small class="text-xs text-gray-500">Gợi ý khi tạo ghế trong hàng này, có thể đổi từng ghế sau.</small>
+
+            </div>
+
+            <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-[#0f0f0f] p-4">
+
+                <input type="checkbox" name="la_hang_couple" value="1"
+                    {{ old('la_hang_couple') ? 'checked' : '' }}
+                    class="mt-1 h-4 w-4 rounded border-white/20 bg-[#151515] text-[#d99a32] focus:ring-[#d99a32]">
+
+                <div>
+
+                    <div class="text-sm font-semibold text-white">
+                        Đây là hàng ghép đôi (Couple)
+                    </div>
+
+                    <div class="mt-1 text-xs text-gray-400">
+                        Bật nếu hàng này có ghế couple. Hệ thống sẽ tự động ghép 2 ghế liền kề thành 1 cặp khi tạo ghế.
+                        Bạn có thể bật/tắt sau nếu muốn thay đổi kiểu hàng.
+                    </div>
+
+                </div>
+
+            </label>
+
             <div class="flex items-center justify-end gap-4 border-t border-white/10 pt-6">
 
                 <a href="{{ route('admin.hang-ghes.index') }}"

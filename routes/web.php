@@ -159,6 +159,10 @@ Route::middleware(['auth'])
         // Khóa bảo vệ Module: Cấu trúc Phòng Chiếu & Sơ đồ Ghế Ngồi
         Route::middleware(['permission:quan_ly_phong_ghe'])->group(function () {
             Route::resource('phong-chieus', PhongChieuController::class);
+            // CSRF refresher: dùng GET để Laravel không check CSRF, trả về token mới nhất từ session
+            Route::get('csrf-token', function () {
+                return response()->json(['csrf_token' => csrf_token()]);
+            })->name('admin.csrf-token');
             Route::post('phong-chieus/{phong_chieu}/generate-seats', [PhongChieuController::class, 'generateSeats'])->name('phong-chieus.generate-seats');
             Route::post('phong-chieus/{phong_chieu}/toggle-seat-maintenance', [PhongChieuController::class, 'toggleSeatMaintenance'])->name('phong-chieus.toggle-seat-maintenance');
             Route::post('phong-chieus/{phong_chieu}/update-seat-type', [PhongChieuController::class, 'updateSeatType'])->name('phong-chieus.update-seat-type');
@@ -166,9 +170,12 @@ Route::middleware(['auth'])
             Route::post('phong-chieus/{phong_chieu}/bulk-update-seats', [PhongChieuController::class, 'bulkUpdateSeats'])->name('phong-chieus.bulk-update-seats');
             Route::post('phong-chieus/{phong_chieu}/delete-row-seats', [PhongChieuController::class, 'deleteRowSeats'])->name('phong-chieus.delete-row-seats');
             Route::post('phong-chieus/{phong_chieu}/toggle-row-maintenance', [PhongChieuController::class, 'toggleRowMaintenance'])->name('phong-chieus.toggle-row-maintenance');
+            Route::post('phong-chieus/{phong_chieu}/create-seat', [PhongChieuController::class, 'createSeat'])->name('phong-chieus.create-seat');
+            Route::post('phong-chieus/{phong_chieu}/create-row', [PhongChieuController::class, 'createRow'])->name('phong-chieus.create-row');
 
             Route::resource('hang-ghes', HangGheController::class);
             Route::post('hang-ghes/{hang_ghe}/update-row-type', [HangGheController::class, 'updateRowType'])->name('hang-ghes.update-row-type');
+            Route::get('phong-chieus/{phong_chieu}/hang-ghes', [HangGheController::class, 'byPhongChieu'])->name('phong-chieus.hang-ghes.index');
             Route::resource('loai-ghes', LoaiGheController::class);
             Route::resource('ghe-ngois', GheNgoiController::class);
             Route::post('ghe-ngois/{ghe_ngoi}/toggle-maintenance', [GheNgoiController::class, 'toggleMaintenance'])->name('ghe-ngois.toggle-maintenance');

@@ -10,6 +10,7 @@ use App\Models\LoaiGhe;
 use App\Models\PhongChieu;
 use App\Services\SeatGeneratorService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class GheNgoiController extends Controller
@@ -63,6 +64,8 @@ class GheNgoiController extends Controller
     public function create(Request $request): View
     {
         $phongChieuId = $request->phong_chieu_id;
+        $hangGheId = $request->hang_ghe_id;
+
         $phongChieus = PhongChieu::with('rapChieuPhim')
             ->where('trang_thai', 'hoat_dong')
             ->orderBy('ten_phong')
@@ -70,10 +73,33 @@ class GheNgoiController extends Controller
 
         $loaiGhes = LoaiGhe::orderBy('ten_loai')->get();
 
+        // Nếu đã chọn phòng thì load sẵn các hàng thuộc phòng đó
+        $hangGhes = $phongChieuId
+            ? HangGhe::where('phong_chieu_id', $phongChieuId)
+                ->orderBy('ten_hang')
+                ->get()
+            : collect();
+
+        // Gợi ý cột kế tiếp cho hàng đã chọn (nếu có)
+        $goiYCot = 1;
+        $goiYMaGhe = '';
+        if ($hangGheId) {
+            $hangGhe = HangGhe::find($hangGheId);
+            if ($hangGhe) {
+                $cotLonNhat = (int) GheNgoi::where('hang_ghe_id', $hangGhe->id)->max('cot');
+                $goiYCot = $cotLonNhat + 1;
+                $goiYMaGhe = $hangGhe->ten_hang . $goiYCot;
+            }
+        }
+
         return view('admin.ghe-ngois.create', compact(
             'phongChieus',
             'phongChieuId',
-            'loaiGhes'
+            'hangGhes',
+            'hangGheId',
+            'loaiGhes',
+            'goiYCot',
+            'goiYMaGhe'
         ));
     }
 
@@ -83,23 +109,25 @@ class GheNgoiController extends Controller
     public function store(StoreGheNgoiRequest $request)
     {
         $data = $request->validated();
-        
-        $exists = GheNgoi::where('phong_chieu_id', $data['phong_chieu_id'])
-            ->where('ma_ghe', $data['ma_ghe'])
-            ->exists();
 
-        if ($exists) {
+        $ghe = GheNgoi::create($data);
+
+        // Nếu ghế vừa tạo thuộc loại couple, tự gán couple_group_id ghép với ghế liền kề
+        $this->seatGenerator->attachCoupleGroupForSeat($ghe);
+
+        // Nếu người dùng tick "tiếp tục thêm ghế cho hàng này" thì quay lại form
+        if ($request->boolean('tiep_tuc_tao')) {
             return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Mã ghế đã tồn tại trong phòng chiếu này.');
+                ->route('admin.ghe-ngois.create', [
+                    'phong_chieu_id' => $data['phong_chieu_id'],
+                    'hang_ghe_id' => $data['hang_ghe_id'],
+                ])
+                ->with('success', "Đã tạo ghế {$ghe->ma_ghe}. Hãy tạo ghế tiếp theo.");
         }
-
-        GheNgoi::create($data);
 
         return redirect()
             ->route('admin.ghe-ngois.index', ['phong_chieu_id' => $data['phong_chieu_id']])
-            ->with('success', 'Ghế ngồi đã được tạo thành công.');
+            ->with('success', "Ghế {$ghe->ma_ghe} đã được tạo thành công.");
     }
 
     /**
@@ -152,16 +180,47 @@ class GheNgoiController extends Controller
      */
     public function destroy(GheNgoi $gheNgoi)
     {
-        $gheNgoi->delete();
+        $phongChieuId = $gheNgoi->phong_chieu_id;
+        $maGhe = $gheNgoi->ma_ghe;
+        $coupleGroupId = $gheNgoi->couple_group_id;
+        $phongChieu = $gheNgoi->phongChieu;
 
-        $message = 'Ghế đã được xóa.';
+        // Kiểm tra ghế có vé đang sử dụng không (tránh xóa nhầm)
+        if ($phongChieu) {
+            $conflicted = app(PhongChieuController::class)
+                ->findSeatsInUsePublic($phongChieu, [$maGhe]);
+            if (!empty($conflicted)) {
+                $message = "Không thể xóa ghế {$maGhe}: đang có vé đã bán/đã sử dụng.";
+                if (request()->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => $message], 422);
+                }
+                return redirect()
+                    ->route('admin.ghe-ngois.index', ['phong_chieu_id' => $phongChieuId])
+                    ->with('error', $message);
+            }
+        }
+
+        DB::transaction(function () use ($gheNgoi, $coupleGroupId, $maGhe) {
+            // Soft delete ghế
+            $gheNgoi->delete();
+
+            // Nếu ghế thuộc cặp couple, dọn couple_group_id của ghế còn lại
+            // để tránh "mồ côi" trỏ vào group_id không còn tồn tại
+            if ($coupleGroupId) {
+                GheNgoi::where('couple_group_id', $coupleGroupId)
+                    ->where('id', '!=', $gheNgoi->id)
+                    ->update(['couple_group_id' => null]);
+            }
+        });
+
+        $message = "Ghế {$maGhe} đã được xóa.";
 
         if (request()->expectsJson()) {
             return response()->json(['success' => true, 'message' => $message]);
         }
 
         return redirect()
-            ->route('admin.ghe-ngois.index')
+            ->route('admin.ghe-ngois.index', ['phong_chieu_id' => $phongChieuId])
             ->with('success', $message);
     }
 

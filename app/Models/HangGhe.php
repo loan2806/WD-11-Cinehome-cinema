@@ -16,6 +16,12 @@ class HangGhe extends Model
     protected $fillable = [
         'phong_chieu_id',
         'ten_hang',
+        'la_hang_couple',
+        'loai_ghe_mac_dinh_id',
+    ];
+
+    protected $casts = [
+        'la_hang_couple' => 'boolean',
     ];
 
     public function phongChieu(): BelongsTo
@@ -26,6 +32,11 @@ class HangGhe extends Model
     public function gheNgois(): HasMany
     {
         return $this->hasMany(GheNgoi::class, 'hang_ghe_id');
+    }
+
+    public function loaiGheMacDinh(): BelongsTo
+    {
+        return $this->belongsTo(LoaiGhe::class, 'loai_ghe_mac_dinh_id');
     }
 
     public function getSoGheAttribute(): int

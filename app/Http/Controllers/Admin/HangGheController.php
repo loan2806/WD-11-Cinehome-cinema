@@ -9,6 +9,7 @@ use App\Models\HangGhe;
 use App\Models\LoaiGhe;
 use App\Models\PhongChieu;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class HangGheController extends Controller
@@ -45,8 +46,9 @@ class HangGheController extends Controller
             ->where('trang_thai', 'hoat_dong')
             ->orderBy('ten_phong')
             ->get();
+        $loaiGhes = LoaiGhe::orderBy('ten_loai')->get();
 
-        return view('admin.hang-ghes.create', compact('phongChieus', 'phongChieuId'));
+        return view('admin.hang-ghes.create', compact('phongChieus', 'phongChieuId', 'loaiGhes'));
     }
 
     /**
@@ -55,7 +57,8 @@ class HangGheController extends Controller
     public function store(StoreHangGheRequest $request)
     {
         $data = $request->validated();
-        
+        $data['la_hang_couple'] = $request->boolean('la_hang_couple');
+
         HangGhe::create($data);
 
         return redirect()
@@ -68,7 +71,7 @@ class HangGheController extends Controller
      */
     public function show(HangGhe $hangGhe): View
     {
-        $hangGhe->load(['phongChieu.rapChieuPhim', 'gheNgois.loaiGhe']);
+        $hangGhe->load(['phongChieu.rapChieuPhim', 'gheNgois.loaiGhe', 'loaiGheMacDinh']);
 
         return view('admin.hang-ghes.show', compact('hangGhe'));
     }
@@ -81,8 +84,9 @@ class HangGheController extends Controller
         $phongChieus = PhongChieu::with('rapChieuPhim')
             ->orderBy('ten_phong')
             ->get();
+        $loaiGhes = LoaiGhe::orderBy('ten_loai')->get();
 
-        return view('admin.hang-ghes.edit', compact('hangGhe', 'phongChieus'));
+        return view('admin.hang-ghes.edit', compact('hangGhe', 'phongChieus', 'loaiGhes'));
     }
 
     /**
@@ -91,7 +95,8 @@ class HangGheController extends Controller
     public function update(UpdateHangGheRequest $request, HangGhe $hangGhe)
     {
         $data = $request->validated();
-        
+        $data['la_hang_couple'] = $request->boolean('la_hang_couple');
+
         $hangGhe->update($data);
 
         return redirect()
@@ -104,17 +109,33 @@ class HangGheController extends Controller
      */
     public function destroy(HangGhe $hangGhe)
     {
-        if ($hangGhe->gheNgois()->exists()) {
-            return redirect()
-                ->route('admin.hang-ghes.index')
-                ->with('error', 'Không thể xóa hàng ghế vì đang có ghế.');
+        $ghes = $hangGhe->gheNgois;
+        $maGheList = $ghes->pluck('ma_ghe')->all();
+        $phongChieu = $hangGhe->phongChieu;
+
+        if (!empty($maGheList) && $phongChieu) {
+            $phongCtl = app(PhongChieuController::class);
+            $conflicted = $phongCtl->findSeatsInUsePublic($phongChieu, $maGheList);
+            if (!empty($conflicted)) {
+                $preview = implode(', ', array_slice($conflicted, 0, 10));
+                $more = count($conflicted) > 10 ? '…' : '';
+                return redirect()
+                    ->route('admin.hang-ghes.index', ['phong_chieu_id' => $hangGhe->phong_chieu_id])
+                    ->with('error', "Không thể xóa hàng {$hangGhe->ten_hang}: các ghế [{$preview}{$more}] đang có vé đã bán/đã sử dụng.");
+            }
         }
 
-        $hangGhe->delete();
+        DB::transaction(function () use ($hangGhe, $ghes) {
+            // Soft delete ghế trước (sẽ tự động do cascade nếu FK + onDelete cascade, nhưng soft delete vẫn phải gọi tay)
+            foreach ($ghes as $ghe) {
+                $ghe->delete();
+            }
+            $hangGhe->delete();
+        });
 
         return redirect()
-            ->route('admin.hang-ghes.index')
-            ->with('success', 'Hàng ghế đã được xóa thành công.');
+            ->route('admin.hang-ghes.index', ['phong_chieu_id' => $hangGhe->phong_chieu_id])
+            ->with('success', "Hàng ghế {$hangGhe->ten_hang} đã được xóa thành công.");
     }
 
     /**
@@ -133,5 +154,26 @@ class HangGheController extends Controller
         return redirect()
             ->route('admin.hang-ghes.show', $hangGhe)
             ->with('success', "Đã cập nhật {$updated} ghế thành loại mới.");
+    }
+
+    /**
+     * Trả về danh sách hàng thuộc một phòng chiếu (dùng cho AJAX / select phụ thuộc).
+     */
+    public function byPhongChieu(Request $request, PhongChieu $phongChieu)
+    {
+        $hangGhes = HangGhe::where('phong_chieu_id', $phongChieu->id)
+            ->withCount('gheNgois')
+            ->orderBy('ten_hang')
+            ->get(['id', 'ten_hang', 'phong_chieu_id', 'la_hang_couple', 'loai_ghe_mac_dinh_id']);
+
+        return response()->json([
+            'data' => $hangGhes->map(fn ($h) => [
+                'id' => $h->id,
+                'ten_hang' => $h->ten_hang,
+                'so_ghe' => $h->ghe_ngois_count,
+                'la_hang_couple' => (bool) $h->la_hang_couple,
+                'loai_ghe_mac_dinh_id' => $h->loai_ghe_mac_dinh_id,
+            ]),
+        ]);
     }
 }

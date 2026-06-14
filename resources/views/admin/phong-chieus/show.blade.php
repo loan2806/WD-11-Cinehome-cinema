@@ -40,6 +40,16 @@
         </p>
     </div>
     <div class="flex flex-wrap gap-3">
+        <button type="button" id="btnOpenAddSeat" data-phong-id="{{ $phongChieu->id }}"
+            class="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 transition hover:scale-[1.02] hover:bg-emerald-500/20 hover:border-emerald-500/50">
+            <i class="fa-solid fa-plus"></i>
+            Thêm ghế
+        </button>
+        <button type="button" id="btnOpenAddRow" data-phong-id="{{ $phongChieu->id }}"
+            class="inline-flex items-center gap-2 rounded-2xl border border-[#d99a32]/30 bg-[#d99a32]/10 px-5 py-3 text-sm font-bold text-[#d99a32] transition hover:scale-[1.02] hover:bg-[#d99a32]/20 hover:border-[#d99a32]/50">
+            <i class="fa-solid fa-layer-group"></i>
+            Thêm hàng
+        </button>
         <a href="{{ route('admin.phong-chieus.edit', $phongChieu) }}"
             class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-[#d99a32]/20 transition hover:scale-[1.02] hover:shadow-xl hover:shadow-[#d99a32]/30">
             <i class="fa-solid fa-pen-to-square"></i>
@@ -92,6 +102,9 @@
             </div>
             <button type="button" id="btnToggleMaintenance" class="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/10">
                 <i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì
+            </button>
+            <button type="button" id="btnBulkDeleteSeats" class="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/25 hover:border-red-500/60">
+                <i class="fa-solid fa-trash-can mr-1.5"></i>Xóa ghế
             </button>
             <button type="button" id="applyBulkAction" class="rounded-xl bg-[#d99a32] px-6 py-2.5 text-sm font-bold text-black transition hover:bg-[#e5a847] hover:scale-[1.02]">
                 <i class="fa-solid fa-check mr-1.5"></i>Áp dụng
@@ -590,6 +603,185 @@
     </div>
 </div>
 
+{{-- MODAL: THÊM GHẾ --}}
+<div id="addSeatModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div class="w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-[#0f0f0f] p-6 shadow-2xl">
+        <div class="mb-5 flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-white">
+                    <i class="fa-solid fa-plus text-emerald-400 mr-2"></i>Thêm ghế mới
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Thêm 1 ghế vào hàng đã chọn trong phòng {{ $phongChieu->ten_phong }}</p>
+            </div>
+            <button type="button" id="addSeatModalClose" class="text-gray-500 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <div id="addSeatModalErrors" class="hidden mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300"></div>
+
+        <form id="addSeatForm" class="space-y-4">
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-gray-400">Hàng ghế <span class="text-red-400">*</span></label>
+                <select name="hang_ghe_id" id="addSeatHangGhe" required
+                    class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
+                    <option value="">-- Chọn hàng --</option>
+                    @foreach($phongChieu->hangGhes->sortBy('ten_hang') as $hang)
+                        <option value="{{ $hang->id }}" data-la-couple="{{ $hang->la_hang_couple ? 1 : 0 }}">{{ $hang->ten_hang }}{{ $hang->la_hang_couple ? ' (Couple)' : '' }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Mã ghế <span class="text-red-400">*</span></label>
+                    <input type="text" name="ma_ghe" id="addSeatMaGhe" maxlength="10" required
+                        placeholder="VD: A1, B2"
+                        class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Cột <span class="text-red-400">*</span></label>
+                    <input type="number" name="cot" id="addSeatCot" min="1" required
+                        class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-gray-400">Loại ghế <span class="text-red-400">*</span></label>
+                <select name="loai_ghe_id" id="addSeatLoaiGhe" required
+                    class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
+                    <option value="">-- Chọn loại --</option>
+                    @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
+                        <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-gray-400">Trạng thái <span class="text-red-400">*</span></label>
+                <select name="trang_thai" id="addSeatTrangThai" required
+                    class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
+                    <option value="hoat_dong">Hoạt động</option>
+                    <option value="bao_tri">Bảo trì</option>
+                </select>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button type="button" id="addSeatCancel"
+                    class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+                    Hủy
+                </button>
+                <button type="submit" id="addSeatSubmit"
+                    class="flex-1 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 hover:scale-[1.01]">
+                    <i class="fa-solid fa-plus mr-1.5"></i>Thêm ghế
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- MODAL: THÊM HÀNG --}}
+<div id="addRowModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div class="w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-[#0f0f0f] p-6 shadow-2xl">
+        <div class="mb-5 flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-bold text-white">
+                    <i class="fa-solid fa-layer-group text-[#d99a32] mr-2"></i>Thêm hàng ghế mới
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Thêm hàng ghế mới vào phòng {{ $phongChieu->ten_phong }} (có thể kèm ghế mẫu)</p>
+            </div>
+            <button type="button" id="addRowModalClose" class="text-gray-500 hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <div id="addRowModalErrors" class="hidden mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300"></div>
+
+        <form id="addRowForm" class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Tên hàng <span class="text-red-400">*</span></label>
+                    <input type="text" name="ten_hang" id="addRowTenHang" maxlength="10" required
+                        placeholder="VD: A, B, C..."
+                        class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Loại ghế mặc định</label>
+                    <select name="loai_ghe_mac_dinh_id" id="addRowLoaiMacDinh"
+                        class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+                        <option value="">-- Không đặt --</option>
+                        @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
+                            <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-[#0a0a0a] p-3">
+                <input type="checkbox" name="la_hang_couple" id="addRowIsCouple" value="1"
+                    class="mt-0.5 h-4 w-4 rounded border-white/20 bg-[#151515] text-pink-500 focus:ring-pink-500">
+                <div class="text-xs">
+                    <div class="font-semibold text-white">Hàng ghép đôi (Couple)</div>
+                    <div class="text-gray-500 mt-0.5">Hệ thống sẽ tự ghép 2 ghế liền kề thành 1 cặp khi tạo ghế mẫu.</div>
+                </div>
+            </label>
+
+            <div class="rounded-xl border border-white/10 bg-[#0a0a0a] p-3">
+                <label class="flex cursor-pointer items-center gap-3 text-xs text-gray-300">
+                    <input type="checkbox" name="tu_dong_tao_ghe" id="addRowAuto" value="1" checked
+                        class="h-4 w-4 rounded border-white/20 bg-[#151515] text-[#d99a32] focus:ring-[#d99a32]">
+                    <span>Tự động tạo ghế mẫu cho hàng (theo số cột)</span>
+                </label>
+            </div>
+
+            <div id="addRowAutoBox" class="space-y-3 rounded-xl border border-white/10 bg-[#0a0a0a] p-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-gray-400">Số ghế <span class="text-red-400">*</span></label>
+                        <input type="number" name="so_ghe" id="addRowSoGhe" min="1" max="50" value="10"
+                            class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-gray-400">Cột bắt đầu</label>
+                        <input type="number" name="cot_bat_dau" id="addRowCotBatDau" min="1" value="1"
+                            class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+                    </div>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Loại ghế cho hàng <span class="text-red-400">*</span></label>
+                    <select name="loai_ghe_id" id="addRowLoaiGhe"
+                        class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+                        <option value="">-- Chọn loại --</option>
+                        @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
+                            <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Trạng thái ghế</label>
+                    <select name="trang_thai" id="addRowTrangThai"
+                        class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+                        <option value="hoat_dong">Hoạt động</option>
+                        <option value="bao_tri">Bảo trì</option>
+                    </select>
+                </div>
+                <p class="text-[11px] text-gray-500">Mã ghế sẽ tự sinh: <span class="text-[#d99a32] font-bold" id="addRowPreview">A1, A2, ...</span></p>
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button type="button" id="addRowCancel"
+                    class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+                    Hủy
+                </button>
+                <button type="submit" id="addRowSubmit"
+                    class="flex-1 rounded-xl bg-[#d99a32] px-4 py-3 text-sm font-bold text-black transition hover:bg-[#e5a847] hover:scale-[1.01]">
+                    <i class="fa-solid fa-plus mr-1.5"></i>Thêm hàng
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- HOVER TOOLTIP (giống trang chọn ghế user) --}}
 <div id="seatHoverTooltip" class="seat-hover-tooltip">
     <div class="tt-title">
@@ -601,25 +793,19 @@
 
 {{-- SEAT INFO POPOVER --}}
 <div id="seatInfoPopover" class="seat-info-popover">
-    {{-- Header gradient theo màu loại ghế --}}
-    <div id="popoverHeader" class="seat-info-popover__header">
-        <div class="seat-info-popover__header-overlay">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-2">
-                    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-                        <i class="fa-solid fa-chair text-white text-xs"></i>
-                    </div>
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-white/80">Ghế</span>
-                </div>
-                <span id="popoverHeaderMaGhe" class="rounded-md bg-black/30 px-2 py-0.5 text-[11px] font-black text-white backdrop-blur-sm"></span>
-            </div>
+    {{-- Header: strip màu loại ghế + meta --}}
+    <div class="seat-info-popover__strip"></div>
+    <div class="seat-info-popover__head">
+        <div class="flex items-center gap-2">
+            <i class="fa-solid fa-chair text-[11px] text-[#d99a32]"></i>
+            <span class="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">Chi tiết ghế</span>
         </div>
+        <span id="popoverHeaderMaGhe" class="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-black text-white"></span>
     </div>
 
-    {{-- Hero: khối màu lớn + mã ghế + loại --}}
+    {{-- Hero: mã ghế lớn + loại --}}
     <div class="seat-info-popover__hero">
         <div id="popoverColorBlock" class="seat-info-popover__color-block">
-            <div class="seat-info-popover__color-shine"></div>
             <div class="seat-info-popover__color-content">
                 <div id="popoverMaGhe" class="seat-info-popover__ma-ghe"></div>
                 <div id="popoverLoaiGhe" class="seat-info-popover__loai-ghe"></div>
@@ -627,47 +813,19 @@
         </div>
     </div>
 
-    {{-- Phụ thu --}}
-    <div class="seat-info-popover__phuthu-row">
-        <div class="flex items-center gap-2">
-            <i class="fa-solid fa-tag text-[#d99a32] text-xs"></i>
-            <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Phụ thu</span>
+    {{-- Thông tin: Phụ thu + Trạng thái (chia 2 dòng đơn giản) --}}
+    <div class="seat-info-popover__meta">
+        <div class="seat-info-popover__meta-row">
+            <div class="flex items-center gap-2 text-gray-400">
+                <i class="fa-solid fa-tag text-[10px]"></i>
+                <span class="text-[10px] font-semibold uppercase tracking-wider">Phụ thu</span>
+            </div>
+            <div id="popoverPhuThu" class="text-[13px] font-black text-white"></div>
         </div>
-        <div id="popoverPhuThu" class="text-sm font-black text-[#d99a32]"></div>
+        <div class="seat-info-popover__status" id="popoverStatus"></div>
     </div>
 
-    {{-- Status badge --}}
-    <div class="seat-info-popover__status" id="popoverStatus"></div>
-
-    {{-- Actions --}}
-    <div class="seat-info-popover__actions">
-        <button type="button" id="popoverBtnChangeType" class="seat-popover-btn seat-popover-btn--primary">
-            <i class="fa-solid fa-repeat mr-1.5"></i>Đổi loại
-        </button>
-        <button type="button" id="popoverBtnMaintenance" class="seat-popover-btn seat-popover-btn--secondary">
-            <i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì
-        </button>
-        <button type="button" id="popoverBtnDelete" class="seat-popover-btn seat-popover-btn--danger">
-            <i class="fa-solid fa-trash-can mr-1.5"></i>Xóa ghế
-        </button>
-    </div>
-    <div id="popoverTypeSelector" class="seat-info-popover__type-selector hidden">
-        <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-gray-500">Chọn loại ghế</label>
-        <div class="relative">
-            <select id="popoverLoaiGheSelect" class="w-full appearance-none rounded-xl border border-white/10 bg-[#0f0f0f] px-4 py-3 pl-10 text-sm text-white outline-none focus:border-[#d99a32] cursor-pointer">
-                @foreach(\App\Models\LoaiGhe::all() as $loai)
-                    <option value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}">
-                        {{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)
-                    </option>
-                @endforeach
-            </select>
-            <div id="popoverColorPreview" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 rounded-lg border border-white/10 shadow-sm"></div>
-        </div>
-        <div class="mt-3 flex gap-2">
-            <button type="button" id="popoverCancelType" class="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-xs font-medium text-gray-400 transition hover:bg-white/10">Hủy</button>
-            <button type="button" id="popoverConfirmType" class="flex-1 rounded-lg bg-[#d99a32] py-2 text-xs font-bold text-black transition hover:bg-[#e5a847]">Xác nhận</button>
-        </div>
-    </div>
+    {{-- (Hành động đã được tích hợp trên thanh bulk action) --}}
 </div>
 
 @endsection
@@ -870,82 +1028,57 @@
         transform: translateY(0) scale(0.96);
         transition: transform 0.1s ease;
     }
-    /* ==== GHẾ ĐANG ĐƯỢC CHỌN - HIỆU ỨNG GLOW + VIỀN SÁNG ==== */
+    /* ==== GHẾ ĐANG ĐƯỢC CHỌN ==== */
+    /* (Hiệu ứng được apply bằng inline style qua syncSeatCheckMark() trong JS
+       để đảm bảo không bị CSS rule nào ghi đè. Chỉ giữ @keyframes ở đây.) */
     @keyframes seatPulse {
         0%, 100% {
             box-shadow:
-                0 0 0 3px rgba(244, 197, 106, 0.95),
-                0 0 0 5px rgba(217, 154, 50, 0.5),
+                0 0 0 2px rgba(244, 197, 106, 0.95),
+                0 0 0 4px rgba(217, 154, 50, 0.5),
                 0 0 18px 4px rgba(244, 197, 106, 0.65),
                 0 0 35px 8px rgba(217, 154, 50, 0.35),
                 0 4px 12px rgba(0, 0, 0, 0.4);
         }
         50% {
             box-shadow:
-                0 0 0 3px rgba(244, 197, 106, 1),
-                0 0 0 7px rgba(217, 154, 50, 0.7),
+                0 0 0 2px rgba(244, 197, 106, 1),
+                0 0 0 6px rgba(217, 154, 50, 0.7),
                 0 0 25px 6px rgba(244, 197, 106, 0.85),
                 0 0 45px 12px rgba(217, 154, 50, 0.5),
                 0 4px 14px rgba(0, 0, 0, 0.45);
         }
     }
-    .seat-chip--selected,
-    .seat-interactive.selected {
-        position: relative;
-        outline: none !important;
-        transform: scale(1.08) translateY(-2px) !important;
-        animation: seatPulse 1.4s ease-in-out infinite;
-        z-index: 10 !important;
-        border: 3px solid #fde68a !important;
-        box-shadow:
-            0 0 0 2px rgba(244, 197, 106, 0.6),
-            0 0 0 5px rgba(217, 154, 50, 0.4),
-            0 0 18px 4px rgba(244, 197, 106, 0.7) !important;
-    }
-    /* Vòng sáng bao quanh ghế - 3 lớp */
-    .seat-interactive.selected::before {
-        content: "";
-        position: absolute;
-        inset: -6px;
-        border-radius: 18px 18px 10px 10px;
-        background: radial-gradient(ellipse at center,
-            rgba(244, 197, 106, 0.6) 0%,
-            rgba(217, 154, 50, 0.4) 40%,
-            rgba(217, 154, 50, 0) 70%);
-        z-index: -1;
-        pointer-events: none;
-        animation: seatPulse 1.4s ease-in-out infinite;
-    }
-    /* Dấu check ✓ góc phải trên - hiệu ứng xuất hiện */
+
+    /* Dấu check ✓ - render bằng JS (class .seat-check-mark) để không xung đột với ::after của couple */
     @keyframes checkAppear {
         0% { transform: scale(0) rotate(-180deg); opacity: 0; }
         60% { transform: scale(1.3) rotate(20deg); opacity: 1; }
         100% { transform: scale(1) rotate(0); opacity: 1; }
     }
-    .seat-interactive.selected::after {
-        content: "✓";
-        position: absolute;
-        top: -10px;
-        right: -10px;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #fde68a 0%, #f4c56a 50%, #d99a32 100%);
-        color: #1a0b04;
-        font-size: 13px;
-        font-weight: 900;
-        line-height: 22px;
-        text-align: center;
-        border: 2px solid #141414;
+    .seat-check-mark {
+        position: absolute !important;
+        top: 4px !important;
+        right: 4px !important;
+        width: 18px !important;
+        height: 18px !important;
+        border-radius: 50% !important;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        color: #ffffff !important;
+        font-size: 11px !important;
+        font-weight: 900 !important;
+        line-height: 18px !important;
+        text-align: center !important;
+        border: 2px solid #ffffff !important;
         box-shadow:
-            0 0 10px rgba(244, 197, 106, 0.9),
-            0 2px 6px rgba(0, 0, 0, 0.6);
-        z-index: 11;
-        animation: checkAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            0 0 10px rgba(16, 185, 129, 0.95),
+            0 2px 4px rgba(0, 0, 0, 0.6) !important;
+        z-index: 9999 !important;
+        pointer-events: none !important;
+        animation: checkAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
     }
-    /* Ghế couple được chọn - vẫn giữ hiệu ứng */
-    .seat-chip--couple.selected::after {
-        right: -10px;
+    .seat-check-mark::before {
+        content: "✓" !important;
     }
 
     /* Couple: 1 div to duy nhất chứa 2 nhãn ghế (H1 | H2)
@@ -954,7 +1087,7 @@
         width: 208px !important;
         gap: 0;
         padding: 0 16px 6px 16px !important;
-        overflow: hidden;
+        overflow: visible !important;
     }
     /* Vạch dashed ở giữa ghế couple */
     .seat-chip--couple::after {
@@ -998,175 +1131,90 @@
         position: fixed;
         z-index: 9999;
         width: 280px;
-        border-radius: 20px;
-        background: linear-gradient(180deg, #1a1a1a 0%, #0d0d0d 100%);
+        border-radius: 16px;
+        background: #0f0f0f;
         border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow:
-            0 30px 70px rgba(0, 0, 0, 0.8),
-            0 0 0 1px rgba(217, 154, 50, 0.05),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
         color: #ffffff;
         padding: 0;
         overflow: hidden;
         opacity: 0;
-        transform: translateY(8px) scale(0.95);
+        transform: translateY(6px);
         pointer-events: none;
-        transition: opacity .25s cubic-bezier(.16,1,.3,1), transform .25s cubic-bezier(.16,1,.3,1);
+        transition: opacity .18s ease, transform .18s ease;
     }
     .seat-info-popover.is-visible {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
         pointer-events: auto;
     }
 
-    /* Header gradient theo màu loại ghế */
-    .seat-info-popover__header {
-        position: relative;
-        height: 70px;
-        background: linear-gradient(135deg, var(--popover-color, #666) 0%, rgba(0, 0, 0, 0.4) 100%);
-        overflow: hidden;
-    }
-    .seat-info-popover__header::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background:
-            radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-            radial-gradient(circle at 20% 80%, rgba(0, 0, 0, 0.3) 0%, transparent 50%);
-    }
-    .seat-info-popover__header-overlay {
-        position: relative;
-        z-index: 1;
-        padding: 14px 16px;
+    /* Strip màu loại ghế — chỉ 3px trên cùng, không chiếm diện tích */
+    .seat-info-popover__strip {
+        height: 3px;
+        background: var(--popover-color, #666);
     }
 
-    /* Hero block - khối màu lớn */
+    /* Head: label + mã ghế nhỏ */
+    .seat-info-popover__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px 8px;
+    }
+
+    /* Hero: mã ghế + loại trong khối màu lớn */
     .seat-info-popover__hero {
-        padding: 0 16px;
-        margin-top: -28px;
-        position: relative;
-        z-index: 2;
+        padding: 0 14px;
     }
     .seat-info-popover__color-block {
         position: relative;
-        height: 90px;
-        border-radius: 16px;
+        height: 86px;
+        border-radius: 12px;
         background: var(--popover-color, #666);
         overflow: hidden;
-        box-shadow:
-            0 12px 30px rgba(0, 0, 0, 0.5),
-            0 0 0 1px rgba(255, 255, 255, 0.1),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15);
         display: flex;
         align-items: center;
         justify-content: center;
     }
-    .seat-info-popover__color-shine {
-        position: absolute;
-        inset: 0;
-        background:
-            radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.25) 0%, transparent 60%),
-            radial-gradient(circle at 70% 80%, rgba(0, 0, 0, 0.2) 0%, transparent 60%);
-        pointer-events: none;
-    }
     .seat-info-popover__color-content {
-        position: relative;
-        z-index: 1;
         text-align: center;
         color: #fff;
-        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
     .seat-info-popover__ma-ghe {
-        font-size: 28px;
-        font-weight: 900;
+        font-size: 26px;
+        font-weight: 800;
         letter-spacing: 1.5px;
         line-height: 1;
         margin-bottom: 4px;
     }
     .seat-info-popover__loai-ghe {
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 1.5px;
-        opacity: 0.95;
+        opacity: 0.9;
     }
 
-    /* Phụ thu row */
-    .seat-info-popover__phuthu-row {
-        margin: 14px 16px 0;
-        padding: 12px 14px;
-        background: rgba(217, 154, 50, 0.08);
-        border: 1px solid rgba(217, 154, 50, 0.15);
-        border-radius: 12px;
+    /* Meta: Phụ thu + Status — đơn giản, không box riêng */
+    .seat-info-popover__meta {
+        padding: 12px 14px 4px;
+    }
+    .seat-info-popover__meta-row {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        padding: 6px 0;
     }
-
-    /* Status badge */
     .seat-info-popover__status {
-        margin: 14px 16px 0;
+        margin-top: 10px;
         text-align: center;
     }
 
-    /* Actions */
-    .seat-info-popover__actions {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 14px 16px 16px;
-    }
-    .seat-popover-btn {
-        width: 100%;
-        border-radius: 12px;
-        padding: 11px 14px;
-        font-size: 13px;
-        font-weight: 700;
-        border: none;
-        cursor: pointer;
-        transition: all .2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-    }
-    .seat-popover-btn i {
-        font-size: 12px;
-    }
-    .seat-popover-btn--primary {
-        background: linear-gradient(135deg, #d99a32 0%, #e5a847 100%);
-        color: #000;
-        box-shadow: 0 4px 12px rgba(217, 154, 50, 0.25);
-    }
-    .seat-popover-btn--primary:hover {
-        background: linear-gradient(135deg, #e5a847 0%, #f0b95a 100%);
-        transform: translateY(-1px);
-        box-shadow: 0 6px 18px rgba(217, 154, 50, 0.4);
-    }
-    .seat-popover-btn--secondary {
-        background: rgba(255, 255, 255, 0.06);
-        color: #e0e0e0;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .seat-popover-btn--secondary:hover {
-        background: rgba(255, 255, 255, 0.12);
-        border-color: rgba(255, 255, 255, 0.15);
-    }
-    .seat-popover-btn--danger {
-        background: rgba(239, 68, 68, 0.1);
-        color: #fca5a5;
-        border: 1px solid rgba(239, 68, 68, 0.2);
-    }
-    .seat-popover-btn--danger:hover {
-        background: rgba(239, 68, 68, 0.22);
-        color: #fff;
-        border-color: rgba(239, 68, 68, 0.55);
-        transform: translateY(-1px);
-    }
-    .seat-popover-btn--active {
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.18) 0%, rgba(34, 197, 94, 0.1) 100%) !important;
-        color: #4ade80 !important;
-        border: 1px solid rgba(34, 197, 94, 0.35) !important;
+    /* Thông tin bên dưới: phụ thu + trạng thái (compact, không còn actions) */
+    .seat-info-popover__meta {
+        padding: 12px 14px 14px;
     }
 
     .seat-info-popover__type-selector {
@@ -1228,8 +1276,35 @@
 
 @push('scripts')
 <script>
+/* Show phong chieu - last updated: {{ date('Y-m-d H:i:s') }} */
+// Global fallback CSRF helper - định nghĩa ngoài DOMContentLoaded để form submit handler (line ~5173) và mọi nơi đều truy cập được
+window.getCsrfToken = function() {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.getAttribute('content')) {
+        return meta.getAttribute('content');
+    }
+    var match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+    if (match) {
+        return decodeURIComponent(match[1]);
+    }
+    return '';
+};
 document.addEventListener('DOMContentLoaded', function() {
     const phongChieuId = {{ $phongChieu->id }};
+
+    // === CSRF helper: đặt sớm để mọi handler bên dưới đều dùng được ===
+    function getCsrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.getAttribute('content')) {
+            return meta.getAttribute('content');
+        }
+        const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+        if (match) {
+            return decodeURIComponent(match[1]);
+        }
+        return '';
+    }
+
     let selectedSeats = new Set();
     let currentSeatId = null;
     let currentRowHangId = null;
@@ -1337,6 +1412,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
+     * Helper: đồng bộ hiệu ứng "đã chọn" với class .selected trên 1 element ghế.
+     * Dùng INLINE STYLE để đảm bảo không bị CSS rule nào ghi đè.
+     * Không động đến logic bulk action / click handler khác.
+     */
+    function syncSeatCheckMark(seatEl) {
+        if (!seatEl) return;
+        const existing = seatEl.querySelector('.seat-check-mark');
+        if (seatEl.classList.contains('selected')) {
+            if (!existing) {
+                const mark = document.createElement('span');
+                mark.className = 'seat-check-mark';
+                seatEl.appendChild(mark);
+            }
+            // === Inline style — chắc chắn thắng mọi CSS rule ===
+            seatEl.style.setProperty('transform', 'scale(1.15) translateY(-8px)', 'important');
+            seatEl.style.setProperty('z-index', '9999', 'important');
+            seatEl.style.setProperty('filter', 'brightness(1.35) saturate(1.25) drop-shadow(0 0 8px rgba(244,197,106,0.9))', 'important');
+            seatEl.style.setProperty('outline', '3px solid #fde68a', 'important');
+            seatEl.style.setProperty('outline-offset', '3px', 'important');
+            seatEl.style.setProperty('animation', 'seatPulse 1.4s ease-in-out infinite', 'important');
+        } else {
+            if (existing) existing.remove();
+            // === Xóa inline style để ghế trở về bình thường ===
+            seatEl.style.removeProperty('transform');
+            seatEl.style.removeProperty('z-index');
+            seatEl.style.removeProperty('filter');
+            seatEl.style.removeProperty('outline');
+            seatEl.style.removeProperty('outline-offset');
+            seatEl.style.removeProperty('animation');
+        }
+    }
+    // Đồng bộ cho mọi ghế khi load (phòng trường hợp có .selected sẵn từ server)
+    document.querySelectorAll('.seat-interactive').forEach(syncSeatCheckMark);
+    // (Đã bỏ debug log sau khi xác nhận hook chạy đúng)
+
+    /**
      * Render danh sách chip tên ghế đã chọn vào #selectedSeatsList
      * - Với ghế đơn: hiển thị tên 1 chip
      * - Với ghế couple: hiển thị 1 chip với cả 2 tên (H1+H2) để user biết cả cặp được chọn
@@ -1420,9 +1531,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (sibArr.length > 1) {
                         // Couple: nếu không còn selectedSeats chứa id của nó thì bỏ
                         const stillSelected = sibArr.some(sid => selectedSeats.has(sid));
-                        if (!stillSelected) dom.classList.remove('selected');
+                        if (!stillSelected) { dom.classList.remove('selected'); syncSeatCheckMark(dom); }
                     } else {
-                        if (!selectedSeats.has(dom.dataset.gheId)) dom.classList.remove('selected');
+                        if (!selectedSeats.has(dom.dataset.gheId)) { dom.classList.remove('selected'); syncSeatCheckMark(dom); }
                     }
                 });
                 updateBulkToolbar();
@@ -1479,29 +1590,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set màu cho header gradient + color block thông qua CSS variable
         popover.style.setProperty('--popover-color', mauSac);
 
-        // Status badge
+        // Status badge - đồng nhất với style tối giản của trang
         const statusEl = document.getElementById('popoverStatus');
         if (trangThai === 'bao_tri') {
-            statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold text-red-400"><i class="fa-solid fa-wrench"></i> Đang bảo trì</span>';
+            statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-bold text-red-400"><i class="fa-solid fa-wrench text-[10px]"></i> Đang bảo trì</span>';
         } else {
-            statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-400"><i class="fa-solid fa-check-circle"></i> Hoạt động</span>';
+            statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-400"><i class="fa-solid fa-check-circle text-[10px]"></i> Đang hoạt động</span>';
         }
-
-        // Maintenance button state
-        const maintBtn = document.getElementById('popoverBtnMaintenance');
-        if (trangThai === 'bao_tri') {
-            maintBtn.innerHTML = '<i class="fa-solid fa-rotate mr-1.5"></i>Kích hoạt ghế';
-            maintBtn.classList.add('seat-popover-btn--active');
-        } else {
-            maintBtn.innerHTML = '<i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì';
-            maintBtn.classList.remove('seat-popover-btn--active');
-        }
-
-        // Hide type selector
-        document.getElementById('popoverTypeSelector').classList.add('hidden');
-        document.getElementById('popoverBtnChangeType').classList.remove('hidden');
-        document.getElementById('popoverBtnMaintenance').classList.remove('hidden');
-        document.getElementById('popoverBtnDelete').classList.remove('hidden');
 
         positionPopover(seatEl);
         popover.classList.add('is-visible');
@@ -1515,7 +1610,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Bulk Toolbar ---
     clearSelection.addEventListener('click', function() {
         selectedSeats.clear();
-        document.querySelectorAll('.seat-interactive.selected').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
         updateBulkToolbar();
     });
 
@@ -1557,7 +1652,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-CSRF-TOKEN': getCsrfToken(),
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
@@ -1574,7 +1669,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
                 });
                 selectedSeats.clear();
-                document.querySelectorAll('.seat-interactive.selected').forEach(el => el.classList.remove('selected'));
+                document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
                 updateBulkToolbar();
                 bulkLoaiGheSelect.value = '';
             }
@@ -1609,7 +1704,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
                 });
                 selectedSeats.clear();
-                document.querySelectorAll('.seat-interactive.selected').forEach(el => el.classList.remove('selected'));
+                document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
                 updateBulkToolbar();
             } else {
                 alert('Có lỗi: ' + (data.message || status));
@@ -1617,6 +1712,58 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
         .finally(() => { updateBulkMaintenanceBtnLabel(); setBtnLoading(this, false); });
+    });
+
+    // --- Bulk Xóa ghế ---
+    const btnBulkDeleteSeats = document.getElementById('btnBulkDeleteSeats');
+    btnBulkDeleteSeats?.addEventListener('click', function() {
+        if (selectedSeats.size === 0) {
+            alert('Vui lòng chọn ít nhất 1 ghế để xóa.');
+            return;
+        }
+
+        // Mở rộng couple: nếu chọn 1 trong 2 ghế couple thì xóa cả cặp
+        const expandedIds = expandCoupleIds(Array.from(selectedSeats));
+        const soGhe = expandedIds.length;
+
+        if (!confirm(
+            `Xóa ${soGhe} ghế đã chọn?\n\n` +
+            `Hành động này không thể hoàn tác. ` +
+            `Các ghế đang có vé đã bán sẽ KHÔNG bị xóa.`
+        )) return;
+
+        setBtnLoading(this, true);
+
+        fetch(`/admin/phong-chieus/${phongChieuId}/bulk-update-seats`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': getCsrfToken(),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                ghe_ids: Array.from(expandedIds),
+                action: 'delete'
+            })
+        })
+        .then(async res => ({ status: res.status, ct: res.headers.get('content-type') || '', body: await res.text() }))
+        .then(({ status, ct, body }) => {
+            const data = ct.includes('application/json') ? JSON.parse(body) : { success: false, message: body };
+            if (data.success) {
+                // Xóa DOM các ghế đã xóa (server trả updated_seats rỗng cho delete; tự loại theo expandedIds)
+                expandedIds.forEach(id => {
+                    document.querySelectorAll(`.seat-interactive[data-ghe-id="${id}"]`).forEach(el => el.remove());
+                });
+                selectedSeats.clear();
+                document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
+                updateBulkToolbar();
+                alert(data.message || `Đã xóa ${soGhe} ghế.`);
+            } else {
+                alert('Có lỗi: ' + (data.message || status));
+            }
+        })
+        .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
+        .finally(() => { setBtnLoading(this, false, '<i class="fa-solid fa-trash-can mr-1.5"></i>Xóa ghế'); });
     });
 
     // Cập nhật nhãn nút bảo trì/hoạt động trong bulk toolbar theo trạng thái các ghế đã chọn
@@ -1727,6 +1874,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Đánh dấu selected trên chính DOM node couple (1 node = 1 cặp)
             if (siblingsIds.length > 1) {
                 el.classList.add('selected');
+                syncSeatCheckMark(el);
             }
         });
         return Array.from(expanded);
@@ -1753,17 +1901,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (selectedSeats.has(seatId)) {
                         siblingIds.forEach(id => selectedSeats.delete(id));
                         this.classList.remove('selected');
+                        syncSeatCheckMark(this);
                     } else {
                         siblingIds.forEach(id => selectedSeats.add(id));
                         this.classList.add('selected');
+                        syncSeatCheckMark(this);
                     }
                 } else {
                     if (selectedSeats.has(seatId)) {
                         selectedSeats.delete(seatId);
                         this.classList.remove('selected');
+                        syncSeatCheckMark(this);
                     } else {
                         selectedSeats.add(seatId);
                         this.classList.add('selected');
+                        syncSeatCheckMark(this);
                     }
                 }
                 updateBulkToolbar();
@@ -1784,148 +1936,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // --- Popover Actions ---
-    document.getElementById('popoverBtnChangeType').addEventListener('click', function() {
-        const typeSelector = document.getElementById('popoverTypeSelector');
-        const selectEl = document.getElementById('popoverLoaiGheSelect');
-        typeSelector.classList.remove('hidden');
-        this.classList.add('hidden');
-        document.getElementById('popoverBtnMaintenance').classList.add('hidden');
-        document.getElementById('popoverBtnDelete').classList.add('hidden');
-
-        // Set current type
-        if (currentSeatEl) {
-            selectEl.value = currentSeatEl.dataset.loaiGheId || '';
-        }
-        const selected = selectEl.options[selectEl.selectedIndex];
-        const preview = document.getElementById('popoverColorPreview');
-        if (preview) preview.style.backgroundColor = selected?.dataset?.color || '#666';
-
-        selectEl.focus();
-    });
-
-    document.getElementById('popoverLoaiGheSelect').addEventListener('change', function() {
-        const selected = this.options[this.selectedIndex];
-        const preview = document.getElementById('popoverColorPreview');
-        if (preview) preview.style.backgroundColor = selected?.dataset?.color || '#666';
-    });
-
-    document.getElementById('popoverCancelType').addEventListener('click', function() {
-        document.getElementById('popoverTypeSelector').classList.add('hidden');
-        document.getElementById('popoverBtnChangeType').classList.remove('hidden');
-        document.getElementById('popoverBtnMaintenance').classList.remove('hidden');
-        document.getElementById('popoverBtnDelete').classList.remove('hidden');
-    });
-
-    document.getElementById('popoverConfirmType').addEventListener('click', function() {
-        const loaiGheId = document.getElementById('popoverLoaiGheSelect').value;
-        const btn = this;
-        setBtnLoading(btn, true);
-
-        fetch(`/admin/phong-chieus/${phongChieuId}/update-seat-type`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                ghe_id: currentSeatSiblings.length > 1 ? null : currentSeatId,
-                ghe_ids: currentSeatSiblings.length > 1 ? currentSeatSiblings : null,
-                loai_ghe_id: loaiGheId
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                // Cập nhật tất cả ghế cùng cặp couple
-                if (data.updated_seats) {
-                    data.updated_seats.forEach(s => {
-                        const el = findSeatEl(s.id);
-                        if (el) updateSeatDOM(el, s.loai_ghe, s.mau_sac, s.trang_thai, s.phu_thu);
-                    });
-                } else {
-                    const seatEl = findSeatEl(currentSeatId);
-                    if (seatEl) updateSeatDOM(seatEl, data.loai_ghe, data.mau_sac, data.trang_thai, data.phu_thu);
-                }
-                document.getElementById('popoverTypeSelector').classList.add('hidden');
-                document.getElementById('popoverBtnChangeType').classList.remove('hidden');
-                document.getElementById('popoverBtnMaintenance').classList.remove('hidden');
-                document.getElementById('popoverBtnDelete').classList.remove('hidden');
-                const seatEl = findSeatEl(currentSeatId);
-                showPopover(seatEl);
-            }
-        })
-        .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
-        .finally(() => { setBtnLoading(btn, false, 'Xác nhận'); });
-    });
-
-    document.getElementById('popoverBtnMaintenance').addEventListener('click', function() {
-        const btn = this;
-        setBtnLoading(btn, true);
-
-        fetch(`/admin/phong-chieus/${phongChieuId}/toggle-seat-maintenance`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                ghe_id: currentSeatSiblings.length > 1 ? null : currentSeatId,
-                ghe_ids: currentSeatSiblings.length > 1 ? currentSeatSiblings : null,
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                // Cập nhật tất cả ghế cùng cặp couple
-                if (data.updated_seats) {
-                    data.updated_seats.forEach(s => {
-                        const el = findSeatEl(s.id);
-                        if (el) updateSeatDOM(el, s.loai_ghe, s.mau_sac, s.trang_thai, s.phu_thu);
-                    });
-                }
-                const seatEl = findSeatEl(currentSeatId);
-                showPopover(seatEl);
-            }
-        })
-        .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
-        .finally(() => { setBtnLoading(btn, false, '<i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì'); });
-    });
-
-    // --- Xóa ghế (đơn hoặc cả cặp couple) ---
-    document.getElementById('popoverBtnDelete').addEventListener('click', function() {
-        if (!currentSeatId) return;
-        const btn = this;
-        const targetCount = currentSeatSiblings.length > 1 ? currentSeatSiblings.length : 1;
-        const label = currentSeatSiblings.length > 1
-            ? 'Xóa cả cặp ghế couple này?'
-            : 'Xóa ghế này?';
-        if (!confirm(label + ' Hành động này không thể hoàn tác.')) return;
-
-        setBtnLoading(btn, true);
-
-        fetch(`/admin/phong-chieus/${phongChieuId}/bulk-update-seats`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                ghe_ids: currentSeatSiblings.length > 1 ? currentSeatSiblings : [currentSeatId],
-                action: 'delete',
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                // Reload để lấy seatMap mới
-                location.reload();
-            } else {
-                alert(data.message || 'Có lỗi xảy ra');
-            }
-        })
-        .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
-        .finally(() => { setBtnLoading(btn, false, '<i class="fa-solid fa-trash-can mr-1.5"></i>Xóa ghế'); });
-    });
+    // (Đã bỏ: Đổi loại / Bảo trì / Xóa trong popover — dùng thanh bulk action)
 
     // Hide popover on outside click
     document.addEventListener('click', function(e) {
@@ -2032,7 +2043,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': getCsrfToken()
             },
             body: JSON.stringify({ hang_ghe_id: currentRowHangId, loai_ghe_id: loaiGheId })
         })
@@ -2054,19 +2065,42 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // --- Bảo trì cả hàng (toggle) ---
-    // Lấy CSRF token: ưu tiên meta, fallback cookie XSRF-TOKEN (Laravel tự sinh)
-    function getCsrfToken() {
-        const meta = document.querySelector('meta[name="csrf-token"]');
-        if (meta && meta.getAttribute('content')) {
-            return meta.getAttribute('content');
-        }
-        const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-        if (match) {
-            return decodeURIComponent(match[1]);
-        }
-        return '';
-    }
+    // CSRF helper đã được định nghĩa ở đầu script (xem trên cùng)
     console.log('[DEBUG] CSRF token =', getCsrfToken().substring(0, 10) + '...');
+
+    // Helper fetch an toàn:
+    //   - Tự đính X-CSRF-TOKEN, X-Requested-With, Accept JSON
+    //   - Nếu server trả 419 (CSRF token hết hạn) thì reload meta tag từ server (gọi /csrf-token) rồi retry 1 lần
+    async function adminFetch(url, options = {}) {
+        options.method = options.method || 'POST';
+        options.credentials = options.credentials || 'same-origin';
+        options.headers = Object.assign({
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest'
+        }, options.headers || {});
+
+        let res = await fetch(url, options);
+
+        if (res.status === 419) {
+            // CSRF token mismatch → thử lấy token mới rồi gọi lại
+            try {
+                const refresh = await fetch('/admin/csrf-token', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+                if (refresh.ok) {
+                    const data = await refresh.json();
+                    if (data && data.csrf_token) {
+                        const meta = document.querySelector('meta[name="csrf-token"]');
+                        if (meta) meta.setAttribute('content', data.csrf_token);
+                    }
+                }
+            } catch (e) { /* ignore */ }
+            options.headers['X-CSRF-TOKEN'] = getCsrfToken();
+            res = await fetch(url, options);
+        }
+
+        return res;
+    }
 
     // Hàm được gọi bởi onclick inline trên nút #rowMaintenanceBtn
     // (Đặt trên window để inline onclick truy cập được)
@@ -2189,7 +2223,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                'X-CSRF-TOKEN': getCsrfToken()
             },
             body: JSON.stringify({ hang_ghe_id: currentRowHangId })
         })
@@ -2256,6 +2290,301 @@ document.addEventListener('DOMContentLoaded', function() {
         const seat = e.target.closest('.seat-interactive');
         if (!seat) return;
         tooltip.style.opacity = '0';
+    });
+
+    /* ============================================ */
+    /* MODAL: THÊM GHẾ                              */
+    /* ============================================ */
+    const addSeatModal = document.getElementById('addSeatModal');
+    const addSeatForm = document.getElementById('addSeatForm');
+    const addSeatErrors = document.getElementById('addSeatModalErrors');
+    const addSeatHangGhe = document.getElementById('addSeatHangGhe');
+    const addSeatMaGhe = document.getElementById('addSeatMaGhe');
+    const addSeatCot = document.getElementById('addSeatCot');
+    const addSeatLoaiGhe = document.getElementById('addSeatLoaiGhe');
+    const addSeatTrangThai = document.getElementById('addSeatTrangThai');
+    const phongChieuIdAddSeat = document.getElementById('btnOpenAddSeat')?.dataset.phongId;
+
+    function openAddSeatModal() {
+        if (!addSeatModal) return;
+        addSeatForm.reset();
+        addSeatErrors.classList.add('hidden');
+        addSeatErrors.innerHTML = '';
+        addSeatModal.classList.remove('hidden');
+        // Auto-suggest cột kế tiếp nếu đã chọn hàng
+        addSeatHangGhe.dispatchEvent(new Event('change'));
+    }
+
+    function closeAddSeatModal() {
+        addSeatModal.classList.add('hidden');
+    }
+
+    function showAddSeatErrors(errors) {
+        addSeatErrors.classList.remove('hidden');
+        const html = Object.values(errors).flat().map(e => `<div>• ${e}</div>`).join('');
+        addSeatErrors.innerHTML = html;
+    }
+
+    // Tự động gợi ý cột kế tiếp + mã ghế khi chọn hàng
+    addSeatHangGhe?.addEventListener('change', async function() {
+        const hangId = this.value;
+        if (!hangId || !phongChieuIdAddSeat) {
+            addSeatCot.value = 1;
+            addSeatMaGhe.value = '';
+            return;
+        }
+        // Lấy danh sách hàng để biết tên hàng + số ghế hiện tại
+        try {
+            const res = await fetch(`/admin/phong-chieus/${phongChieuIdAddSeat}/hang-ghes`, {
+                headers: { 'Accept': 'application/json' }
+            });
+            const json = await res.json();
+            const hang = (json.data || []).find(h => String(h.id) === String(hangId));
+            if (hang) {
+                const nextCol = (hang.so_ghe || 0) + 1;
+                addSeatCot.value = nextCol;
+                addSeatMaGhe.value = hang.ten_hang + nextCol;
+            }
+        } catch (e) {
+            console.error('Lỗi tải hàng:', e);
+        }
+    });
+
+    document.getElementById('btnOpenAddSeat')?.addEventListener('click', openAddSeatModal);
+    document.getElementById('addSeatModalClose')?.addEventListener('click', closeAddSeatModal);
+    document.getElementById('addSeatCancel')?.addEventListener('click', closeAddSeatModal);
+    addSeatModal?.addEventListener('click', function(e) {
+        if (e.target === addSeatModal) closeAddSeatModal();
+    });
+
+    addSeatForm?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        addSeatErrors.classList.add('hidden');
+
+        if (!phongChieuIdAddSeat) {
+            showAddSeatErrors({ _global: ['Không xác định được ID phòng chiếu. Vui lòng tải lại trang.'] });
+            return;
+        }
+
+        const payload = {
+            hang_ghe_id: addSeatHangGhe.value,
+            ma_ghe: addSeatMaGhe.value.trim(),
+            cot: parseInt(addSeatCot.value, 10),
+            loai_ghe_id: addSeatLoaiGhe.value,
+            trang_thai: addSeatTrangThai.value,
+        };
+
+        if (!payload.hang_ghe_id || !payload.ma_ghe || !payload.cot || !payload.loai_ghe_id || !payload.trang_thai) {
+            showAddSeatErrors({ _global: ['Vui lòng điền đầy đủ thông tin.'] });
+            return;
+        }
+
+        const csrfToken = getCsrfToken();
+        if (!csrfToken) {
+            showAddSeatErrors({ _global: ['Không tìm thấy CSRF token. Vui lòng tải lại trang (F5).'] });
+            return;
+        }
+
+        const btn = document.getElementById('addSeatSubmit');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang thêm...';
+
+        try {
+            const url = `/admin/phong-chieus/${phongChieuIdAddSeat}/create-seat`;
+            console.log('[AddSeat] POST', url, payload);
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload),
+                credentials: 'same-origin'
+            });
+            console.log('[AddSeat] Response status:', res.status);
+            const data = await res.json().catch(() => ({ success: false, message: 'Server trả về response không phải JSON' }));
+            if (!res.ok || !data.success) {
+                if (data.errors) showAddSeatErrors(data.errors);
+                else showAddSeatErrors({ _global: [data.message || `Lỗi HTTP ${res.status}`] });
+                return;
+            }
+            closeAddSeatModal();
+            location.reload();
+        } catch (err) {
+            console.error('[AddSeat] Fetch error:', err);
+            const msg = err && err.message ? err.message : String(err);
+            showAddSeatErrors({ _global: [`Lỗi kết nối: ${msg}. Vui lòng kiểm tra mạng và thử lại (F5 nếu cần).`] });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    });
+
+    /* ============================================ */
+    /* MODAL: THÊM HÀNG                             */
+    /* ============================================ */
+    const addRowModal = document.getElementById('addRowModal');
+    const addRowForm = document.getElementById('addRowForm');
+    const addRowErrors = document.getElementById('addRowModalErrors');
+    const addRowTenHang = document.getElementById('addRowTenHang');
+    const addRowIsCouple = document.getElementById('addRowIsCouple');
+    const addRowLoaiMacDinh = document.getElementById('addRowLoaiMacDinh');
+    const addRowAuto = document.getElementById('addRowAuto');
+    const addRowAutoBox = document.getElementById('addRowAutoBox');
+    const addRowSoGhe = document.getElementById('addRowSoGhe');
+    const addRowCotBatDau = document.getElementById('addRowCotBatDau');
+    const addRowLoaiGhe = document.getElementById('addRowLoaiGhe');
+    const addRowTrangThai = document.getElementById('addRowTrangThai');
+    const addRowPreview = document.getElementById('addRowPreview');
+    const phongChieuIdAddRow = document.getElementById('btnOpenAddRow')?.dataset.phongId;
+
+    function updateAddRowPreview() {
+        if (!addRowPreview) return;
+        const ten = (addRowTenHang.value || 'A').trim();
+        const so = parseInt(addRowSoGhe.value, 10) || 0;
+        const start = parseInt(addRowCotBatDau.value, 10) || 1;
+        if (so <= 0) { addRowPreview.textContent = `${ten}1, ${ten}2, ...`; return; }
+        if (so <= 3) {
+            const codes = [];
+            for (let i = 0; i < so; i++) codes.push(ten + (start + i));
+            addRowPreview.textContent = codes.join(', ');
+        } else {
+            addRowPreview.textContent = `${ten}${start}, ${ten}${start + 1}, ... ${ten}${start + so - 1}`;
+        }
+    }
+
+    function updateAddRowAutoBox() {
+        if (!addRowAutoBox) return;
+        if (addRowAuto.checked) {
+            addRowAutoBox.classList.remove('opacity-50', 'pointer-events-none');
+        } else {
+            addRowAutoBox.classList.add('opacity-50', 'pointer-events-none');
+        }
+    }
+
+    function openAddRowModal() {
+        if (!addRowModal) return;
+        addRowForm.reset();
+        addRowAuto.checked = true;
+        addRowErrors.classList.add('hidden');
+        addRowErrors.innerHTML = '';
+        updateAddRowAutoBox();
+        updateAddRowPreview();
+        addRowModal.classList.remove('hidden');
+    }
+
+    function closeAddRowModal() {
+        addRowModal.classList.add('hidden');
+    }
+
+    function showAddRowErrors(errors) {
+        addRowErrors.classList.remove('hidden');
+        const html = Object.values(errors).flat().map(e => `<div>• ${e}</div>`).join('');
+        addRowErrors.innerHTML = html;
+    }
+
+    document.getElementById('btnOpenAddRow')?.addEventListener('click', openAddRowModal);
+    document.getElementById('addRowModalClose')?.addEventListener('click', closeAddRowModal);
+    document.getElementById('addRowCancel')?.addEventListener('click', closeAddRowModal);
+    addRowModal?.addEventListener('click', function(e) {
+        if (e.target === addRowModal) closeAddRowModal();
+    });
+
+    addRowTenHang?.addEventListener('input', updateAddRowPreview);
+    addRowSoGhe?.addEventListener('input', updateAddRowPreview);
+    addRowCotBatDau?.addEventListener('input', updateAddRowPreview);
+    addRowAuto?.addEventListener('change', updateAddRowAutoBox);
+
+    addRowForm?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        addRowErrors.classList.add('hidden');
+
+        if (!phongChieuIdAddRow) {
+            showAddRowErrors({ _global: ['Không xác định được ID phòng chiếu. Vui lòng tải lại trang.'] });
+            return;
+        }
+
+        const tuDong = addRowAuto.checked;
+        const soGhe = parseInt(addRowSoGhe.value, 10) || 0;
+        const loaiGheId = addRowLoaiGhe.value;
+
+        if (!addRowTenHang.value.trim()) {
+            showAddRowErrors({ ten_hang: ['Vui lòng nhập tên hàng.'] });
+            return;
+        }
+        if (tuDong && (!soGhe || soGhe < 1)) {
+            showAddRowErrors({ so_ghe: ['Vui lòng nhập số ghế khi bật tự động tạo.'] });
+            return;
+        }
+        if (tuDong && !loaiGheId) {
+            showAddRowErrors({ loai_ghe_id: ['Vui lòng chọn loại ghế khi bật tự động tạo.'] });
+            return;
+        }
+
+        const payload = {
+            ten_hang: addRowTenHang.value.trim(),
+            la_hang_couple: addRowIsCouple.checked,
+            loai_ghe_mac_dinh_id: addRowLoaiMacDinh.value || null,
+            tu_dong_tao_ghe: tuDong,
+            so_ghe: tuDong ? soGhe : 0,
+            cot_bat_dau: parseInt(addRowCotBatDau.value, 10) || 1,
+            loai_ghe_id: tuDong ? loaiGheId : null,
+            trang_thai: addRowTrangThai.value || 'hoat_dong',
+        };
+
+        const csrfToken = getCsrfToken();
+        if (!csrfToken) {
+            showAddRowErrors({ _global: ['Không tìm thấy CSRF token. Vui lòng tải lại trang (F5).'] });
+            return;
+        }
+
+        const btn = document.getElementById('addRowSubmit');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang thêm...';
+
+        try {
+            const url = `/admin/phong-chieus/${phongChieuIdAddRow}/create-row`;
+            console.log('[AddRow] POST', url, payload);
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload),
+                credentials: 'same-origin'
+            });
+            console.log('[AddRow] Response status:', res.status);
+            const data = await res.json().catch(() => ({ success: false, message: 'Server trả về response không phải JSON' }));
+            if (!res.ok || !data.success) {
+                if (data.errors) showAddRowErrors(data.errors);
+                else showAddRowErrors({ _global: [data.message || `Lỗi HTTP ${res.status}`] });
+                return;
+            }
+            closeAddRowModal();
+            location.reload();
+        } catch (err) {
+            console.error('[AddRow] Fetch error:', err);
+            const msg = err && err.message ? err.message : String(err);
+            showAddRowErrors({ _global: [`Lỗi kết nối: ${msg}. Vui lòng kiểm tra mạng và thử lại (F5 nếu cần).`] });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    });
+
+    // ESC để đóng modal
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAddSeatModal();
+            closeAddRowModal();
+        }
     });
 })();
 </script>
