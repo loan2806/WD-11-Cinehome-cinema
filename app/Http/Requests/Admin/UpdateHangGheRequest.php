@@ -25,6 +25,8 @@ class UpdateHangGheRequest extends FormRequest
                     ->where('phong_chieu_id', $this->phong_chieu_id)
                     ->ignore($hangGheId),
             ],
+            'la_hang_couple' => ['nullable', 'boolean'],
+            'loai_ghe_mac_dinh_id' => ['nullable', 'exists:loai_ghes,id'],
         ];
     }
 
@@ -33,6 +35,7 @@ class UpdateHangGheRequest extends FormRequest
         return [
             'ten_hang.required' => 'Tên hàng ghế không được để trống.',
             'ten_hang.unique' => 'Tên hàng ghế đã tồn tại trong phòng chiếu này.',
+            'loai_ghe_mac_dinh_id.exists' => 'Loại ghế mặc định không hợp lệ.',
         ];
     }
 }

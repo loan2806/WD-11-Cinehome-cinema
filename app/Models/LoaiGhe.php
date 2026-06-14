@@ -17,10 +17,12 @@ class LoaiGhe extends Model
         'mo_ta',
         'phu_thu',
         'mau_sac',
+        'la_couple',
     ];
 
     protected $casts = [
         'phu_thu' => 'decimal:2',
+        'la_couple' => 'boolean',
     ];
 
     public function gheNgois(): HasMany
