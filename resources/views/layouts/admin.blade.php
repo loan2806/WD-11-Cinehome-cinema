@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>@yield('title', 'CineHome - Nền tảng quản trị tối cao')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {{-- Tailwind / Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])

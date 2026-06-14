@@ -37,7 +37,8 @@ class LoaiGheController extends Controller
     public function store(StoreLoaiGheRequest $request)
     {
         $data = $request->validated();
-        
+        $data['la_couple'] = $request->boolean('la_couple');
+
         LoaiGhe::create($data);
 
         return redirect()
@@ -72,7 +73,8 @@ class LoaiGheController extends Controller
     public function update(UpdateLoaiGheRequest $request, LoaiGhe $loaiGhe)
     {
         $data = $request->validated();
-        
+        $data['la_couple'] = $request->boolean('la_couple');
+
         $loaiGhe->update($data);
 
         return redirect()
