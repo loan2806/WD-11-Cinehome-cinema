@@ -165,6 +165,7 @@ Route::middleware(['auth'])
             Route::post('phong-chieus/{phong_chieu}/update-row-seats', [PhongChieuController::class, 'updateRowSeats'])->name('phong-chieus.update-row-seats');
             Route::post('phong-chieus/{phong_chieu}/bulk-update-seats', [PhongChieuController::class, 'bulkUpdateSeats'])->name('phong-chieus.bulk-update-seats');
             Route::post('phong-chieus/{phong_chieu}/delete-row-seats', [PhongChieuController::class, 'deleteRowSeats'])->name('phong-chieus.delete-row-seats');
+            Route::post('phong-chieus/{phong_chieu}/toggle-row-maintenance', [PhongChieuController::class, 'toggleRowMaintenance'])->name('phong-chieus.toggle-row-maintenance');
 
             Route::resource('hang-ghes', HangGheController::class);
             Route::post('hang-ghes/{hang_ghe}/update-row-type', [HangGheController::class, 'updateRowType'])->name('hang-ghes.update-row-type');

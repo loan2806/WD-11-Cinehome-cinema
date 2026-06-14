@@ -1,37 +1,217 @@
 @extends('layouts.user')
 
-@section('title', 'Chon ghe')
+@section('title', 'Chọn ghế - ' . $suatChieu->phim->ten_phim)
 
 @push('styles')
 <style>
-    .seat-button {
-        width: 40px;
-        height: 40px;
-        border-radius: 8px 8px 3px 3px;
-        border: 1px solid rgba(255,255,255,.18);
-        background: #2a2a2a;
-        color: #cfcfcf;
-        font-size: 12px;
-        font-weight: 800;
-        transition: .15s ease;
+    /* ============== SƠ ĐỒ GHẾ ============== */
+    .seat-wrapper {
+        position: relative;
+        display: inline-block;
     }
-    .seat-button:not(.booked):hover,
+
+    .seat-button {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        border-radius: 8px 8px 4px 4px;
+        border: 1px solid rgba(255, 255, 255, .18);
+        background: #2a2a2a;
+        color: #e8e8e8;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .02em;
+        transition: transform .15s ease, background .15s ease, border-color .15s ease, color .15s ease, box-shadow .15s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .seat-button:hover:not(.booked) {
+        transform: translateY(-2px);
+        background: #3a3a3a;
+        border-color: rgba(217, 154, 50, .55);
+    }
+
     .seat-button.selected {
-        background: #d99a32;
+        background: linear-gradient(135deg, #f4c56a, #d99a32);
         border-color: #f4c56a;
         color: #2b1208;
+        box-shadow: 0 0 0 3px rgba(244, 197, 106, .25), 0 8px 20px rgba(217, 154, 50, .35);
+        transform: translateY(-2px);
     }
+
+    .seat-button.selected::after {
+        content: "✓";
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #1a8f3a;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 900;
+        line-height: 18px;
+        text-align: center;
+        border: 2px solid #121212;
+    }
+
     .seat-button.booked {
-        background: #111;
-        color: #555;
+        background: #0e0e0e;
+        color: #4a4a4a;
         cursor: not-allowed;
-        opacity: .65;
+        opacity: .7;
+        border-color: rgba(255, 255, 255, .05);
     }
+
+    .seat-button.booked::before {
+        content: "✕";
+        position: absolute;
+        font-size: 16px;
+        color: #5a5a5a;
+    }
+
+    .seat-button.booked .seat-label {
+        opacity: 0;
+    }
+
+    /* ============== TOOLTIP ============== */
+    .seat-tooltip {
+        position: absolute;
+        bottom: calc(100% + 12px);
+        left: 50%;
+        transform: translateX(-50%) translateY(4px);
+        background: #1a1a1a;
+        border: 1px solid rgba(217, 154, 50, .55);
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.5;
+        white-space: nowrap;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, .55), 0 0 0 4px rgba(217, 154, 50, .08);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity .15s ease, transform .15s ease;
+        z-index: 50;
+        min-width: 170px;
+    }
+
+    .seat-tooltip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 6px solid transparent;
+        border-top-color: rgba(217, 154, 50, .55);
+    }
+
+    .seat-tooltip .tt-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #f4c56a;
+        font-weight: 900;
+        font-size: 13px;
+        margin-bottom: 4px;
+    }
+
+    .seat-tooltip .tt-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        color: #d0d0d0;
+    }
+
+    .seat-tooltip .tt-row .tt-label {
+        color: #888;
+    }
+
+    .seat-tooltip .tt-row .tt-value {
+        color: #fff;
+        font-weight: 700;
+    }
+
+    .seat-wrapper:hover .seat-tooltip,
+    .seat-button.selected + .seat-tooltip,
+    .seat-wrapper.show-tooltip .seat-tooltip {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    .seat-wrapper.selected .seat-tooltip {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+        border-color: rgba(244, 197, 106, .85);
+    }
+
+    /* Tooltip cho hàng dưới cùng (đẩy lên trên đã là mặc định) — không cần đổi chiều */
+    /* Tooltip cho hàng đầu tiên sẽ hơi sát màn hình — đẩy xuống dưới */
+    .seat-row:first-of-type .seat-tooltip {
+        bottom: auto;
+        top: calc(100% + 12px);
+    }
+
+    .seat-row:first-of-type .seat-tooltip::after {
+        top: auto;
+        bottom: 100%;
+        border-top-color: transparent;
+        border-bottom-color: rgba(217, 154, 50, .55);
+    }
+
+    /* ============== SCREEN ============== */
     .screen-line {
         height: 34px;
         border-radius: 50% 50% 0 0;
-        background: linear-gradient(180deg, rgba(244,197,106,.9), rgba(217,154,50,.15));
-        box-shadow: 0 18px 40px rgba(217,154,50,.25);
+        background: linear-gradient(180deg, rgba(244, 197, 106, .9), rgba(217, 154, 50, .15));
+        box-shadow: 0 18px 40px rgba(217, 154, 50, .25);
+    }
+
+    .row-label {
+        width: 28px;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 900;
+        color: #d99a32;
+    }
+
+    /* ============== BẢNG CHỌN GHẾ BÊN PHẢI ============== */
+    .selected-list:empty::before {
+        content: "Chưa chọn ghế nào";
+        display: block;
+        text-align: center;
+        color: #6b6b6b;
+        font-style: italic;
+        padding: 18px 0;
+        font-size: 12px;
+    }
+
+    .selected-list .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: linear-gradient(135deg, #f4c56a, #d99a32);
+        color: #2b1208;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 800;
+        margin: 2px;
+    }
+
+    .selected-list .pill button {
+        background: transparent;
+        border: 0;
+        color: #2b1208;
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+        font-weight: 900;
     }
 </style>
 @endpush
@@ -48,10 +228,10 @@
 
             <h1 class="mt-5 text-2xl font-black text-[#d99a32]">{{ $suatChieu->phim->ten_phim }}</h1>
             <div class="mt-4 space-y-2 text-sm text-gray-300">
-                <p><strong>Rap:</strong> {{ $suatChieu->rapChieuPhim->ten_rap }}</p>
-                <p><strong>Phong:</strong> Phong 1</p>
-                <p><strong>Suat chieu:</strong> {{ $suatChieu->thoi_gian_chieu->format('H:i d/m/Y') }}</p>
-                <p><strong>Gia ve:</strong> {{ number_format($suatChieu->gia_ve, 0, ',', '.') }} VND</p>
+                <p><strong>Rạp:</strong> {{ $suatChieu->rapChieuPhim->ten_rap }}</p>
+                <p><strong>Phòng:</strong> Phòng 1</p>
+                <p><strong>Suất chiếu:</strong> {{ $suatChieu->thoi_gian_chieu->format('H:i d/m/Y') }}</p>
+                <p><strong>Giá vé:</strong> {{ number_format($suatChieu->gia_ve, 0, ',', '.') }} VND</p>
             </div>
 
             @if($errors->any())
@@ -66,17 +246,21 @@
 
                 <div class="mb-4 rounded-xl bg-white/5 p-4">
                     <div class="flex justify-between text-sm">
-                        <span>So ghe</span>
-                        <strong id="count-seats">0</strong>
+                        <span>Ghế đã chọn</span>
+                        <strong id="count-seats" class="text-[#f4c56a]">0</strong>
                     </div>
-                    <div class="mt-2 flex justify-between text-sm">
-                        <span>Tong tien</span>
+
+                    {{-- Danh sách ghế đang chọn (pill) --}}
+                    <div id="selected-list" class="selected-list mt-2 mb-3"></div>
+
+                    <div class="flex justify-between border-t border-white/10 pt-2 text-sm">
+                        <span>Tổng tiền</span>
                         <strong class="text-[#f4c56a]"><span id="total-price">0</span> VND</strong>
                     </div>
                 </div>
 
                 <button id="btn-dat-ve" class="w-full rounded-xl bg-[#d99a32] px-5 py-3 font-black text-[#2b1208] opacity-60 transition hover:bg-[#f4c56a]" disabled>
-                    Dat ve
+                    Đặt vé
                 </button>
             </form>
         </aside>
@@ -85,31 +269,76 @@
             <div class="mx-auto max-w-4xl text-center">
                 <div class="mx-auto mb-10 w-4/5">
                     <div class="screen-line"></div>
-                    <div class="mt-2 text-xs font-bold uppercase tracking-[0.3em] text-[#f4c56a]">Man hinh</div>
+                    <div class="mt-2 text-xs font-bold uppercase tracking-[0.3em] text-[#f4c56a]">Màn hình</div>
                 </div>
 
                 <div class="inline-block space-y-2">
                     @foreach($hangGhe as $hang)
-                        <div class="flex items-center gap-2">
-                            <span class="w-7 text-sm font-black text-gray-400">{{ $hang }}</span>
+                        <div class="seat-row flex items-center gap-2 justify-center">
+                            <span class="row-label">{{ $hang }}</span>
                             @for($i = 1; $i <= $soCot; $i++)
                                 @php
                                     $maGhe = $hang . $i;
                                     $daDat = in_array($maGhe, $gheDaDat, true);
                                 @endphp
-                                <button type="button" class="seat-button {{ $daDat ? 'booked' : '' }}" data-seat="{{ $maGhe }}" @disabled($daDat)>
-                                    {{ $i }}
-                                </button>
+                                <div class="seat-wrapper {{ $daDat ? 'booked' : '' }}" data-seat="{{ $maGhe }}">
+                                    <button
+                                        type="button"
+                                        class="seat-button {{ $daDat ? 'booked' : '' }}"
+                                        data-seat="{{ $maGhe }}"
+                                        @disabled($daDat)
+                                    >
+                                        <span class="seat-label">{{ $maGhe }}</span>
+                                    </button>
+                                    <div class="seat-tooltip" role="tooltip">
+                                        <div class="tt-title">
+                                            <i class="fa-solid fa-couch"></i>
+                                            <span>Ghế {{ $maGhe }}</span>
+                                        </div>
+                                        <div class="tt-row">
+                                            <span class="tt-label">Hàng</span>
+                                            <span class="tt-value">{{ $hang }}</span>
+                                        </div>
+                                        <div class="tt-row">
+                                            <span class="tt-label">Cột</span>
+                                            <span class="tt-value">{{ $i }}</span>
+                                        </div>
+                                        <div class="tt-row">
+                                            <span class="tt-label">Giá</span>
+                                            <span class="tt-value">{{ number_format($suatChieu->gia_ve, 0, ',', '.') }}đ</span>
+                                        </div>
+                                        @if($daDat)
+                                            <div class="tt-row" style="margin-top:4px;color:#ff6b6b;">
+                                                <span class="tt-label">Trạng thái</span>
+                                                <span class="tt-value">Đã bán</span>
+                                            </div>
+                                        @else
+                                            <div class="tt-row" style="margin-top:4px;color:#7ed957;">
+                                                <span class="tt-label">Trạng thái</span>
+                                                <span class="tt-value">Còn trống</span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
                             @endfor
-                            <span class="w-7 text-sm font-black text-gray-400">{{ $hang }}</span>
+                            <span class="row-label">{{ $hang }}</span>
                         </div>
                     @endforeach
                 </div>
 
                 <div class="mt-8 flex flex-wrap justify-center gap-5 border-t border-white/10 pt-5 text-sm text-gray-300">
-                    <span><span class="inline-block h-4 w-4 rounded bg-[#2a2a2a] align-middle"></span> Ghe trong</span>
-                    <span><span class="inline-block h-4 w-4 rounded bg-[#d99a32] align-middle"></span> Dang chon</span>
-                    <span><span class="inline-block h-4 w-4 rounded bg-[#111] align-middle"></span> Da dat</span>
+                    <span class="flex items-center gap-2">
+                        <span class="inline-block h-5 w-5 rounded bg-[#2a2a2a] border border-white/20 align-middle"></span>
+                        Ghế trống
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <span class="inline-block h-5 w-5 rounded bg-gradient-to-br from-[#f4c56a] to-[#d99a32] align-middle"></span>
+                        Đang chọn
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <span class="inline-block h-5 w-5 rounded bg-[#0e0e0e] border border-white/10 align-middle"></span>
+                        Đã đặt
+                    </span>
                 </div>
             </div>
         </section>
@@ -120,34 +349,79 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const seats = document.querySelectorAll('.seat-button:not(.booked)');
+    const wrappers = document.querySelectorAll('.seat-wrapper');
     const selectedInput = document.getElementById('ghe_duoc_chon');
     const countSeats = document.getElementById('count-seats');
     const totalPrice = document.getElementById('total-price');
     const submitButton = document.getElementById('btn-dat-ve');
+    const selectedList = document.getElementById('selected-list');
     const price = Number({{ (float) $suatChieu->gia_ve }});
-    let selectedSeats = selectedInput.value ? selectedInput.value.split(',').map(seat => seat.trim()).filter(Boolean) : [];
+
+    let selectedSeats = selectedInput.value
+        ? selectedInput.value.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
 
     function render() {
-        seats.forEach(seat => {
-            seat.classList.toggle('selected', selectedSeats.includes(seat.dataset.seat));
+        // Cập nhật trạng thái trên sơ đồ
+        wrappers.forEach(wrapper => {
+            const code = wrapper.dataset.seat;
+            const isSelected = selectedSeats.includes(code);
+            wrapper.classList.toggle('selected', isSelected);
+            const btn = wrapper.querySelector('.seat-button');
+            if (btn) btn.classList.toggle('selected', isSelected);
         });
 
+        // Cập nhật input ẩn + tổng tiền + số ghế
         selectedInput.value = selectedSeats.join(',');
         countSeats.textContent = selectedSeats.length;
         totalPrice.textContent = (selectedSeats.length * price).toLocaleString('vi-VN');
         submitButton.disabled = selectedSeats.length === 0;
         submitButton.classList.toggle('opacity-60', selectedSeats.length === 0);
+
+        // Render danh sách pill bên trái
+        selectedList.innerHTML = selectedSeats.map(code =>
+            `<span class="pill" data-code="${code}">${code}<button type="button" data-remove="${code}" aria-label="Bỏ chọn ${code}">×</button></span>`
+        ).join('');
+
+        // Bind sự kiện bỏ chọn nhanh qua pill
+        selectedList.querySelectorAll('button[data-remove]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const code = btn.dataset.remove;
+                selectedSeats = selectedSeats.filter(s => s !== code);
+                render();
+            });
+        });
     }
 
-    seats.forEach(seat => {
-        seat.addEventListener('click', function () {
-            const code = this.dataset.seat;
+    wrappers.forEach(wrapper => {
+        const btn = wrapper.querySelector('.seat-button');
+        if (!btn || btn.classList.contains('booked')) return;
+
+        wrapper.addEventListener('click', (e) => {
+            // Nếu click vào tooltip thì bỏ qua
+            if (e.target.closest('.seat-tooltip')) return;
+
+            const code = wrapper.dataset.seat;
             selectedSeats = selectedSeats.includes(code)
-                ? selectedSeats.filter(item => item !== code)
+                ? selectedSeats.filter(s => s !== code)
                 : [...selectedSeats, code];
             render();
         });
+    });
+
+    // Hỗ trợ bàn phím: dùng phím số để chọn nhanh
+    document.addEventListener('keydown', (e) => {
+        // Bỏ qua nếu đang gõ trong input/textarea
+        if (e.target.matches('input, textarea, select')) return;
+
+        const key = e.key.toUpperCase();
+        // Phím số 1-9 chọn ghế ở hàng đầu tiên (A)
+        if (/^[1-9]$/.test(e.key)) {
+            const targetCode = 'A' + e.key;
+            const target = document.querySelector(`.seat-wrapper[data-seat="${targetCode}"]`);
+            if (target && !target.classList.contains('booked')) target.click();
+        }
     });
 
     render();
