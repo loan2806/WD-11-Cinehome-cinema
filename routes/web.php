@@ -41,6 +41,7 @@ use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
 | GIAO DIỆN CÔNG CỘNG - FRONTEND WEBSITE
 |--------------------------------------------------------------------------
 */
+
 Route::get('/', [PhimsController::class, 'home'])->name('home');
 
 // Điều phối trung tâm dựa trên vai trò tài khoản khi đăng nhập
@@ -121,8 +122,8 @@ Route::middleware(['auth'])
     ->prefix('staff')
     ->name('staff.')
     ->group(function () {
-        
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
 
         // Nhóm chức năng 1: Nghiệp vụ kiểm tra & Soát vé QR vào cửa phòng chiếu
         Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
@@ -133,6 +134,10 @@ Route::middleware(['auth'])
         Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
             Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
             Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
+            Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
+            Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
+            Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
+            Route::post('/ban-ve/{suatChieu}', [BanVeController::class, 'store'])->name('ban-ve.store');
         });
     });
 
@@ -145,7 +150,7 @@ Route::middleware(['auth'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        
+
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Khóa bảo vệ Module: Quản lý Phim & Lịch Chiếu
@@ -181,9 +186,9 @@ Route::middleware(['auth'])
             Route::delete('/food-invoices/{foodInvoice}', [FoodInvoiceController::class, 'destroy'])->name('food-invoices.destroy');
 
             Route::resource('ve-xem-phims', AdminVeXemPhimController::class)->only(['index', 'show', 'edit', 'update'])->names('ve-xem-phims');
-            Route::patch('ve-xem-phims/{veXemPhim}/huy',[AdminVeXemPhimController::class, 'huy'])->name('ve-xem-phims.huy');
+            Route::patch('ve-xem-phims/{veXemPhim}/huy', [AdminVeXemPhimController::class, 'huy'])->name('ve-xem-phims.huy');
             Route::patch('ve-xem-phims/{veXemPhim}/su-dung', [AdminVeXemPhimController::class, 'suDung'])->name('ve-xem-phims.su-dung');
-            Route::patch('ve-xem-phims/{veXemPhim}/cap-nhat-trang-thai',[AdminVeXemPhimController::class, 'capNhatTrangThai'])->name('ve-xem-phims.cap-nhat-trang-thai');
+            Route::patch('ve-xem-phims/{veXemPhim}/cap-nhat-trang-thai', [AdminVeXemPhimController::class, 'capNhatTrangThai'])->name('ve-xem-phims.cap-nhat-trang-thai');
         });
 
         // Khóa bảo vệ Module: Danh sách Khách Hàng
@@ -231,16 +236,22 @@ Route::middleware(['auth'])
     ->prefix('system')
     ->name('system.')
     ->group(function () {
-        
+
         // Trang chủ Dashboard đầu não hệ thống
-        Route::get('/dashboard', function() {
+        Route::get('/dashboard', function () {
             return view('system.dashboard'); // Trả về view độc lập sử dụng layout system.blade.php
         })->name('dashboard');
 
         // Các đặc quyền hạ tầng kỹ thuật gốc (Độc lập 100%)
-        Route::get('/cai-dat-thanh-toan', function() { return 'Cấu hình cổng API MoMo, VNPAY'; })->name('payments');
-        Route::get('/sao-luu-du-lieu', function() { return 'Quản trị sao lưu cơ sở dữ liệu MySQL hạt nhân'; })->name('backups');
-        Route::get('/giam-sat-loi', function() { return 'Nhật ký lỗi hệ thống tập trung'; })->name('logs');
+        Route::get('/cai-dat-thanh-toan', function () {
+            return 'Cấu hình cổng API MoMo, VNPAY';
+        })->name('payments');
+        Route::get('/sao-luu-du-lieu', function () {
+            return 'Quản trị sao lưu cơ sở dữ liệu MySQL hạt nhân';
+        })->name('backups');
+        Route::get('/giam-sat-loi', function () {
+            return 'Nhật ký lỗi hệ thống tập trung';
+        })->name('logs');
     });
 
 /*
