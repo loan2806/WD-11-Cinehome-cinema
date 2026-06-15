@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use App\Models\NguoiDung;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -14,12 +14,19 @@ class NhanVienSeeder extends Seeder
      */
     public function run(): void
     {
-        NguoiDung::create([
-            'ho_ten' => 'Nhân Viên 01',
-            'email' => 'staff@gmail.com',
-            'mat_khau' => Hash::make('123456'),
-            'vai_tro' => 'nhan_vien',
-            'trang_thai_hoat_dong' => true,
-        ]);
+        // Không dùng create() vì có thể gây lỗi duplicate dữ liệu khi seed lại.
+        // updateOrCreate() đảm bảo dữ liệu hệ thống được cập nhật hoặc tạo mới an toàn.
+        NguoiDung::updateOrCreate(
+
+            [
+                'email' => 'staff@gmail.com'
+            ],
+            [
+                'ho_ten' => 'Nhân Viên 01',
+                'mat_khau' => Hash::make('123456'),
+                'vai_tro' => 'nhan_vien',
+                'trang_thai_hoat_dong' => true,
+            ]
+        );
     }
 }

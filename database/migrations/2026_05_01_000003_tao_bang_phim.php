@@ -15,47 +15,44 @@ return new class extends Migration
             |--------------------------------------------------------------------------
             | THÔNG TIN PHIM
             |--------------------------------------------------------------------------
-            |*/
+            */
             $table->string('ten_phim');
             $table->string('slug')->unique();
-            $table->text('mo_ta')->nullable();
+            $table->text('mo_ta');
 
             /*
             |--------------------------------------------------------------------------
             | MEDIA
             |--------------------------------------------------------------------------
-            |*/
-            $table->string('poster')->nullable();
-            $table->string('trailer')->nullable();
+            */
+            $table->string('poster');
+            $table->string('trailer');
 
             /*
             |--------------------------------------------------------------------------
             | THÔNG TIN BỔ SUNG
             |--------------------------------------------------------------------------
-            |*/
-            $table->string('dao_dien')->nullable();
-            $table->text('dien_vien')->nullable();
-            $table->string('ngon_ngu')->nullable();
+            */
+            $table->string('dao_dien');
+            $table->text('dien_vien');
+            $table->string('ngon_ngu');
             $table->integer('thoi_luong')->default(90);
-            
-            
-            $table->string('gioi_han_tuoi')->nullable();
+            $table->string('gioi_han_tuoi');
 
             /*
             |--------------------------------------------------------------------------
             | QUỐC GIA
             |--------------------------------------------------------------------------
-            |*/
+            */
             $table->foreignId('quoc_gia_id')
-                ->nullable()
                 ->constrained('quoc_gias')
-                ->onDelete('set null');
+                ->restrictOnDelete();
 
             /*
             |--------------------------------------------------------------------------
             | TIMESTAMPS
             |--------------------------------------------------------------------------
-            |*/
+            */
             $table->timestamps();
         });
     }

@@ -32,7 +32,8 @@
         </div>
 
         {{-- SEARCH & FILTER --}}
-        <form action="{{ route('admin.the-loais.index') }}" method="GET" class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-end">
+        <form action="{{ route('admin.the-loais.index') }}" method="GET"
+            class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-end">
 
             <div class="flex-1">
                 <label class="block text-xs font-semibold uppercase text-gray-400 mb-2">Tìm kiếm tên thể loại</label>
@@ -42,35 +43,26 @@
 
             <div class="w-full lg:w-48">
                 <label class="block text-xs font-semibold uppercase text-gray-400 mb-2">Trạng thái</label>
-                <select name="status" class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+                <select name="status"
+                    class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
                     <option value="">-- Tất cả --</option>
                     <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Kích hoạt</option>
                     <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Vô hiệu hóa</option>
                 </select>
             </div>
 
-            <button type="submit" class="rounded-xl bg-[#d99a32] px-6 py-3 font-semibold text-black transition hover:bg-[#e6a940]">
+            <button type="submit"
+                class="rounded-xl bg-[#d99a32] px-6 py-3 font-semibold text-black transition hover:bg-[#e6a940]">
                 <i class="fa-solid fa-search mr-2"></i>Tìm kiếm
             </button>
 
-            <a href="{{ route('admin.the-loais.index') }}" class="rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-semibold text-white transition hover:bg-white/10">
+            <a href="{{ route('admin.the-loais.index') }}"
+                class="rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-semibold text-white transition hover:bg-white/10">
                 <i class="fa-solid fa-redo mr-2"></i>Đặt lại
             </a>
 
         </form>
 
-        {{-- MESSAGES --}}
-        @if ($message = Session::get('success'))
-            <div class="mt-6 rounded-2xl border border-green-500/30 bg-green-500/10 p-4 text-green-400">
-                <i class="fa-solid fa-check-circle mr-2"></i>{{ $message }}
-            </div>
-        @endif
-
-        @if ($message = Session::get('error'))
-            <div class="mt-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-400">
-                <i class="fa-solid fa-exclamation-circle mr-2"></i>{{ $message }}
-            </div>
-        @endif
 
         {{-- TABLE --}}
         <div class="mt-6 overflow-hidden rounded-3xl border border-white/10">
@@ -124,7 +116,8 @@
 
                                 <td class="px-5 py-5">
 
-                                    <span class="rounded-full {{ $theLoai->phims_count > 0 ? 'bg-blue-500/15 text-blue-300' : 'bg-gray-500/15 text-gray-300' }} px-3 py-1 text-xs font-medium">
+                                    <span
+                                        class="rounded-full {{ $theLoai->phims_count > 0 ? 'bg-blue-500/15 text-blue-300' : 'bg-gray-500/15 text-gray-300' }} px-3 py-1 text-xs font-medium">
                                         {{ $theLoai->phims_count }}
                                     </span>
 
@@ -133,11 +126,13 @@
                                 <td class="px-5 py-5">
 
                                     @if ($theLoai->trang_thai)
-                                        <span class="rounded-full bg-green-500/15 px-3 py-1 text-xs font-medium text-green-300">
+                                        <span
+                                            class="rounded-full bg-green-500/15 px-3 py-1 text-xs font-medium text-green-300">
                                             <i class="fa-solid fa-check-circle mr-1"></i>Kích hoạt
                                         </span>
                                     @else
-                                        <span class="rounded-full bg-gray-500/15 px-3 py-1 text-xs font-medium text-gray-300">
+                                        <span
+                                            class="rounded-full bg-gray-500/15 px-3 py-1 text-xs font-medium text-gray-300">
                                             <i class="fa-solid fa-ban mr-1"></i>Vô hiệu
                                         </span>
                                     @endif
@@ -156,19 +151,18 @@
 
                                         </a>
 
-                                        <form action="{{ route('admin.the-loais.destroy', $theLoai) }}" method="POST" class="inline">
+                                        <form action="{{ route('admin.the-loais.destroy', $theLoai) }}" method="POST"
+                                            class="inline">
 
                                             @csrf
-
                                             @method('DELETE')
 
                                             <button type="submit"
                                                 onclick="return confirm('Bạn có chắc muốn xóa thể loại này?')"
-                                                class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl text-red-300 transition {{ $theLoai->phims_count > 0 ? 'bg-gray-500/15 cursor-not-allowed opacity-50' : 'bg-red-500/15 hover:bg-red-500/25' }}"
-                                                {{ $theLoai->phims_count > 0 ? 'disabled' : '' }}
-                                                title="{{ $theLoai->phims_count > 0 ? 'Không thể xóa (có phim liên kết)' : 'Xóa' }}">
+                                                class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25"
+                                                title="Xóa">
 
-                                                <i class="fa-solid fa-trash text-base leading-none"></i>
+                                                <i class="fa-solid fa-trash text-base"></i>
 
                                             </button>
 
@@ -191,7 +185,6 @@
                                 </td>
 
                             </tr>
-
                         @endforelse
 
                     </tbody>
@@ -202,12 +195,7 @@
 
         </div>
 
-        {{-- PAGINATION --}}
-        <div class="mt-6">
-
-            {{ $theLoais->links() }}
-
-        </div>
+       @include('components.admin-pagination', ['paginator' => $theLoais])
 
     </div>
 

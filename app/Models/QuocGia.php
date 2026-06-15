@@ -21,4 +21,8 @@ class QuocGia extends Model
     {
         return $this->hasMany(Phims::class, 'quoc_gia_id');
     }
+    public function getRouteKeyName()
+{
+    return 'ten_quoc_gia';
+}
 }

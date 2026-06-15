@@ -12,40 +12,48 @@ use Illuminate\View\View;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * Display the login view.
+     * Hiển thị giao diện màn hình đăng nhập công cộng.
      */
     public function create(): View
     {
-        // Gọi đúng file dang_nhap.blade.php tiếng Việt của bạn
-        return view('auth.dang_nhap');
+        return view('auth.login');
     }
 
     /**
-     * Handle an incoming authentication request.
+     * Xử lý xác thực thông tin đăng nhập và điều hướng phân quyền tài khoản.
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        // 1. Thực hiện kiểm tra thông tin tài khoản và mật khẩu
         $request->authenticate();
 
+        // 2. Tái tạo lại mã Session bảo mật chống tấn công giả mạo phiên
         $request->session()->regenerate();
 
         $user = Auth::user();
 
-        // GIẢI PHÁP ĐA NĂNG: Kiểm tra song song cả 'admin' và 'quan_tri_vien' để không bao giờ bị lệch dữ liệu nhóm
-        if ($user->vai_tro === 'admin' || $user->vai_tro === 'quan_tri_vien') {
+        /**
+         * ĐIỀU HƯỚNG BAN VẬN HÀNH (ADMIN / QUẢN LÝ HỆ THỐNG / QUẢN LÝ RẠP / NHÂN VIÊN VÀO BACKEND)
+         * Khắc phục hoàn toàn lỗi RouteNotFoundException bằng cách hướng toàn bộ nhân sự rạp phim
+         * về trang admin.dashboard chung để nhận diện phân loại menu thông minh.
+         */
+        if (
+            $user->hasRole('Quản trị viên') || 
+            $user->hasRole('Quản lý hệ thống') || 
+            $user->hasRole('Quản lý') || 
+            $user->hasRole('Nhân viên') || 
+            $user->vai_tro === 'admin' || 
+            $user->vai_tro === 'nhan_vien'
+        ) {
             return redirect()->route('admin.dashboard');
         }
 
-        // Kiểm tra song song cả 'nhan_vien' và 'staff' cho phân hệ nhân viên
-        if ($user->vai_tro === 'nhan_vien' || $user->vai_tro === 'staff') {
-            return redirect()->route('staff.dashboard');
-        }
-
-        return redirect()->intended(route('home'));
+        // Khách hàng mặc định sẽ được hướng thẳng ra trang chủ công cộng ngoài Frontend
+        return redirect()->intended(route('home', absolute: false));
     }
 
     /**
-     * Destroy an authenticated session.
+     * Xử lý đăng xuất phá hủy phiên làm việc của tài khoản.
      */
     public function destroy(Request $request): RedirectResponse
     {

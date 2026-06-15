@@ -82,14 +82,14 @@
                                 </div>
                             </div>
 
-                            {{-- MENU --}}
+                            {{-- MENU THẢ XUỐNG DÀNH CHO CÁC VAI TRÒ --}}
                             <div class="p-1.5">
                                 <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                     <i class="fa-solid fa-user-gear w-4 text-xs"></i>
                                     Tài khoản
                                 </a>
 
-                                @if (Auth::user()->role === 'khach_hang' || Auth::user()->vai_tro === 'khach_hang')
+                                @if (Auth::user()->hasRole('Khách hàng') || Auth::user()->vai_tro === 'khach_hang')
                                     <a href="{{ route('user.ve_xem_phim.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-ticket w-4 text-xs"></i>
                                         Vé của tôi
@@ -106,15 +106,17 @@
                                     Danh sách phim
                                 </a>
 
-                                @if (Auth::user()->role === 'admin' || Auth::user()->vai_tro === 'admin')
+                                {{-- Nếu là Quản trị viên hoặc Quản lý hệ thống --}}
+                                @if (Auth::user()->hasRole('Quản trị viên') || Auth::user()->hasRole('Quản lý hệ thống') || Auth::user()->hasRole('Quản lý') || Auth::user()->vai_tro === 'admin')
                                     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-user-shield w-4 text-xs"></i>
                                         Trang quản lý
                                     </a>
                                 @endif
 
-                                @if (Auth::user()->role === 'nhan_vien' || Auth::user()->vai_tro === 'nhan_vien')
-                                    <a href="{{ route('staff.dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
+                                {{-- CHỈNH SỬA TẠI ĐÂY: Trỏ luồng Nhân viên về route hệ thống mới --}}
+                                @if (Auth::user()->hasRole('Nhân viên') || Auth::user()->vai_tro === 'nhan_vien')
+                                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-user-tie w-4 text-xs"></i>
                                         Trang nhân viên
                                     </a>

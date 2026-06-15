@@ -81,7 +81,8 @@
                                     <p class="text-zinc-500 text-sm text-center py-6">
                                         Chưa có thể loại nào.
 
-                                        <a href="{{ route('admin.the-loais.create') }}" class="text-amber-500 hover:underline">
+                                        <a href="{{ route('admin.the-loais.create') }}"
+                                            class="text-amber-500 hover:underline">
 
                                             Tạo ngay
 
@@ -250,6 +251,7 @@
 
                         </div>
 
+
                     </div>
 
                     {{-- RIGHT --}}
@@ -318,6 +320,18 @@
                             @enderror
 
                         </div>
+                        <div id="trailerBox" class="hidden mt-5">
+                            <label class="text-sm text-zinc-400">
+                                Xem trước trailer
+                            </label>
+
+                            <div class="mt-2 overflow-hidden rounded-2xl border border-zinc-800 aspect-video">
+                                <iframe id="trailerPreview" class="w-full h-full" src="" frameborder="0"
+                                    allowfullscreen>
+                                </iframe>
+                            </div>
+                        </div>
+
 
                     </div>
 
@@ -374,7 +388,278 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
+
+        const trailerInput = document.getElementById('trailer');
+        const trailerBox = document.getElementById('trailerBox');
+        const trailerPreview = document.getElementById('trailerPreview');
+
+        function getYoutubeEmbed(url) {
+
+            let id = '';
+
+            if (url.includes('watch?v=')) {
+                id = url.split('watch?v=')[1].split('&')[0];
+            } else if (url.includes('youtu.be/')) {
+                id = url.split('youtu.be/')[1].split('?')[0];
+            }
+
+            return id ? `https://www.youtube.com/embed/${id}` : null;
+        }
+
+        trailerInput.addEventListener('change', function() {
+
+            const embed = getYoutubeEmbed(this.value.trim());
+
+            if (embed) {
+                trailerPreview.src = embed;
+                trailerBox.classList.remove('hidden');
+            } else {
+                trailerPreview.src = '';
+                trailerBox.classList.add('hidden');
+            }
+
+        });
     </script>
 
 @endsection
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

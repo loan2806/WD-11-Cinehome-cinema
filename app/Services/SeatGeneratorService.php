@@ -95,21 +95,35 @@ class SeatGeneratorService
                     for ($pairIndex = 1; $pairIndex <= $soCotCouple; $pairIndex++) {
                         $cotStart = ($pairIndex - 1) * 2 + 1;
                         $cotEnd = $pairIndex * 2;
-                        $maGhe = $tenHang . $cotStart . '-' . $tenHang . $cotEnd;
+                        // Mã nhóm couple - 2 ghế cùng nhóm
+                        $coupleGroupId = $hangGhe->ky_hieu . '_CPL_' . $pairIndex . '_P' . $phongChieu->id;
 
-                        $ghe = GheNgoi::create([
+                        // Tạo ghế thứ 1 (cột start)
+                        $ghe1 = GheNgoi::create([
                             'phong_chieu_id' => $phongChieu->id,
                             'hang_ghe_id' => $hangGhe->id,
                             'loai_ghe_id' => $loaiGheCoupleId ?? $loaiGheThuongId,
-                            'ma_ghe' => $maGhe,
+                            'ma_ghe' => $tenHang . $cotStart,
                             'cot' => $cotStart,
-                            'cot_end' => $cotEnd,
+                            'couple_group_id' => $coupleGroupId,
                             'trang_thai' => 'hoat_dong',
                         ]);
 
-                        $ketQua['da_tao'][] = $ghe->id;
-                        $ketQua['tong_so_ghe']++;
-                        $ketQua['ghe_couple']++;
+                        // Tạo ghế thứ 2 (cột end) - cùng nhóm couple
+                        $ghe2 = GheNgoi::create([
+                            'phong_chieu_id' => $phongChieu->id,
+                            'hang_ghe_id' => $hangGhe->id,
+                            'loai_ghe_id' => $loaiGheCoupleId ?? $loaiGheThuongId,
+                            'ma_ghe' => $tenHang . $cotEnd,
+                            'cot' => $cotEnd,
+                            'couple_group_id' => $coupleGroupId,
+                            'trang_thai' => 'hoat_dong',
+                        ]);
+
+                        $ketQua['da_tao'][] = $ghe1->id;
+                        $ketQua['da_tao'][] = $ghe2->id;
+                        $ketQua['tong_so_ghe'] += 2;
+                        $ketQua['ghe_couple'] += 2;
                     }
                 } else {
                     for ($j = 1; $j <= $soCotThuongVip; $j++) {
@@ -265,36 +279,109 @@ class SeatGeneratorService
                 for ($p = 1; $p <= $pairCount; $p++) {
                     $start = ($p - 1) * 2 + 1;
                     $end = $p * 2;
-                    $ghe = $grouped[$rowLabel][$start] ?? null;
+
+                    // Lấy 2 ghế trong cùng 1 cặp couple
+                    $ghe1 = $grouped[$rowLabel][$start] ?? null;
+                    $ghe2 = $grouped[$rowLabel][$end] ?? null;
+
+                    // Lấy couple_group_id (ưu tiên từ DB, nếu không có thì tạo mới)
+                    $coupleGroupId = $ghe1->couple_group_id
+                        ?? $ghe2->couple_group_id
+                        ?? ('CPL_' . $rowLabel . '_' . $p);
+
+                    // Siblings là cả 2 ghế cùng nhóm
+                    $siblings = [];
+                    if ($ghe1) $siblings[] = $ghe1->id;
+                    if ($ghe2) $siblings[] = $ghe2->id;
+
+                    // Lấy thông tin loại ghế - ưu tiên từ ghế1
+                    $refGhe = $ghe1 ?? $ghe2;
                     $loai = 'Thường';
                     $phuThu = 0;
                     $trangThai = 'hoat_dong';
-                    $maGhe = $rowLabel . $start . '-' . $rowLabel . $end;
+                    $loaiGheId = null;
+                    $mauSac = '#666666';
+                    $maGheLeft = $rowLabel . $start;
+                    $maGheRight = $rowLabel . $end;
 
-                    if ($ghe) {
-                        $loai = $ghe->loaiGhe->ten_loai ?? 'Thường';
-                        $phuThu = $ghe->loaiGhe->phu_thu ?? 0;
-                        $loaiGheId = $ghe->loai_ghe_id;
-                        $mauSac = $ghe->loaiGhe->mau_sac ?? '#666666';
-                        $trangThai = $ghe->trang_thai;
-                        $maGhe = $ghe->ma_ghe ?: $maGhe;
-                    } else {
-                        $loaiGheId = null;
-                        $mauSac = '#666666';
+                    if ($refGhe) {
+                        $loai = $refGhe->loaiGhe->ten_loai ?? 'Thường';
+                        $phuThu = $refGhe->loaiGhe->phu_thu ?? 0;
+                        $loaiGheId = $refGhe->loai_ghe_id;
+                        $mauSac = $refGhe->loaiGhe->mau_sac ?? '#666666';
+                        $trangThai = $refGhe->trang_thai;
                     }
 
-                    $cols[$start] = [
-                        'id' => $ghe->id ?? null,
-                        'ma_ghe' => $maGhe,
-                        'loai_ghe' => $loai,
-                        'loai_ghe_id' => $loaiGheId,
-                        'mau_sac' => $mauSac,
-                        'phu_thu' => $phuThu,
-                        'trang_thai' => $trangThai,
-                        'is_couple' => true,
-                        'cot_end' => $end,
-                        'display_number' => $end,
-                    ];
+                    // === Ghế 1 (trái) ===
+                    if ($ghe1) {
+                        $cols[$start] = [
+                            'id' => $ghe1->id,
+                            'ma_ghe' => $ghe1->ma_ghe ?: $maGheLeft,
+                            'loai_ghe' => $ghe1->loaiGhe->ten_loai ?? $loai,
+                            'loai_ghe_id' => $ghe1->loai_ghe_id ?? $loaiGheId,
+                            'mau_sac' => $ghe1->loaiGhe->mau_sac ?? $mauSac,
+                            'phu_thu' => $ghe1->loaiGhe->phu_thu ?? $phuThu,
+                            'trang_thai' => $ghe1->trang_thai,
+                            'is_couple' => true,
+                            'cot_end' => $end,
+                            'display_number' => $start,
+                            'couple_group_id' => $coupleGroupId,
+                            'couple_siblings' => $siblings,
+                            'couple_position' => 'left',
+                        ];
+                    } else {
+                        // Ghế trống chưa có trong DB
+                        $cols[$start] = [
+                            'id' => null,
+                            'ma_ghe' => $maGheLeft,
+                            'loai_ghe' => $loai,
+                            'loai_ghe_id' => $loaiGheId,
+                            'mau_sac' => $mauSac,
+                            'phu_thu' => $phuThu,
+                            'trang_thai' => $trangThai,
+                            'is_couple' => true,
+                            'cot_end' => $end,
+                            'display_number' => $start,
+                            'couple_group_id' => $coupleGroupId,
+                            'couple_siblings' => $siblings,
+                            'couple_position' => 'left',
+                        ];
+                    }
+
+                    // === Ghế 2 (phải) ===
+                    if ($ghe2) {
+                        $cols[$end] = [
+                            'id' => $ghe2->id,
+                            'ma_ghe' => $ghe2->ma_ghe ?: $maGheRight,
+                            'loai_ghe' => $ghe2->loaiGhe->ten_loai ?? $loai,
+                            'loai_ghe_id' => $ghe2->loai_ghe_id ?? $loaiGheId,
+                            'mau_sac' => $ghe2->loaiGhe->mau_sac ?? $mauSac,
+                            'phu_thu' => $ghe2->loaiGhe->phu_thu ?? $phuThu,
+                            'trang_thai' => $ghe2->trang_thai,
+                            'is_couple' => true,
+                            'cot_end' => $start,
+                            'display_number' => $end,
+                            'couple_group_id' => $coupleGroupId,
+                            'couple_siblings' => $siblings,
+                            'couple_position' => 'right',
+                        ];
+                    } else {
+                        $cols[$end] = [
+                            'id' => null,
+                            'ma_ghe' => $maGheRight,
+                            'loai_ghe' => $loai,
+                            'loai_ghe_id' => $loaiGheId,
+                            'mau_sac' => $mauSac,
+                            'phu_thu' => $phuThu,
+                            'trang_thai' => $trangThai,
+                            'is_couple' => true,
+                            'cot_end' => $start,
+                            'display_number' => $end,
+                            'couple_group_id' => $coupleGroupId,
+                            'couple_siblings' => $siblings,
+                            'couple_position' => 'right',
+                        ];
+                    }
                 }
             } elseif ($isRegular) {
                 foreach ($grouped[$rowLabel] ?? [] as $cot => $ghe) {

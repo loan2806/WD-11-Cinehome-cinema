@@ -19,11 +19,14 @@
 
                 <div class="relative flex flex-col items-center">
 
+                    {{-- POSTER --}}
                     <img src="{{ $movie->poster }}" alt="{{ $movie->ten_phim }}"
                         class="poster-pop-left relative z-10 w-[320px] md:w-[410px] lg:w-[450px] h-[520px] md:h-[620px] object-cover rounded-3xl shadow-2xl border border-white/10">
 
+                    {{-- BUTTONS --}}
                     <div class="relative z-10 mt-6 w-[320px] md:w-[410px] lg:w-[450px] space-y-3">
 
+                        {{-- TRAILER --}}
                         <a href="{{ $movie->trailer_url }}" target="_blank"
                             class="w-full flex items-center justify-center gap-2 bg-white/10 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/20 transition">
                             <i class="fa-solid fa-play"></i>
@@ -31,30 +34,41 @@
                         </a>
 
                         @php
-                            $status = $movie->schedule_status;
+                            $status = optional($movie->showtimes->sortBy('thoi_gian_chieu')->first())?->trang_thai;
                         @endphp
 
-                        @if ($status === 'Sắp ra mắt')
+                        {{-- SẮP RA MẮT --}}
+                        @if ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT)
                             <button
                                 class="w-full flex items-center justify-center gap-2 bg-pink-500 text-white font-extrabold px-6 py-3 rounded-xl hover:bg-pink-400 transition">
                                 <i class="fa-regular fa-heart"></i>
                                 Quan tâm
                             </button>
-                        @elseif ($status === 'Sắp chiếu')
-                            <a href="#showtimes"
+
+                            {{-- SẮP CHIẾU --}}
+                        @elseif ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
+                            <a href="{{ route('booking', $movie) }}"
                                 class="w-full flex items-center justify-center gap-2 bg-[#f5a623] text-black font-extrabold px-6 py-3 rounded-xl hover:bg-[#ffc04d] transition">
                                 <i class="fa-solid fa-ticket"></i>
                                 Đặt vé ngay
                             </a>
-                        @else
+
+                            {{-- ĐANG CHIẾU --}}
+                        @elseif ($status === \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU)
                             <div
                                 class="w-full flex items-center justify-center gap-2 bg-white/10 text-white font-extrabold px-6 py-3 rounded-xl border border-white/10">
                                 <i class="fa-solid fa-film"></i>
                                 Đang chiếu
                             </div>
+                        @else
+                            <div
+                                class="w-full flex items-center justify-center gap-2 bg-gray-700 text-white font-extrabold px-6 py-3 rounded-xl">
+                                Không xác định
+                            </div>
                         @endif
 
                     </div>
+
                 </div>
             </div>
 
@@ -95,7 +109,7 @@
 
                         <div class="bg-white/10 rounded-2xl p-4">
                             <p class="text-gray-400 text-sm mb-1">Quốc gia</p>
-                            <p class="font-bold">{{ $movie->country?->ten_quoc_gia }}</p>
+                            <p class="font-bold">{{ $movie->country->ten_quoc_gia }}</p>
                         </div>
 
                         <div class="bg-white/10 rounded-2xl p-4">
@@ -111,8 +125,8 @@
                         <div class="bg-white/10 rounded-2xl p-4 md:col-span-2">
                             <p class="text-gray-400 text-sm mb-1">Diễn viên</p>
                             <p class="font-bold">
-                                @if (is_array($movie->dien_vien))
-                                    {{ implode(', ', $movie->dien_vien) }}
+                                @if (is_array($movie->dien_vien) || is_object($movie->dien_vien))
+                                    {{ implode(', ', (array) $movie->dien_vien) }}
                                 @else
                                     {{ $movie->dien_vien }}
                                 @endif
@@ -132,99 +146,28 @@
             </div>
 
         </div>
-    </section>
 
-    {{-- SHOWTIMES --}}
-    <section id="showtimes" class="bg-[#080808] px-6 py-14 text-white">
-        <div class="mx-auto max-w-7xl">
-            <h2 class="mb-8 text-3xl font-black">
-                Suất <span class="text-[#f5a623]">chiếu</span>
-            </h2>
-
-            @php
-                $showtimesByCinema = $showtimes->groupBy('rap_chieu_phim_id');
-            @endphp
-
-            <div class="space-y-5">
-                @forelse($showtimesByCinema as $cinemaShowtimes)
-                    @php
-                        $rap = $cinemaShowtimes->first()->rapChieuPhim;
-                        $showtimesByDate = $cinemaShowtimes->groupBy(fn ($suat) => $suat->thoi_gian_chieu->format('Y-m-d'));
-                    @endphp
-
-                    <div class="rounded-2xl border border-white/10 bg-[#121212] p-6">
-                        <h3 class="text-xl font-black text-[#f5a623]">{{ $rap->ten_rap }}</h3>
-                        <p class="mt-1 text-sm text-gray-400">{{ $rap->dia_chi }}</p>
-
-                        <div class="mt-5 space-y-4">
-                            @foreach($showtimesByDate as $date => $items)
-                                <div>
-                                    <div class="mb-3 text-sm font-bold text-gray-300">
-                                        {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}
-                                    </div>
-
-                                    <div class="flex flex-wrap gap-3">
-                                        @foreach($items as $suat)
-                                            <a href="{{ route('dat_ve.chon_ghe', ['suat_chieu_id' => $suat->id]) }}"
-                                                class="rounded-xl border border-[#f5a623]/50 px-4 py-2 font-bold text-[#f5a623] transition hover:bg-[#f5a623] hover:text-black">
-                                                {{ $suat->thoi_gian_chieu->format('H:i') }}
-                                            </a>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @empty
-                    <div class="rounded-2xl border border-white/10 bg-[#121212] p-8 text-center text-gray-400">
-                        Hiện chưa có suất chiếu phù hợp.
-                    </div>
-                @endforelse
-            </div>
-        </div>
     </section>
 
     {{-- RELATED MOVIES --}}
     <section class="bg-[#0b0705] text-white py-20">
         <div class="container-fluid px-8">
+
             <div class="section-title-wrap mb-8">
                 <h2 class="section-title">
                     Phim <span>liên quan</span>
                 </h2>
             </div>
 
-            @if(isset($relatedMovies) && $relatedMovies->isNotEmpty())
+            @if (isset($relatedMovies) && $relatedMovies->isNotEmpty())
                 @include('partials.movie-section', ['movies' => $relatedMovies])
             @else
                 <div class="text-center text-gray-400 py-14">
                     Không tìm thấy phim liên quan.
                 </div>
             @endif
+
         </div>
     </section>
-
-    <script>
-        function backWithAnimation(url) {
-            const poster = document.querySelector('.poster-pop-left');
-            const content = document.querySelector('.content-fade-right');
-
-            if (!poster || !content) {
-                window.location.href = url;
-                return;
-            }
-
-            poster.classList.remove('poster-pop-left');
-            content.classList.remove('content-fade-right');
-
-            void poster.offsetWidth;
-
-            poster.classList.add('poster-back');
-            content.classList.add('content-back');
-
-            setTimeout(function() {
-                window.location.href = url;
-            }, 600);
-        }
-    </script>
 
 @endsection
