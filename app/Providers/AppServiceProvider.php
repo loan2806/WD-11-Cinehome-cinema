@@ -22,11 +22,15 @@ class AppServiceProvider extends ServiceProvider
     {
         /**
          * THIẾT LẬP QUYỀN TỐI CAO (SUPER ADMIN BYPASS)
-         * Đảm bảo tài khoản giữ vai trò "Quản trị viên" luôn được phép truy cập mọi liên kết URL,
+         * Đảm bảo tài khoản giữ vai trò "Quản trị viên" hoặc "Quản lý hệ thống"
+         * luôn được phép truy cập mọi liên kết URL,
          * vượt qua tất cả các chốt chặn middleware permission mà không bao giờ bị dính lỗi 403 Forbidden.
          */
         Gate::before(function ($user, $ability) {
-            return $user->hasRole('Quản trị viên') ? true : null;
+            if ($user->hasRole('Quản trị viên') || $user->hasRole('Quản lý hệ thống')) {
+                return true;
+            }
+            return null;
         });
     }
 }

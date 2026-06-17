@@ -10,12 +10,14 @@ use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use App\Services\SeatGeneratorService;
+use App\Traits\Loggable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SuatChieuController extends Controller
 {
+    use Loggable;
     private const THOI_GIAN_DON_PHONG = 15;
 
     private const TRANG_THAI_SAP_RA_MAT = 'sap_ra_mat';
@@ -106,6 +108,8 @@ class SuatChieuController extends Controller
 
         SuatChieu::create($data);
 
+        $this->ghiNhatKy($request, 'Thêm suất chiếu', 'Quản lý phim & lịch chiếu', "Thêm suất chiếu cho phim: {$phim->ten_phim}");
+
         return redirect()
             ->route('admin.suat-chieus.index')
             ->with('success', 'Suất chiếu đã được tạo thành công.');
@@ -178,6 +182,8 @@ class SuatChieuController extends Controller
 
         $suatChieu->update($data);
 
+        $this->ghiNhatKy($request, 'Cập nhật suất chiếu', 'Quản lý phim & lịch chiếu', "Cập nhật suất chiếu #{$suatChieu->id}");
+
         return redirect()
             ->route('admin.suat-chieus.index')
             ->with('success', 'Suất chiếu đã được cập nhật thành công.');
@@ -195,6 +201,8 @@ class SuatChieuController extends Controller
         }
 
         $suatChieu->delete();
+
+        $this->ghiNhatKy($request, 'Xóa suất chiếu', 'Quản lý phim & lịch chiếu', "Xóa suất chiếu #{$suatChieu->id}");
 
         return redirect()
             ->route('admin.suat-chieus.index')

@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CapnhatQuocGiaRequest;
 use App\Http\Requests\ThemmoiQuocGiaRequest;
 use App\Models\QuocGia;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 
 class QuocGiaController extends Controller
 {
+    use Loggable;
     /**
      * Danh sách quốc gia
      */
@@ -46,6 +48,8 @@ public function store(ThemmoiQuocGiaRequest $request)
 {
     QuocGia::create($request->validated());
 
+    $this->ghiNhatKy($request, 'Thêm quốc gia', 'Quản lý phim & lịch chiếu', "Thêm quốc gia: {$request->ten_quoc_gia}");
+
     return redirect()
         ->route('admin.quoc-gias.index')
         ->with('success', 'Thêm quốc gia thành công');
@@ -66,6 +70,8 @@ public function store(ThemmoiQuocGiaRequest $request)
 {
     $quocGia->update($request->validated());
 
+    $this->ghiNhatKy($request, 'Cập nhật quốc gia', 'Quản lý phim & lịch chiếu', "Cập nhật quốc gia: {$quocGia->ten_quoc_gia}");
+
     return redirect()
         ->route('admin.quoc-gias.index')
         ->with('success', 'Cập nhật quốc gia thành công');
@@ -82,7 +88,10 @@ public function destroy(QuocGia $quocGia)
             ->with('error', 'Không thể xóa quốc gia vì đang có phim liên kết');
     }
 
+    $tenQuocGia = $quocGia->ten_quoc_gia;
     $quocGia->delete();
+
+    $this->ghiNhatKy($request, 'Xóa quốc gia', 'Quản lý phim & lịch chiếu', "Xóa quốc gia: {$tenQuocGia}");
 
     return redirect()
         ->route('admin.quoc-gias.index')

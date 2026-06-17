@@ -212,6 +212,10 @@ Route::middleware(['auth'])
         // Khóa bảo vệ Module: Thống Kê Doanh Thu Rạp Phim
         Route::middleware(['permission:thong_ke_doanh_thu'])->group(function () {
             Route::get('/revenue-reports', [RevenueReportController::class, 'index'])->name('revenue-reports.index');
+        });
+
+        // Khóa bảo vệ Module: Nhật ký hoạt động (chỉ admin và super admin)
+        Route::middleware(['permission:xem_nhat_ky_hoat_dong'])->group(function () {
             Route::get('/activity-logs', [NhatKyHoatDongHeThongController::class, 'index'])->name('activity-logs.index');
         });
 

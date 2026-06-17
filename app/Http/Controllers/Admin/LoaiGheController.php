@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreLoaiGheRequest;
 use App\Http\Requests\Admin\UpdateLoaiGheRequest;
 use App\Models\LoaiGhe;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LoaiGheController extends Controller
 {
+    use Loggable;
     /**
      * Display a listing of the resource.
      */
@@ -40,6 +42,8 @@ class LoaiGheController extends Controller
         $data['la_couple'] = $request->boolean('la_couple');
 
         LoaiGhe::create($data);
+
+        $this->ghiNhatKy($request, 'Thêm loại ghế', 'Quản lý phòng & ghế', "Thêm loại ghế: {$data['ten_loai']}");
 
         return redirect()
             ->route('admin.loai-ghes.index')
@@ -77,6 +81,8 @@ class LoaiGheController extends Controller
 
         $loaiGhe->update($data);
 
+        $this->ghiNhatKy($request, 'Cập nhật loại ghế', 'Quản lý phòng & ghế', "Cập nhật loại ghế: {$loaiGhe->ten_loai}");
+
         return redirect()
             ->route('admin.loai-ghes.index')
             ->with('success', 'Loại ghế đã được cập nhật thành công.');
@@ -93,7 +99,10 @@ class LoaiGheController extends Controller
                 ->with('error', 'Không thể xóa loại ghế vì đang có ghế sử dụng.');
         }
 
+        $tenLoai = $loaiGhe->ten_loai;
         $loaiGhe->delete();
+
+        $this->ghiNhatKy($request, 'Xóa loại ghế', 'Quản lý phòng & ghế', "Xóa loại ghế: {$tenLoai}");
 
         return redirect()
             ->route('admin.loai-ghes.index')

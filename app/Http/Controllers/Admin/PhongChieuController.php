@@ -12,12 +12,14 @@ use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Models\VeXemPhim;
 use App\Services\SeatGeneratorService;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PhongChieuController extends Controller
 {
+    use Loggable;
     protected SeatGeneratorService $seatGenerator;
 
     public function __construct(SeatGeneratorService $seatGenerator)
@@ -70,6 +72,8 @@ class PhongChieuController extends Controller
         
         PhongChieu::create($data);
 
+        $this->ghiNhatKy($request, 'Thêm phòng chiếu', 'Quản lý phòng & ghế', "Thêm phòng: {$data['ten_phong']}");
+
         return redirect()
             ->route('admin.phong-chieus.index')
             ->with('success', 'Phòng chiếu đã được tạo thành công.');
@@ -115,6 +119,8 @@ class PhongChieuController extends Controller
         
         $phongChieu->update($data);
 
+        $this->ghiNhatKy($request, 'Cập nhật phòng chiếu', 'Quản lý phòng & ghế', "Cập nhật phòng: {$phongChieu->ten_phong}");
+
         return redirect()
             ->route('admin.phong-chieus.index')
             ->with('success', 'Phòng chiếu đã được cập nhật thành công.');
@@ -133,6 +139,8 @@ class PhongChieuController extends Controller
 
         $phongChieu->delete();
 
+        $this->ghiNhatKy($request, 'Xóa phòng chiếu', 'Quản lý phòng & ghế', "Xóa phòng: {$phongChieu->ten_phong}");
+
         return redirect()
             ->route('admin.phong-chieus.index')
             ->with('success', 'Phòng chiếu đã được xóa thành công.');
@@ -141,10 +149,12 @@ class PhongChieuController extends Controller
     /**
      * Force delete the specified resource.
      */
-    public function forceDestroy($id)
+    public function forceDestroy(Request $request, $id)
     {
         $phongChieu = PhongChieu::withTrashed()->findOrFail($id);
         $phongChieu->forceDelete();
+
+        $this->ghiNhatKy($request, 'Xóa vĩnh viễn phòng chiếu', 'Quản lý phòng & ghế', "Xóa vĩnh viễn phòng #{$id}");
 
         return redirect()
             ->route('admin.phong-chieus.index')
@@ -154,10 +164,12 @@ class PhongChieuController extends Controller
     /**
      * Restore the specified resource.
      */
-    public function restore($id)
+    public function restore(Request $request, $id)
     {
         $phongChieu = PhongChieu::withTrashed()->findOrFail($id);
         $phongChieu->restore();
+
+        $this->ghiNhatKy($request, 'Khôi phục phòng chiếu', 'Quản lý phòng & ghế', "Khôi phục phòng #{$id}");
 
         return redirect()
             ->route('admin.phong-chieus.index')
