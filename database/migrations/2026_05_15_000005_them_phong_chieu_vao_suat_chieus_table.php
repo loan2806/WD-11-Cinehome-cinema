@@ -6,38 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('suat_chieus', function (Blueprint $table) {
-            $table->foreignId('phong_chieu_id')
-                ->nullable()
-                ->after('rap_chieu_phim_id')
-                ->constrained('phong_chieus')
-                ->nullOnDelete();
-            
-            $table->integer('thoi_luong')
-                ->nullable()
-                ->after('thoi_gian_chieu')
-                ->comment('Thời lượng chiếu tính bằng phút');
-            
-            $table->dateTime('thoi_gian_ket_thuc')
-                ->nullable()
-                ->after('thoi_luong')
-                ->comment('Thời gian kết thúc tự động tính');
+            // Đợi bảng phong_chieus sinh ra xong xuôi mới thực hiện liên kết khóa ngoại
+            if (!Schema::hasColumn('suat_chieus', 'phong_chieu_id')) {
+                $table->foreignId('phong_chieu_id')
+                      ->after('rap_chieu_phim_id')
+                      ->constrained('phong_chieus')
+                      ->cascadeOnDelete();
+            }
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('suat_chieus', function (Blueprint $table) {
             $table->dropForeign(['phong_chieu_id']);
-            $table->dropColumn(['phong_chieu_id', 'thoi_luong', 'thoi_gian_ket_thuc']);
+            $table->dropColumn('phong_chieu_id');
         });
     }
 };

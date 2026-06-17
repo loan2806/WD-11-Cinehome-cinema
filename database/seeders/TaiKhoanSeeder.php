@@ -11,11 +11,12 @@ class TaiKhoanSeeder extends Seeder
 {
     public function run(): void
     {
-        // Khởi tạo vai trò của Spatie để phục vụ rẽ nhánh phân hệ chuyên sâu
-        $vaiTroHeThong = Role::findOrCreate('Quản lý hệ thống', 'web');
+        // Khởi tạo các Vai trò hệ thống của Spatie để khớp với Gate và Middleware
+        $roleSystem = Role::findOrCreate('Quản lý hệ thống', 'web');
+        $roleAdmin  = Role::findOrCreate('Quản trị viên', 'web');
+        $roleStaff  = Role::findOrCreate('Nhân viên', 'web');
 
-        // 1. Tài khoản Quản lý hệ thống tách biệt hoàn toàn
-        // Giải pháp: Đặt 'vai_tro' là 'admin' để khớp cấu hình dữ liệu cũ, dùng Role Spatie để phân tách Dashboard
+        // 1. Tài khoản Quản lý hệ thống tách biệt
         $systemUser = NguoiDung::updateOrCreate(
             ['email' => 'system@cinehome.vn'],
             [
@@ -25,11 +26,10 @@ class TaiKhoanSeeder extends Seeder
                 'trang_thai_hoat_dong' => true,
             ]
         );
-        // Gán vai trò tối cao để điều hướng sang layout system.blade.php độc lập
-        $systemUser->assignRole($vaiTroHeThong);
+        $systemUser->assignRole($roleSystem);
 
-        // 2. Tài khoản Admin điều hành rạp thông thường (Sub-Admin)
-        NguoiDung::updateOrCreate(
+        // 2. Tài khoản Admin điều hành rạp (Sub-Admin)
+        $adminUser = NguoiDung::updateOrCreate(
             ['email' => 'admin@cinehome.vn'],
             [
                 'ho_ten' => 'Admin CineHome',
@@ -38,9 +38,10 @@ class TaiKhoanSeeder extends Seeder
                 'trang_thai_hoat_dong' => true,
             ]
         );
+        $adminUser->assignRole($roleAdmin); // Gán vai trò để vượt qua Gate::before
 
-        // 3. Tài khoản Nhân viên tác nghiệp tại quầy rạp
-        NguoiDung::updateOrCreate(
+        // 3. Tài khoản Nhân viên quầy
+        $staffUser = NguoiDung::updateOrCreate(
             ['email' => 'staff@cinehome.vn'],
             [
                 'ho_ten' => 'Staff CineHome',
@@ -49,8 +50,9 @@ class TaiKhoanSeeder extends Seeder
                 'trang_thai_hoat_dong' => true,
             ]
         );
+        $staffUser->assignRole($roleStaff);
 
-        // 4. Tài khoản Khách hàng mua vé trực tuyến công cộng
+        // 4. Tài khoản Khách hàng
         NguoiDung::updateOrCreate(
             ['email' => 'user@cinehome.vn'],
             [

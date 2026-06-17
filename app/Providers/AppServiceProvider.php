@@ -7,26 +7,20 @@ use Illuminate\Support\Facades\Gate;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Đăng ký các dịch vụ ứng dụng hệ thống.
-     */
     public function register(): void
     {
         //
     }
 
-    /**
-     * Khởi chạy các dịch vụ ứng dụng (Mở khóa đặc quyền Quản trị viên).
-     */
     public function boot(): void
     {
         /**
          * THIẾT LẬP QUYỀN TỐI CAO (SUPER ADMIN BYPASS)
-         * Đảm bảo tài khoản giữ vai trò "Quản trị viên" luôn được phép truy cập mọi liên kết URL,
-         * vượt qua tất cả các chốt chặn middleware permission mà không bao giờ bị dính lỗi 403 Forbidden.
+         * Đảm bảo tài khoản giữ vai trò "Quản trị viên" hoặc có giá trị cột vai_tro là 'admin'
+         * luôn vượt qua tất cả các chốt chặn middleware permission mà không bao giờ bị dính lỗi 403 hay vỡ layout.
          */
         Gate::before(function ($user, $ability) {
-            return $user->hasRole('Quản trị viên') ? true : null;
+            return ($user->hasRole('Quản trị viên') || $user->vai_tro === 'admin') ? true : null;
         });
     }
 }
