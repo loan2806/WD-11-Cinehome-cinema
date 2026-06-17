@@ -7,10 +7,13 @@ use App\Http\Requests\CapnhatQuocGiaRequest;
 use App\Http\Requests\ThemmoiQuocGiaRequest;
 use App\Models\QuocGia;
 use App\Services\AdminNotificationService;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 
 class QuocGiaController extends Controller
 {
+    use Loggable;
+
     /**
      * Danh sách quốc gia
      */
@@ -18,7 +21,6 @@ class QuocGiaController extends Controller
     {
         $query = QuocGia::query();
 
-        // SEARCH
         if ($request->search) {
             $query->where(function ($q) use ($request) {
                 $q->where('ten_quoc_gia', 'like', '%' . $request->search . '%')
@@ -26,7 +28,6 @@ class QuocGiaController extends Controller
             });
         }
 
-        // SORT NEWEST
         $countries = $query->latest()->paginate(10);
 
         return view('admin.quoc-gias.index', compact('countries'));
@@ -45,12 +46,21 @@ class QuocGiaController extends Controller
      */
     public function store(ThemmoiQuocGiaRequest $request)
     {
-        $quocGia =  QuocGia::create($request->validated());
+        $quocGia = QuocGia::create($request->validated());
 
+        // NOTIFICATION SYSTEM
         AdminNotificationService::push(
             '🌍 Quốc gia mới được thêm',
             'Đã thêm quốc gia ' . $quocGia->ten_quoc_gia,
             'Success'
+        );
+
+        // LOG SYSTEM
+        $this->ghiNhatKy(
+            $request,
+            'Thêm quốc gia',
+            'Quản lý phim & lịch chiếu',
+            "Thêm quốc gia: {$quocGia->ten_quoc_gia}"
         );
 
         return redirect()
@@ -73,10 +83,19 @@ class QuocGiaController extends Controller
     {
         $quocGia->update($request->validated());
 
+        // NOTIFICATION SYSTEM
         AdminNotificationService::push(
             '✏️ Quốc gia đã được cập nhật',
             'Đã cập nhật quốc gia ' . $quocGia->ten_quoc_gia,
             'Success'
+        );
+
+        // LOG SYSTEM
+        $this->ghiNhatKy(
+            $request,
+            'Cập nhật quốc gia',
+            'Quản lý phim & lịch chiếu',
+            "Cập nhật quốc gia: {$quocGia->ten_quoc_gia}"
         );
 
         return redirect()
@@ -87,21 +106,31 @@ class QuocGiaController extends Controller
     /**
      * Xóa quốc gia
      */
-    public function destroy(QuocGia $quocGia)
+    public function destroy(Request $request, QuocGia $quocGia)
     {
         if ($quocGia->phims()->exists()) {
             return redirect()
                 ->route('admin.quoc-gias.index')
                 ->with('error', 'Không thể xóa quốc gia vì đang có phim liên kết');
         }
-        $tenQuocGia = $quocGia->ten_quoc_gia; 
+
+        $tenQuocGia = $quocGia->ten_quoc_gia;
 
         $quocGia->delete();
 
+        // NOTIFICATION SYSTEM
         AdminNotificationService::push(
             '🗑️ Quốc gia đã bị xóa',
             'Đã xóa quốc gia ' . $tenQuocGia,
-            'Success'
+            'Warning'
+        );
+
+        // LOG SYSTEM
+        $this->ghiNhatKy(
+            $request,
+            'Xóa quốc gia',
+            'Quản lý phim & lịch chiếu',
+            "Xóa quốc gia: {$tenQuocGia}"
         );
 
         return redirect()

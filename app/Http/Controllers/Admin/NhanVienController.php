@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\NguoiDung;
 use App\Services\AdminNotificationService;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class NhanVienController extends Controller
 {
+    use Loggable;
+
     public function index(Request $request)
     {
         $query = NguoiDung::query()
@@ -23,14 +26,9 @@ class NhanVienController extends Controller
             });
         }
 
-        $nhanViens = $query
-            ->latest()
-            ->paginate(10);
+        $nhanViens = $query->latest()->paginate(10);
 
-        return view(
-            'admin.nhanviens.index',
-            compact('nhanViens')
-        );
+        return view('admin.nhanviens.index', compact('nhanViens'));
     }
 
     public function create()
@@ -62,6 +60,13 @@ class NhanVienController extends Controller
             'Info'
         );
 
+        $this->ghiNhatKy(
+            $request,
+            'Thêm nhân viên',
+            'Quản lý nhân viên',
+            "Thêm nhân viên: {$nhanVien->ho_ten}"
+        );
+
         return redirect()
             ->route('admin.nhanviens.index')
             ->with('success', 'Thêm nhân viên thành công');
@@ -72,19 +77,16 @@ class NhanVienController extends Controller
         if ($nhanvien->vai_tro !== 'nhan_vien') {
             abort(404);
         }
-        return view(
-            'admin.nhanviens.edit',
-            compact('nhanvien')
-        );
+
+        return view('admin.nhanviens.edit', compact('nhanvien'));
     }
 
-    public function update(
-        Request $request,
-        NguoiDung $nhanvien
-    ) {
+    public function update(Request $request, NguoiDung $nhanvien)
+    {
         if ($nhanvien->vai_tro !== 'nhan_vien') {
             abort(404);
         }
+
         $request->validate([
             'ho_ten' => 'required|max:255',
             'email' => 'required|email|unique:nguoi_dungs,email,' . $nhanvien->id,
@@ -101,25 +103,29 @@ class NhanVienController extends Controller
             'Info'
         );
 
+        $this->ghiNhatKy(
+            $request,
+            'Cập nhật nhân viên',
+            'Quản lý nhân viên',
+            "Cập nhật nhân viên: {$nhanvien->ho_ten}"
+        );
 
         return redirect()
             ->route('admin.nhanviens.index')
             ->with('success', 'Cập nhật thành công');
     }
 
-    public function destroy(NguoiDung $nhanvien)
+    public function destroy(Request $request, NguoiDung $nhanvien)
     {
         if ($nhanvien->vai_tro !== 'nhan_vien') {
             abort(404);
         }
 
         if ($nhanvien->id == Auth::id()) {
-            return back()
-                ->with('error', 'Không thể xóa chính tài khoản của bạn');
+            return back()->with('error', 'Không thể xóa chính tài khoản của bạn');
         }
 
         $ten = $nhanvien->ho_ten;
-
         $nhanvien->delete();
 
         AdminNotificationService::push(
@@ -128,27 +134,39 @@ class NhanVienController extends Controller
             'Warning'
         );
 
-        return back()
-            ->with('success', 'Đã xóa nhân viên');
+        $this->ghiNhatKy(
+            $request,
+            'Xóa nhân viên',
+            'Quản lý nhân viên',
+            "Xóa nhân viên: {$ten}"
+        );
+
+        return back()->with('success', 'Đã xóa nhân viên');
     }
 
-    public function toggleStatus(NguoiDung $nhanvien)
+    public function toggleStatus(Request $request, NguoiDung $nhanvien)
     {
         if ($nhanvien->vai_tro !== 'nhan_vien') {
             abort(404);
         }
 
         if ($nhanvien->id == Auth::id()) {
-            return back()
-                ->with('error', 'Không thể khóa chính tài khoản của bạn');
+            return back()->with('error', 'Không thể khóa chính tài khoản của bạn');
         }
 
         $nhanvien->update([
-            'trang_thai_hoat_dong'
-            => !$nhanvien->trang_thai_hoat_dong
+            'trang_thai_hoat_dong' => !$nhanvien->trang_thai_hoat_dong
         ]);
 
-        return back()
-            ->with('success', 'Cập nhật trạng thái thành công');
+        $trangThai = $nhanvien->trang_thai_hoat_dong ? 'kích hoạt' : 'khóa';
+
+        $this->ghiNhatKy(
+            $request,
+            'Đổi trạng thái nhân viên',
+            'Quản lý nhân viên',
+            "Đổi trạng thái nhân viên {$nhanvien->ho_ten} sang {$trangThai}"
+        );
+
+        return back()->with('success', 'Cập nhật trạng thái thành công');
     }
 }

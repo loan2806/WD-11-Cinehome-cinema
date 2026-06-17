@@ -37,6 +37,7 @@ class SuatChieu extends Model
     public const TRANG_THAI_DA_CHIEU = 'da_chieu';
     public const TRANG_THAI_HUY = 'huy';
 
+    // 💡 KHÔI PHỤC LẠI HẰNG SỐ NÀY ĐỂ SỬA LỖI 500 Ở INDEX VIEW
     public const TRANG_THAI_LIST = [
         self::TRANG_THAI_SAP_RA_MAT => 'Sắp ra mắt',
         self::TRANG_THAI_SAP_CHIEU => 'Sắp chiếu',
@@ -58,29 +59,5 @@ class SuatChieu extends Model
     public function phongChieu(): BelongsTo
     {
         return $this->belongsTo(PhongChieu::class, 'phong_chieu_id');
-    }
-
-    /**
-     * Tự động tính thời gian kết thúc dựa trên thời gian bắt đầu và thời lượng phim
-     */
-    public function tinhThoiGianKetThuc(): void
-    {
-        if ($this->thoi_gian_chieu && $this->thoi_luong) {
-            $this->thoi_gian_ket_thuc = $this->thoi_gian_chieu->copy()->addMinutes($this->thoi_luong);
-        }
-    }
-
-    /**
-     * Kiểm tra xem suất chiếu này có chồng lấn với suất chiếu khác không
-     */
-    public function kiemTraChongLan(SuatChieu $suatChieuKhac): bool
-    {
-        if (!$this->thoi_gian_chieu || !$this->thoi_gian_ket_thuc || 
-            !$suatChieuKhac->thoi_gian_chieu || !$suatChieuKhac->thoi_gian_ket_thuc) {
-            return false;
-        }
-
-        return $this->thoi_gian_chieu < $suatChieuKhac->thoi_gian_ket_thuc 
-            && $this->thoi_gian_ket_thuc > $suatChieuKhac->thoi_gian_chieu;
     }
 }

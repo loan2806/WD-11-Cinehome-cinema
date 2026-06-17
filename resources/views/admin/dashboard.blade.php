@@ -84,7 +84,7 @@
                     </a>
                 @endcan
                 @can('soat_ve_vao_cua')
-                    <a href="#" class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-xs font-black text-white transition hover:bg-white/15 no-underline border border-white/5">
+                    <a href="{{ route('admin.soat-ve.index') }}" class="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-xs font-black text-white transition hover:bg-white/15 no-underline border border-white/5">
                         <i class="fa-solid fa-qrcode"></i> Quét mã soát vé phòng chiếu
                     </a>
                 @endcan
