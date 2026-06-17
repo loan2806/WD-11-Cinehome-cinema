@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\PhongChieuController;
 use App\Http\Controllers\Admin\QuocGiaController;
 use App\Http\Controllers\Admin\RevenueReportController;
+use App\Http\Controllers\Admin\SoatVeController as AdminSoatVeController;
 use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\TheloaisController;
@@ -128,13 +129,13 @@ Route::middleware(['auth'])
         // Nhóm chức năng 1: Nghiệp vụ kiểm tra & Soát vé QR vào cửa phòng chiếu
         Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
             Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
+            Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
         });
 
         // Nhóm chức năng 2: Nghiệp vụ lập hóa đơn và bán vé trực tiếp cho khách tại quầy rạp
         Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
             Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
             Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
-            Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
             Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
             Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
             Route::post('/ban-ve/{suatChieu}', [BanVeController::class, 'store'])->name('ban-ve.store');
@@ -152,6 +153,11 @@ Route::middleware(['auth'])
     ->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
+            Route::get('/soat-ve', [AdminSoatVeController::class, 'index'])->name('soat-ve.index');
+            Route::post('/soat-ve/check', [AdminSoatVeController::class, 'check'])->name('soat-ve.check');
+        });
 
         // Khóa bảo vệ Module: Quản lý Phim & Lịch Chiếu
         Route::middleware(['permission:quan_ly_phim_suat_chieu'])->group(function () {
@@ -212,6 +218,10 @@ Route::middleware(['auth'])
         // Khóa bảo vệ Module: Thống Kê Doanh Thu Rạp Phim
         Route::middleware(['permission:thong_ke_doanh_thu'])->group(function () {
             Route::get('/revenue-reports', [RevenueReportController::class, 'index'])->name('revenue-reports.index');
+        });
+
+        // Khóa bảo vệ Module: Nhật ký hoạt động (chỉ admin và super admin)
+        Route::middleware(['permission:xem_nhat_ky_hoat_dong'])->group(function () {
             Route::get('/activity-logs', [NhatKyHoatDongHeThongController::class, 'index'])->name('activity-logs.index');
         });
 

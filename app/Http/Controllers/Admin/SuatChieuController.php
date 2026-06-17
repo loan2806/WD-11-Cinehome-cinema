@@ -3,86 +3,80 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StoreSuatChieuRequest;
-use App\Http\Requests\Admin\UpdateSuatChieuRequest;
 use App\Models\Phims;
 use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use App\Services\AdminNotificationService;
-use App\Services\SeatGeneratorService;
+use App\Traits\Loggable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SuatChieuController extends Controller
 {
+    use Loggable;
+
     private const THOI_GIAN_DON_PHONG = 15;
 
-    private const TRANG_THAI_SAP_RA_MAT = 'sap_ra_mat';
     private const TRANG_THAI_SAP_CHIEU = 'sap_chieu';
     private const TRANG_THAI_DANG_CHIEU = 'dang_chieu';
     private const TRANG_THAI_DA_CHIEU = 'da_chieu';
-    private const TRANG_THAI_HUY = 'huy';
 
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request): View
     {
-        $query = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu']);
+        $movieQuery = Phims::query();
+
+        $filterSuatChieu = function ($query) use ($request) {
+            $query->with(['rapChieuPhim', 'phongChieu']);
+
+            if ($request->filled('trang_thai')) {
+                $query->where('trang_thai', $request->trang_thai);
+            }
+
+            if ($request->filled('phong_chieu_id')) {
+                $query->where('phong_chieu_id', $request->phong_chieu_id);
+            }
+
+            if ($request->filled('ngay_chieu')) {
+                $query->whereDate('thoi_gian_chieu', $request->ngay_chieu);
+            }
+
+            $query->orderBy('thoi_gian_chieu', 'asc');
+        };
 
         if ($request->filled('phim_id')) {
-            $query->where('phim_id', $request->phim_id);
+            $movieQuery->where('id', $request->phim_id);
         }
 
-        if ($request->filled('trang_thai')) {
-            $query->where('trang_thai', $request->trang_thai);
-        }
+        $movieQuery->whereHas('showtimes', function ($q) use ($filterSuatChieu) {
+            $filterSuatChieu($q);
+        })->with(['showtimes' => $filterSuatChieu]);
 
-        if ($request->filled('phong_chieu_id')) {
-            $query->where('phong_chieu_id', $request->phong_chieu_id);
-        }
-
-        if ($request->filled('ngay_chieu')) {
-            $query->whereDate('thoi_gian_chieu', $request->ngay_chieu);
-        }
-
-        $suatChieus = $query->orderByDesc('thoi_gian_chieu')
-            ->paginate(15)
+        $phimsPhanTrang = $movieQuery->orderBy('ten_phim', 'asc')
+            ->paginate(5)
             ->withQueryString();
 
         $phims = Phims::orderBy('ten_phim')->get();
-
-        $phongChieus = PhongChieu::with('rapChieuPhim')
-            ->orderBy('ten_phong')
-            ->get();
-
-
+        $phongChieus = PhongChieu::with('rapChieuPhim')->orderBy('ten_phong')->get();
 
         return view('admin.suat-chieus.index', compact(
-            'suatChieus',
+            'phimsPhanTrang',
             'phims',
             'phongChieus'
         ));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create(Request $request): View
     {
         $phims = Phims::orderBy('ten_phim')->get();
-
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
-
         $phongChieus = PhongChieu::with('rapChieuPhim')
+            ->where('trang_thai', 'hoat_dong')
             ->orderBy('ten_phong')
             ->get();
 
         $phongChieuId = $request->phong_chieu_id;
-
-
 
         return view('admin.suat-chieus.create', compact(
             'phims',
@@ -92,196 +86,204 @@ class SuatChieuController extends Controller
         ));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreSuatChieuRequest $request)
-    {
-        $data = $request->validated();
-
-        $phim = Phims::findOrFail($data['phim_id']);
-
-        $thoiGianChieu = Carbon::parse($data['thoi_gian_chieu']);
-        $thoiLuong = $phim->thoi_luong ?? 120;
-        $thoiGianKetThuc = $thoiGianChieu->copy()->addMinutes($thoiLuong + self::THOI_GIAN_DON_PHONG);
-
-        $data['thoi_luong'] = $thoiLuong;
-        $data['thoi_gian_ket_thuc'] = $thoiGianKetThuc;
-        $data['trang_thai'] = $data['trang_thai'] ?? $this->xacDinhTrangThai($thoiGianChieu, $thoiGianKetThuc);
-
-        SuatChieu::create($data);
-
-        AdminNotificationService::push(
-            '🎬 Suất chiếu mới được thêm',
-            'Đã thêm suất chiếu cho phim ' . $phim->ten_phim,
-            'Success'
-        );
-
-        return redirect()
-            ->route('admin.suat-chieus.index')
-            ->with('success', 'Suất chiếu đã được tạo thành công.');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(SuatChieu $suatChieu): View
-    {
-        $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu.hangGhes.gheNgois.loaiGhe']);
-
-        $seatMap = [];
-        $soHang = 0;
-        $soCot = 0;
-
-        if ($suatChieu->phongChieu) {
-            $soHang = $suatChieu->phongChieu->hangGhes->count();
-            $soCot = $suatChieu->phongChieu->gheNgois->max('cot') ?? 0;
-            $seatMap = app(SeatGeneratorService::class)->getSeatMap($suatChieu->phongChieu);
-        }
-
-        return view('admin.suat-chieus.show', compact(
-            'suatChieu',
-            'seatMap',
-            'soHang',
-            'soCot'
-        ));
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(SuatChieu $suatChieu): View
-    {
-        $phims = Phims::orderBy('ten_phim')->get();
-
-        $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
-
-        $phongChieus = PhongChieu::with('rapChieuPhim')
-            ->orderBy('ten_phong')
-            ->get();
-
-        return view('admin.suat-chieus.edit', compact(
-            'suatChieu',
-            'phims',
-            'rapChieuPhims',
-            'phongChieus'
-        ));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateSuatChieuRequest $request, SuatChieu $suatChieu)
-    {
-        $data = $request->validated();
-
-        $phim = Phims::findOrFail($data['phim_id']);
-        $thoiGianChieu = Carbon::parse($data['thoi_gian_chieu']);
-        $thoiLuong = $phim->thoi_luong ?? 120;
-        $thoiGianKetThuc = $thoiGianChieu->copy()->addMinutes($thoiLuong + self::THOI_GIAN_DON_PHONG);
-
-        $data['thoi_luong'] = $thoiLuong;
-        $data['thoi_gian_ket_thuc'] = $thoiGianKetThuc;
-
-        if (empty($data['trang_thai'])) {
-            $data['trang_thai'] = $this->xacDinhTrangThai($thoiGianChieu, $thoiGianKetThuc);
-        }
-
-        $suatChieu->update($data);
-
-        AdminNotificationService::push(
-            '✏️ Suất chiếu đã được cập nhật',
-            'Đã cập nhật suất chiếu của phim ' . $phim->ten_phim,
-            'Success'
-        );
-
-
-        return redirect()
-            ->route('admin.suat-chieus.index')
-            ->with('success', 'Suất chiếu đã được cập nhật thành công.');
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(SuatChieu $suatChieu)
-    {
-        if ($suatChieu->thoi_gian_chieu <= Carbon::now()) {
-            return redirect()
-                ->route('admin.suat-chieus.index')
-                ->with('error', 'Không thể xóa suất chiếu đã chiếu.');
-        }
-
-
-        $phim = $suatChieu->phim->ten_phim;
-
-        $suatChieu->delete();
-
-
-        AdminNotificationService::push(
-            '🗑️ Suất chiếu đã bị xóa',
-            'Đã xóa suất chiếu của phim ' . $phim,
-            'Success'
-        );
-        return redirect()
-            ->route('admin.suat-chieus.index')
-            ->with('success', 'Suất chiếu đã được xóa thành công.');
-    }
-
-    /**
-     * Get showtimes for a room on a specific date (AJAX).
-     */
-    public function getByRoomAndDate(Request $request)
+    public function store(Request $request)
     {
         $request->validate([
-            'phong_chieu_id' => 'required|exists:phong_chieus,id',
-            'ngay_chieu' => 'required|date',
-        ]);
-
-        $suatChieus = SuatChieu::where('phong_chieu_id', $request->phong_chieu_id)
-            ->whereDate('thoi_gian_chieu', $request->ngay_chieu)
-            ->with('phim')
-            ->orderBy('thoi_gian_chieu')
-            ->get();
-
-        return response()->json($suatChieus);
-    }
-
-    /**
-     * Get available rooms for a cinema (AJAX).
-     */
-    public function getAvailableRooms(Request $request)
-    {
-        $request->validate([
+            'phim_id' => 'required|exists:phims,id',
             'rap_chieu_phim_id' => 'required|exists:rap_chieu_phims,id',
+            'phong_chieu_id' => 'required|exists:phong_chieus,id',
+            'loai_tao' => 'required|in:don_le,hang_loat',
+
+            'ngay_chieu_don_le' => 'required_if:loai_tao,don_le|nullable|date',
+            'gio_chieu_don_le' => 'required_if:loai_tao,don_le|nullable|string',
+
+            'ngay_bat_dau' => 'required_if:loai_tao,hang_loat|nullable|date',
+            'ngay_ket_thuc' => 'required_if:loai_tao,hang_loat|nullable|date|after_or_equal:ngay_bat_dau',
+            'khung_gio' => 'required_if:loai_tao,hang_loat|nullable|array',
+
+            'gia_ve_tuy_chinh' => 'nullable|numeric|min:0',
         ]);
 
-        $phongChieus = PhongChieu::where('rap_chieu_phim_id', $request->rap_chieu_phim_id)
-            ->where('trang_thai', 'hoat_dong')
-            ->withCount('gheNgois')
-            ->orderBy('ten_phong')
-            ->get();
+        $phim = Phims::findOrFail($request->phim_id);
+        $phongChieu = PhongChieu::findOrFail($request->phong_chieu_id);
+        $thoiLuongPhim = $phim->thoi_luong ?? 90;
 
-        return response()->json($phongChieus);
-    }
+        $created = 0;
+        $failed = 0;
 
-    private function xacDinhTrangThai($thoiGianChieu, $thoiGianKetThuc): string
-    {
-        $now = Carbon::now();
+        // ====== TẠO ĐƠN LẺ ======
+        if ($request->loai_tao === 'don_le') {
 
-        if ($now->lt($thoiGianChieu)) {
-            $daysUntilShow = $now->diffInDays($thoiGianChieu, false);
+            $start = Carbon::parse($request->ngay_chieu_don_le . ' ' . $request->gio_chieu_don_le);
+            $end = $start->copy()->addMinutes($thoiLuongPhim + self::THOI_GIAN_DON_PHONG);
 
-            if ($daysUntilShow > 10) {
-                return self::TRANG_THAI_SAP_RA_MAT;
+            if ($this->kiemTraXungDotLich($phongChieu->id, $start, $end)) {
+                return back()->withInput()->with('error', 'Trùng lịch chiếu.');
             }
 
-            return self::TRANG_THAI_SAP_CHIEU;
+            $gia = $request->filled('gia_ve_tuy_chinh')
+                ? $request->gia_ve_tuy_chinh
+                : $this->tinhGiaVeTuDong($start, $phongChieu);
+
+            $suat = SuatChieu::create([
+                'phim_id' => $phim->id,
+                'rap_chieu_phim_id' => $request->rap_chieu_phim_id,
+                'phong_chieu_id' => $phongChieu->id,
+                'thoi_gian_chieu' => $start,
+                'thoi_luong' => $thoiLuongPhim,
+                'thoi_gian_ket_thuc' => $end,
+                'gia_ve' => $gia,
+                'trang_thai' => $this->xacDinhTrangThaiBanDau($start, $end),
+            ]);
+
+            $this->sinhMaGheTuDongChoSuatChieu($suat);
+
+            $this->ghiNhatKy($request, 'Thêm suất chiếu', 'Quản lý lịch chiếu', $phim->ten_phim);
+
+            AdminNotificationService::push(
+                '🎬 Suất chiếu mới',
+                "Phim {$phim->ten_phim}",
+                'Success'
+            );
+
+            return redirect()->route('admin.suat-chieus.index')
+                ->with('success', 'Tạo suất chiếu thành công');
         }
 
-        if ($now->gte($thoiGianChieu) && $now->lt($thoiGianKetThuc)) {
-            return self::TRANG_THAI_DANG_CHIEU;
+        // ====== HÀNG LOẠT ======
+        $from = Carbon::parse($request->ngay_bat_dau);
+        $to = Carbon::parse($request->ngay_ket_thuc);
+
+        for ($d = $from; $d->lte($to); $d->addDay()) {
+            foreach ($request->khung_gio as $time) {
+
+                $start = Carbon::parse($d->format('Y-m-d') . ' ' . $time);
+                $end = $start->copy()->addMinutes($thoiLuongPhim + self::THOI_GIAN_DON_PHONG);
+
+                if ($this->kiemTraXungDotLich($phongChieu->id, $start, $end)) {
+                    $failed++;
+                    continue;
+                }
+
+                $gia = $request->filled('gia_ve_tuy_chinh')
+                    ? $request->gia_ve_tuy_chinh
+                    : $this->tinhGiaVeTuDong($start, $phongChieu);
+
+                $suat = SuatChieu::create([
+                    'phim_id' => $phim->id,
+                    'rap_chieu_phim_id' => $request->rap_chieu_phim_id,
+                    'phong_chieu_id' => $phongChieu->id,
+                    'thoi_gian_chieu' => $start,
+                    'thoi_luong' => $thoiLuongPhim,
+                    'thoi_gian_ket_thuc' => $end,
+                    'gia_ve' => $gia,
+                    'trang_thai' => $this->xacDinhTrangThaiBanDau($start, $end),
+                ]);
+
+                $this->sinhMaGheTuDongChoSuatChieu($suat);
+
+                $created++;
+            }
         }
+
+        $this->ghiNhatKy($request, 'Thêm suất chiếu hàng loạt', 'Quản lý lịch chiếu', $phim->ten_phim);
+
+        return redirect()->route('admin.suat-chieus.index')
+            ->with('success', "Tạo {$created} suất chiếu")
+            ->with('warning', $failed ? "Bỏ qua {$failed} suất do trùng lịch" : null);
+    }
+
+    public function update(Request $request, SuatChieu $suatChieu)
+    {
+        $request->validate([
+            'phim_id' => 'required',
+            'rap_chieu_phim_id' => 'required',
+            'phong_chieu_id' => 'required',
+            'thoi_gian_chieu' => 'required|date',
+            'gia_ve' => 'required|numeric',
+            'trang_thai' => 'required',
+        ]);
+
+        $phim = Phims::findOrFail($request->phim_id);
+        $start = Carbon::parse($request->thoi_gian_chieu);
+        $end = $start->copy()->addMinutes(($phim->thoi_luong ?? 90) + self::THOI_GIAN_DON_PHONG);
+
+        $suatChieu->update([
+            'phim_id' => $request->phim_id,
+            'rap_chieu_phim_id' => $request->rap_chieu_phim_id,
+            'phong_chieu_id' => $request->phong_chieu_id,
+            'thoi_gian_chieu' => $start,
+            'thoi_gian_ket_thuc' => $end,
+            'gia_ve' => $request->gia_ve,
+            'trang_thai' => $request->trang_thai,
+        ]);
+
+        $this->ghiNhatKy($request, 'Cập nhật suất chiếu', 'Quản lý lịch chiếu', $suatChieu->id);
+
+        AdminNotificationService::push(
+            '✏️ Cập nhật suất chiếu',
+            "ID {$suatChieu->id}",
+            'Info'
+        );
+
+        return back()->with('success', 'Cập nhật thành công');
+    }
+
+    public function destroy(SuatChieu $suatChieu)
+    {
+        if ($suatChieu->thoi_gian_chieu <= now()) {
+            return back()->with('error', 'Không thể xóa suất đã chiếu');
+        }
+
+        $id = $suatChieu->id;
+        $suatChieu->delete();
+
+        $this->ghiNhatKy(request(), 'Xóa suất chiếu', 'Quản lý lịch chiếu', $id);
+
+        AdminNotificationService::push(
+            '🗑️ Xóa suất chiếu',
+            "ID {$id}",
+            'Warning'
+        );
+
+        return back()->with('success', 'Xóa thành công');
+    }
+
+    private function kiemTraXungDotLich($phongId, $start, $end): bool
+    {
+        return SuatChieu::where('phong_chieu_id', $phongId)
+            ->where('trang_thai', '!=', 'huy')
+            ->where(function ($q) use ($start, $end) {
+                $q->where('thoi_gian_chieu', '<', $end)
+                  ->where('thoi_gian_ket_thuc', '>', $start);
+            })->exists();
+    }
+
+    private function tinhGiaVeTuDong($start, $room): float
+    {
+        $price = 75000;
+
+        if (in_array($start->dayOfWeek, [5, 6, 0])) {
+            $price = 120000;
+        }
+
+        if ($room->loai_phong === 'imax') $price += 50000;
+        if ($room->loai_phong === '4dx') $price += 70000;
+
+        return $price;
+    }
+
+    private function sinhMaGheTuDongChoSuatChieu(SuatChieu $suat): void
+    {
+        $suat->load('phongChieu.hangGhes.gheNgois');
+    }
+
+    private function xacDinhTrangThaiBanDau($start, $end): string
+    {
+        $now = now();
+
+        if ($now->lt($start)) return self::TRANG_THAI_SAP_CHIEU;
+        if ($now->between($start, $end)) return self::TRANG_THAI_DANG_CHIEU;
 
         return self::TRANG_THAI_DA_CHIEU;
     }

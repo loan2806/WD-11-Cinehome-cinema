@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FoodInvoiceItem extends Model
 {
@@ -17,8 +18,8 @@ class FoodInvoiceItem extends Model
         'total_price',
     ];
 
-    public function invoice()
+    public function invoice(): BelongsTo
     {
-        return $this->belongsTo(FoodInvoiceItem::class, 'food_invoice_id');
+        return $this->belongsTo(FoodInvoice::class, 'food_invoice_id');
     }
 }
