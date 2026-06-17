@@ -8,6 +8,7 @@ use App\Models\GheNgoi;
 use App\Models\HangGhe;
 use App\Models\LoaiGhe;
 use App\Models\PhongChieu;
+use App\Services\AdminNotificationService;
 use App\Services\SeatGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -76,8 +77,8 @@ class GheNgoiController extends Controller
         // Nếu đã chọn phòng thì load sẵn các hàng thuộc phòng đó
         $hangGhes = $phongChieuId
             ? HangGhe::where('phong_chieu_id', $phongChieuId)
-                ->orderBy('ten_hang')
-                ->get()
+            ->orderBy('ten_hang')
+            ->get()
             : collect();
 
         // Gợi ý cột kế tiếp cho hàng đã chọn (nếu có)
@@ -125,6 +126,12 @@ class GheNgoiController extends Controller
                 ->with('success', "Đã tạo ghế {$ghe->ma_ghe}. Hãy tạo ghế tiếp theo.");
         }
 
+        AdminNotificationService::push(
+            '🪑 Thêm ghế',
+            "Đã thêm ghế {$ghe->ma_ghe}",
+            'Success'
+        );
+
         return redirect()
             ->route('admin.ghe-ngois.index', ['phong_chieu_id' => $data['phong_chieu_id']])
             ->with('success', "Ghế {$ghe->ma_ghe} đã được tạo thành công.");
@@ -169,6 +176,12 @@ class GheNgoiController extends Controller
         ]);
 
         $gheNgoi->update($request->only(['loai_ghe_id', 'trang_thai']));
+
+        AdminNotificationService::push(
+            '✏️ Cập nhật ghế',
+            "Đã cập nhật ghế {$gheNgoi->ma_ghe}",
+            'Warning'
+        );
 
         return redirect()
             ->route('admin.ghe-ngois.index')
@@ -218,6 +231,12 @@ class GheNgoiController extends Controller
         if (request()->expectsJson()) {
             return response()->json(['success' => true, 'message' => $message]);
         }
+
+        AdminNotificationService::push(
+            '🗑️ Xóa ghế',
+            "Đã xóa ghế {$maGhe}",
+            'Danger'
+        );
 
         return redirect()
             ->route('admin.ghe-ngois.index', ['phong_chieu_id' => $phongChieuId])

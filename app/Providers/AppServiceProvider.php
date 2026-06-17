@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+use App\Models\AdminNotification;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,5 +40,19 @@ class AppServiceProvider extends ServiceProvider
             
             return null;
         });
+
+         View::composer('layouts.admin', function ($view) {
+
+        $notifications = AdminNotification::latest()
+            ->take(5)
+            ->get();
+
+        $count = AdminNotification::count();
+
+        $view->with([
+            'adminNotifications' => $notifications,
+            'notificationCount' => $count,
+        ]);
+    });
     }
 }
