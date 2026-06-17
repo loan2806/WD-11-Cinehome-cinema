@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TheLoaiRequest;
 use App\Models\TheLoai;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 
 class TheloaisController extends Controller
 {
+    use Loggable;
     /*
     |--------------------------------------------------------------------------
     | LIST
@@ -56,6 +58,8 @@ class TheloaisController extends Controller
 
         TheLoai::create($data);
 
+        $this->ghiNhatKy($request, 'Thêm thể loại phim', 'Quản lý phim & lịch chiếu', "Thêm thể loại: {$data['ten_the_loai']}");
+
         return redirect()
             ->route('admin.the-loais.index');
     }
@@ -79,6 +83,8 @@ class TheloaisController extends Controller
     {
         $theLoai->update($request->validated());
 
+        $this->ghiNhatKy($request, 'Cập nhật thể loại phim', 'Quản lý phim & lịch chiếu', "Cập nhật thể loại: {$theLoai->ten_the_loai}");
+
         return redirect()
             ->route('admin.the-loais.index');
     }
@@ -96,7 +102,10 @@ class TheloaisController extends Controller
                 ->with('error', 'Không thể xóa thể loại này vì đang có phim liên kết. Vui lòng xóa hoặc cập nhật các phim trước.');
         }
 
+        $tenTheLoai = $theLoai->ten_the_loai;
         $theLoai->delete();
+
+        $this->ghiNhatKy($request, 'Xóa thể loại phim', 'Quản lý phim & lịch chiếu', "Xóa thể loại: {$tenTheLoai}");
 
         return redirect()
             ->route('admin.the-loais.index');

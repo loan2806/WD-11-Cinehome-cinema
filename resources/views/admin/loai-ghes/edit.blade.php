@@ -103,6 +103,26 @@
 
             </div>
 
+            <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-white/10 bg-[#0f0f0f] p-4">
+
+                <input type="checkbox" name="la_couple" value="1"
+                    {{ old('la_couple', $loaiGhe->la_couple) ? 'checked' : '' }}
+                    class="mt-1 h-4 w-4 rounded border-white/20 bg-[#151515] text-[#d99a32] focus:ring-[#d99a32]">
+
+                <div>
+
+                    <div class="text-sm font-semibold text-white">
+                        Đây là loại ghế ghép đôi (Couple)
+                    </div>
+
+                    <div class="mt-1 text-xs text-gray-400">
+                        Ghế thuộc loại này sẽ được tự động ghép thành từng cặp 2 ghế liền kề trên sơ đồ phòng.
+                    </div>
+
+                </div>
+
+            </label>
+
             <div class="flex items-center justify-end gap-4 border-t border-white/10 pt-6">
 
                 <a href="{{ route('admin.loai-ghes.index') }}"

@@ -19,6 +19,7 @@ class GheNgoi extends Model
         'loai_ghe_id',
         'ma_ghe',
         'cot',
+        'couple_group_id',
         'trang_thai',
     ];
 

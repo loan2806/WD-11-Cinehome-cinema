@@ -22,6 +22,24 @@
 
         <div class="flex gap-3">
 
+            <a href="{{ route('admin.ghe-ngois.create', ['phong_chieu_id' => $hangGhe->phong_chieu_id, 'hang_ghe_id' => $hangGhe->id]) }}"
+                class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#6b3a1e] via-[#a66a2b] to-[#d9a441] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]">
+
+                <i class="fa-solid fa-plus"></i>
+
+                Thêm ghế
+
+            </a>
+
+            <a href="{{ route('admin.hang-ghes.create', ['phong_chieu_id' => $hangGhe->phong_chieu_id]) }}"
+                class="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white transition hover:bg-white/10">
+
+                <i class="fa-solid fa-layer-group"></i>
+
+                Thêm hàng mới
+
+            </a>
+
             <a href="{{ route('admin.hang-ghes.edit', $hangGhe) }}"
                 class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]">
 
@@ -184,7 +202,14 @@
 
                     </div>
                 @else
-                    <p class="py-12 text-center text-gray-500">Chưa có ghế nào trong hàng này.</p>
+                    <div class="flex flex-col items-center justify-center gap-4 py-10 text-gray-500">
+                        <p>Chưa có ghế nào trong hàng này.</p>
+                        <a href="{{ route('admin.ghe-ngois.create', ['phong_chieu_id' => $hangGhe->phong_chieu_id, 'hang_ghe_id' => $hangGhe->id]) }}"
+                            class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#6b3a1e] via-[#a66a2b] to-[#d9a441] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]">
+                            <i class="fa-solid fa-plus"></i>
+                            Thêm ghế đầu tiên cho hàng này
+                        </a>
+                    </div>
                 @endif
 
             </div>

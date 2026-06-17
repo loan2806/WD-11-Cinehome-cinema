@@ -30,6 +30,7 @@ class VaiTroAndQuyenSeeder extends Seeder
         $permissionsData = [
             // Cụm 1: Quản trị tài khoản tối cao (Admin bảo mật)
             ['name' => 'phan_quyen_he_thong', 'description' => 'Cấu hình ma trận phân quyền hệ thống'],
+            ['name' => 'xem_nhat_ky_hoat_dong', 'description' => 'Xem nhật ký hoạt động hệ thống'],
             ['name' => 'quan_ly_nhan_vien', 'description' => 'Quản lý hồ sơ, tài khoản và trạng thái nhân viên rạp'],
             ['name' => 'quan_ly_khach_hang', 'description' => 'Xem và quản lý danh sách tài khoản khách hàng (Người dùng)'],
 
@@ -85,6 +86,7 @@ class VaiTroAndQuyenSeeder extends Seeder
             $createdPermissions['khach_hang_dat_ve'],
             $createdPermissions['khach_hang_xem_lich_su'],
             $createdPermissions['khach_hang_huy_ve'],
+            $createdPermissions['xem_nhat_ky_hoat_dong'],
         ]);
 
         // 3. Quản lý rạp: Tập trung vào điều hành ca làm việc, phim ảnh và danh sách nhân sự tại quầy

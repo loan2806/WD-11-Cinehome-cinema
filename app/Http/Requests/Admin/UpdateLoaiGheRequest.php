@@ -40,6 +40,7 @@ class UpdateLoaiGheRequest extends FormRequest
                 'max:7',
                 'regex:/^#[0-9A-Fa-f]{6}$/',
             ],
+            'la_couple' => ['nullable', 'boolean'],
         ];
     }
 

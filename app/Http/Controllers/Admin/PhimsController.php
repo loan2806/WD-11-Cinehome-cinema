@@ -8,11 +8,13 @@ use App\Http\Requests\ThemmoiPhimsRequest;
 use App\Models\Phims;
 use App\Models\QuocGia;
 use App\Models\TheLoai;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class PhimsController extends Controller
 {
+    use Loggable;
     /*
     |--------------------------------------------------------------------------
     | LIST
@@ -174,6 +176,8 @@ class PhimsController extends Controller
         */
         $movie = Phims::create($data);
 
+        $this->ghiNhatKy($request, 'Thêm phim mới', 'Quản lý phim & lịch chiếu', "Thêm phim: {$data['ten_phim']}");
+
         /*
         |--------------------------------------------------------------------------
         | SYNC GENRES
@@ -257,6 +261,8 @@ class PhimsController extends Controller
 
         $phim->update($data);
 
+        $this->ghiNhatKy($request, 'Cập nhật phim', 'Quản lý phim & lịch chiếu', "Cập nhật phim: {$phim->ten_phim}");
+
         if (!empty($data['the_loai_id'])) {
             $phim->genres()->sync($data['the_loai_id']);
         } else {
@@ -288,8 +294,10 @@ class PhimsController extends Controller
         }
 
         $phim->genres()->detach();
-
+        $tenPhim = $phim->ten_phim;
         $phim->delete();
+
+        $this->ghiNhatKy($request, 'Xóa phim', 'Quản lý phim & lịch chiếu', "Xóa phim: {$tenPhim}");
 
         return redirect()
             ->route('admin.phims.index')

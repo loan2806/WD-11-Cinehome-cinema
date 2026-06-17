@@ -341,6 +341,18 @@
 
                         </div>
 
+                        <div id="trailerBox" class="hidden mt-5">
+                            <label class="text-sm text-zinc-400">
+                                Xem trước trailer
+                            </label>
+
+                            <div class="mt-2 overflow-hidden rounded-2xl border border-zinc-800 aspect-video">
+                                <iframe id="trailerPreview" class="w-full h-full" src="" frameborder="0"
+                                    allowfullscreen>
+                                </iframe>
+                            </div>
+                        </div>
+
                     </div>
 
                 </div>
@@ -413,6 +425,11 @@
 
         const trailerInput = document.getElementById('trailer');
 
+        const trailerBox = document.getElementById('trailerBox');
+        
+        const trailerPreview = document.getElementById('trailerPreview');
+
+
         trailerInput.addEventListener('input', function() {
 
             const url = this.value;
@@ -425,7 +442,16 @@
 
                 error.classList.add('hidden');
 
+                trailerBox.classList.remove('hidden');
+
+                trailerPreview.src = `https://www.youtube.com/embed/${videoId}`;
+
+
             } else {
+                trailerPreview.src = "";
+
+                trailerBox.classList.add('hidden');
+
 
                 if (url.length > 0) {
 
@@ -440,4 +466,3 @@
     </script>
 
 @endsection
-

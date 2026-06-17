@@ -26,6 +26,8 @@ class StoreHangGheRequest extends FormRequest
                 Rule::unique('hang_ghes')
                     ->where('phong_chieu_id', $this->phong_chieu_id),
             ],
+            'la_hang_couple' => ['nullable', 'boolean'],
+            'loai_ghe_mac_dinh_id' => ['nullable', 'exists:loai_ghes,id'],
         ];
     }
 
@@ -35,6 +37,7 @@ class StoreHangGheRequest extends FormRequest
             'ten_hang.required' => 'Tên hàng ghế không được để trống.',
             'ten_hang.unique' => 'Tên hàng ghế đã tồn tại trong phòng chiếu này.',
             'phong_chieu_id.required' => 'Phòng chiếu không được để trống.',
+            'loai_ghe_mac_dinh_id.exists' => 'Loại ghế mặc định không hợp lệ.',
         ];
     }
 }
