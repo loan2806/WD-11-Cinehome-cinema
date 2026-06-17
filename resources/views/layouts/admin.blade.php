@@ -152,9 +152,9 @@
                 @endif
 
                 {{-- NHÓM DROPDOWN 3: VÉ, HÓA ĐƠN & DỊCH VỤ QUẦY --}}
-                @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo'))
+                @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') || auth()->user()->can('soat_ve_vao_cua'))
                 @php
-                    $isGiaoDichActive = request()->routeIs('admin.food-invoices.*') || request()->routeIs('admin.ve-xem-phims.*');
+                    $isGiaoDichActive = request()->routeIs('admin.food-invoices.*') || request()->routeIs('admin.ve-xem-phims.*') || request()->routeIs('admin.soat-ve.*');
                 @endphp
                 <div class="sidebar-dropdown-box {{ $isGiaoDichActive ? 'open' : '' }}">
                     <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
@@ -168,6 +168,9 @@
                         @can('ban_ve_tai_quay')
                             <a href="{{ route('admin.ve-xem-phims.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.ve-xem-phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Quản lý kho dữ liệu vé</a>
                             <a href="#" class="block py-2.5 pl-3 text-[15px] font-semibold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Bán vé trực tiếp rạp</a>
+                        @endcan
+                        @can('soat_ve_vao_cua')
+                            <a href="{{ route('admin.soat-ve.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.soat-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Soát vé QR</a>
                         @endcan
                         @can('quan_ly_do_an_combo')
                             <a href="{{ route('admin.food-invoices.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.food-invoices.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Hóa đơn đồ ăn & Combo</a>
