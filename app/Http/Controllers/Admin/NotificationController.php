@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ActivityLog;
 use App\Models\AdminNotification;
+use App\Models\NhatKyHoatDongHeThong;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    use Loggable;
+
     public function index()
     {
         $notifications = AdminNotification::latest()->paginate(15);
@@ -35,15 +38,7 @@ class NotificationController extends Controller
             'published_at' => now(),
         ]);
 
-        ActivityLog::create([
-            'user_id' => $request->user()?->id,
-            'action' => 'create_notification',
-            'module' => 'notifications',
-            'description' => 'Tao thong bao ' . $notification->title,
-            'ip_address' => $request->ip(),
-            'user_agent' => substr((string) $request->userAgent(), 0, 255),
-            'properties' => ['notification_id' => $notification->id],
-        ]);
+        $this->ghiNhatKy($request, 'Tạo thông báo', 'Quản lý thông báo', "Tạo thông báo: {$notification->title}");
 
         return redirect()->route('admin.notifications.index')->with('success', 'Da tao thong bao.');
     }
@@ -53,14 +48,7 @@ class NotificationController extends Controller
         $title = $notification->title;
         $notification->delete();
 
-        ActivityLog::create([
-            'user_id' => $request->user()?->id,
-            'action' => 'delete_notification',
-            'module' => 'notifications',
-            'description' => 'Xoa thong bao ' . $title,
-            'ip_address' => $request->ip(),
-            'user_agent' => substr((string) $request->userAgent(), 0, 255),
-        ]);
+        $this->ghiNhatKy($request, 'Xóa thông báo', 'Quản lý thông báo', "Xóa thông báo: {$title}");
 
         return back()->with('success', 'Da xoa thong bao.');
     }

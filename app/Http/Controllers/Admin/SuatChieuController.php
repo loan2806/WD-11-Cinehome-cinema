@@ -7,13 +7,24 @@ use App\Models\Phims;
 use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
+use App\Services\SeatGeneratorService;
+use App\Traits\Loggable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class SuatChieuController extends Controller
 {
+    use Loggable;
+
     private const THOI_GIAN_DON_PHONG = 15; // Phút dọn rạp giãn cách giữa các suất
+
+    // Bảo lưu danh sách hằng số trạng thái phục vụ hệ thống nhật ký vận hành
+    private const TRANG_THAI_SAP_RA_MAT = 'sap_ra_mat';
+    private const TRANG_THAI_SAP_CHIEU = 'sap_chieu';
+    private const TRANG_THAI_DANG_CHIEU = 'dang_chieu';
+    private const TRANG_THAI_DA_CHIEU = 'da_chieu';
+    private const TRANG_THAI_HUY = 'huy';
 
     /**
      * 1. TRANG DANH SÁCH SUẤT CHIẾU (Đã tối ưu phân trang theo đầu Phim cho Dropdown UI)
@@ -59,7 +70,7 @@ class SuatChieuController extends Controller
     }
 
     /**
-     * 2. GIAO DIỆN THÊM MỚI SUẤT CHIẾU (Sửa lỗi khuyết hàm Call to undefined)
+     * 2. GIAO DIỆN THÊM MỚI SUẤT CHIẾU
      */
     public function create(Request $request): View
     {
@@ -125,6 +136,10 @@ class SuatChieuController extends Controller
             ]);
 
             $this->sinhMaGheTuDongChoSuatChieu($suatChieu);
+
+            // Ghi nhật ký hệ thống từ nhánh main
+            $this->ghiNhatKy($request, 'Thêm suất chiếu', 'Quản lý phim & lịch chiếu', "Thêm suất chiếu đơn lẻ cho phim: {$phim->ten_phim}");
+
             return redirect()->route('admin.suat-chieus.index')->with('success', 'Tạo suất chiếu đơn lẻ thành công.');
         }
 
@@ -142,7 +157,6 @@ class SuatChieuController extends Controller
                     continue;
                 }
 
-                // Áp dụng giá vé (Nếu tạo hàng loạt mà điền giá tùy chỉnh thì toàn bộ chuỗi ngày sẽ mang giá này)
                 $giaVeCuoiCung = $request->filled('gia_ve_tuy_chinh') ? $request->gia_ve_tuy_chinh : $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu);
 
                 $suatChieu = SuatChieu::create([
@@ -161,7 +175,14 @@ class SuatChieuController extends Controller
             }
         }
 
-        return redirect()->route('admin.suat-chieus.index')->with('success', "Xử lý hàng loạt hoàn tất! Đã tạo thành công " . $ketQuaScript['thanh_cong'] . " suất chiếu.");
+        // Hợp nhất ghi log nghiệp vụ từ main và thông báo tiến trình của feature/vietanh
+        $this->ghiNhatKy($request, 'Thêm suất chiếu', 'Quản lý phim & lịch chiếu', "Thêm chuỗi gồm {$ketQuaScript['thanh_cong']} suất chiếu cho phim: {$phim->ten_phim}");
+
+        $msg = "Xử lý hàng loạt hoàn tất! Đã tạo thành công " . $ketQuaScript['thanh_cong'] . " suất chiếu.";
+        if ($ketQuaScript['that_bai'] > 0) {
+            return redirect()->route('admin.suat-chieus.index')->with('success', $msg)->with('warning', "Bỏ qua " . $ketQuaScript['that_bai'] . " suất do trùng lịch phòng.");
+        }
+        return redirect()->route('admin.suat-chieus.index')->with('success', $msg);
     }
 
     /**
@@ -204,7 +225,6 @@ class SuatChieuController extends Controller
         $thoiGianChieu = Carbon::parse($request->thoi_gian_chieu);
         $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + self::THOI_GIAN_DON_PHONG);
 
-        // Kiểm tra trùng lịch ngoại trừ chính ID suất chiếu đang sửa đổi
         $xungDot = SuatChieu::where('phong_chieu_id', $request->phong_chieu_id)
             ->where('id', '!=', $suatChieu->id)
             ->where('trang_thai', '!=', 'huy')
@@ -228,6 +248,9 @@ class SuatChieuController extends Controller
             'trang_thai' => $request->trang_thai,
         ]);
 
+        // Kích hoạt ghi log cập nhật từ main
+        $this->ghiNhatKy($request, 'Cập nhật suất chiếu', 'Quản lý phim & lịch chiếu', "Cập nhật suất chiếu #{$suatChieu->id}");
+
         return redirect()->route('admin.suat-chieus.index')->with('success', 'Cập nhật dữ liệu suất chiếu thành công.');
     }
 
@@ -236,7 +259,12 @@ class SuatChieuController extends Controller
      */
     public function destroy(SuatChieu $suatChieu)
     {
+        $idBackup = $suatChieu->id;
         $suatChieu->delete();
+
+        // Đồng bộ Log của nhánh main vào hàm xóa
+        $this->ghiNhatKy(request(), 'Xóa suất chiếu', 'Quản lý phim & lịch chiếu', "Xóa thành công suất chiếu #{$idBackup}");
+
         return redirect()->route('admin.suat-chieus.index')->with('success', 'Xóa suất chiếu thành công.');
     }
 
