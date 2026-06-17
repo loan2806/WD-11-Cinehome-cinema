@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FoodInvoice;
-use App\Models\Ticket;
+use App\Models\VeXemPhim;
 use Illuminate\Http\Request;
 
 class RevenueReportController extends Controller
@@ -14,7 +14,7 @@ class RevenueReportController extends Controller
         $from = ($request->date('from') ?? now()->startOfMonth())->startOfDay();
         $to = ($request->date('to') ?? now())->endOfDay();
 
-        $tickets = Ticket::query()
+        $tickets = VeXemPhim::query()
             ->whereBetween('created_at', [$from->copy(), $to->copy()])
             ->get();
 
@@ -22,11 +22,14 @@ class RevenueReportController extends Controller
             ->whereBetween('created_at', [$from->copy(), $to->copy()])
             ->get();
 
+        $paidTickets = $tickets->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung']);
+        $paidFoodInvoices = $foodInvoices->where('payment_status', 'paid');
+
         $summary = [
-            'ticket_revenue' => $tickets->where('status', 'paid')->sum('total_price'),
-            'food_revenue' => $foodInvoices->where('payment_status', 'paid')->sum('total'),
-            'tickets_sold' => $tickets->where('status', 'paid')->count(),
-            'food_invoices' => $foodInvoices->where('payment_status', 'paid')->count(),
+            'ticket_revenue' => $paidTickets->sum('tong_tien'),
+            'food_revenue' => $paidFoodInvoices->sum('total'),
+            'tickets_sold' => $paidTickets->count(),
+            'food_invoices' => $paidFoodInvoices->count(),
         ];
         $summary['total_revenue'] = $summary['ticket_revenue'] + $summary['food_revenue'];
 

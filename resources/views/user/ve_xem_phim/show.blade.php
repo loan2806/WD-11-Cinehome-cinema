@@ -19,6 +19,21 @@
 
         <h1 class="text-3xl font-black text-[#d99a32]">{{ $veXemPhim->ma_ve }}</h1>
 
+        <div class="mt-6 flex flex-col gap-5 rounded-2xl border border-[#d99a32]/30 bg-white/5 p-5 md:flex-row md:items-center">
+            <div class="rounded-2xl bg-white p-3">
+                <img
+                    class="h-44 w-44"
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($veXemPhim->ma_ve) }}"
+                    alt="QR vé {{ $veXemPhim->ma_ve }}"
+                >
+            </div>
+            <div>
+                <p class="text-sm font-bold uppercase tracking-widest text-[#d99a32]">QR soát vé</p>
+                <p class="mt-2 text-gray-300">Đưa mã này cho nhân viên/admin quét tại cửa phòng chiếu.</p>
+                <p class="mt-3 rounded-xl bg-black/30 px-4 py-3 font-mono text-lg font-black text-white">{{ $veXemPhim->ma_ve }}</p>
+            </div>
+        </div>
+
         <div class="mt-8 grid gap-4 md:grid-cols-2">
             <div class="rounded-xl bg-white/5 p-4">
                 <p class="text-sm text-gray-400">Phim</p>
