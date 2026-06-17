@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreLoaiGheRequest;
 use App\Http\Requests\Admin\UpdateLoaiGheRequest;
 use App\Models\LoaiGhe;
+use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -39,7 +40,14 @@ class LoaiGheController extends Controller
         $data = $request->validated();
         $data['la_couple'] = $request->boolean('la_couple');
 
-        LoaiGhe::create($data);
+        $loaiGhe = LoaiGhe::create($data);
+
+
+        AdminNotificationService::push(
+            '🎟️ Thêm loại ghế',
+            "Đã tạo loại ghế {$loaiGhe->ten_loai}",
+            'Info'
+        );
 
         return redirect()
             ->route('admin.loai-ghes.index')
@@ -77,6 +85,13 @@ class LoaiGheController extends Controller
 
         $loaiGhe->update($data);
 
+        AdminNotificationService::push(
+            '✏️ Cập nhật loại ghế',
+            "Đã cập nhật loại ghế {$loaiGhe->ten_loai}",
+            'Info'
+        );
+
+
         return redirect()
             ->route('admin.loai-ghes.index')
             ->with('success', 'Loại ghế đã được cập nhật thành công.');
@@ -93,7 +108,15 @@ class LoaiGheController extends Controller
                 ->with('error', 'Không thể xóa loại ghế vì đang có ghế sử dụng.');
         }
 
+        $ten = $loaiGhe->ten_loai;
+
         $loaiGhe->delete();
+
+        AdminNotificationService::push(
+            '🗑️ Xóa loại ghế',
+            "Đã xóa loại ghế {$ten}",
+            'Warning'
+        );
 
         return redirect()
             ->route('admin.loai-ghes.index')

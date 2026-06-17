@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TheLoaiRequest;
 use App\Models\TheLoai;
+use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 
 class TheloaisController extends Controller
@@ -54,7 +55,13 @@ class TheloaisController extends Controller
         // Mặc định trạng thái = 1 (kích hoạt) khi tạo mới
         $data['trang_thai'] = $data['trang_thai'] ?? 1;
 
-        TheLoai::create($data);
+        $theLoai = TheLoai::create($data);
+
+        AdminNotificationService::push(
+            '🎭 Thể loại mới được thêm',
+            'Đã thêm thể loại ' . $theLoai->ten_the_loai,
+            'Success'
+        );
 
         return redirect()
             ->route('admin.the-loais.index');
@@ -79,6 +86,15 @@ class TheloaisController extends Controller
     {
         $theLoai->update($request->validated());
 
+
+        AdminNotificationService::push(
+            '✏️ Thể loại đã được cập nhật',
+            'Đã cập nhật thể loại ' . $theLoai->ten_the_loai,
+            'Success'
+        );
+
+
+
         return redirect()
             ->route('admin.the-loais.index');
     }
@@ -96,7 +112,18 @@ class TheloaisController extends Controller
                 ->with('error', 'Không thể xóa thể loại này vì đang có phim liên kết. Vui lòng xóa hoặc cập nhật các phim trước.');
         }
 
+        $tenTheLoai = $theLoai->ten_the_loai;
+
         $theLoai->delete();
+
+
+        AdminNotificationService::push(
+            '🗑️ Thể loại đã bị xóa',
+            'Đã xóa thể loại ' . $tenTheLoai,
+            'Danger'
+        );
+
+
 
         return redirect()
             ->route('admin.the-loais.index');

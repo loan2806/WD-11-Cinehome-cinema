@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\VeXemPhim;
+use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 
 class VeXemPhimController extends Controller
@@ -123,6 +124,9 @@ class VeXemPhimController extends Controller
             return back()->with('error', 'Không thể hủy vé đã sử dụng');
         }
 
+        $trangThaiCu = $veXemPhim->trang_thai;
+
+
         $updateData = [
             'trang_thai' => $data['trang_thai'],
         ];
@@ -138,6 +142,16 @@ class VeXemPhimController extends Controller
         }
 
         $veXemPhim->update($updateData);
+
+
+        AdminNotificationService::push(
+            '🎟️ Vé xem phim đã được cập nhật',
+            'Trạng thái vé #' . $veXemPhim->ma_ve .
+                ' đã chuyển từ ' . $trangThaiCu .
+                ' sang ' . $data['trang_thai'],
+            'Success'
+        );
+
 
         return redirect()
             ->route('admin.ve-xem-phims.show', $veXemPhim)
@@ -165,6 +179,17 @@ class VeXemPhimController extends Controller
             'tien_hoan' => $veXemPhim->tong_tien,
         ]);
 
+
+        AdminNotificationService::push(
+            '❌ Vé đã bị hủy',
+            'Vé #' . $veXemPhim->ma_ve .
+                ' của suất chiếu #' . $veXemPhim->suatChieu->id .
+                ' đã bị hủy',
+            'Danger'
+        );
+
+
+
         return back()->with('success', 'Hủy vé thành công');
     }
 
@@ -189,29 +214,37 @@ class VeXemPhimController extends Controller
             'tien_hoan' => 0,
         ]);
 
+
+        AdminNotificationService::push(
+            '✔️ Vé đã được sử dụng',
+            'Vé #' . $veXemPhim->ma_ve .
+                ' đã được check-in thành công',
+            'Success'
+        );
+
         return back()->with('success', 'Cập nhật vé đã sử dụng thành công');
     }
 
     public function capNhatTrangThai(Request $request, VeXemPhim $veXemPhim)
-{
-    $data = $request->validate([
-        'trang_thai' => ['required', 'in:da_thanh_toan,da_su_dung,da_huy'],
-    ]);
+    {
+        $data = $request->validate([
+            'trang_thai' => ['required', 'in:da_thanh_toan,da_su_dung,da_huy'],
+        ]);
 
-    if (
-        $veXemPhim->trang_thai === 'da_su_dung'
-        && $data['trang_thai'] === 'da_huy'
-    ) {
-        return back()->with('error', 'Không thể hủy vé đã sử dụng');
+        if (
+            $veXemPhim->trang_thai === 'da_su_dung'
+            && $data['trang_thai'] === 'da_huy'
+        ) {
+            return back()->with('error', 'Không thể hủy vé đã sử dụng');
+        }
+
+        $veXemPhim->update([
+            'trang_thai' => $data['trang_thai'],
+            'tien_hoan' => $data['trang_thai'] === 'da_huy'
+                ? $veXemPhim->tong_tien
+                : 0,
+        ]);
+
+        return back()->with('success', 'Cập nhật trạng thái vé thành công');
     }
-
-    $veXemPhim->update([
-        'trang_thai' => $data['trang_thai'],
-        'tien_hoan' => $data['trang_thai'] === 'da_huy'
-            ? $veXemPhim->tong_tien
-            : 0,
-    ]);
-
-    return back()->with('success', 'Cập nhật trạng thái vé thành công');
-}
 }

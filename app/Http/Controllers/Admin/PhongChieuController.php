@@ -11,6 +11,7 @@ use App\Models\LoaiGhe;
 use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Models\VeXemPhim;
+use App\Services\AdminNotificationService;
 use App\Services\SeatGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -67,8 +68,14 @@ class PhongChieuController extends Controller
     public function store(StorePhongChieuRequest $request)
     {
         $data = $request->validated();
-        
-        PhongChieu::create($data);
+
+        $phongChieu = PhongChieu::create($data);
+
+        AdminNotificationService::push(
+            '➕ Tạo phòng chiếu',
+            "Đã tạo phòng {$phongChieu->ten_phong}",
+            'Success'
+        );
 
         return redirect()
             ->route('admin.phong-chieus.index')
@@ -84,8 +91,8 @@ class PhongChieuController extends Controller
 
         $seatMap = $this->seatGenerator->getSeatMap($phongChieu);
         $soHang = $phongChieu->hangGhes->count();
-        $soCot = $phongChieu->gheNgois->count() > 0 
-            ? $phongChieu->gheNgois->max('cot') 
+        $soCot = $phongChieu->gheNgois->count() > 0
+            ? $phongChieu->gheNgois->max('cot')
             : 0;
 
         return view('admin.phong-chieus.show', compact(
@@ -112,8 +119,16 @@ class PhongChieuController extends Controller
     public function update(UpdatePhongChieuRequest $request, PhongChieu $phongChieu)
     {
         $data = $request->validated();
-        
+
         $phongChieu->update($data);
+
+        $tenPhong = $phongChieu->ten_phong;
+
+        AdminNotificationService::push(
+            '✏️ Cập nhật phòng chiếu',
+            "Đã cập nhật phòng {$tenPhong}",
+            'Info'
+        );
 
         return redirect()
             ->route('admin.phong-chieus.index')
@@ -130,8 +145,15 @@ class PhongChieuController extends Controller
                 ->route('admin.phong-chieus.index')
                 ->with('error', 'Không thể xóa phòng chiếu vì đang có suất chiếu.');
         }
+        $tenPhong = $phongChieu->ten_phong;
 
         $phongChieu->delete();
+
+        AdminNotificationService::push(
+            '🗑️ Xóa phòng chiếu',
+            "Đã xóa phòng {$tenPhong}",
+            'Warning'
+        );
 
         return redirect()
             ->route('admin.phong-chieus.index')
@@ -157,8 +179,17 @@ class PhongChieuController extends Controller
     public function restore($id)
     {
         $phongChieu = PhongChieu::withTrashed()->findOrFail($id);
+
+        $tenPhong = $phongChieu->ten_phong;
+
         $phongChieu->restore();
 
+        AdminNotificationService::push(
+            '💥 Xóa vĩnh viễn phòng chiếu',
+            "Đã xóa vĩnh viễn phòng {$tenPhong}",
+            'Danger'
+        );
+        
         return redirect()
             ->route('admin.phong-chieus.index')
             ->with('success', 'Phòng chiếu đã được khôi phục.');
@@ -191,7 +222,6 @@ class PhongChieuController extends Controller
             return redirect()
                 ->route('admin.phong-chieus.show', $phongChieu)
                 ->with('success', "Đã tạo {$ketQua['tong_so_ghe']} ghế thành công!");
-
         } catch (\Exception $e) {
             return redirect()
                 ->route('admin.phong-chieus.show', $phongChieu)
@@ -471,7 +501,7 @@ class PhongChieuController extends Controller
         $tenRap = optional($phongChieu->rapChieuPhim)->ten_rap;
 
         // Xây regex: mã ghế phải là 1 phần tử trong CSV (word-boundary = (?:^|,)/(?:,|$))
-        $escaped = array_map(fn ($m) => preg_quote($m, '/'), $maGheCanKiemTra);
+        $escaped = array_map(fn($m) => preg_quote($m, '/'), $maGheCanKiemTra);
         $pattern = '/(?:^|,)(?:' . implode('|', $escaped) . ')(?:,|$)/';
 
         // 1 query duy nhất: lấy ma_ghe của các vé thuộc phòng này
@@ -526,7 +556,9 @@ class PhongChieuController extends Controller
                 if (!$exists) $fail('Hàng ghế không thuộc phòng chiếu này.');
             }],
             'ma_ghe' => [
-                'required', 'string', 'max:10',
+                'required',
+                'string',
+                'max:10',
                 // Unique trong phòng, bỏ qua soft-deleted
                 function ($attr, $value, $fail) use ($phongChieu) {
                     $exists = GheNgoi::where('phong_chieu_id', $phongChieu->id)
@@ -537,7 +569,9 @@ class PhongChieuController extends Controller
                 },
             ],
             'cot' => [
-                'required', 'integer', 'min:1',
+                'required',
+                'integer',
+                'min:1',
                 // Unique trong hàng, bỏ qua soft-deleted
                 function ($attr, $value, $fail) use ($request, $phongChieu) {
                     $exists = GheNgoi::where('hang_ghe_id', $request->hang_ghe_id)
@@ -637,7 +671,9 @@ class PhongChieuController extends Controller
     {
         $data = $request->validate([
             'ten_hang' => [
-                'required', 'string', 'max:10',
+                'required',
+                'string',
+                'max:10',
                 function ($attr, $value, $fail) use ($phongChieu) {
                     $exists = HangGhe::where('phong_chieu_id', $phongChieu->id)
                         ->where('ten_hang', $value)
@@ -679,8 +715,15 @@ class PhongChieuController extends Controller
 
         try {
             $result = DB::transaction(function () use (
-                $phongChieu, $data, $laHangCouple, $tuDongTaoGhe,
-                $soGhe, $cotBatDau, $loaiGheId, $trangThai, $seatsToCreate
+                $phongChieu,
+                $data,
+                $laHangCouple,
+                $tuDongTaoGhe,
+                $soGhe,
+                $cotBatDau,
+                $loaiGheId,
+                $trangThai,
+                $seatsToCreate
             ) {
                 // Dọn dẹp các bản ghi soft-deleted cùng (ma_ghe) hoặc (hang_ghe_id+cot) trước khi insert
                 // (MySQL unique index không phân biệt deleted_at)
@@ -770,7 +813,7 @@ class PhongChieuController extends Controller
                 'la_hang_couple' => (bool) $result['hangGhe']->la_hang_couple,
                 'so_ghe' => $result['hangGhe']->gheNgois->count(),
             ],
-            'seats' => $result['seats']->map(fn ($g) => [
+            'seats' => $result['seats']->map(fn($g) => [
                 'id' => $g->id,
                 'ma_ghe' => $g->ma_ghe,
                 'cot' => $g->cot,

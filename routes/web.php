@@ -218,6 +218,8 @@ Route::middleware(['auth'])
         // Khóa bảo vệ Module: Cấu Hinh Hệ Thống Chung
         Route::middleware(['permission:quan_ly_cau_hinh_he_thong'])->group(function () {
             Route::resource('notifications', AdminNotificationController::class)->only(['index', 'create', 'store', 'destroy']);
+            Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead'])
+                ->name('notifications.markAllRead');
             Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])->name('movie-reviews.index');
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');

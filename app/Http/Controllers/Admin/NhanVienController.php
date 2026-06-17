@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NguoiDung;
+use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class NhanVienController extends Controller
 {
@@ -47,13 +48,19 @@ class NhanVienController extends Controller
 
         $email = strtolower(trim($request->email));
 
-        NguoiDung::create([
+        $nhanVien = NguoiDung::create([
             'ho_ten' => trim($request->ho_ten),
             'email' => $email,
             'mat_khau' => Hash::make($request->mat_khau),
             'vai_tro' => 'nhan_vien',
             'trang_thai_hoat_dong' => true,
         ]);
+
+        AdminNotificationService::push(
+            '👤 Thêm nhân viên',
+            "Đã tạo nhân viên {$nhanVien->ho_ten}",
+            'Info'
+        );
 
         return redirect()
             ->route('admin.nhanviens.index')
@@ -88,6 +95,13 @@ class NhanVienController extends Controller
             'email' => strtolower(trim($request->email)),
         ]);
 
+        AdminNotificationService::push(
+            '✏️ Cập nhật nhân viên',
+            "Đã cập nhật nhân viên {$nhanvien->ho_ten}",
+            'Info'
+        );
+
+
         return redirect()
             ->route('admin.nhanviens.index')
             ->with('success', 'Cập nhật thành công');
@@ -104,7 +118,15 @@ class NhanVienController extends Controller
                 ->with('error', 'Không thể xóa chính tài khoản của bạn');
         }
 
+        $ten = $nhanvien->ho_ten;
+
         $nhanvien->delete();
+
+        AdminNotificationService::push(
+            '🗑️ Xóa nhân viên',
+            "Đã xóa nhân viên {$ten}",
+            'Warning'
+        );
 
         return back()
             ->with('success', 'Đã xóa nhân viên');

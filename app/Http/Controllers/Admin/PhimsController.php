@@ -8,6 +8,7 @@ use App\Http\Requests\ThemmoiPhimsRequest;
 use App\Models\Phims;
 use App\Models\QuocGia;
 use App\Models\TheLoai;
+use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -78,9 +79,9 @@ class PhimsController extends Controller
         |--------------------------------------------------------------------------
         */
         $movies = $query
-        ->latest()
-        ->paginate(10)
-        ->withQueryString();
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         /*
         |--------------------------------------------------------------------------
@@ -184,6 +185,12 @@ class PhimsController extends Controller
             $movie->genres()
                 ->sync($data['the_loai_id']);
         }
+        AdminNotificationService::push(
+            '🎬 Phim mới được thêm',
+            ' Đã thêm phim ' . $movie->ten_phim,
+
+            'Success'
+        );
 
         return redirect()
             ->route('admin.phims.index')
@@ -263,6 +270,18 @@ class PhimsController extends Controller
             $phim->genres()->detach();
         }
 
+
+        AdminNotificationService::push(
+
+            '✏️ Phim đã được cập nhật',
+
+            'Vừa cập nhật phim  ' . $phim->ten_phim,
+
+            'Success'
+
+        );
+
+
         return redirect()
             ->route('admin.phims.index')
             ->with(
@@ -290,6 +309,16 @@ class PhimsController extends Controller
         $phim->genres()->detach();
 
         $phim->delete();
+
+        AdminNotificationService::push(
+
+            '🗑️ Phim đã được xóa',
+
+            'Đã xóa  phim  ' . $phim->ten_phim,
+
+            'Danger'
+
+        );
 
         return redirect()
             ->route('admin.phims.index')

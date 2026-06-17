@@ -9,6 +9,7 @@ use App\Models\Phims;
 use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
+use App\Services\AdminNotificationService;
 use App\Services\SeatGeneratorService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -57,6 +58,8 @@ class SuatChieuController extends Controller
             ->orderBy('ten_phong')
             ->get();
 
+
+
         return view('admin.suat-chieus.index', compact(
             'suatChieus',
             'phims',
@@ -78,6 +81,8 @@ class SuatChieuController extends Controller
             ->get();
 
         $phongChieuId = $request->phong_chieu_id;
+
+
 
         return view('admin.suat-chieus.create', compact(
             'phims',
@@ -105,6 +110,12 @@ class SuatChieuController extends Controller
         $data['trang_thai'] = $data['trang_thai'] ?? $this->xacDinhTrangThai($thoiGianChieu, $thoiGianKetThuc);
 
         SuatChieu::create($data);
+
+        AdminNotificationService::push(
+            '🎬 Suất chiếu mới được thêm',
+            'Đã thêm suất chiếu cho phim ' . $phim->ten_phim,
+            'Success'
+        );
 
         return redirect()
             ->route('admin.suat-chieus.index')
@@ -178,6 +189,13 @@ class SuatChieuController extends Controller
 
         $suatChieu->update($data);
 
+        AdminNotificationService::push(
+            '✏️ Suất chiếu đã được cập nhật',
+            'Đã cập nhật suất chiếu của phim ' . $phim->ten_phim,
+            'Success'
+        );
+
+
         return redirect()
             ->route('admin.suat-chieus.index')
             ->with('success', 'Suất chiếu đã được cập nhật thành công.');
@@ -194,8 +212,17 @@ class SuatChieuController extends Controller
                 ->with('error', 'Không thể xóa suất chiếu đã chiếu.');
         }
 
+
+        $phim = $suatChieu->phim->ten_phim;
+
         $suatChieu->delete();
 
+
+        AdminNotificationService::push(
+            '🗑️ Suất chiếu đã bị xóa',
+            'Đã xóa suất chiếu của phim ' . $phim,
+            'Success'
+        );
         return redirect()
             ->route('admin.suat-chieus.index')
             ->with('success', 'Suất chiếu đã được xóa thành công.');
