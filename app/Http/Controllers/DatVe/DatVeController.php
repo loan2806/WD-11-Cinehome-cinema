@@ -44,9 +44,23 @@ class DatVeController extends Controller
 
         abort_if($suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
+        $gheDaDat = $this->gheDaDat($suatChieu);
+
+        $gheBaoTri = [];
+        if ($suatChieu->phong_chieu_id) {
+            $gheBaoTri = \App\Models\GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
+                ->get(['ma_ghe', 'trang_thai'])
+                ->filter(fn ($ghe) => $ghe->isEffectivelyUnderMaintenance())
+                ->pluck('ma_ghe')
+                ->map(fn ($code) => strtoupper(trim($code)))
+                ->values()
+                ->all();
+        }
+
         return view('dat_ve.chon_ghe', [
             'suatChieu' => $suatChieu,
-            'gheDaDat' => $this->gheDaDat($suatChieu),
+            'gheDaDat' => $gheDaDat,
+            'gheBaoTri' => $gheBaoTri,
             'hangGhe' => self::HANG_GHE,
             'soCot' => self::SO_COT,
         ]);

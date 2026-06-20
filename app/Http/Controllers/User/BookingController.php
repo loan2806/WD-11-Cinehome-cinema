@@ -45,9 +45,23 @@ class BookingController extends Controller
 
         abort_if($showtime->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
+        $gheDaDat = $this->gheDaDat($showtime);
+
+        $gheBaoTri = [];
+        if ($showtime->phong_chieu_id) {
+            $gheBaoTri = GheNgoi::where('phong_chieu_id', $showtime->phong_chieu_id)
+                ->get(['ma_ghe', 'trang_thai'])
+                ->filter(fn ($ghe) => $ghe->isEffectivelyUnderMaintenance())
+                ->pluck('ma_ghe')
+                ->map(fn ($code) => strtoupper(trim($code)))
+                ->values()
+                ->all();
+        }
+
         return view('dat_ve.chon_ghe', [
             'suatChieu' => $showtime,
-            'gheDaDat' => $this->gheDaDat($showtime),
+            'gheDaDat' => $gheDaDat,
+            'gheBaoTri' => $gheBaoTri,
             'hangGhe' => self::HANG_GHE,
             'soCot' => self::SO_COT,
         ]);
@@ -78,6 +92,22 @@ class BookingController extends Controller
         if ($gheDuocChon->isEmpty()) {
             throw ValidationException::withMessages([
                 'ghe_duoc_chon' => 'Vui long chon it nhat mot ghe.',
+            ]);
+        }
+
+        $showSeats = GheNgoi::where('phong_chieu_id', $showtime->phong_chieu_id)
+            ->whereIn('ma_ghe', $gheDuocChon->toArray())
+            ->get(['ma_ghe', 'trang_thai']);
+
+        $maintenanceSeats = $showSeats
+            ->filter(fn ($seat) => $seat->isEffectivelyUnderMaintenance())
+            ->pluck('ma_ghe')
+            ->values()
+            ->all();
+
+        if (!empty($maintenanceSeats)) {
+            throw ValidationException::withMessages([
+                'ghe_duoc_chon' => 'Ghế ' . implode(', ', $maintenanceSeats) . ' đang bảo trì, vui lòng chọn ghế khác.',
             ]);
         }
 

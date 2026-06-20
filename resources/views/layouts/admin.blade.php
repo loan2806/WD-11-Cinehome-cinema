@@ -147,6 +147,7 @@
                     <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
                         <a href="{{ route('admin.phong-chieus.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phong-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Quản lý phòng chiếu</a>
                         <a href="{{ route('admin.loai-ghes.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.loai-ghes.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Danh mục loại ghế</a>
+                        <a href="{{ route('admin.ghe-ngois.baoTri') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.ghe-ngois.baoTri') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Lịch sử bảo trì ghế</a>
                     </div>
                 </div>
                 @endif
