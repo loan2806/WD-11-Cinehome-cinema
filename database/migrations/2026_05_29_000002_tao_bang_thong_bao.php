@@ -10,11 +10,12 @@ return new class extends Migration
     {
         Schema::create('admin_notifications', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->text('message');
-            $table->enum('type', ['info', 'success', 'warning', 'danger'])->default('info');
-            $table->enum('audience', ['all', 'user', 'staff', 'admin'])->default('all');
-            $table->timestamp('published_at')->nullable();
+            $table->string('tieu_de');
+            $table->text('noi_dung');
+            $table->enum('loai', ['info', 'success', 'warning', 'danger'])->default('info');
+            $table->enum('doi_tuong', ['admin'])->default('admin');
+            $table->boolean('da_doc')->default(false);
+            $table->timestamp('thoi_gian_xuat_ban')->nullable();
             $table->timestamps();
         });
     }

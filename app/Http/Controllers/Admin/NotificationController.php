@@ -4,9 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminNotification;
-use App\Models\NhatKyHoatDongHeThong;
 use App\Traits\Loggable;
-use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
@@ -16,40 +14,22 @@ class NotificationController extends Controller
     {
         $notifications = AdminNotification::latest()->paginate(15);
 
-        return view('admin.notifications.index', compact('notifications'));
+        $notificationCount = AdminNotification::where('da_doc', false)->count();
+
+        return view('admin.notifications.index', compact(
+            'notifications',
+            'notificationCount'
+        ));
     }
 
-    public function create()
+    public function markAllRead()
     {
-        return view('admin.notifications.create');
-    }
+        AdminNotification::where('da_doc', false)
+            ->update(['da_doc' => true]);
 
-    public function store(Request $request)
-    {
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'message' => ['required', 'string'],
-            'type' => ['required', 'in:info,success,warning,danger'],
-            'audience' => ['required', 'in:all,user,staff,admin'],
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã đánh dấu tất cả thông báo là đã đọc'
         ]);
-
-        $notification = AdminNotification::create([
-            ...$data,
-            'published_at' => now(),
-        ]);
-
-        $this->ghiNhatKy($request, 'Tạo thông báo', 'Quản lý thông báo', "Tạo thông báo: {$notification->title}");
-
-        return redirect()->route('admin.notifications.index')->with('success', 'Da tao thong bao.');
-    }
-
-    public function destroy(Request $request, AdminNotification $notification)
-    {
-        $title = $notification->title;
-        $notification->delete();
-
-        $this->ghiNhatKy($request, 'Xóa thông báo', 'Quản lý thông báo', "Xóa thông báo: {$title}");
-
-        return back()->with('success', 'Da xoa thong bao.');
     }
 }

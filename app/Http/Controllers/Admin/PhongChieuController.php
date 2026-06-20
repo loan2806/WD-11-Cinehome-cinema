@@ -60,7 +60,9 @@ class PhongChieuController extends Controller
      */
     public function create(): View
     {
-        $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
+        $rapChieuPhims = RapChieuPhim::where('trang_thai', 'hoat_dong')
+            ->orderBy('ten_rap')
+            ->get();
 
         return view('admin.phong-chieus.create', compact('rapChieuPhims'));
     }
@@ -133,9 +135,24 @@ class PhongChieuController extends Controller
      */
     public function destroy(Request $request, PhongChieu $phongChieu)
     {
+        if ($phongChieu->suatChieus()->exists()) {
+            return redirect()->back()->with('error', 'Không thể xóa phòng chiếu vì đang có suất chiếu.');
+        }
+
+        $tenPhong = $phongChieu->ten_phong;
+        $phongChieu->delete();
+
+        AdminNotificationService::push(
+            '🗑️ Xóa phòng chiếu',
+            "Đã xóa phòng {$tenPhong}",
+            'Warning'
+        );
+
+        $this->ghiNhatKy($request, 'Xóa phòng chiếu', 'Quản lý phòng & ghế', "Xóa phòng: {$tenPhong}");
+
         return redirect()
             ->route('admin.phong-chieus.index')
-            ->with('error', 'Chức năng xóa phòng chiếu đã bị vô hiệu hóa.');
+            ->with('success', 'Phòng chiếu đã được xóa.');
     }
 
     /**

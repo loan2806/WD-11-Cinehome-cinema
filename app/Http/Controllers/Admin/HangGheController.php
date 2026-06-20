@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\UpdateHangGheRequest;
 use App\Models\HangGhe;
 use App\Models\LoaiGhe;
 use App\Models\PhongChieu;
+use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -59,7 +60,15 @@ class HangGheController extends Controller
         $data = $request->validated();
         $data['la_hang_couple'] = $request->boolean('la_hang_couple');
 
-        HangGhe::create($data);
+        $hangGhe = HangGhe::create($data);
+
+
+        AdminNotificationService::push(
+            '🪑 Thêm hàng ghế',
+            "Đã tạo hàng {$hangGhe->ten_hang}",
+            'Info'
+        );
+
 
         return redirect()
             ->route('admin.hang-ghes.index', ['phong_chieu_id' => $data['phong_chieu_id']])
@@ -99,6 +108,13 @@ class HangGheController extends Controller
 
         $hangGhe->update($data);
 
+        AdminNotificationService::push(
+            '✏️ Cập nhật hàng ghế',
+            "Đã cập nhật hàng {$hangGhe->ten_hang}",
+            'Info'
+        );
+
+
         return redirect()
             ->route('admin.hang-ghes.index')
             ->with('success', 'Hàng ghế đã được cập nhật thành công.');
@@ -125,6 +141,8 @@ class HangGheController extends Controller
             }
         }
 
+        $tenHang = $hangGhe->ten_hang;
+
         DB::transaction(function () use ($hangGhe, $ghes) {
             // Soft delete ghế trước (sẽ tự động do cascade nếu FK + onDelete cascade, nhưng soft delete vẫn phải gọi tay)
             foreach ($ghes as $ghe) {
@@ -132,6 +150,12 @@ class HangGheController extends Controller
             }
             $hangGhe->delete();
         });
+
+        AdminNotificationService::push(
+            '🗑️ Xóa hàng ghế',
+            "Đã xóa hàng {$tenHang}",
+            'Warning'
+        );
 
         return redirect()
             ->route('admin.hang-ghes.index', ['phong_chieu_id' => $hangGhe->phong_chieu_id])
@@ -151,6 +175,12 @@ class HangGheController extends Controller
             'loai_ghe_id' => $request->loai_ghe_id,
         ]);
 
+          AdminNotificationService::push(
+        '🎟️ Cập nhật loại ghế theo hàng',
+        "Đã đổi {$updated} ghế trong hàng {$hangGhe->ten_hang}",
+        'Info'
+    );
+
         return redirect()
             ->route('admin.hang-ghes.show', $hangGhe)
             ->with('success', "Đã cập nhật {$updated} ghế thành loại mới.");
@@ -167,7 +197,7 @@ class HangGheController extends Controller
             ->get(['id', 'ten_hang', 'phong_chieu_id', 'la_hang_couple', 'loai_ghe_mac_dinh_id']);
 
         return response()->json([
-            'data' => $hangGhes->map(fn ($h) => [
+            'data' => $hangGhes->map(fn($h) => [
                 'id' => $h->id,
                 'ten_hang' => $h->ten_hang,
                 'so_ghe' => $h->ghe_ngois_count,
