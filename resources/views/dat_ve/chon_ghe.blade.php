@@ -78,6 +78,26 @@
         opacity: 0;
     }
 
+    .seat-button.maintenance {
+        background: linear-gradient(135deg, #475569, #94a3b8);
+        cursor: not-allowed;
+        opacity: .75;
+        color: #1e293b;
+    }
+
+    .seat-button.maintenance::before {
+        content: "🔧";
+        position: absolute;
+        font-size: 14px;
+        opacity: .9;
+    }
+
+    .seat-button.maintenance .seat-label {
+        opacity: .9;
+        color: #1e293b;
+        font-weight: 900;
+    }
+
     /* ============== TOOLTIP ============== */
     .seat-tooltip {
         position: absolute;
@@ -279,14 +299,15 @@
                             @for($i = 1; $i <= $soCot; $i++)
                                 @php
                                     $maGhe = $hang . $i;
-                                    $daDat = in_array($maGhe, $gheDaDat, true);
+                                    $daDat = in_array($maGhe, $gheDaDat ?? [], true);
+                                    $dangBaoTri = in_array($maGhe, $gheBaoTri ?? [], true);
                                 @endphp
-                                <div class="seat-wrapper {{ $daDat ? 'booked' : '' }}" data-seat="{{ $maGhe }}">
+                                <div class="seat-wrapper {{ $daDat ? 'booked' : '' }} {{ $dangBaoTri ? 'maintenance' : '' }}" data-seat="{{ $maGhe }}">
                                     <button
                                         type="button"
-                                        class="seat-button {{ $daDat ? 'booked' : '' }}"
+                                        class="seat-button {{ $daDat ? 'booked' : '' }} {{ $dangBaoTri ? 'maintenance' : '' }}"
                                         data-seat="{{ $maGhe }}"
-                                        @disabled($daDat)
+                                        @disabled($daDat || $dangBaoTri)
                                     >
                                         <span class="seat-label">{{ $maGhe }}</span>
                                     </button>
@@ -307,7 +328,12 @@
                                             <span class="tt-label">Giá</span>
                                             <span class="tt-value">{{ number_format($suatChieu->gia_ve, 0, ',', '.') }}đ</span>
                                         </div>
-                                        @if($daDat)
+                                        @if($dangBaoTri)
+                                            <div class="tt-row" style="margin-top:4px;color:#94a3b8;">
+                                                <span class="tt-label">Trạng thái</span>
+                                                <span class="tt-value">Đang bảo trì</span>
+                                            </div>
+                                        @elseif($daDat)
                                             <div class="tt-row" style="margin-top:4px;color:#ff6b6b;">
                                                 <span class="tt-label">Trạng thái</span>
                                                 <span class="tt-value">Đã bán</span>
@@ -338,6 +364,10 @@
                     <span class="flex items-center gap-2">
                         <span class="inline-block h-5 w-5 rounded bg-[#0e0e0e] border border-white/10 align-middle"></span>
                         Đã đặt
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <span class="inline-block h-5 w-5 rounded bg-gray-600 align-middle"></span>
+                        Bảo trì
                     </span>
                 </div>
             </div>
