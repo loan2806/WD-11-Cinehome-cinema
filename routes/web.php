@@ -15,7 +15,7 @@ use App\Http\Controllers\Admin\QuocGiaController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\SoatVeController as AdminSoatVeController;
 use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
-use App\Http\Controllers\Admin\SystemSettingController;
+use App\Http\Controllers\Admin\CaiDatHeThong; // Cấu hình trỏ về Controller của bạn
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\DatVe\DatVeController;
@@ -23,7 +23,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Staff\BanVeController;
 use App\Http\Controllers\Staff\LichSuVeController;
 use App\Http\Controllers\Staff\SoatVeController;
-use App\Http\Controllers\Staff\StaffDashboardController;
 use App\Http\Controllers\User\BandoRapController;
 use App\Http\Controllers\User\BookingController;
 use App\Http\Controllers\User\DanhGiaPhimController;
@@ -199,6 +198,8 @@ Route::middleware(['auth'])
             Route::delete('/food-invoices/{foodInvoice}', [FoodInvoiceController::class, 'destroy'])->name('food-invoices.destroy');
 
             Route::resource('ve-xem-phims', AdminVeXemPhimController::class)->only(['index', 'show', 'edit', 'update'])->names('ve-xem-phims');
+            
+            // 💡 ĐÃ SỬA CHUẨN: Thay đổi $this->patch thành Route::patch tĩnh đúng cú pháp Laravel
             Route::patch('ve-xem-phims/{veXemPhim}/huy', [AdminVeXemPhimController::class, 'huy'])->name('ve-xem-phims.huy');
             Route::patch('ve-xem-phims/{veXemPhim}/su-dung', [AdminVeXemPhimController::class, 'suDung'])->name('ve-xem-phims.su-dung');
             Route::patch('ve-xem-phims/{veXemPhim}/cap-nhat-trang-thai', [AdminVeXemPhimController::class, 'capNhatTrangThai'])->name('ve-xem-phims.cap-nhat-trang-thai');
@@ -234,8 +235,9 @@ Route::middleware(['auth'])
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
             Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
-            Route::get('/system-settings', [SystemSettingController::class, 'index'])->name('system-settings.index');
-            Route::patch('/system-settings', [SystemSettingController::class, 'update'])->name('system-settings.update');
+            
+            Route::get('/system-settings', [CaiDatHeThong::class, 'index'])->name('system-settings.index');
+            Route::patch('/system-settings', [CaiDatHeThong::class, 'update'])->name('system-settings.update');
         });
 
         // Khóa bảo vệ tối cao: Ma trận Phân quyền động của hệ thống CineHome
