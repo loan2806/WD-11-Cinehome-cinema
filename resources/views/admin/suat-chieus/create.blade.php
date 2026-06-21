@@ -107,8 +107,8 @@
                 </div>
             </div>
 
-            {{-- PHÂN KHU NHÁNH ĐƠN LẺ --}}
-            <div id="khu_don_le" class="grid grid-cols-1 gap-5 md:grid-cols-3 transition-all duration-300">
+            {{-- PHÂN KHU NHÁNH ĐƠN LẺ (💡 ĐÃ THU GỌN VỀ 2 CỘT DO TRẠNG THÁI TỰ ĐỘNG) --}}
+            <div id="khu_don_le" class="grid grid-cols-1 gap-5 md:grid-cols-2 transition-all duration-300">
                 <div class="space-y-2">
                     <label class="text-sm text-gray-400 font-bold block">
                         Chọn Ngày Chiếu <span class="text-red-400">*</span>
@@ -123,20 +123,6 @@
                     </label>
                     <input type="time" name="gio_chieu_don_le" id="gio_chieu_don_le" value="{{ old('gio_chieu_don_le') }}"
                         class="w-full h-11 rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition cursor-pointer [&::-webkit-calendar-picker-indicator]:invert">
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-sm text-gray-400 font-bold block">
-                        Trạng Thái Khởi Tạo <span class="text-red-400">*</span>
-                    </label>
-                    <select name="trang_thai"
-                        class="w-full h-11 rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                        @foreach (\App\Models\SuatChieu::TRANG_THAI_LIST as $value => $label)
-                            <option value="{{ $value }}" {{ old('trang_thai') == $value ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
                 </div>
             </div>
 
@@ -193,16 +179,29 @@
                         <span class="absolute right-4 text-xs text-gray-500 font-bold select-none">VND</span>
                     </div>
                     <p class="text-xs text-gray-500 m-0 leading-relaxed">
-                        💡 <span class="text-gray-400 font-bold">Lưu ý nghiệp vụ:</span> Hãy điền số tiền vào đây nếu muốn gán giá cố định cho các ngày <span class="text-white font-bold">Lễ/Tết</span> hoặc phim bom tấn. Nếu để trống, hệ thống tự động chạy ma trận giá sàn (Thường: 75k, Cuối tuần: 120k, phụ thu IMAX/Đêm muộn).
+                        💡 <span class="text-gray-400 font-bold">Lưu ý nghiệp vụ:</span> Hãy điền số tiền vào đây nếu muốn gán giá cố định cho các ngày <span class="text-white font-bold">Lễ/Tết</span> hoặc phim bom tấn. Nếu để trống, hệ thống tự động chạy ma trận giá sàn được lấy từ cấu hình tham số gốc.
                     </p>
                 </div>
             </div>
 
-            {{-- GIÁM SÁT QUỸ THỜI GIAN CHIẾM DỤNG PHÒNG --}}
-            <div class="space-y-2 p-4 bg-white/5 rounded-2xl border border-white/5">
-                <label class="text-sm text-gray-400 font-semibold block">Giám sát quỹ thời gian chiếm dụng phòng</label>
-                <input type="text" id="thoi_luong_preview" class="w-full rounded-xl border border-0 bg-transparent px-0 py-1 text-[#f4c56a] font-black outline-none text-sm"
-                       value="" readonly placeholder="Chọn thông số lịch để hiển thị bảng phân tích dòng thời gian...">
+            {{-- 💡 BẢNG MONITOR GIÁM SÁT TRẠNG THÁI VÀ DÒNG THỜI GIAN ĐỘNG --}}
+            <div class="p-5 rounded-2xl border border-white/5 bg-[#121212]/90 space-y-3">
+                <label class="text-xs text-gray-400 font-black uppercase tracking-widest block m-0">
+                    <i class="fa-solid fa-desktop text-[#d99a32] mr-1"></i> Hệ Thống Monitor Suất Chiếu Tự Động Real-time
+                </label>
+                
+                <div class="space-y-2">
+                    <span class="text-xs text-gray-400 font-bold block">Bảng phân tích dòng thời gian chiếm dụng phòng:</span>
+                    <input type="text" id="thoi_luong_preview" class="w-full rounded-xl border border-0 bg-white/5 px-4 py-2.5 text-[#f4c56a] font-black outline-none text-sm shadow-inner"
+                           value="" readonly placeholder="Chọn thông số lịch để hiển thị bảng phân tích dòng thời gian...">
+                </div>
+
+                <div class="pt-3 border-t border-white/5 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px] text-gray-400 font-semibold">
+                    <div class="flex items-center gap-1.5"><i class="fa-solid fa-circle text-blue-500 text-[8px]"></i> Sắp ra mắt (>30 ngày trước chiếu)</div>
+                    <div class="flex items-center gap-1.5"><i class="fa-solid fa-circle text-yellow-500 text-[8px]"></i> Sắp chiếu (Thuộc khung lịch bán)</div>
+                    <div class="flex items-center gap-1.5"><i class="fa-solid fa-circle text-green-500 text-[8px]"></i> Đang chiếu (Khung giờ chiếu + gối đầu)</div>
+                    <div class="flex items-center gap-1.5"><i class="fa-solid fa-circle text-gray-600 text-[8px]"></i> Đã chiếu (Quá giờ kết thúc phim)</div>
+                </div>
             </div>
 
             {{-- FOOTER ĐIỀU HƯỚNG LỆNH --}}
@@ -235,6 +234,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const ngayChieuDonLe = document.getElementById('ngay_chieu_don_le');
     const gioChieuDonLe = document.getElementById('gio_chieu_don_le');
+
+    // 💡 ĐỌC ĐỘNG THỜI GIAN DỌN PHÒNG TỪ CONTROLLER TRUYỀN XUỐNG
+    const thoiGianDonPhong = {{ $thoiGianDonPhong }};
 
     function switchFormMode() {
         if (loaiParam.value === 'don_le') {
@@ -270,15 +272,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loaiParam.value === 'don_le') {
             if (ngayChieuDonLe.value && gioChieuDonLe.value) {
                 const start = new Date(`${ngayChieuDonLe.value}T${gioChieuDonLe.value}`);
-                const end = new Date(start.getTime() + (thoiLuong + 15) * 60000);
+                const end = new Date(start.getTime() + (thoiLuong + thoiGianDonPhong) * 60000);
                 
                 const formatTime = (d) => d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                thoiLuongPreview.value = `Suất chiếu đơn lẻ dự kiến: ${formatTime(start)} - ${formatTime(end)} (Phòng chiếu bị chiếm dụng ${thoiLuong + 15} phút bao gồm dọn vệ sinh).`;
+                thoiLuongPreview.value = `Suất chiếu đơn lẻ dự kiến: ${formatTime(start)} - ${formatTime(end)} (Phòng chiếu bị chiếm dụng ${thoiLuong + thoiGianDonPhong} phút bao gồm dọn vệ sinh gốc).`;
             } else {
-                thoiLuongPreview.value = `Phim đã chọn: Thời lượng gốc ${thoiLuong} phút (+ 15 phút giãn cách dọn phòng vệ sinh rạp).`;
+                thoiLuongPreview.value = `Phim đã chọn: Thời lượng gốc ${thoiLuong} phút (+ ${thoiGianDonPhong} phút giãn cách dọn phòng vệ sinh rạp động).`;
             }
         } else {
-            thoiLuongPreview.value = `Chế độ hàng loạt: Tự động rải chuỗi suất chiếu thời lượng gốc ${thoiLuong} phút (+ 15 phút giãn cách) vào các khung giờ được tick chọn.`;
+            thoiLuongPreview.value = `Chế độ hàng loạt: Tự động rải chuỗi suất chiếu thời lượng gốc ${thoiLuong} phút (+ ${thoiGianDonPhong} phút giãn cách gốc) vào các khung giờ được chọn.`;
         }
     }
 

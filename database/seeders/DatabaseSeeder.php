@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
             SuatChieuSeeder::class,
             VeXemPhimSeeder::class,
             NhanVienSeeder::class,
+            CaiDatHeThongSeeder::class
         ]);
 
         // --- TỰ ĐỘNG ĐỒNG BỘ VAI TRÒ SPATIE CHO TẤT CẢ TÀI KHOẢN VỪA TẠO ---

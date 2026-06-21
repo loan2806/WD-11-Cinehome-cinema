@@ -16,7 +16,7 @@ use App\Http\Controllers\Admin\QuocGiaController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\SoatVeController as AdminSoatVeController;
 use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
-use App\Http\Controllers\Admin\SystemSettingController;
+use App\Http\Controllers\Admin\CaiDatHeThongController; // ĐÃ SỬA CHUẨN: Gọi đúng Controller mới thay vì dùng Model làm class name
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\DatVe\DatVeController;
@@ -47,16 +47,14 @@ use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
 
 Route::get('/', [PhimsController::class, 'home'])->name('home');
 
-// Điều phối trung tâm dựa trên vai trò tài khoản khi đăng nhập
+// LOGIC ĐIỀU PHỐI PHÂN TẦNG: Định tuyến động dựa trên vai trò đặc quyền thực tế của tài khoản ngay khi đăng nhập thành công
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
-    // 1. Chuyển hướng sang phân hệ Quản lý hệ thống tối cao
     if ($user->hasRole('Quản lý hệ thống') || $user->vai_tro === 'quan_ly_he_thong') {
         return redirect()->route('system.dashboard');
     }
 
-    // 2. Chuyển hướng sang phân hệ Sub-Admin / Quản lý rạp thông thường
     if ($user->hasRole('Quản trị viên') || $user->vai_tro === 'admin') {
         return redirect()->route('admin.dashboard');
     }
@@ -128,17 +126,14 @@ Route::middleware(['auth'])
 
         Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
 
-        // Nhóm chức năng 1: Nghiệp vụ kiểm tra & Soát vé QR vào cửa phòng chiếu
         Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
             Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
             Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
         });
 
-        // Nhóm chức năng 2: Nghiệp vụ lập hóa đơn và bán vé trực tiếp cho khách tại quầy rạp
         Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
             Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
             Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
-            Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
             Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
             Route::post('/ban-ve/{suatChieu}', [BanVeController::class, 'store'])->name('ban-ve.store');
         });
@@ -146,7 +141,7 @@ Route::middleware(['auth'])
 
 /*
 |--------------------------------------------------------------------------
-| HỆ THỐNG QUẢN TRỊ ADMIN PANEL (CHÈN MIDDLEWARE KIỂM TRA QUYỀN CHẶT CHẼ)
+| HỆ THỐNG QUẢN TRỊ ADMIN PANEL
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])
@@ -164,7 +159,6 @@ Route::middleware(['auth'])
             Route::post('/soat-ve/confirm', [AdminSoatVeController::class, 'confirm'])->name('soat-ve.confirm');
         });
 
-        // Khóa bảo vệ Module: Quản lý Phim & Lịch Chiếu
         Route::middleware(['permission:quan_ly_phim_suat_chieu'])->group(function () {
             Route::resource('phims', AdminMovieController::class);
             Route::resource('quoc-gias', QuocGiaController::class);
@@ -172,10 +166,8 @@ Route::middleware(['auth'])
             Route::resource('suat-chieus', AdminSuatChieuController::class);
         });
 
-        // Khóa bảo vệ Module: Cấu trúc Phòng Chiếu & Sơ đồ Ghế Ngồi
         Route::middleware(['permission:quan_ly_phong_ghe'])->group(function () {
             Route::resource('phong-chieus', PhongChieuController::class);
-            // CSRF refresher: dùng GET để Laravel không check CSRF, trả về token mới nhất từ session
             Route::get('csrf-token', function () {
                 return response()->json(['csrf_token' => csrf_token()]);
             })->name('admin.csrf-token');
@@ -201,40 +193,35 @@ Route::middleware(['auth'])
             Route::patch('lich-bao-tri-ghe-ngois/{lichBaoTriGheNgoi}/complete', [GheNgoiController::class, 'completeMaintenance'])->name('lich-bao-tri-ghe-ngois.complete');
         });
 
-        // Khóa bảo vệ Module: Thao tác Bán Vé Tại Quầy & Quản lý thông tin vé của hệ thống
         Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
             Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])->name('food-invoices.index');
             Route::post('/food-invoices', [FoodInvoiceController::class, 'store'])->name('food-invoices.store');
             Route::delete('/food-invoices/{foodInvoice}', [FoodInvoiceController::class, 'destroy'])->name('food-invoices.destroy');
 
             Route::resource('ve-xem-phims', AdminVeXemPhimController::class)->only(['index', 'show', 'edit', 'update'])->names('ve-xem-phims');
+            
             Route::patch('ve-xem-phims/{veXemPhim}/huy', [AdminVeXemPhimController::class, 'huy'])->name('ve-xem-phims.huy');
             Route::patch('ve-xem-phims/{veXemPhim}/su-dung', [AdminVeXemPhimController::class, 'suDung'])->name('ve-xem-phims.su-dung');
             Route::patch('ve-xem-phims/{veXemPhim}/cap-nhat-trang-thai', [AdminVeXemPhimController::class, 'capNhatTrangThai'])->name('ve-xem-phims.cap-nhat-trang-thai');
         });
 
-        // Khóa bảo vệ Module: Danh sách Khách Hàng
         Route::middleware(['permission:quan_ly_khach_hang'])->group(function () {
-            // Định tuyến mở rộng tương lai đặt tại đây
+            // Định tuyến mở rộng tương lai dành cho Module Khách hàng đặt tại đây
         });
 
-        // Khóa bảo vệ Module: Hồ sơ & Chia Ca Làm Nhân Viên
         Route::middleware(['permission:quan_ly_nhan_vien'])->group(function () {
             Route::resource('nhanviens', NhanVienController::class);
             Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
         });
 
-        // Khóa bảo vệ Module: Thống Kê Doanh Thu Rạp Phim
         Route::middleware(['permission:thong_ke_doanh_thu'])->group(function () {
             Route::get('/revenue-reports', [RevenueReportController::class, 'index'])->name('revenue-reports.index');
         });
 
-        // Khóa bảo vệ Module: Nhật ký hoạt động (chỉ admin và super admin)
         Route::middleware(['permission:xem_nhat_ky_hoat_dong'])->group(function () {
             Route::get('/activity-logs', [NhatKyHoatDongHeThongController::class, 'index'])->name('activity-logs.index');
         });
 
-        // Khóa bảo vệ Module: Cấu Hinh Hệ Thống Chung
         Route::middleware(['permission:quan_ly_cau_hinh_he_thong'])->group(function () {
             Route::resource('notifications', AdminNotificationController::class)->only(['index', 'create', 'store', 'destroy']);
             Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead'])
@@ -243,11 +230,12 @@ Route::middleware(['auth'])
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
             Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
-            Route::get('/system-settings', [SystemSettingController::class, 'index'])->name('system-settings.index');
-            Route::patch('/system-settings', [SystemSettingController::class, 'update'])->name('system-settings.update');
+            
+            // ĐÃ SỬA CHUẨN: Điều phối lại hành động trỏ thẳng về lớp CaiDatHeThongController mới đổi tên
+            Route::get('/system-settings', [CaiDatHeThongController::class, 'index'])->name('system-settings.index');
+            Route::patch('/system-settings', [CaiDatHeThongController::class, 'update'])->name('system-settings.update');
         });
 
-        // Khóa bảo vệ tối cao: Ma trận Phân quyền động của hệ thống CineHome
         Route::middleware(['permission:phan_quyen_he_thong'])->group(function () {
             Route::get('/phan-quyen', [PhanQuyenController::class, 'index'])->name('phan-quyen.index');
             Route::post('/phan-quyen/vai-tro', [PhanQuyenController::class, 'storeRole'])->name('phan-quyen.storeRole');
@@ -265,9 +253,8 @@ Route::middleware(['auth'])
     ->name('system.')
     ->group(function () {
 
-        // Trang chủ Dashboard đầu não hệ thống
         Route::get('/dashboard', function () {
-            return view('system.dashboard'); // Trả về view độc lập sử dụng layout system.blade.php
+            return view('system.dashboard'); 
         })->name('dashboard');
 
         // Các đặc quyền hạ tầng kỹ thuật gốc (Độc lập 100%)
