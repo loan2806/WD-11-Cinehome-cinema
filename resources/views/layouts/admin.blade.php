@@ -112,9 +112,35 @@
                             <a href="{{ route('admin.cai-dat-thanh-toan.edit') }}"
                                 class="block py-2.5 pl-3 text-[15px] font-bold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.cai-dat-thanh-toan.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Cài
                                 đặt cổng thanh toán</a>
-                            <a href="#"
-                                class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Sao
-                                lưu dữ liệu hạt nhân</a>
+
+                            <form action="{{ route('admin.backup') }}" method="POST">
+                                @csrf
+                                <button type="submit" onclick="return confirm('Bạn có chắc muốn sao lưu dữ liệu?')"
+                                    class="w-full text-left py-2.5 pl-3 text-[15px] font-bold text-green-400 hover:text-green-300 transition duration-200 bg-transparent border-0">
+                                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i>
+                                    Sao lưu dữ liệu
+                                </button>
+                            </form>
+
+                            <form action="{{ route('admin.restore') }}" method="POST">
+                                @csrf
+                                <button type="submit"
+                                    onclick="return confirm('Khôi phục dữ liệu từ Firebase? Dữ liệu hiện tại có thể bị ghi đè!')"
+                                    class="w-full text-left py-2.5 pl-3 text-[15px] font-bold text-yellow-400 hover:text-yellow-300 transition duration-200 bg-transparent border-0">
+                                    <i class="fa-solid fa-rotate-left mr-2"></i>
+                                    Khôi phục dữ liệu
+                                </button>
+                            </form>
+
+                            <form action="{{ route('dong-bo-du-lieu') }}" method="POST" class="m-0">
+                                @csrf
+                                <button type="submit" onclick="return confirm('Đồng bộ dữ liệu từ Firebase?')"
+                                    class="w-full text-left py-2.5 pl-3 text-[15px] font-bold text-blue-400 hover:text-blue-300 transition duration-200 hover:translate-x-1.5 bg-transparent border-0">
+                                    <i class="fa-solid fa-arrows-rotate mr-2"></i>
+                                    Đồng bộ dữ liệu
+                                </button>
+                            </form>
+
                             <a href="#"
                                 class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Log
                                 hàng đợi & Monitor lỗi</a>
@@ -171,7 +197,7 @@
                 @endif
 
                 {{-- NHÓM DROPDOWN 3: VÉ, HÓA ĐƠN & DỊCH VỤ QUẦY --}}
-                @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') || auth()->user()->can('soat_ve_vao_cua'))
+  @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') || auth()->user()->can('soat_ve_vao_cua'))
                     @php
                         $isGiaoDichActive = request()->routeIs('admin.food-invoices.*') || request()->routeIs('admin.ve-xem-phims.*') || request()->routeIs('admin.soat-ve.*');
                     @endphp
@@ -199,6 +225,7 @@
                         </div>
                     </div>
                 @endif
+
 
                 {{-- NHÓM DROPDOWN 4: QUẢN LÝ TÀI KHOẢN & NHÂN LỰC --}}
                 @if (auth()->user()->can('quan_ly_khach_hang') || auth()->user()->can('quan_ly_nhan_vien') || auth()->user()->can('phan_quyen_he_thong'))
