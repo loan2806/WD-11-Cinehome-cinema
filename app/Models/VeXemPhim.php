@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\SystemSetting;
+use App\Models\LichSuDiem;
 
 class VeXemPhim extends Model
 {
@@ -57,5 +57,13 @@ class VeXemPhim extends Model
     public function suatChieu(): BelongsTo
     {
         return $this->belongsTo(SuatChieu::class, 'suat_chieu_id');
+    }
+
+    /**
+     * Một vé có thể phát sinh lịch sử cộng/trừ điểm.
+     */
+    public function lichSuDiems()
+    {
+        return $this->hasMany(LichSuDiem::class, 've_xem_phim_id');
     }
 }

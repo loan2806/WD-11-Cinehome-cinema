@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use App\Services\DatVeXemPhimService;
+use Illuminate\Support\Facades\Auth;
+use App\Models\NguoiDungVoucher;
 
 class DatVeController extends Controller
 {
@@ -42,6 +44,16 @@ class DatVeController extends Controller
 
         abort_if($suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
-        return view('dat_ve.chon_ghe', $datVeXemPhimService->duLieuChonGhe($suatChieu));
+        $duLieuChonGhe = $datVeXemPhimService->duLieuChonGhe($suatChieu);
+
+        // Lấy voucher chưa sử dụng của khách đang đăng nhập
+        $duLieuChonGhe['vouchers'] = Auth::check()
+            ? NguoiDungVoucher::with('voucher')
+            ->where('nguoi_dung_id', Auth::id())
+            ->where('da_su_dung', false)
+            ->get()
+            : collect();
+
+        return view('dat_ve.chon_ghe', $duLieuChonGhe);
     }
 }

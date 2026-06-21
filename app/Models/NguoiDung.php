@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\ThanhVien;
 
 class NguoiDung extends Authenticatable
 {
@@ -16,9 +17,11 @@ class NguoiDung extends Authenticatable
     protected $fillable = [
         'ho_ten',
         'email',
+        'ngay_sinh',
         'mat_khau',
         'vai_tro',
         'trang_thai_hoat_dong',
+        'so_dien_thoai',
     ];
 
     protected $hidden = [
@@ -28,6 +31,7 @@ class NguoiDung extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'ngay_sinh' => 'date',
         'mat_khau' => 'hashed',
         'trang_thai_hoat_dong' => 'boolean',
     ];
@@ -58,5 +62,29 @@ class NguoiDung extends Authenticatable
     public function veXemPhims()
     {
         return $this->hasMany(VeXemPhim::class, 'nguoi_dung_id');
+    }
+
+    /**
+     * Quan hệ: một người dùng có một thẻ thành viên.
+     */
+    public function thanhVien()
+    {
+        return $this->hasOne(ThanhVien::class, 'nguoi_dung_id');
+    }
+
+    /**
+     * Quan hệ: một người dùng có thể sở hữu nhiều voucher cá nhân.
+     */
+    public function vouchersCaNhan()
+    {
+        return $this->hasMany(NguoiDungVoucher::class, 'nguoi_dung_id');
+    }
+
+    /**
+     * Một người dùng có nhiều thông báo cá nhân.
+     */
+    public function thongBaoCaNhans()
+    {
+        return $this->hasMany(ThongBaoCaNhan::class);
     }
 }
