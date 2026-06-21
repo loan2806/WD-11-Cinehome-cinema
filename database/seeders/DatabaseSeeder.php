@@ -51,5 +51,8 @@ class DatabaseSeeder extends Seeder
 
         // Ép buộc xóa sạch bộ nhớ đệm phân quyền một lần nữa để đồng bộ ngay lập tức
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Gọi VoucherSeeder để tự động thêm các voucher mẫu vào bảng vouchers
+        $this->call([VoucherSeeder::class,]);
     }
 }

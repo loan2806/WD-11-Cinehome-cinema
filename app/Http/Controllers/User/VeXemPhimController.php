@@ -44,6 +44,19 @@ class VeXemPhimController extends Controller
             'tien_hoan' => $veXemPhim->tong_tien * 0.5,
         ]);
 
+        // Nếu vé đã được cộng điểm trước đó thì trừ lại điểm khi khách hủy vé
+        $lichSuCongDiem = $veXemPhim->lichSuDiems()
+            ->where('loai_giao_dich', 'cong_diem')
+            ->first();
+
+        if ($lichSuCongDiem && $veXemPhim->nguoiDung?->thanhVien) {
+            $veXemPhim->nguoiDung->thanhVien->truDiem(
+                $lichSuCongDiem->so_diem,
+                $veXemPhim,
+                'Trừ điểm do hủy vé phim ' . $veXemPhim->ten_phim
+            );
+        }
+
         return redirect()
             ->route('user.ve_xem_phim.index')
             ->with('success', 'Hủy vé thành công. Bạn được hoàn 50% giá trị vé.');

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use App\Models\VeXemPhim;
+use App\Models\NguoiDungVoucher;
+use Illuminate\Support\Facades\Auth;
 
 class DatVeController extends Controller
 {
@@ -44,11 +46,21 @@ class DatVeController extends Controller
 
         abort_if($suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
+        $vouchers = collect();
+
+        if (Auth::check()) {
+            $vouchers = NguoiDungVoucher::with('voucher')
+                ->where('nguoi_dung_id', Auth::id())
+                ->where('da_su_dung', false)
+                ->get();
+        }
+
         return view('dat_ve.chon_ghe', [
             'suatChieu' => $suatChieu,
             'gheDaDat' => $this->gheDaDat($suatChieu),
             'hangGhe' => self::HANG_GHE,
             'soCot' => self::SO_COT,
+            'vouchers' => $vouchers,
         ]);
     }
 
@@ -60,8 +72,8 @@ class DatVeController extends Controller
             ->where('thoi_gian_chieu', $suatChieu->thoi_gian_chieu->format('Y-m-d H:i:s'))
             ->where('trang_thai', '!=', 'da_huy')
             ->pluck('ma_ghe')
-            ->flatMap(fn ($seats) => explode(',', (string) $seats))
-            ->map(fn ($seat) => strtoupper(trim($seat)))
+            ->flatMap(fn($seats) => explode(',', (string) $seats))
+            ->map(fn($seat) => strtoupper(trim($seat)))
             ->filter()
             ->unique()
             ->values()

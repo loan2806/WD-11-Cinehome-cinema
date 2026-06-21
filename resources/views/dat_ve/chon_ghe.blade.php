@@ -138,7 +138,7 @@
     }
 
     .seat-wrapper:hover .seat-tooltip,
-    .seat-button.selected + .seat-tooltip,
+    .seat-button.selected+.seat-tooltip,
     .seat-wrapper.show-tooltip .seat-tooltip {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
@@ -213,6 +213,7 @@
         cursor: pointer;
         font-weight: 900;
     }
+
 </style>
 @endpush
 
@@ -220,11 +221,7 @@
 <div class="min-h-screen bg-[#080808] px-6 pt-28 pb-12 text-white">
     <div class="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[360px_1fr]">
         <aside class="rounded-2xl border border-white/10 bg-[#121212] p-5">
-            <img
-                src="{{ $suatChieu->phim->poster ?? 'https://via.placeholder.com/300x450?text=Poster' }}"
-                class="h-[420px] w-full rounded-xl object-cover"
-                alt="{{ $suatChieu->phim->ten_phim }}"
-            >
+            <img src="{{ $suatChieu->phim->poster ?? 'https://via.placeholder.com/300x450?text=Poster' }}" class="h-[420px] w-full rounded-xl object-cover" alt="{{ $suatChieu->phim->ten_phim }}">
 
             <h1 class="mt-5 text-2xl font-black text-[#d99a32]">{{ $suatChieu->phim->ten_phim }}</h1>
             <div class="mt-4 space-y-2 text-sm text-gray-300">
@@ -235,9 +232,9 @@
             </div>
 
             @if($errors->any())
-                <div class="mt-4 rounded-xl bg-red-500/15 px-4 py-3 text-sm text-red-300">
-                    {{ $errors->first() }}
-                </div>
+            <div class="mt-4 rounded-xl bg-red-500/15 px-4 py-3 text-sm text-red-300">
+                {{ $errors->first() }}
+            </div>
             @endif
 
             <form id="booking-form" method="POST" action="{{ route('user.bookings.store', $suatChieu) }}" class="mt-5">
@@ -253,9 +250,48 @@
                     {{-- Danh sách ghế đang chọn (pill) --}}
                     <div id="selected-list" class="selected-list mt-2 mb-3"></div>
 
-                    <div class="flex justify-between border-t border-white/10 pt-2 text-sm">
-                        <span>Tổng tiền</span>
-                        <strong class="text-[#f4c56a]"><span id="total-price">0</span> VND</strong>
+                    <div class="mt-4 border-t border-white/10 pt-4">
+
+                        <label class="mb-2 block text-sm font-bold">
+                            Voucher
+                        </label>
+
+                        <select id="voucher_select" name="voucher_id" class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] p-3 text-white">
+                            <option value="">
+                                Không sử dụng voucher
+                            </option>
+
+                            @foreach($vouchers as $voucher)
+                            <option value="{{ $voucher->id }}" data-discount="{{ $voucher->voucher->gia_tri_giam }}">
+                                {{ $voucher->ma_voucher_ca_nhan }}
+                                -
+                                Giảm
+                                {{ number_format($voucher->voucher->gia_tri_giam) }}đ
+                            </option>
+                            @endforeach
+                        </select>
+
+                    </div>
+
+                    <div class="mt-4 space-y-2 text-sm">
+
+                        <div class="flex justify-between">
+                            <span>Tạm tính</span>
+                            <span id="subtotal-price">0đ</span>
+                        </div>
+
+                        <div class="flex justify-between text-green-400">
+                            <span>Giảm giá</span>
+                            <span id="discount-price">0đ</span>
+                        </div>
+
+                        <div class="flex justify-between border-t border-white/10 pt-2 text-base font-black">
+                            <span>Thanh toán</span>
+                            <span class="text-[#f4c56a]" id="final-price">
+                                0đ
+                            </span>
+                        </div>
+
                     </div>
                 </div>
 
@@ -274,157 +310,193 @@
 
                 <div class="inline-block space-y-2">
                     @foreach($hangGhe as $hang)
-                        <div class="seat-row flex items-center gap-2 justify-center">
-                            <span class="row-label">{{ $hang }}</span>
-                            @for($i = 1; $i <= $soCot; $i++)
-                                @php
-                                    $maGhe = $hang . $i;
-                                    $daDat = in_array($maGhe, $gheDaDat, true);
-                                @endphp
-                                <div class="seat-wrapper {{ $daDat ? 'booked' : '' }}" data-seat="{{ $maGhe }}">
-                                    <button
-                                        type="button"
-                                        class="seat-button {{ $daDat ? 'booked' : '' }}"
-                                        data-seat="{{ $maGhe }}"
-                                        @disabled($daDat)
-                                    >
-                                        <span class="seat-label">{{ $maGhe }}</span>
-                                    </button>
-                                    <div class="seat-tooltip" role="tooltip">
-                                        <div class="tt-title">
-                                            <i class="fa-solid fa-couch"></i>
-                                            <span>Ghế {{ $maGhe }}</span>
-                                        </div>
-                                        <div class="tt-row">
-                                            <span class="tt-label">Hàng</span>
-                                            <span class="tt-value">{{ $hang }}</span>
-                                        </div>
-                                        <div class="tt-row">
-                                            <span class="tt-label">Cột</span>
-                                            <span class="tt-value">{{ $i }}</span>
-                                        </div>
-                                        <div class="tt-row">
-                                            <span class="tt-label">Giá</span>
-                                            <span class="tt-value">{{ number_format($suatChieu->gia_ve, 0, ',', '.') }}đ</span>
-                                        </div>
-                                        @if($daDat)
-                                            <div class="tt-row" style="margin-top:4px;color:#ff6b6b;">
-                                                <span class="tt-label">Trạng thái</span>
-                                                <span class="tt-value">Đã bán</span>
-                                            </div>
-                                        @else
-                                            <div class="tt-row" style="margin-top:4px;color:#7ed957;">
-                                                <span class="tt-label">Trạng thái</span>
-                                                <span class="tt-value">Còn trống</span>
-                                            </div>
-                                        @endif
-                                    </div>
+                    <div class="seat-row flex items-center gap-2 justify-center">
+                        <span class="row-label">{{ $hang }}</span>
+                        @for($i = 1; $i <= $soCot; $i++) @php $maGhe=$hang . $i; $daDat=in_array($maGhe, $gheDaDat, true); @endphp <div class="seat-wrapper {{ $daDat ? 'booked' : '' }}" data-seat="{{ $maGhe }}">
+                            <button type="button" class="seat-button {{ $daDat ? 'booked' : '' }}" data-seat="{{ $maGhe }}" @disabled($daDat)>
+                                <span class="seat-label">{{ $maGhe }}</span>
+                            </button>
+                            <div class="seat-tooltip" role="tooltip">
+                                <div class="tt-title">
+                                    <i class="fa-solid fa-couch"></i>
+                                    <span>Ghế {{ $maGhe }}</span>
                                 </div>
-                            @endfor
-                            <span class="row-label">{{ $hang }}</span>
-                        </div>
-                    @endforeach
+                                <div class="tt-row">
+                                    <span class="tt-label">Hàng</span>
+                                    <span class="tt-value">{{ $hang }}</span>
+                                </div>
+                                <div class="tt-row">
+                                    <span class="tt-label">Cột</span>
+                                    <span class="tt-value">{{ $i }}</span>
+                                </div>
+                                <div class="tt-row">
+                                    <span class="tt-label">Giá</span>
+                                    <span class="tt-value">{{ number_format($suatChieu->gia_ve, 0, ',', '.') }}đ</span>
+                                </div>
+                                @if($daDat)
+                                <div class="tt-row" style="margin-top:4px;color:#ff6b6b;">
+                                    <span class="tt-label">Trạng thái</span>
+                                    <span class="tt-value">Đã bán</span>
+                                </div>
+                                @else
+                                <div class="tt-row" style="margin-top:4px;color:#7ed957;">
+                                    <span class="tt-label">Trạng thái</span>
+                                    <span class="tt-value">Còn trống</span>
+                                </div>
+                                @endif
+                            </div>
+                    </div>
+                    @endfor
+                    <span class="row-label">{{ $hang }}</span>
                 </div>
-
-                <div class="mt-8 flex flex-wrap justify-center gap-5 border-t border-white/10 pt-5 text-sm text-gray-300">
-                    <span class="flex items-center gap-2">
-                        <span class="inline-block h-5 w-5 rounded bg-[#2a2a2a] border border-white/20 align-middle"></span>
-                        Ghế trống
-                    </span>
-                    <span class="flex items-center gap-2">
-                        <span class="inline-block h-5 w-5 rounded bg-gradient-to-br from-[#f4c56a] to-[#d99a32] align-middle"></span>
-                        Đang chọn
-                    </span>
-                    <span class="flex items-center gap-2">
-                        <span class="inline-block h-5 w-5 rounded bg-[#0e0e0e] border border-white/10 align-middle"></span>
-                        Đã đặt
-                    </span>
-                </div>
+                @endforeach
             </div>
-        </section>
+
+            <div class="mt-8 flex flex-wrap justify-center gap-5 border-t border-white/10 pt-5 text-sm text-gray-300">
+                <span class="flex items-center gap-2">
+                    <span class="inline-block h-5 w-5 rounded bg-[#2a2a2a] border border-white/20 align-middle"></span>
+                    Ghế trống
+                </span>
+                <span class="flex items-center gap-2">
+                    <span class="inline-block h-5 w-5 rounded bg-gradient-to-br from-[#f4c56a] to-[#d99a32] align-middle"></span>
+                    Đang chọn
+                </span>
+                <span class="flex items-center gap-2">
+                    <span class="inline-block h-5 w-5 rounded bg-[#0e0e0e] border border-white/10 align-middle"></span>
+                    Đã đặt
+                </span>
+            </div>
     </div>
+    </section>
+</div>
 </div>
 @endsection
 
 @section('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const wrappers = document.querySelectorAll('.seat-wrapper');
-    const selectedInput = document.getElementById('ghe_duoc_chon');
-    const countSeats = document.getElementById('count-seats');
-    const totalPrice = document.getElementById('total-price');
-    const submitButton = document.getElementById('btn-dat-ve');
-    const selectedList = document.getElementById('selected-list');
-    const price = Number({{ (float) $suatChieu->gia_ve }});
+    document.addEventListener('DOMContentLoaded', function() {
+        const wrappers = document.querySelectorAll('.seat-wrapper');
+        const selectedInput = document.getElementById('ghe_duoc_chon');
+        const countSeats = document.getElementById('count-seats');
+        const submitButton = document.getElementById('btn-dat-ve');
+        const selectedList = document.getElementById('selected-list');
 
-    let selectedSeats = selectedInput.value
-        ? selectedInput.value.split(',').map(s => s.trim()).filter(Boolean)
-        : [];
+        const subtotalPrice = document.getElementById('subtotal-price');
+        const discountPrice = document.getElementById('discount-price');
+        const finalPrice = document.getElementById('final-price');
+        const voucherSelect = document.getElementById('voucher_select');
 
-    function render() {
-        // Cập nhật trạng thái trên sơ đồ
+        const price = @json((float) $suatChieu->gia_ve);
+
+        let selectedSeats = selectedInput.value ?
+            selectedInput.value.split(',').map(s => s.trim()).filter(Boolean) :
+            [];
+
+        function render() {
+            wrappers.forEach(wrapper => {
+                const code = wrapper.dataset.seat;
+                const isSelected = selectedSeats.includes(code);
+
+                wrapper.classList.toggle('selected', isSelected);
+
+                const btn = wrapper.querySelector('.seat-button');
+                if (btn) {
+                    btn.classList.toggle('selected', isSelected);
+                }
+            });
+
+            selectedInput.value = selectedSeats.join(',');
+            countSeats.textContent = selectedSeats.length;
+
+            const subtotal = selectedSeats.length * price;
+
+            let discount = 0;
+
+            if (voucherSelect && voucherSelect.value) {
+                const selectedOption = voucherSelect.options[voucherSelect.selectedIndex];
+                discount = Number(selectedOption.dataset.discount || 0);
+            }
+
+            if (discount > subtotal) {
+                discount = subtotal;
+            }
+
+            const finalTotal = Math.max(subtotal - discount, 0);
+
+            if (subtotalPrice) {
+                subtotalPrice.textContent = subtotal.toLocaleString('vi-VN') + 'đ';
+            }
+
+            if (discountPrice) {
+                discountPrice.textContent = '-' + discount.toLocaleString('vi-VN') + 'đ';
+            }
+
+            if (finalPrice) {
+                finalPrice.textContent = finalTotal.toLocaleString('vi-VN') + 'đ';
+            }
+
+            submitButton.disabled = selectedSeats.length === 0;
+            submitButton.classList.toggle('opacity-60', selectedSeats.length === 0);
+
+            selectedList.innerHTML = selectedSeats.map(code =>
+                `<span class="pill" data-code="${code}">${code}<button type="button" data-remove="${code}" aria-label="Bỏ chọn ${code}">×</button></span>`
+            ).join('');
+
+            selectedList.querySelectorAll('button[data-remove]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+
+                    const code = btn.dataset.remove;
+                    selectedSeats = selectedSeats.filter(s => s !== code);
+
+                    render();
+                });
+            });
+        }
+
         wrappers.forEach(wrapper => {
-            const code = wrapper.dataset.seat;
-            const isSelected = selectedSeats.includes(code);
-            wrapper.classList.toggle('selected', isSelected);
             const btn = wrapper.querySelector('.seat-button');
-            if (btn) btn.classList.toggle('selected', isSelected);
-        });
 
-        // Cập nhật input ẩn + tổng tiền + số ghế
-        selectedInput.value = selectedSeats.join(',');
-        countSeats.textContent = selectedSeats.length;
-        totalPrice.textContent = (selectedSeats.length * price).toLocaleString('vi-VN');
-        submitButton.disabled = selectedSeats.length === 0;
-        submitButton.classList.toggle('opacity-60', selectedSeats.length === 0);
+            if (!btn || btn.classList.contains('booked')) {
+                return;
+            }
 
-        // Render danh sách pill bên trái
-        selectedList.innerHTML = selectedSeats.map(code =>
-            `<span class="pill" data-code="${code}">${code}<button type="button" data-remove="${code}" aria-label="Bỏ chọn ${code}">×</button></span>`
-        ).join('');
+            wrapper.addEventListener('click', (e) => {
+                if (e.target.closest('.seat-tooltip')) {
+                    return;
+                }
 
-        // Bind sự kiện bỏ chọn nhanh qua pill
-        selectedList.querySelectorAll('button[data-remove]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const code = btn.dataset.remove;
-                selectedSeats = selectedSeats.filter(s => s !== code);
+                const code = wrapper.dataset.seat;
+
+                selectedSeats = selectedSeats.includes(code) ?
+                    selectedSeats.filter(s => s !== code) :
+                    [...selectedSeats, code];
+
                 render();
             });
         });
-    }
 
-    wrappers.forEach(wrapper => {
-        const btn = wrapper.querySelector('.seat-button');
-        if (!btn || btn.classList.contains('booked')) return;
-
-        wrapper.addEventListener('click', (e) => {
-            // Nếu click vào tooltip thì bỏ qua
-            if (e.target.closest('.seat-tooltip')) return;
-
-            const code = wrapper.dataset.seat;
-            selectedSeats = selectedSeats.includes(code)
-                ? selectedSeats.filter(s => s !== code)
-                : [...selectedSeats, code];
-            render();
-        });
-    });
-
-    // Hỗ trợ bàn phím: dùng phím số để chọn nhanh
-    document.addEventListener('keydown', (e) => {
-        // Bỏ qua nếu đang gõ trong input/textarea
-        if (e.target.matches('input, textarea, select')) return;
-
-        const key = e.key.toUpperCase();
-        // Phím số 1-9 chọn ghế ở hàng đầu tiên (A)
-        if (/^[1-9]$/.test(e.key)) {
-            const targetCode = 'A' + e.key;
-            const target = document.querySelector(`.seat-wrapper[data-seat="${targetCode}"]`);
-            if (target && !target.classList.contains('booked')) target.click();
+        if (voucherSelect) {
+            voucherSelect.addEventListener('change', render);
         }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.target.matches('input, textarea, select')) {
+                return;
+            }
+
+            if (/^[1-9]$/.test(e.key)) {
+                const targetCode = 'A' + e.key;
+                const target = document.querySelector(`.seat-wrapper[data-seat="${targetCode}"]`);
+
+                if (target && !target.classList.contains('booked')) {
+                    target.click();
+                }
+            }
+        });
+
+        render();
     });
 
-    render();
-});
 </script>
 @endsection

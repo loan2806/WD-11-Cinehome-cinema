@@ -35,6 +35,11 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Admin\PhanQuyenController;
 use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
+use App\Http\Controllers\User\ThanhVienController;
+use App\Http\Controllers\User\VoucherController;
+use App\Http\Controllers\User\ChamSocKhachHangController;
+use App\Http\Controllers\Admin\ThanhVienController as AdminThanhVienController;
+use App\Http\Controllers\Admin\KhachHangController;
 
 /*
 |--------------------------------------------------------------------------
@@ -111,6 +116,14 @@ Route::middleware(['auth'])
         Route::get('/ve-xem-phim/{veXemPhim}', [VeXemPhimController::class, 'show'])->name('ve_xem_phim.show');
         Route::patch('/ve-xem-phim/{veXemPhim}/huy', [VeXemPhimController::class, 'cancel'])->name('ve_xem_phim.cancel');
         Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('thanh-vien.index');
+        // Danh sách voucher có thể đổi
+        Route::get('/doi-diem', [VoucherController::class, 'index'])->name('voucher.index');
+        // Xử lý đổi điểm
+        Route::post('/doi-diem/{voucher}', [VoucherController::class, 'exchange'])->name('voucher.exchange');
+        // Voucher của tôi
+        Route::get('/voucher-cua-toi', [VoucherController::class, 'myVoucher'])->name('voucher.my');
+        Route::post('/nhan-voucher-sinh-nhat', [ChamSocKhachHangController::class, 'nhanVoucherSinhNhat'])->name('birthday.voucher.receive');
     });
 
 /*
@@ -232,6 +245,25 @@ Route::middleware(['auth'])
             Route::post('/phan-quyen/vai-tro', [PhanQuyenController::class, 'storeRole'])->name('phan-quyen.storeRole');
             Route::put('/phan-quyen/cap-nhat/{id}', [PhanQuyenController::class, 'updateMatrix'])->name('phan-quyen.updateMatrix');
         });
+
+
+        // Quản lý thẻ thành viên và điểm khách hàng
+        Route::get('/thanh-vien', [AdminThanhVienController::class, 'index'])->name('thanh-vien.index');
+        Route::get('/thanh-vien/{thanhVien}', [AdminThanhVienController::class, 'show'])->name('thanh-vien.show');
+
+        // Quản lý tài khoản khách hàng
+        Route::get('/khach-hang', [KhachHangController::class, 'index'])->name('khach-hang.index');
+        Route::get('/khach-hang/{khachHang}', [KhachHangController::class, 'show'])->name('khach-hang.show');
+        Route::patch('/khach-hang/{khachHang}/trang-thai', [KhachHangController::class, 'toggleStatus'])->name('khach-hang.toggle-status');
+        // Form sửa thông tin khách hàng
+        Route::get('/khach-hang/{khachHang}/edit', [KhachHangController::class, 'edit'])->name('khach-hang.edit');
+        // Cập nhật thông tin khách hàng
+        Route::patch('/khach-hang/{khachHang}', [KhachHangController::class, 'update'])->name('khach-hang.update');
+
+        // Admin tặng điểm thủ công cho thành viên
+        Route::post('/thanh-vien/{thanhVien}/tang-diem', [AdminThanhVienController::class, 'tangDiem'])->name('thanh-vien.tang-diem');
+        // Admin trừ điểm thủ công cho thành viên
+        Route::post('/thanh-vien/{thanhVien}/tru-diem', [AdminThanhVienController::class, 'truDiem'])->name('thanh-vien.tru-diem');
     });
 
 /*
@@ -270,6 +302,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::get('/thanh-vien', [ThanhVienController::class, 'index'])
+        ->name('user.thanh-vien.index');
 });
 
 require __DIR__ . '/auth.php';

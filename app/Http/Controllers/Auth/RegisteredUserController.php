@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Models\ThanhVien;
 
 class RegisteredUserController extends Controller
 {
@@ -33,7 +34,7 @@ class RegisteredUserController extends Controller
         // Đã sửa: Kiểm tra các trường dữ liệu theo tiếng Việt đầu vào của form đăng ký
         $request->validate([
             'ho_ten' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.NguoiDung::class],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . NguoiDung::class],
             'mat_khau' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -44,6 +45,16 @@ class RegisteredUserController extends Controller
             'mat_khau' => Hash::make($request->mat_khau),
             'vai_tro' => 'khach_hang', // Mặc định tài khoản tự đăng ký trực tuyến là khách hàng
             'trang_thai_hoat_dong' => true,
+        ]);
+
+        // Tự động tạo thẻ thành viên cho khách hàng sau khi đăng ký tài khoản
+        ThanhVien::create([
+            'nguoi_dung_id' => $user->id,
+            'ma_thanh_vien' => 'TV' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
+            'hang_thanh_vien' => 'member',
+            'diem_hien_tai' => 0,
+            'tong_diem_tich_luy' => 0,
+            'ngay_tham_gia' => now(),
         ]);
 
         event(new Registered($user));
