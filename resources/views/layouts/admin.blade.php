@@ -54,7 +54,7 @@
         <x-toast type="warning" :message="session('warning')" />
     @endif
 
-    {{-- GLOBAL CONFIRM MODAL --}}
+ 1   {{-- GLOBAL CONFIRM MODAL --}}
     <x-modal-confirm />
 
     <div id="adminLayout" data-sidebar="open" class="min-h-screen overflow-x-hidden bg-[#080808] text-white">
@@ -97,7 +97,10 @@
                     ĐẶC QUYỀN CAO CẤP: KHỐI CHỨC NĂNG DÀNH RIÊNG CHO QUẢN LÝ HỆ THỐNG
                 ========================================================================= --}}
                 @if (auth()->user()->hasRole('Quản lý hệ thống') || auth()->user()->vai_tro === 'admin')
-                    <div class="sidebar-dropdown-box">
+                    @php
+                        $isNenTangActive = request()->routeIs('admin.cai-dat-thanh-toan.*');
+                    @endphp
+                    <div class="sidebar-dropdown-box {{ $isNenTangActive ? 'open' : '' }}">
                         <button type="button"
                             class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-black text-[#f4c56a] bg-white/5 hover:bg-white/10 transition duration-200 border border-[#d99a32]/30 text-left whitespace-nowrap leading-none outline-none">
                             <span class="flex items-center gap-3.5">
@@ -108,8 +111,8 @@
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32] ml-6 space-y-1">
                             {{-- Đã lược bỏ Cụm rạp chi nhánh theo mô hình 1 rạp duy nhất --}}
-                            <a href="#"
-                                class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Cài
+                            <a href="{{ route('admin.cai-dat-thanh-toan.edit') }}"
+                                class="block py-2.5 pl-3 text-[15px] font-bold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.cai-dat-thanh-toan.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Cài
                                 đặt cổng thanh toán</a>
                             <a href="#"
                                 class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Sao
