@@ -178,14 +178,65 @@ class SuatChieuController extends Controller
     /**
      * 4. 💡 ĐÃ SỬA CHUẨN: TRANG XEM CHI TIẾT RIÊNG BIỆT (Không bị chuyển hướng nhầm sang edit)
      */
-    public function show(SuatChieu $suatChieu): View
-    {
-        // TỐI ƯU SQL (Eager Loading): Nạp trước toàn bộ các thực thể liên quan để triệt tiêu lỗi N+1 Query làm giảm hiệu năng hệ thống
-        $suatChieu->load(['phims', 'rapChieuPhim', 'phongChieu']);
+ public function show(SuatChieu $suatChieu): \Illuminate\View\View
+{
+    // 1. Tối ưu SQL (Eager Loading): Nạp trước các thực thể để tăng tốc độ tải trang
+    $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu.hangGhes', 'phongChieu.gheNgois.loaiGhe']);
+
+    // 2. Lấy tất cả các chuỗi 'ma_ghe' của các vé hợp lệ thuộc suất chiếu này
+    // Sử dụng đúng các trạng thái ['da_thanh_toan', 'da_su_dung'] theo migration của bạn, loại bỏ 'da_huy'
+    $chuoiGheDaDats = \DB::table('ve_xem_phims')
+        ->where('suat_chieu_id', $suatChieu->id)
+        ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung']) 
+        ->pluck('ma_ghe') // Lấy ra danh sách chuỗi ví dụ: ["A1", "B2,B3", "A5"]
+        ->toArray();
+
+    // 3. Xử lý bóc tách mảng: Biến đổi các chuỗi gộp thành một mảng phẳng chứa các mã ghế độc lập
+    $danhSachMaGheDaDat = [];
+    foreach ($chuoiGheDaDats as $chuoiGhe) {
+        if (!empty($chuoiGhe)) {
+            // Tách chuỗi bằng dấu phẩy đề phòng trường hợp một vé đặt nhiều ghế cùng lúc "A1,A2"
+            $mangGhe = explode(',', $chuoiGhe);
+            foreach ($mangGhe as $tenGhe) {
+                $danhSachMaGheDaDat[] = trim($tenGhe); // Xóa khoảng trắng thừa nếu có
+            }
+        }
+    }
+    // Lọc bỏ trùng lặp nếu có để tối ưu hóa mảng dữ liệu quét
+    $danhSachMaGheDaDat = array_unique($danhSachMaGheDaDat);
+
+    // 4. Khởi tạo ma trận sơ đồ ghế kết hợp dữ liệu trạng thái động
+    $seatMap = [];
+    foreach ($suatChieu->phongChieu->gheNgois as $g) {
+        $tHang = $g->hangGhe->ten_hang ?? '';
+        $vCot = (int)($g->vi_tri_cot ?? 1);
         
-        return view('admin.suat-chieus.show', compact('suatChieu'));
+        // Mặc định ban đầu thiết lập là ghế trống
+        $trangThaiThucTe = 'trong'; 
+        
+        // KIỂM TRA ĐỒNG BỘ: Nếu mã của ghế này nằm trong danh sách mã ghế đã được đặt mua
+        if (in_array($g->ma_ghe, $danhSachMaGheDaDat)) {
+            $trangThaiThucTe = 'da_dat'; // Chuyển sang trạng thái ĐÃ BÁN
+        } elseif ($g->trang_thai === 'bao_tri') {
+            $trangThaiThucTe = 'bao_tri'; // Ghế hỏng vật lý
+        }
+
+        if ($tHang) {
+            $seatMap[$tHang][$vCot] = [
+                'ma_ghe' => $g->ma_ghe,
+                'loai_ghe' => $g->loaiGhe->ten_loai ?? 'Regular',
+                'trang_thai' => $trangThaiThucTe, 
+                'is_couple' => ($g->loaiGhe->ten_loai ?? '') === 'Couple',
+                'cot_end' => $g->cot_end ?? null
+            ];
+        }
     }
 
+    // Tính toán số cột lớn nhất để vẽ giao diện ma trận
+    $soCot = (int)$suatChieu->phongChieu->gheNgois->max('vi_tri_cot') ?: 12;
+
+    return view('admin.suat-chieus.show', compact('suatChieu', 'seatMap', 'soCot'));
+}
     /**
      * 5. GIAO DIỆN CHỈNH SỬA SUẤT CHIẾU
      */
