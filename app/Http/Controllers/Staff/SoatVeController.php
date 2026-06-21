@@ -72,9 +72,8 @@ class SoatVeController extends Controller
             'trang_thai' => 'da_su_dung',
         ]);
 
-        // Lấy lại dữ liệu mới nhất sau khi cập nhật,
-        // để giao diện hiển thị đúng trạng thái "Đã sử dụng".
-        $ve->refresh();
+        // Lấy lại dữ liệu mới nhất sau khi cập nhật.
+        $ve = $ve->fresh();
 
         return back()
             ->with('ticket', $ve)

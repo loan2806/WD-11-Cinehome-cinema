@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Phim;
-use App\Models\DanhGiaPhim; // Đã đổi từ MovieReview sang DanhGiaPhim
+use App\Models\DanhGiaPhim;
 use App\Models\Phims;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 
 class DanhGiaPhimController extends Controller
 {
+    use Loggable;
     public function index()
     {
         // ĐÃ SỬA: Nạp các mối quan hệ liên kết bằng tiếng Việt (phim, nguoiDung)
@@ -34,16 +35,7 @@ class DanhGiaPhimController extends Controller
 
         $danhGia = DanhGiaPhim::create($data);
 
-        if (class_exists(\App\Models\ActivityLog::class)) {
-            \App\Models\ActivityLog::create([
-                'user_id' => auth()->id(),
-                'action' => 'create',
-                'module' => 'movie_reviews',
-                'description' => 'Thêm đánh giá phim #' . $danhGia->id,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
-        }
+        $this->ghiNhatKy($request, 'Thêm đánh giá phim', 'Quản lý đánh giá phim', "Thêm đánh giá phim #{$danhGia->id}");
 
         return back()->with('success', 'Đã thêm đánh giá phim.');
     }
@@ -56,16 +48,7 @@ class DanhGiaPhimController extends Controller
 
         $danhGiaPhim->update($data);
 
-        if (class_exists(\App\Models\ActivityLog::class)) {
-            \App\Models\ActivityLog::create([
-                'user_id' => auth()->id(),
-                'action' => 'update',
-                'module' => 'movie_reviews',
-                'description' => 'Cập nhật đánh giá phim #' . $danhGiaPhim->id . ' sang ' . $data['trang_thai'],
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
-        }
+        $this->ghiNhatKy($request, 'Cập nhật đánh giá phim', 'Quản lý đánh giá phim', "Cập nhật đánh giá #{$danhGiaPhim->id} sang {$data['trang_thai']}");
 
         return back()->with('success', 'Đã cập nhật trạng thái đánh giá.');
     }
@@ -75,16 +58,7 @@ class DanhGiaPhimController extends Controller
         $id = $danhGiaPhim->id;
         $danhGiaPhim->delete();
 
-        if (class_exists(\App\Models\ActivityLog::class)) {
-            \App\Models\ActivityLog::create([
-                'user_id' => auth()->id(),
-                'action' => 'delete',
-                'module' => 'movie_reviews',
-                'description' => 'Xóa đánh giá phim #' . $id,
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
-        }
+        $this->ghiNhatKy($request, 'Xóa đánh giá phim', 'Quản lý đánh giá phim', "Xóa đánh giá #{$id}");
 
         return back()->with('success', 'Đã xóa đánh giá phim.');
     }

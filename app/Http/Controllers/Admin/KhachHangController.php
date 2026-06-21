@@ -20,12 +20,15 @@ class KhachHangController extends Controller
             ->with('thanhVien');
 
         // Tìm theo họ tên, email
+        // Tìm theo họ tên, email hoặc số điện thoại.
+        // Admin chỉ cần nhập SĐT là biết khách hàng nào.
         if ($request->filled('tim_kiem')) {
-            $keyword = $request->tim_kiem;
+            $keyword = trim($request->tim_kiem);
 
             $query->where(function ($q) use ($keyword) {
                 $q->where('ho_ten', 'like', "%{$keyword}%")
-                    ->orWhere('email', 'like', "%{$keyword}%");
+                    ->orWhere('email', 'like', "%{$keyword}%")
+                    ->orWhere('so_dien_thoai', 'like', "%{$keyword}%");
             });
         }
 
@@ -131,6 +134,15 @@ class KhachHangController extends Controller
         $data = $request->validate([
             'ho_ten' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:nguoi_dungs,email,' . $khachHang->id],
+
+            // SĐT là mã nhận diện thực tế để tìm khách nhanh.
+            'so_dien_thoai' => [
+                'nullable',
+                'string',
+                'max:20',
+                'unique:nguoi_dungs,so_dien_thoai,' . $khachHang->id,
+            ],
+
             'ngay_sinh' => ['nullable', 'date', 'before:today'],
             'trang_thai_hoat_dong' => ['required', 'boolean'],
         ]);

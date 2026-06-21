@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\TheLoaiRequest;
 use App\Models\TheLoai;
+use App\Services\AdminNotificationService;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 
 class TheloaisController extends Controller
 {
+    use Loggable;
+
     /*
     |--------------------------------------------------------------------------
     | LIST
@@ -18,12 +22,10 @@ class TheloaisController extends Controller
     {
         $query = TheLoai::withCount('phims');
 
-        // Search
         if ($request->filled('search')) {
             $query->where('ten_the_loai', 'like', '%' . $request->search . '%');
         }
 
-        // Filter by status
         if ($request->filled('status')) {
             $query->where('trang_thai', $request->status);
         }
@@ -35,7 +37,7 @@ class TheloaisController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE FORM
+    | CREATE
     |--------------------------------------------------------------------------
     */
     public function create()
@@ -51,18 +53,30 @@ class TheloaisController extends Controller
     public function store(TheLoaiRequest $request)
     {
         $data = $request->validated();
-        // Mặc định trạng thái = 1 (kích hoạt) khi tạo mới
         $data['trang_thai'] = $data['trang_thai'] ?? 1;
 
-        TheLoai::create($data);
+        $theLoai = TheLoai::create($data);
 
-        return redirect()
-            ->route('admin.the-loais.index');
+        AdminNotificationService::push(
+            '🎭 Thể loại mới được thêm',
+            'Đã thêm thể loại ' . $theLoai->ten_the_loai,
+            'Success'
+        );
+
+        $this->ghiNhatKy(
+            $request,
+            'Thêm thể loại phim',
+            'Quản lý phim & lịch chiếu',
+            "Thêm thể loại: {$theLoai->ten_the_loai}"
+        );
+
+        return redirect()->route('admin.the-loais.index')
+            ->with('success', 'Thêm thể loại thành công');
     }
 
     /*
     |--------------------------------------------------------------------------
-    | EDIT FORM
+    | EDIT
     |--------------------------------------------------------------------------
     */
     public function edit(TheLoai $theLoai)
@@ -79,8 +93,21 @@ class TheloaisController extends Controller
     {
         $theLoai->update($request->validated());
 
-        return redirect()
-            ->route('admin.the-loais.index');
+        AdminNotificationService::push(
+            '✏️ Thể loại đã được cập nhật',
+            'Đã cập nhật thể loại ' . $theLoai->ten_the_loai,
+            'Success'
+        );
+
+        $this->ghiNhatKy(
+            $request,
+            'Cập nhật thể loại phim',
+            'Quản lý phim & lịch chiếu',
+            "Cập nhật thể loại: {$theLoai->ten_the_loai}"
+        );
+
+        return redirect()->route('admin.the-loais.index')
+            ->with('success', 'Cập nhật thể loại thành công');
     }
 
     /*
@@ -93,12 +120,27 @@ class TheloaisController extends Controller
         if ($theLoai->phims()->exists()) {
             return redirect()
                 ->route('admin.the-loais.index')
-                ->with('error', 'Không thể xóa thể loại này vì đang có phim liên kết. Vui lòng xóa hoặc cập nhật các phim trước.');
+                ->with('error', 'Không thể xóa thể loại này vì đang có phim liên kết.');
         }
+
+        $tenTheLoai = $theLoai->ten_the_loai;
 
         $theLoai->delete();
 
-        return redirect()
-            ->route('admin.the-loais.index');
+        AdminNotificationService::push(
+            '🗑️ Thể loại đã bị xóa',
+            'Đã xóa thể loại ' . $tenTheLoai,
+            'Danger'
+        );
+
+        $this->ghiNhatKy(
+            request(),
+            'Xóa thể loại phim',
+            'Quản lý phim & lịch chiếu',
+            "Xóa thể loại: {$tenTheLoai}"
+        );
+
+        return redirect()->route('admin.the-loais.index')
+            ->with('success', 'Xóa thể loại thành công');
     }
 }

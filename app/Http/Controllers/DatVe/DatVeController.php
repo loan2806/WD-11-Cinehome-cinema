@@ -5,15 +5,16 @@ namespace App\Http\Controllers\DatVe;
 use App\Http\Controllers\Controller;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
+<<<<<<< HEAD
 use App\Models\VeXemPhim;
 use App\Models\NguoiDungVoucher;
 use Illuminate\Support\Facades\Auth;
+=======
+use App\Services\DatVeXemPhimService;
+>>>>>>> 0136db73e24e35e641afeb35dc1fc30a050c0e43
 
 class DatVeController extends Controller
 {
-    private const HANG_GHE = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-    private const SO_COT = 10;
-
     public function chonRap()
     {
         $danhSachRap = RapChieuPhim::whereHas('suatChieus', function ($query) {
@@ -40,12 +41,14 @@ class DatVeController extends Controller
         return view('dat_ve.chon_phim', compact('rap', 'suatChieuTheoPhim'));
     }
 
-    public function chonGhe($suat_chieu_id)
+    public function chonGhe($suat_chieu_id, DatVeXemPhimService $datVeXemPhimService)
     {
-        $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim'])->findOrFail($suat_chieu_id);
+        $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])
+            ->findOrFail($suat_chieu_id);
 
         abort_if($suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
+<<<<<<< HEAD
         $vouchers = collect();
 
         if (Auth::check()) {
@@ -80,3 +83,8 @@ class DatVeController extends Controller
             ->all();
     }
 }
+=======
+        return view('dat_ve.chon_ghe', $datVeXemPhimService->duLieuChonGhe($suatChieu));
+    }
+}
+>>>>>>> 0136db73e24e35e641afeb35dc1fc30a050c0e43

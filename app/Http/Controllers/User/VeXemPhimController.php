@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers\User;
 
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
-use App\Models\VeXemPhim; // Đã đổi từ Ticket sang VeXemPhim
-use Illuminate\Http\Request;
+use App\Models\SystemSetting;
+use App\Models\VeXemPhim;
+use Illuminate\Support\Facades\Auth;
 
 class VeXemPhimController extends Controller
 {
     public function index()
     {
-        // Đã sửa: Đổi sang bảng ve_xem_phims và cột nguoi_dung_id. 
-        // LƯU Ý: Bỏ with('movie') vì bảng ve_xem_phims hiện tại lưu trực tiếp tên_phim dạng chuỗi.
         $veXemPhims = VeXemPhim::where('nguoi_dung_id', Auth::id())
             ->latest()
             ->paginate(10);
@@ -22,10 +20,8 @@ class VeXemPhimController extends Controller
 
     public function show(VeXemPhim $veXemPhim)
     {
-        // Đã sửa: Kiểm tra quyền sở hữu vé bằng cột nguoi_dung_id
         abort_if($veXemPhim->nguoi_dung_id !== Auth::id(), 403);
 
-        // LƯU Ý: Tạm thời bỏ load quan hệ cũ để tránh lỗi do các bảng foodOrders chưa được việt hóa
         return view('user.ve_xem_phim.show', compact('veXemPhim'));
     }
 
@@ -33,15 +29,17 @@ class VeXemPhimController extends Controller
     {
         abort_if($veXemPhim->nguoi_dung_id !== Auth::id(), 403);
 
-        // Gọi hàm kiểm tra thời gian hủy vé bên Model VeXemPhim
-        if (!$veXemPhim->canCancel()) {
-            return back()->with('error', 'Chỉ được hủy vé trong vòng 5 phút sau khi đặt.');
+        if (! $veXemPhim->canCancel()) {
+            $minutes = (int) SystemSetting::getValue('ticket_cancel_minutes', 5);
+
+            return back()->with('error', 'Chỉ được hủy vé trong vòng ' . $minutes . ' phút sau khi đặt và khi vé chưa sử dụng.');
         }
 
-        // Đã sửa: Cập nhật dữ liệu theo các cột tiếng Việt và trạng thái 'da_huy'
+        $refundPercent = max(0, min(100, (float) SystemSetting::getValue('refund_percent', 50)));
+
         $veXemPhim->update([
             'trang_thai' => 'da_huy',
-            'tien_hoan' => $veXemPhim->tong_tien * 0.5,
+            'tien_hoan' => ((float) $veXemPhim->tong_tien) * $refundPercent / 100,
         ]);
 
         // Nếu vé đã được cộng điểm trước đó thì trừ lại điểm khi khách hủy vé
@@ -59,6 +57,6 @@ class VeXemPhimController extends Controller
 
         return redirect()
             ->route('user.ve_xem_phim.index')
-            ->with('success', 'Hủy vé thành công. Bạn được hoàn 50% giá trị vé.');
+            ->with('success', 'Hủy vé thành công. Bạn được hoàn ' . $refundPercent . '% giá trị vé.');
     }
 }

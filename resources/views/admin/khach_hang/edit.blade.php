@@ -8,7 +8,7 @@
 <div class="mx-auto max-w-4xl space-y-6">
 
     <a href="{{ route('admin.khach-hang.show', $khachHang) }}"
-       class="inline-flex items-center gap-2 text-sm font-bold text-[#d99a32] no-underline transition hover:translate-x-1">
+        class="inline-flex items-center gap-2 text-sm font-bold text-[#d99a32] no-underline transition hover:translate-x-1">
         <i class="fa-solid fa-arrow-left"></i>
         Quay lại chi tiết khách hàng
     </a>
@@ -28,13 +28,11 @@
                     Họ tên khách hàng
                 </label>
 
-                <input type="text"
-                       name="ho_ten"
-                       value="{{ old('ho_ten', $khachHang->ho_ten) }}"
-                       class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+                <input type="text" name="ho_ten" value="{{ old('ho_ten', $khachHang->ho_ten) }}"
+                    class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
 
                 @error('ho_ten')
-                    <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -44,13 +42,26 @@
                     Email
                 </label>
 
-                <input type="email"
-                       name="email"
-                       value="{{ old('email', $khachHang->email) }}"
-                       class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+                <input type="email" name="email" value="{{ old('email', $khachHang->email) }}"
+                    class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
 
                 @error('email')
-                    <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- Số điện thoại --}}
+            <div>
+                <label class="mb-2 block text-sm font-bold text-gray-300">
+                    Số điện thoại
+                </label>
+
+                <input type="text" name="so_dien_thoai" value="{{ old('so_dien_thoai', $khachHang->so_dien_thoai) }}"
+                    placeholder="Ví dụ: 0987654321"
+                    class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+
+                @error('so_dien_thoai')
+                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -60,17 +71,17 @@
                     Ngày sinh
                 </label>
 
-                <input type="date"
-                       name="ngay_sinh"
-                       value="{{ old('ngay_sinh', $khachHang->ngay_sinh?->format('Y-m-d')) }}"
-                       class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+                <input type="date" name="ngay_sinh"
+                    value="{{ old('ngay_sinh', $khachHang->ngay_sinh?->format('Y-m-d')) }}"
+                    class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
 
                 <p class="mt-2 text-xs text-gray-500">
-                    Admin được phép sửa ngày sinh để hỗ trợ khách hàng nhập sai. Người dùng thường không được tự sửa sau khi đã lưu.
+                    Admin được phép sửa ngày sinh để hỗ trợ khách hàng nhập sai. Người dùng thường không được tự sửa sau
+                    khi đã lưu.
                 </p>
 
                 @error('ngay_sinh')
-                    <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -81,7 +92,7 @@
                 </label>
 
                 <select name="trang_thai_hoat_dong"
-                        class="w-full rounded-2xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+                    class="w-full rounded-2xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
                     <option value="1" @selected(old('trang_thai_hoat_dong', $khachHang->trang_thai_hoat_dong) == 1)>
                         Đang hoạt động
                     </option>
@@ -92,13 +103,13 @@
                 </select>
 
                 @error('trang_thai_hoat_dong')
-                    <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
                 @enderror
             </div>
 
             <div class="flex justify-end gap-3 border-t border-white/10 pt-5">
                 <a href="{{ route('admin.khach-hang.show', $khachHang) }}"
-                   class="rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white no-underline transition hover:bg-white/15">
+                    class="rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white no-underline transition hover:bg-white/15">
                     Hủy
                 </a>
 

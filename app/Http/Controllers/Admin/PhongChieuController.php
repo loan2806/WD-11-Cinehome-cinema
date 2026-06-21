@@ -7,17 +7,21 @@ use App\Http\Requests\Admin\StorePhongChieuRequest;
 use App\Http\Requests\Admin\UpdatePhongChieuRequest;
 use App\Models\GheNgoi;
 use App\Models\HangGhe;
+use App\Models\LichBaoTriGheNgoi;
 use App\Models\LoaiGhe;
 use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Models\VeXemPhim;
 use App\Services\SeatGeneratorService;
+use App\Services\SeatMaintenanceService;
+use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PhongChieuController extends Controller
 {
+    use Loggable;
     protected SeatGeneratorService $seatGenerator;
 
     public function __construct(SeatGeneratorService $seatGenerator)
@@ -56,7 +60,9 @@ class PhongChieuController extends Controller
      */
     public function create(): View
     {
-        $rapChieuPhims = RapChieuPhim::where('trang_thai', 'hoat_dong')->orderBy('ten_rap')->get();
+        $rapChieuPhims = RapChieuPhim::where('trang_thai', 'hoat_dong')
+            ->orderBy('ten_rap')
+            ->get();
 
         return view('admin.phong-chieus.create', compact('rapChieuPhims'));
     }
@@ -69,6 +75,8 @@ class PhongChieuController extends Controller
         $data = $request->validated();
         
         PhongChieu::create($data);
+
+        $this->ghiNhatKy($request, 'Thêm phòng chiếu', 'Quản lý phòng & ghế', "Thêm phòng: {$data['ten_phong']}");
 
         return redirect()
             ->route('admin.phong-chieus.index')
@@ -115,6 +123,8 @@ class PhongChieuController extends Controller
         
         $phongChieu->update($data);
 
+        $this->ghiNhatKy($request, 'Cập nhật phòng chiếu', 'Quản lý phòng & ghế', "Cập nhật phòng: {$phongChieu->ten_phong}");
+
         return redirect()
             ->route('admin.phong-chieus.index')
             ->with('success', 'Phòng chiếu đã được cập nhật thành công.');
@@ -123,28 +133,37 @@ class PhongChieuController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(PhongChieu $phongChieu)
+    public function destroy(Request $request, PhongChieu $phongChieu)
     {
         if ($phongChieu->suatChieus()->exists()) {
-            return redirect()
-                ->route('admin.phong-chieus.index')
-                ->with('error', 'Không thể xóa phòng chiếu vì đang có suất chiếu.');
+            return redirect()->back()->with('error', 'Không thể xóa phòng chiếu vì đang có suất chiếu.');
         }
 
+        $tenPhong = $phongChieu->ten_phong;
         $phongChieu->delete();
+
+        AdminNotificationService::push(
+            '🗑️ Xóa phòng chiếu',
+            "Đã xóa phòng {$tenPhong}",
+            'Warning'
+        );
+
+        $this->ghiNhatKy($request, 'Xóa phòng chiếu', 'Quản lý phòng & ghế', "Xóa phòng: {$tenPhong}");
 
         return redirect()
             ->route('admin.phong-chieus.index')
-            ->with('success', 'Phòng chiếu đã được xóa thành công.');
+            ->with('success', 'Phòng chiếu đã được xóa.');
     }
 
     /**
      * Force delete the specified resource.
      */
-    public function forceDestroy($id)
+    public function forceDestroy(Request $request, $id)
     {
         $phongChieu = PhongChieu::withTrashed()->findOrFail($id);
         $phongChieu->forceDelete();
+
+        $this->ghiNhatKy($request, 'Xóa vĩnh viễn phòng chiếu', 'Quản lý phòng & ghế', "Xóa vĩnh viễn phòng #{$id}");
 
         return redirect()
             ->route('admin.phong-chieus.index')
@@ -154,10 +173,12 @@ class PhongChieuController extends Controller
     /**
      * Restore the specified resource.
      */
-    public function restore($id)
+    public function restore(Request $request, $id)
     {
         $phongChieu = PhongChieu::withTrashed()->findOrFail($id);
         $phongChieu->restore();
+
+        $this->ghiNhatKy($request, 'Khôi phục phòng chiếu', 'Quản lý phòng & ghế', "Khôi phục phòng #{$id}");
 
         return redirect()
             ->route('admin.phong-chieus.index')
@@ -210,7 +231,6 @@ class PhongChieuController extends Controller
             'ghe_ids.*' => 'exists:ghe_ngois,id',
         ]);
 
-        // Chấp nhận cả ghe_id (1 ghế) và ghe_ids (mảng - cho cặp couple)
         $gheIds = $request->ghe_ids ?? [$request->ghe_id];
         if (empty($gheIds)) {
             return response()->json(['success' => false, 'message' => 'Thiếu ID ghế.'], 422);
@@ -220,10 +240,57 @@ class PhongChieuController extends Controller
         if (!$ghe) {
             return response()->json(['success' => false, 'message' => 'Ghế không tồn tại.'], 404);
         }
-        $isMaintenance = $ghe->trang_thai !== 'bao_tri';
-        $newStatus = $isMaintenance ? 'bao_tri' : 'hoat_dong';
 
-        $phongChieu->gheNgois()->whereIn('id', $gheIds)->update(['trang_thai' => $newStatus]);
+        $service = app(SeatMaintenanceService::class);
+        $isMaintenance = $ghe->trang_thai !== 'bao_tri';
+
+        if ($isMaintenance) {
+            $allConflictList = [];
+            $gheIdsToMaintain = [];
+
+            foreach ($gheIds as $gheId) {
+                $seat = $phongChieu->gheNgois()->findOrFail($gheId);
+                if ($seat->trang_thai !== 'hoat_dong') {
+                    continue;
+                }
+                $result = $service->canMaintainNow($seat);
+                if (!$result['can']) {
+                    $allConflictList = array_merge($allConflictList, $result['conflicts']);
+                } else {
+                    $gheIdsToMaintain[] = $seat;
+                }
+            }
+
+            if (!empty($allConflictList)) {
+                $uniqueConflicts = collect($allConflictList)->unique('ve_id');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ghế đã chọn có vé ở suất chiếu tương lai. Không thể bảo trì ngay. Hãy xử lý ' . $uniqueConflicts->count() . ' vé liên quan trước.',
+                    'conflicts_count' => $uniqueConflicts->count(),
+                    'conflicts' => $uniqueConflicts->take(5)->values()->all(),
+                ], 422);
+            }
+
+            foreach ($gheIdsToMaintain as $seat) {
+                $service->maintainNow($seat, auth()->id());
+            }
+        } else {
+            foreach ($gheIds as $gheId) {
+                $seat = $phongChieu->gheNgois()->findOrFail($gheId);
+                if ($seat->trang_thai !== 'bao_tri') {
+                    continue;
+                }
+                $pending = LichBaoTriGheNgoi::where('ghe_ngoi_id', $seat->id)
+                    ->whereIn('trang_thai', ['cho_thuc_hien', 'dang_thuc_hien'])
+                    ->latest()
+                    ->first();
+                if ($pending) {
+                    $service->completeMaintenance($pending, auth()->id());
+                } else {
+                    $seat->update(['trang_thai' => 'hoat_dong']);
+                }
+            }
+        }
 
         $updatedSeats = $phongChieu->gheNgois()->whereIn('id', $gheIds)->with('loaiGhe')->get()
             ->map(fn($g) => [
@@ -232,17 +299,20 @@ class PhongChieuController extends Controller
                 'loai_ghe_id' => $g->loai_ghe_id,
                 'mau_sac' => $g->loaiGhe->mau_sac ?? '#666666',
                 'phu_thu' => $g->loaiGhe->phu_thu ?? 0,
-                'trang_thai' => $newStatus,
+                'trang_thai' => $g->trang_thai,
             ])->toArray();
 
-        $count = count($gheIds);
+        $count = $isMaintenance
+            ? count($gheIdsToMaintain ?? $gheIds)
+            : count($gheIds);
+
         return response()->json([
             'success' => true,
             'message' => $isMaintenance
                 ? "Đã chuyển {$count} ghế sang bảo trì."
                 : "Đã kích hoạt lại {$count} ghế.",
             'is_maintenance' => $isMaintenance,
-            'trang_thai' => $newStatus,
+            'trang_thai' => $isMaintenance ? 'bao_tri' : 'hoat_dong',
             'updated_seats' => $updatedSeats,
         ]);
     }
@@ -807,29 +877,76 @@ class PhongChieuController extends Controller
         $soHoatDong = $ghes->where('trang_thai', 'hoat_dong')->count();
         $soBaoTri   = $ghes->where('trang_thai', 'bao_tri')->count();
 
-        // Xác định action nếu client không gửi: mặc định theo hướng "khử" trạng thái hiện tại
         $action = $request->action;
         if (!$action) {
             $action = $soBaoTri > 0 ? 'activate' : 'maintenance';
         }
 
-        $newStatus = $action === 'maintenance' ? 'bao_tri' : 'hoat_dong';
+        $service = app(SeatMaintenanceService::class);
 
-        $hangGhe->gheNgois()->update(['trang_thai' => $newStatus]);
+        if ($action === 'maintenance') {
+            $allCanMaintain = true;
+            $conflictList = [];
+            $gheIdsToMaintain = [];
 
-        $updatedSeats = $ghes->map(function ($g) use ($newStatus) {
+            foreach ($ghes as $ghe) {
+                if ($ghe->trang_thai !== 'hoat_dong') {
+                    continue;
+                }
+                $result = $service->canMaintainNow($ghe);
+                if (!$result['can']) {
+                    $allCanMaintain = false;
+                    $conflictList = array_merge($conflictList, $result['conflicts']);
+                } else {
+                    $gheIdsToMaintain[] = $ghe->id;
+                }
+            }
+
+            if (!$allCanMaintain) {
+                $uniqueConflicts = collect($conflictList)->unique('ve_id')->count();
+                return response()->json([
+                    'success' => false,
+                    'message' => "Không thể bảo trì hàng {$hangGhe->ten_hang}: có {$uniqueConflicts} vé ở suất chiếu tương lai. Hãy xử lý vé trước.",
+                    'conflicts_count' => $uniqueConflicts,
+                ], 422);
+            }
+
+            foreach ($gheIdsToMaintain as $gheId) {
+                $seat = $phongChieu->gheNgois()->findOrFail($gheId);
+                $service->maintainNow($seat, auth()->id());
+            }
+        } else {
+            foreach ($ghes as $ghe) {
+                if ($ghe->trang_thai !== 'bao_tri') {
+                    continue;
+                }
+                $pending = LichBaoTriGheNgoi::where('ghe_ngoi_id', $ghe->id)
+                    ->whereIn('trang_thai', ['cho_thuc_hien', 'dang_thuc_hien'])
+                    ->latest()
+                    ->first();
+                if ($pending) {
+                    $service->completeMaintenance($pending, auth()->id());
+                } else {
+                    $ghe->update(['trang_thai' => 'hoat_dong']);
+                }
+            }
+        }
+
+        $ghes = $ghes->fresh();
+
+        $updatedSeats = $ghes->map(function ($g) {
             return [
                 'id' => $g->id,
-                'trang_thai' => $newStatus,
+                'trang_thai' => $g->trang_thai,
             ];
         })->toArray();
 
         return response()->json([
             'success' => true,
-            'message' => $newStatus === 'bao_tri'
+            'message' => $action === 'maintenance'
                 ? "Đã chuyển {$ghes->count()} ghế trong hàng {$hangGhe->ten_hang} sang bảo trì."
                 : "Đã kích hoạt lại {$ghes->count()} ghế trong hàng {$hangGhe->ten_hang}.",
-            'trang_thai' => $newStatus,
+            'trang_thai' => $action === 'maintenance' ? 'bao_tri' : 'hoat_dong',
             'updated_seats' => $updatedSeats,
         ]);
     }

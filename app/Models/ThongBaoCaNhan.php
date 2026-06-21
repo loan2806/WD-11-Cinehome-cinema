@@ -27,10 +27,10 @@ class ThongBaoCaNhan extends Model
     ];
 
     /**
-     * Một thông báo thuộc về một người dùng.
+     * Một thông báo cá nhân thuộc về một người dùng.
      */
     public function nguoiDung()
     {
-        return $this->belongsTo(NguoiDung::class);
+        return $this->belongsTo(NguoiDung::class, 'nguoi_dung_id');
     }
 }

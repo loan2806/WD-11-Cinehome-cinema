@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\CaiDatThanhToanController as AdminCaiDatThanhToanController;
 use App\Http\Controllers\Admin\DanhGiaPhimController as AdminDanhGiaPhimController;
 use App\Http\Controllers\Admin\FoodInvoiceController;
 use App\Http\Controllers\Admin\GheNgoiController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\PhongChieuController;
 use App\Http\Controllers\Admin\QuocGiaController;
 use App\Http\Controllers\Admin\RevenueReportController;
+use App\Http\Controllers\Admin\SoatVeController as AdminSoatVeController;
 use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\TheloaisController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\Staff\BanVeController;
 use App\Http\Controllers\Staff\LichSuVeController;
 use App\Http\Controllers\Staff\SoatVeController;
 use App\Http\Controllers\Staff\StaffDashboardController;
+use App\Http\Controllers\System\CaiDatThanhToanController;
 use App\Http\Controllers\User\BandoRapController;
 use App\Http\Controllers\User\BookingController;
 use App\Http\Controllers\User\DanhGiaPhimController;
@@ -40,6 +43,7 @@ use App\Http\Controllers\User\VoucherController;
 use App\Http\Controllers\User\ChamSocKhachHangController;
 use App\Http\Controllers\Admin\ThanhVienController as AdminThanhVienController;
 use App\Http\Controllers\Admin\KhachHangController;
+use App\Http\Controllers\User\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -117,6 +121,7 @@ Route::middleware(['auth'])
         Route::patch('/ve-xem-phim/{veXemPhim}/huy', [VeXemPhimController::class, 'cancel'])->name('ve_xem_phim.cancel');
         Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
         Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('thanh-vien.index');
+        
         // Danh sách voucher có thể đổi
         Route::get('/doi-diem', [VoucherController::class, 'index'])->name('voucher.index');
         // Xử lý đổi điểm
@@ -124,7 +129,8 @@ Route::middleware(['auth'])
         // Voucher của tôi
         Route::get('/voucher-cua-toi', [VoucherController::class, 'myVoucher'])->name('voucher.my');
         Route::post('/nhan-voucher-sinh-nhat', [ChamSocKhachHangController::class, 'nhanVoucherSinhNhat'])->name('birthday.voucher.receive');
-    });
+        Route::get('/user/thong-bao', [NotificationController::class, 'index'])
+    ->name('user.thong-bao.index');    });
 
 /*
 |--------------------------------------------------------------------------
@@ -141,13 +147,13 @@ Route::middleware(['auth'])
         // Nhóm chức năng 1: Nghiệp vụ kiểm tra & Soát vé QR vào cửa phòng chiếu
         Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
             Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
+            Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
         });
 
         // Nhóm chức năng 2: Nghiệp vụ lập hóa đơn và bán vé trực tiếp cho khách tại quầy rạp
         Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
             Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
             Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
-            Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
             Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
             Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
             Route::post('/ban-ve/{suatChieu}', [BanVeController::class, 'store'])->name('ban-ve.store');
@@ -165,6 +171,14 @@ Route::middleware(['auth'])
     ->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/cai-dat-thanh-toan', [AdminCaiDatThanhToanController::class, 'edit'])->name('cai-dat-thanh-toan.edit');
+        Route::patch('/cai-dat-thanh-toan', [AdminCaiDatThanhToanController::class, 'update'])->name('cai-dat-thanh-toan.update');
+
+        Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
+            Route::get('/soat-ve', [AdminSoatVeController::class, 'index'])->name('soat-ve.index');
+            Route::post('/soat-ve/check', [AdminSoatVeController::class, 'check'])->name('soat-ve.check');
+            Route::post('/soat-ve/confirm', [AdminSoatVeController::class, 'confirm'])->name('soat-ve.confirm');
+        });
 
         // Khóa bảo vệ Module: Quản lý Phim & Lịch Chiếu
         Route::middleware(['permission:quan_ly_phim_suat_chieu'])->group(function () {
@@ -195,8 +209,12 @@ Route::middleware(['auth'])
             Route::post('hang-ghes/{hang_ghe}/update-row-type', [HangGheController::class, 'updateRowType'])->name('hang-ghes.update-row-type');
             Route::get('phong-chieus/{phong_chieu}/hang-ghes', [HangGheController::class, 'byPhongChieu'])->name('phong-chieus.hang-ghes.index');
             Route::resource('loai-ghes', LoaiGheController::class);
+            Route::get('ghe-ngois/bao-tri', [GheNgoiController::class, 'baoTri'])->name('ghe-ngois.baoTri');
             Route::resource('ghe-ngois', GheNgoiController::class);
             Route::post('ghe-ngois/{ghe_ngoi}/toggle-maintenance', [GheNgoiController::class, 'toggleMaintenance'])->name('ghe-ngois.toggle-maintenance');
+            Route::post('ghe-ngois/{ghe_ngoi}/check-conflicts', [GheNgoiController::class, 'checkConflicts'])->name('ghe-ngois.check-conflicts');
+            Route::post('ghe-ngois/{ghe_ngoi}/schedule-maintenance', [GheNgoiController::class, 'scheduleMaintenance'])->name('ghe-ngois.schedule-maintenance');
+            Route::patch('lich-bao-tri-ghe-ngois/{lichBaoTriGheNgoi}/complete', [GheNgoiController::class, 'completeMaintenance'])->name('lich-bao-tri-ghe-ngois.complete');
         });
 
         // Khóa bảo vệ Module: Thao tác Bán Vé Tại Quầy & Quản lý thông tin vé của hệ thống
@@ -225,12 +243,18 @@ Route::middleware(['auth'])
         // Khóa bảo vệ Module: Thống Kê Doanh Thu Rạp Phim
         Route::middleware(['permission:thong_ke_doanh_thu'])->group(function () {
             Route::get('/revenue-reports', [RevenueReportController::class, 'index'])->name('revenue-reports.index');
+        });
+
+        // Khóa bảo vệ Module: Nhật ký hoạt động (chỉ admin và super admin)
+        Route::middleware(['permission:xem_nhat_ky_hoat_dong'])->group(function () {
             Route::get('/activity-logs', [NhatKyHoatDongHeThongController::class, 'index'])->name('activity-logs.index');
         });
 
         // Khóa bảo vệ Module: Cấu Hinh Hệ Thống Chung
         Route::middleware(['permission:quan_ly_cau_hinh_he_thong'])->group(function () {
             Route::resource('notifications', AdminNotificationController::class)->only(['index', 'create', 'store', 'destroy']);
+            Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead'])
+                ->name('notifications.markAllRead');
             Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])->name('movie-reviews.index');
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
@@ -282,9 +306,8 @@ Route::middleware(['auth'])
         })->name('dashboard');
 
         // Các đặc quyền hạ tầng kỹ thuật gốc (Độc lập 100%)
-        Route::get('/cai-dat-thanh-toan', function () {
-            return 'Cấu hình cổng API MoMo, VNPAY';
-        })->name('payments');
+        Route::get('/cai-dat-thanh-toan', [CaiDatThanhToanController::class, 'edit'])->name('payments');
+        Route::patch('/cai-dat-thanh-toan', [CaiDatThanhToanController::class, 'update'])->name('payments.update');
         Route::get('/sao-luu-du-lieu', function () {
             return 'Quản trị sao lưu cơ sở dữ liệu MySQL hạt nhân';
         })->name('backups');
@@ -304,6 +327,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/thanh-vien', [ThanhVienController::class, 'index'])
         ->name('user.thanh-vien.index');
+    // Trang thông báo cá nhân
+    Route::get('/user/thong-bao', [NotificationController::class, 'index'])
+        ->name('user.thong-bao.index');
 });
 
 require __DIR__ . '/auth.php';

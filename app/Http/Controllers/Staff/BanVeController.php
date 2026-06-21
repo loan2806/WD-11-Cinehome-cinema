@@ -43,6 +43,14 @@ class BanVeController extends Controller
             })
             ->values();
 
+        $maintenanceSeatCodes = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
+            ->get(['ma_ghe', 'trang_thai'])
+            ->filter(fn ($seat) => $seat->isEffectivelyUnderMaintenance())
+            ->pluck('ma_ghe')
+            ->map(fn ($code) => strtoupper(trim($code)))
+            ->values()
+            ->all();
+
         $seatsByRow = collect();
 
         if ($suatChieu->phong_chieu_id) {
@@ -57,6 +65,7 @@ class BanVeController extends Controller
         return view('staff.ban-ve.show', compact(
             'suatChieu',
             'soldSeatCodes',
+            'maintenanceSeatCodes',
             'seatsByRow'
         ));
     }
@@ -97,6 +106,21 @@ class BanVeController extends Controller
             return back()
                 ->withInput()
                 ->with('error', 'Ghế ' . $soldSeats->implode(', ') . ' đã được bán. Vui lòng chọn ghế khác.');
+        }
+
+        $maintenanceSeats = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
+            ->get(['ma_ghe', 'trang_thai'])
+            ->filter(fn ($seat) => $seat->isEffectivelyUnderMaintenance())
+            ->pluck('ma_ghe')
+            ->map(fn ($code) => strtoupper(trim($code)))
+            ->intersect($selectedSeats)
+            ->values()
+            ->all();
+
+        if (!empty($maintenanceSeats)) {
+            return back()
+                ->withInput()
+                ->with('error', 'Ghế ' . implode(', ', $maintenanceSeats) . ' đang bảo trì. Vui lòng chọn ghế khác.');
         }
 
         $tongTien = $selectedSeats->count() * (float) $suatChieu->gia_ve;

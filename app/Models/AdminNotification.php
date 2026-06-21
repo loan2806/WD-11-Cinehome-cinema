@@ -10,14 +10,15 @@ class AdminNotification extends Model
     use HasFactory;
 
     protected $fillable = [
-        'title',
-        'message',
-        'type',
-        'audience',
-        'published_at',
+        'tieu_de',
+        'noi_dung',
+        'loai',
+        'doi_tuong',
+        'da_doc',
+        'thoi_gian_xuat_ban',
     ];
 
     protected $casts = [
-        'published_at' => 'datetime',
+        'thoi_gian_xuat_ban' => 'datetime',
     ];
 }

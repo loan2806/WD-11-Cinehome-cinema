@@ -6,8 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Phims;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
-use App\Models\VeXemPhim;
-use Carbon\Carbon;
+use App\Services\DatVeXemPhimService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -17,9 +16,6 @@ use App\Models\NguoiDungVoucher;
 
 class BookingController extends Controller
 {
-    private const HANG_GHE = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-    private const SO_COT = 10;
-
     public function index(Phims $movie)
     {
         return redirect()->route('user.phims.show', $movie);
@@ -41,10 +37,8 @@ class BookingController extends Controller
         ]);
     }
 
-    public function selectSeats(SuatChieu $showtime)
+    public function selectSeats(SuatChieu $showtime, DatVeXemPhimService $datVeXemPhimService)
     {
-        $showtime->load(['phim', 'rapChieuPhim']);
-
         abort_if($showtime->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
         $vouchers = [];
@@ -65,16 +59,8 @@ class BookingController extends Controller
         ]);
     }
 
-    public function store(Request $request, SuatChieu $showtime)
+    public function store(Request $request, SuatChieu $showtime, DatVeXemPhimService $datVeXemPhimService)
     {
-        $showtime->load(['phim', 'rapChieuPhim']);
-
-        if ($showtime->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh'))) {
-            throw ValidationException::withMessages([
-                'ghe_duoc_chon' => 'Suat chieu nay da qua gio dat ve.',
-            ]);
-        }
-
         $data = $request->validate([
             'ghe_duoc_chon' => ['required', 'string'],
             'voucher_id' => ['nullable', 'exists:nguoi_dung_vouchers,id'],
@@ -154,7 +140,7 @@ class BookingController extends Controller
 
         return redirect()
             ->route('user.ve_xem_phim.show', $veXemPhim)
-            ->with('success', 'Dat ve thanh cong.');
+            ->with('success', 'Đặt vé thành công. Mã vé của bạn là ' . $veXemPhim->ma_ve . '.');
     }
 
     private function gheDaDat(SuatChieu $suatChieu): array
