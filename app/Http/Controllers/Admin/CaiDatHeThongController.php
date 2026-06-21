@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\CaiDatHeThong; // Gọi trực tiếp Model, không lo xung đột nhờ lớp Controller đã có hậu tố 'Controller'
+use App\Models\CaiDatHeThong; // Gọi trực tiếp Model mà không sợ xung đột nữa
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +16,6 @@ class CaiDatHeThongController extends Controller
      */
     public function index(): View
     {
-        // LOGIC ĐẢM BẢO: Luôn lấy ra bản ghi duy nhất (ID = 1), nếu trống tự khởi tạo cấu hình nền để hệ thống không bị crash dữ liệu trống.
         $settings = CaiDatHeThong::firstOrCreate(
             ['id' => 1],
             [
@@ -38,6 +37,7 @@ class CaiDatHeThongController extends Controller
             ]
         );
 
+        // ĐÃ SỬA CHUẨN: Trỏ đúng vào thư mục hiển thị trên cấu trúc cây thư mục thực tế của bạn
         return view('admin.cai-dat-tham-so-goc.index', compact('settings'));
     }
 
@@ -65,7 +65,6 @@ class CaiDatHeThongController extends Controller
             'gia_cuoi_tuan' => 'required|numeric|min:0',
             'phu_thu_ghe_vip' => 'required|numeric|min:0',
             
-            // NGHIỆP VỤ PHỨC TẠP (Conditional Validation): Chỉ bắt buộc nhập dữ liệu cấu hình API khi Admin tích chọn kích hoạt (value = 1) cổng đó.
             'vnpay_tmn_code' => 'required_if:bat_tat_vnpay,1|nullable|string|max:50',
             'vnpay_hash_secret' => 'required_if:bat_tat_vnpay,1|nullable|string|max:255',
             

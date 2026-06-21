@@ -95,7 +95,10 @@
 
                 {{-- QUẢN TRỊ NỀN TẢNG ĐẶC QUYỀN --}}
                 @if (auth()->user()->hasRole('Quản lý hệ thống') || auth()->user()->vai_tro === 'admin')
-                    <div class="sidebar-dropdown-box">
+                    @php
+                        $isNenTangActive = request()->routeIs('admin.cai-dat-thanh-toan.*');
+                    @endphp
+                    <div class="sidebar-dropdown-box {{ $isNenTangActive ? 'open' : '' }}">
                         <button type="button"
                             class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-black text-[#f4c56a] bg-white/5 hover:bg-white/10 transition duration-200 border border-[#d99a32]/30 text-left whitespace-nowrap leading-none outline-none">
                             <span class="flex items-center gap-3.5">
@@ -105,9 +108,16 @@
                             <i class="fa-solid fa-chevron-down text-[11px] text-[#f4c56a] mr-1"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32] ml-6 space-y-1">
-                            <a href="#" class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Cài đặt cổng thanh toán</a>
-                            <a href="#" class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Sao lưu dữ liệu hạt nhân</a>
-                            <a href="#" class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Log hàng đợi & Monitor lỗi</a>
+                            {{-- Đã lược bỏ Cụm rạp chi nhánh theo mô hình 1 rạp duy nhất --}}
+                            <a href="{{ route('admin.cai-dat-thanh-toan.edit') }}"
+                                class="block py-2.5 pl-3 text-[15px] font-bold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.cai-dat-thanh-toan.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Cài
+                                đặt cổng thanh toán</a>
+                            <a href="#"
+                                class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Sao
+                                lưu dữ liệu hạt nhân</a>
+                            <a href="#"
+                                class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Log
+                                hàng đợi & Monitor lỗi</a>
                         </div>
                     </div>
                 @endif

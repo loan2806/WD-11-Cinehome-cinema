@@ -6,18 +6,12 @@ use App\Models\VeXemPhim;
 
 class TicketCheckInService
 {
-    public function checkIn(string $rawCode): array
+    public function inspect(string $rawCode): array
     {
-        $maVe = $this->extractTicketCode($rawCode);
+        $ticket = $this->findTicket($rawCode);
 
-        if ($maVe === '') {
-            return $this->failed('Mã QR không hợp lệ. Vui lòng quét lại hoặc nhập mã vé.');
-        }
-
-        $ticket = VeXemPhim::where('ma_ve', $maVe)->first();
-
-        if (! $ticket) {
-            return $this->failed('Không tìm thấy vé trong hệ thống.');
+        if (is_array($ticket)) {
+            return $ticket;
         }
 
         if ($ticket->trang_thai === 'da_huy') {
@@ -32,6 +26,24 @@ class TicketCheckInService
             return $this->failed('Vé chưa được thanh toán hoặc trạng thái không hợp lệ.', $ticket);
         }
 
+        return [
+            'success' => true,
+            'message' => 'Vé hợp lệ. Bấm xác nhận sử dụng khi khách vào rạp.',
+            'ticket' => $ticket,
+            'ma_ve' => $ticket->ma_ve,
+        ];
+    }
+
+    public function checkIn(string $rawCode): array
+    {
+        $result = $this->inspect($rawCode);
+
+        if (! $result['success']) {
+            return $result;
+        }
+
+        $ticket = $result['ticket'];
+
         $ticket->update([
             'trang_thai' => 'da_su_dung',
             'tien_hoan' => 0,
@@ -41,7 +53,7 @@ class TicketCheckInService
 
         return [
             'success' => true,
-            'message' => 'Soát vé thành công. Vé hợp lệ.',
+            'message' => 'Đã xác nhận sử dụng vé. Khách có thể vào phòng chiếu.',
             'ticket' => $ticket,
             'ma_ve' => $ticket->ma_ve,
         ];
@@ -65,6 +77,7 @@ class TicketCheckInService
             'trang_thai' => $ticket->trang_thai,
             'trang_thai_label' => $this->statusLabel($ticket->trang_thai),
             'loai_ve_label' => $this->typeLabel($ticket->loai_ve),
+            'can_check_in' => $ticket->trang_thai === 'da_thanh_toan',
         ];
     }
 
@@ -109,6 +122,23 @@ class TicketCheckInService
         }
 
         return $rawCode;
+    }
+
+    private function findTicket(string $rawCode): VeXemPhim|array
+    {
+        $maVe = $this->extractTicketCode($rawCode);
+
+        if ($maVe === '') {
+            return $this->failed('Mã QR không hợp lệ. Vui lòng quét lại hoặc nhập mã vé.');
+        }
+
+        $ticket = VeXemPhim::where('ma_ve', $maVe)->first();
+
+        if (! $ticket) {
+            return $this->failed('Không tìm thấy vé trong hệ thống.');
+        }
+
+        return $ticket;
     }
 
     private function failed(string $message, ?VeXemPhim $ticket = null): array

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\CaiDatThanhToanController as AdminCaiDatThanhToanController;
 use App\Http\Controllers\Admin\DanhGiaPhimController as AdminDanhGiaPhimController;
 use App\Http\Controllers\Admin\FoodInvoiceController;
 use App\Http\Controllers\Admin\GheNgoiController;
@@ -23,6 +24,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Staff\BanVeController;
 use App\Http\Controllers\Staff\LichSuVeController;
 use App\Http\Controllers\Staff\SoatVeController;
+use App\Http\Controllers\Staff\StaffDashboardController;
+use App\Http\Controllers\System\CaiDatThanhToanController;
 use App\Http\Controllers\User\BandoRapController;
 use App\Http\Controllers\User\BookingController;
 use App\Http\Controllers\User\DanhGiaPhimController;
@@ -147,10 +150,13 @@ Route::middleware(['auth'])
     ->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/cai-dat-thanh-toan', [AdminCaiDatThanhToanController::class, 'edit'])->name('cai-dat-thanh-toan.edit');
+        Route::patch('/cai-dat-thanh-toan', [AdminCaiDatThanhToanController::class, 'update'])->name('cai-dat-thanh-toan.update');
 
         Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
             Route::get('/soat-ve', [AdminSoatVeController::class, 'index'])->name('soat-ve.index');
             Route::post('/soat-ve/check', [AdminSoatVeController::class, 'check'])->name('soat-ve.check');
+            Route::post('/soat-ve/confirm', [AdminSoatVeController::class, 'confirm'])->name('soat-ve.confirm');
         });
 
         Route::middleware(['permission:quan_ly_phim_suat_chieu'])->group(function () {
@@ -179,8 +185,12 @@ Route::middleware(['auth'])
             Route::post('hang-ghes/{hang_ghe}/update-row-type', [HangGheController::class, 'updateRowType'])->name('hang-ghes.update-row-type');
             Route::get('phong-chieus/{phong_chieu}/hang-ghes', [HangGheController::class, 'byPhongChieu'])->name('phong-chieus.hang-ghes.index');
             Route::resource('loai-ghes', LoaiGheController::class);
+            Route::get('ghe-ngois/bao-tri', [GheNgoiController::class, 'baoTri'])->name('ghe-ngois.baoTri');
             Route::resource('ghe-ngois', GheNgoiController::class);
             Route::post('ghe-ngois/{ghe_ngoi}/toggle-maintenance', [GheNgoiController::class, 'toggleMaintenance'])->name('ghe-ngois.toggle-maintenance');
+            Route::post('ghe-ngois/{ghe_ngoi}/check-conflicts', [GheNgoiController::class, 'checkConflicts'])->name('ghe-ngois.check-conflicts');
+            Route::post('ghe-ngois/{ghe_ngoi}/schedule-maintenance', [GheNgoiController::class, 'scheduleMaintenance'])->name('ghe-ngois.schedule-maintenance');
+            Route::patch('lich-bao-tri-ghe-ngois/{lichBaoTriGheNgoi}/complete', [GheNgoiController::class, 'completeMaintenance'])->name('lich-bao-tri-ghe-ngois.complete');
         });
 
         Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
@@ -247,9 +257,9 @@ Route::middleware(['auth'])
             return view('system.dashboard'); 
         })->name('dashboard');
 
-        Route::get('/cai-dat-thanh-toan', function () {
-            return 'Cấu hình cổng API MoMo, VNPAY';
-        })->name('payments');
+        // Các đặc quyền hạ tầng kỹ thuật gốc (Độc lập 100%)
+        Route::get('/cai-dat-thanh-toan', [CaiDatThanhToanController::class, 'edit'])->name('payments');
+        Route::patch('/cai-dat-thanh-toan', [CaiDatThanhToanController::class, 'update'])->name('payments.update');
         Route::get('/sao-luu-du-lieu', function () {
             return 'Quản trị sao lưu cơ sở dữ liệu MySQL hạt nhân';
         })->name('backups');

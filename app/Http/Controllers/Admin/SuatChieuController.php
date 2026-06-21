@@ -332,4 +332,6 @@ class SuatChieuController extends Controller
                       ->where('thoi_gian_ket_thuc', '>', $thoiGianChieu);
             })->exists();
     }
+
+    
 }
