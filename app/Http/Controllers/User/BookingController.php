@@ -13,6 +13,9 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Models\ThanhVien;
 use App\Models\NguoiDungVoucher;
+use App\Models\VeXemPhim;
+use Carbon\Carbon;
+
 
 class BookingController extends Controller
 {
@@ -41,6 +44,8 @@ class BookingController extends Controller
     {
         abort_if($showtime->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
+        $duLieuChonGhe = $datVeXemPhimService->duLieuChonGhe($showtime);
+
         $vouchers = [];
 
         if (Auth::check()) {
@@ -50,13 +55,9 @@ class BookingController extends Controller
                 ->get();
         }
 
-        return view('dat_ve.chon_ghe', [
-            'suatChieu' => $showtime,
-            'gheDaDat' => $this->gheDaDat($showtime),
-            'hangGhe' => self::HANG_GHE,
-            'soCot' => self::SO_COT,
-            'vouchers' => $vouchers,
-        ]);
+        $duLieuChonGhe['vouchers'] = $vouchers;
+
+        return view('dat_ve.chon_ghe', $duLieuChonGhe);
     }
 
     public function store(Request $request, SuatChieu $showtime, DatVeXemPhimService $datVeXemPhimService)
@@ -78,8 +79,13 @@ class BookingController extends Controller
             ]);
         }
 
-        $gheHopLe = collect(self::HANG_GHE)
-            ->flatMap(fn($hang) => collect(range(1, self::SO_COT))->map(fn($cot) => $hang . $cot));
+        $duLieuChonGhe = $datVeXemPhimService->duLieuChonGhe($showtime);
+
+        $gheHopLe = collect($duLieuChonGhe['gheTheoHang'] ?? [])
+            ->flatten(1)
+            ->pluck('ma_ghe')
+            ->map(fn($seat) => strtoupper(trim($seat)))
+            ->values();
 
         if ($gheDuocChon->diff($gheHopLe)->isNotEmpty()) {
             throw ValidationException::withMessages([
@@ -87,7 +93,7 @@ class BookingController extends Controller
             ]);
         }
 
-        $gheDaDat = collect($this->gheDaDat($showtime));
+        $gheDaDat = collect($duLieuChonGhe['gheDaDat'] ?? []);
         $gheBiTrung = $gheDuocChon->intersect($gheDaDat);
 
         if ($gheBiTrung->isNotEmpty()) {
@@ -132,7 +138,7 @@ class BookingController extends Controller
             'tong_tien' => max(($gheDuocChon->count() * (float) $showtime->gia_ve) - $giamGia, 0),
             'loai_ve' => 'truc_tuyen',
             'trang_thai' => 'da_thanh_toan',
-            'voucher_id' => ['nullable', 'exists:nguoi_dung_vouchers,id'],
+            'voucher_id' => $data['voucher_id'] ?? null,
         ]);
 
         // Cộng điểm thành viên sau khi đặt vé thành công

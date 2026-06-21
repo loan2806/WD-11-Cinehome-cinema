@@ -5,13 +5,9 @@ namespace App\Http\Controllers\DatVe;
 use App\Http\Controllers\Controller;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
-<<<<<<< HEAD
-use App\Models\VeXemPhim;
-use App\Models\NguoiDungVoucher;
-use Illuminate\Support\Facades\Auth;
-=======
 use App\Services\DatVeXemPhimService;
->>>>>>> 0136db73e24e35e641afeb35dc1fc30a050c0e43
+use Illuminate\Support\Facades\Auth;
+use App\Models\NguoiDungVoucher;
 
 class DatVeController extends Controller
 {
@@ -48,43 +44,16 @@ class DatVeController extends Controller
 
         abort_if($suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
-<<<<<<< HEAD
-        $vouchers = collect();
+        $duLieuChonGhe = $datVeXemPhimService->duLieuChonGhe($suatChieu);
 
-        if (Auth::check()) {
-            $vouchers = NguoiDungVoucher::with('voucher')
-                ->where('nguoi_dung_id', Auth::id())
-                ->where('da_su_dung', false)
-                ->get();
-        }
+        // Lấy voucher chưa sử dụng của khách đang đăng nhập
+        $duLieuChonGhe['vouchers'] = Auth::check()
+            ? NguoiDungVoucher::with('voucher')
+            ->where('nguoi_dung_id', Auth::id())
+            ->where('da_su_dung', false)
+            ->get()
+            : collect();
 
-        return view('dat_ve.chon_ghe', [
-            'suatChieu' => $suatChieu,
-            'gheDaDat' => $this->gheDaDat($suatChieu),
-            'hangGhe' => self::HANG_GHE,
-            'soCot' => self::SO_COT,
-            'vouchers' => $vouchers,
-        ]);
-    }
-
-    private function gheDaDat(SuatChieu $suatChieu): array
-    {
-        return VeXemPhim::query()
-            ->where('ten_phim', $suatChieu->phim->ten_phim)
-            ->where('ten_rap', $suatChieu->rapChieuPhim->ten_rap)
-            ->where('thoi_gian_chieu', $suatChieu->thoi_gian_chieu->format('Y-m-d H:i:s'))
-            ->where('trang_thai', '!=', 'da_huy')
-            ->pluck('ma_ghe')
-            ->flatMap(fn($seats) => explode(',', (string) $seats))
-            ->map(fn($seat) => strtoupper(trim($seat)))
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        return view('dat_ve.chon_ghe', $duLieuChonGhe);
     }
 }
-=======
-        return view('dat_ve.chon_ghe', $datVeXemPhimService->duLieuChonGhe($suatChieu));
-    }
-}
->>>>>>> 0136db73e24e35e641afeb35dc1fc30a050c0e43
