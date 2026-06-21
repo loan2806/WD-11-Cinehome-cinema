@@ -3,20 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>@yield('title', 'CineHome - Nền tảng quản trị tối cao')</title>
+    <title>@yield('title', 'CineHome - Quản trị')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    {{-- Tailwind / Vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    {{-- CSS riêng Admin --}}
     <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
 
-    {{-- ChartJS --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
@@ -26,7 +22,7 @@
             transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .sidebar-dropdown-box.open .sidebar-dropdown-content {
+        .sidebar-dropdown-box.open > .sidebar-dropdown-content {
             max-height: 1000px;
             transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -35,16 +31,17 @@
             transition: transform 0.25s ease;
         }
 
-        .sidebar-dropdown-box.open .fa-chevron-down {
+        .sidebar-dropdown-box.open > button .fa-chevron-down {
             transform: rotate(180deg);
         }
     </style>
+
+    @stack('styles')
 </head>
 
 <body class="overflow-x-hidden bg-[#080808] text-white">
     @include('components.preloader')
 
-    {{-- GLOBAL TOAST NOTIFICATIONS --}}
     @if (session('success'))
         <x-toast type="success" :message="session('success')" />
     @endif
@@ -57,16 +54,13 @@
         <x-toast type="warning" :message="session('warning')" />
     @endif
 
-    {{-- GLOBAL CONFIRM MODAL --}}
     <x-modal-confirm />
 
     <div id="adminLayout" data-sidebar="open" class="min-h-screen overflow-x-hidden bg-[#080808] text-white">
 
-        {{-- SIDEBAR --}}
         <aside id="adminSidebar"
             class="admin-scrollbar fixed left-0 top-0 z-[60] h-screen w-[285px] overflow-y-auto overflow-x-hidden border-r border-[#d99a32]/20 bg-gradient-to-b from-[#110702] to-[#200d05] transition-transform duration-300">
 
-            {{-- LOGO --}}
             <div class="flex items-center gap-3.5 border-b border-white/5 px-5 py-6">
                 <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome Logo"
                     class="h-16 w-16 rounded-2xl bg-white object-contain p-1 shadow-lg shadow-[#d99a32]/10">
@@ -81,10 +75,8 @@
                 </div>
             </div>
 
-            {{-- MENU --}}
             <div class="mt-5 space-y-4 px-3 pb-8">
 
-                {{-- DASHBOARD --}}
                 <div>
                     <p class="mb-2 px-3 text-[11px] font-black uppercase tracking-widest text-[#d7a767]/50">
                         Tổng quan hệ thống
@@ -97,9 +89,12 @@
                     </a>
                 </div>
 
-                {{-- QUẢN TRỊ NỀN TẢNG --}}
                 @if(auth()->user()->hasRole('Quản lý hệ thống') || auth()->user()->vai_tro === 'admin')
-                    <div class="sidebar-dropdown-box">
+                    @php
+                        $isNenTangActive = request()->routeIs('admin.cai-dat-thanh-toan.*');
+                    @endphp
+
+                    <div class="sidebar-dropdown-box {{ $isNenTangActive ? 'open' : '' }}">
                         <button type="button"
                             class="sidebar-dropdown-btn flex w-full items-center justify-between rounded-xl border border-[#d99a32]/30 bg-white/5 px-4 py-3 text-left text-[16px] font-black leading-none text-[#f4c56a] outline-none transition duration-200 hover:bg-white/10">
                             <span class="flex items-center gap-3.5">
@@ -110,29 +105,33 @@
                         </button>
 
                         <div class="sidebar-dropdown-content ml-6 mt-1 space-y-1 border-l-2 border-[#d99a32] pl-5">
-                            <a href="#" class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 no-underline transition duration-200 hover:translate-x-1.5 hover:text-white">
+                            <a href="{{ route('admin.cai-dat-thanh-toan.edit') }}"
+                                class="block py-2.5 pl-3 text-[15px] font-bold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.cai-dat-thanh-toan.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                 Cài đặt cổng thanh toán
                             </a>
-                            <a href="#" class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 no-underline transition duration-200 hover:translate-x-1.5 hover:text-white">
+
+                            <a href="#"
+                                class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 no-underline transition duration-200 hover:translate-x-1.5 hover:text-white">
                                 Sao lưu dữ liệu hạt nhân
                             </a>
-                            <a href="#" class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 no-underline transition duration-200 hover:translate-x-1.5 hover:text-white">
+
+                            <a href="#"
+                                class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 no-underline transition duration-200 hover:translate-x-1.5 hover:text-white">
                                 Log hàng đợi & Monitor lỗi
                             </a>
                         </div>
                     </div>
                 @endif
 
-                {{-- QUẢN LÝ NỘI DUNG PHIM --}}
                 @if(auth()->user()->can('quan_ly_phim_suat_chieu'))
                     @php
-                        $isNoidungActive = request()->routeIs('admin.phims.*')
+                        $isNoiDungActive = request()->routeIs('admin.phims.*')
                             || request()->routeIs('admin.suat-chieus.*')
                             || request()->routeIs('admin.the-loais.*')
                             || request()->routeIs('admin.quoc-gias.*');
                     @endphp
 
-                    <div class="sidebar-dropdown-box {{ $isNoidungActive ? 'open' : '' }}">
+                    <div class="sidebar-dropdown-box {{ $isNoiDungActive ? 'open' : '' }}">
                         <button type="button"
                             class="sidebar-dropdown-btn flex w-full items-center justify-between rounded-xl border-0 bg-transparent px-4 py-3 text-left text-[16px] font-bold leading-none text-gray-200 outline-none transition duration-200 hover:bg-white/5">
                             <span class="flex items-center gap-3.5">
@@ -166,7 +165,6 @@
                     </div>
                 @endif
 
-                {{-- PHÒNG CHIẾU VÀ GHẾ --}}
                 @if(auth()->user()->can('quan_ly_phong_ghe'))
                     @php
                         $isPhongGheActive = request()->routeIs('admin.phong-chieus.*')
@@ -197,11 +195,11 @@
                     </div>
                 @endif
 
-                {{-- NGHIỆP VỤ QUẦY VÉ --}}
-                @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo'))
+                @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') || auth()->user()->can('soat_ve_vao_cua'))
                     @php
                         $isGiaoDichActive = request()->routeIs('admin.food-invoices.*')
-                            || request()->routeIs('admin.ve-xem-phims.*');
+                            || request()->routeIs('admin.ve-xem-phims.*')
+                            || request()->routeIs('admin.soat-ve.*');
                     @endphp
 
                     <div class="sidebar-dropdown-box {{ $isGiaoDichActive ? 'open' : '' }}">
@@ -221,8 +219,16 @@
                                     Quản lý kho dữ liệu vé
                                 </a>
 
-                                <a href="#" class="block py-2.5 pl-3 text-[15px] font-semibold text-gray-400 no-underline transition duration-200 hover:translate-x-1.5 hover:text-white">
+                                <a href="#"
+                                    class="block py-2.5 pl-3 text-[15px] font-semibold text-gray-400 no-underline transition duration-200 hover:translate-x-1.5 hover:text-white">
                                     Bán vé trực tiếp rạp
+                                </a>
+                            @endcan
+
+                            @can('soat_ve_vao_cua')
+                                <a href="{{ route('admin.soat-ve.index') }}"
+                                    class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.soat-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
+                                    Soát vé QR
                                 </a>
                             @endcan
 
@@ -233,18 +239,19 @@
                                 </a>
                             @endcan
 
-                            <a href="#" class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 no-underline transition duration-200 hover:translate-x-1.5 hover:text-[#d99a32]">
+                            <a href="#"
+                                class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 no-underline transition duration-200 hover:translate-x-1.5 hover:text-[#d99a32]">
                                 + Cấu hình Menu & Kho hàng
                             </a>
 
-                            <a href="#" class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 no-underline transition duration-200 hover:translate-x-1.5 hover:text-[#d99a32]">
+                            <a href="#"
+                                class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 no-underline transition duration-200 hover:translate-x-1.5 hover:text-[#d99a32]">
                                 + Khuyến mãi & Voucher
                             </a>
                         </div>
                     </div>
                 @endif
 
-                {{-- TÀI KHOẢN & NHÂN LỰC --}}
                 @if(auth()->user()->can('quan_ly_khach_hang') || auth()->user()->can('quan_ly_nhan_vien') || auth()->user()->can('phan_quyen_he_thong'))
                     @php
                         $isTaiKhoanActive = request()->routeIs('admin.nhanviens.*')
@@ -294,7 +301,6 @@
                     </div>
                 @endif
 
-                {{-- BÁO CÁO --}}
                 @if(auth()->user()->can('thong_ke_doanh_thu'))
                     @php
                         $isBaoCaoActive = request()->routeIs('admin.revenue-reports.*')
@@ -325,7 +331,6 @@
                     </div>
                 @endif
 
-                {{-- THIẾT LẬP --}}
                 @if(auth()->user()->can('quan_ly_cau_hinh_he_thong'))
                     @php
                         $isSystemActive = request()->routeIs('admin.notifications.*')
@@ -362,7 +367,6 @@
                     </div>
                 @endif
 
-                {{-- VỀ TRANG CHỦ --}}
                 <div class="border-t border-white/10 pt-3">
                     <a href="{{ route('home') }}"
                         class="flex items-center gap-3.5 rounded-xl px-4 py-3 text-[16px] font-bold text-gray-300 no-underline transition duration-200 hover:bg-white/5 hover:text-white">
@@ -373,14 +377,10 @@
             </div>
         </aside>
 
-        {{-- MAIN CONTENT --}}
         <main id="adminMain" class="ml-[285px] min-h-screen overflow-x-hidden bg-[#080808]">
-
-            {{-- TOPBAR --}}
             <header class="sticky top-0 z-50 border-b border-white/10 bg-[#101010]/95 backdrop-blur-xl">
                 <div class="flex h-[76px] items-center justify-between gap-4 px-5">
 
-                    {{-- LEFT --}}
                     <div class="flex min-w-0 items-center gap-4">
                         <button id="sidebarToggle" type="button"
                             class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-0 bg-white/10 text-white transition hover:bg-[#d99a32] hover:text-[#2b1208]">
@@ -397,15 +397,63 @@
                         </div>
                     </div>
 
-                    {{-- SEARCH --}}
                     <div class="hidden h-11 w-full max-w-[280px] items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 md:flex lg:max-w-[360px]">
                         <i class="fa-solid fa-magnifying-glass text-sm text-[#d99a32]"></i>
                         <input type="text" placeholder="Tìm nhanh chức năng hệ thống..."
                             class="h-full w-full border-0 bg-transparent text-sm text-white outline-none placeholder-gray-500">
                     </div>
 
-                    {{-- ADMIN USER --}}
                     <div class="flex items-center gap-3">
+                        @php
+                            $notificationCount = class_exists(\App\Models\AdminNotification::class)
+                                ? \App\Models\AdminNotification::where('da_doc', false)->count()
+                                : 0;
+
+                            $adminNotificationsData = isset($adminNotifications)
+                                ? $adminNotifications
+                                : collect();
+                        @endphp
+
+                        <div class="relative">
+                            <button type="button" id="bellBtn"
+                                class="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 transition hover:bg-white/15">
+                                <i class="fa-solid fa-bell text-white"></i>
+
+                                @if ($notificationCount > 0)
+                                    <span id="notifyBadge"
+                                        class="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                                        {{ $notificationCount > 99 ? '99+' : $notificationCount }}
+                                    </span>
+                                @endif
+                            </button>
+
+                            <div id="notifyBox"
+                                class="absolute right-0 z-50 mt-2 hidden w-96 rounded-xl border border-white/10 bg-[#151515] shadow-xl">
+                                <div class="border-b border-white/10 p-3">
+                                    <h3 class="font-bold text-white">Thông báo hệ thống</h3>
+                                </div>
+
+                                <div class="max-h-96 overflow-y-auto">
+                                    @forelse($adminNotificationsData as $item)
+                                        <div class="border-b border-white/5 p-3 hover:bg-white/5">
+                                            <div class="font-semibold text-[#d99a32]">{{ $item->tieu_de }}</div>
+                                            <div class="mt-1 text-sm text-gray-300">{{ $item->noi_dung }}</div>
+                                            <div class="mt-2 text-xs text-gray-500">{{ $item->created_at->diffForHumans() }}</div>
+                                        </div>
+                                    @empty
+                                        <div class="p-4 text-center text-gray-500">Không có thông báo</div>
+                                    @endforelse
+                                </div>
+
+                                <div class="border-t border-white/10 p-2 text-center">
+                                    <a href="{{ route('admin.notifications.index') }}"
+                                        class="text-sm font-semibold text-[#d99a32] no-underline">
+                                        Xem tất cả
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
                         @auth
                             <div class="relative" id="adminDropdownBox">
                                 <button type="button" id="adminDropdownBtn"
@@ -469,36 +517,64 @@
                 </div>
             </header>
 
-            {{-- CONTENT --}}
             <section class="w-full overflow-x-hidden px-6 py-6">
                 @yield('content')
             </section>
         </main>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="{{ asset('assets/js/admin.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    {{-- ACCORDION SIDEBAR --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const dropdownBoxes = document.querySelectorAll('.sidebar-dropdown-box');
-
-            dropdownBoxes.forEach(box => {
+            document.querySelectorAll('.sidebar-dropdown-box').forEach(function (box) {
                 const btn = box.querySelector('.sidebar-dropdown-btn');
 
-                if (!btn) return;
+                if (!btn) {
+                    return;
+                }
 
-                btn.addEventListener('click', function (e) {
-                    e.preventDefault();
+                btn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
                     box.classList.toggle('open');
                 });
+            });
+
+            const bellBtn = document.getElementById('bellBtn');
+            const notifyBox = document.getElementById('notifyBox');
+
+            if (bellBtn && notifyBox) {
+                bellBtn.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    notifyBox.classList.toggle('hidden');
+                });
+            }
+
+            const adminDropdownBtn = document.getElementById('adminDropdownBtn');
+            const adminDropdownMenu = document.getElementById('adminDropdownMenu');
+
+            if (adminDropdownBtn && adminDropdownMenu) {
+                adminDropdownBtn.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    adminDropdownMenu.classList.toggle('hidden');
+                });
+            }
+
+            document.addEventListener('click', function () {
+                if (notifyBox) {
+                    notifyBox.classList.add('hidden');
+                }
+
+                if (adminDropdownMenu) {
+                    adminDropdownMenu.classList.add('hidden');
+                }
             });
         });
     </script>
 
     @stack('scripts')
+    @yield('scripts')
 </body>
 
 </html>

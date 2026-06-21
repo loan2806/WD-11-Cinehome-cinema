@@ -18,21 +18,34 @@ class SystemSetting extends Model
 
     public static function getValue(string $key, mixed $default = null): mixed
     {
-        $value = static::query()->where('khoa', $key)->value('gia_tri');
+        $setting = static::query()
+            ->where('khoa', $key)
+            ->first();
 
-        return $value === null ? $default : $value;
+        return $setting ? $setting->gia_tri : $default;
     }
 
     public static function getBoolean(string $key, bool $default = false): bool
     {
-        $value = static::getValue($key, $default ? '1' : '0');
+        $value = static::getValue($key, $default);
 
-        return filter_var($value, FILTER_VALIDATE_BOOL);
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        $boolean = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+        return $boolean ?? $default;
     }
 
-    public static function putDefault(string $key, string $label, mixed $value, string $group, string $type = 'text'): void
-    {
-        static::query()->firstOrCreate(
+    public static function putDefault(
+        string $key,
+        string $label,
+        mixed $value,
+        string $group = 'general',
+        string $type = 'text'
+    ): self {
+        return static::query()->firstOrCreate(
             ['khoa' => $key],
             [
                 'nhan' => $label,
