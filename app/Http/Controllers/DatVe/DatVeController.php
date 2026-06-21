@@ -5,13 +5,10 @@ namespace App\Http\Controllers\DatVe;
 use App\Http\Controllers\Controller;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
-use App\Models\VeXemPhim;
+use App\Services\DatVeXemPhimService;
 
 class DatVeController extends Controller
 {
-    private const HANG_GHE = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
-    private const SO_COT = 10;
-
     public function chonRap()
     {
         $danhSachRap = RapChieuPhim::whereHas('suatChieus', function ($query) {
@@ -38,47 +35,13 @@ class DatVeController extends Controller
         return view('dat_ve.chon_phim', compact('rap', 'suatChieuTheoPhim'));
     }
 
-    public function chonGhe($suat_chieu_id)
+    public function chonGhe($suat_chieu_id, DatVeXemPhimService $datVeXemPhimService)
     {
-        $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim'])->findOrFail($suat_chieu_id);
+        $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])
+            ->findOrFail($suat_chieu_id);
 
         abort_if($suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
-        $gheDaDat = $this->gheDaDat($suatChieu);
-
-        $gheBaoTri = [];
-        if ($suatChieu->phong_chieu_id) {
-            $gheBaoTri = \App\Models\GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
-                ->get(['ma_ghe', 'trang_thai'])
-                ->filter(fn ($ghe) => $ghe->isEffectivelyUnderMaintenance())
-                ->pluck('ma_ghe')
-                ->map(fn ($code) => strtoupper(trim($code)))
-                ->values()
-                ->all();
-        }
-
-        return view('dat_ve.chon_ghe', [
-            'suatChieu' => $suatChieu,
-            'gheDaDat' => $gheDaDat,
-            'gheBaoTri' => $gheBaoTri,
-            'hangGhe' => self::HANG_GHE,
-            'soCot' => self::SO_COT,
-        ]);
-    }
-
-    private function gheDaDat(SuatChieu $suatChieu): array
-    {
-        return VeXemPhim::query()
-            ->where('ten_phim', $suatChieu->phim->ten_phim)
-            ->where('ten_rap', $suatChieu->rapChieuPhim->ten_rap)
-            ->where('thoi_gian_chieu', $suatChieu->thoi_gian_chieu->format('Y-m-d H:i:s'))
-            ->where('trang_thai', '!=', 'da_huy')
-            ->pluck('ma_ghe')
-            ->flatMap(fn ($seats) => explode(',', (string) $seats))
-            ->map(fn ($seat) => strtoupper(trim($seat)))
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
+        return view('dat_ve.chon_ghe', $datVeXemPhimService->duLieuChonGhe($suatChieu));
     }
 }
