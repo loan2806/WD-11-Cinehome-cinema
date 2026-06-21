@@ -111,9 +111,35 @@
                             <a href="#"
                                 class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Cài
                                 đặt cổng thanh toán</a>
-                            <a href="#"
-                                class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Sao
-                                lưu dữ liệu hạt nhân</a>
+
+                            <form action="{{ route('admin.backup') }}" method="POST">
+                                @csrf
+                                <button type="submit" onclick="return confirm('Bạn có chắc muốn sao lưu dữ liệu?')"
+                                    class="w-full text-left py-2.5 pl-3 text-[15px] font-bold text-green-400 hover:text-green-300 transition duration-200 bg-transparent border-0">
+                                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i>
+                                    Sao lưu dữ liệu
+                                </button>
+                            </form>
+
+                            <form action="{{ route('admin.restore') }}" method="POST">
+                                @csrf
+                                <button type="submit"
+                                    onclick="return confirm('Khôi phục dữ liệu từ Firebase? Dữ liệu hiện tại có thể bị ghi đè!')"
+                                    class="w-full text-left py-2.5 pl-3 text-[15px] font-bold text-yellow-400 hover:text-yellow-300 transition duration-200 bg-transparent border-0">
+                                    <i class="fa-solid fa-rotate-left mr-2"></i>
+                                    Khôi phục dữ liệu
+                                </button>
+                            </form>
+
+                            <form action="{{ route('dong-bo-du-lieu') }}" method="POST" class="m-0">
+                                @csrf
+                                <button type="submit" onclick="return confirm('Đồng bộ dữ liệu từ Firebase?')"
+                                    class="w-full text-left py-2.5 pl-3 text-[15px] font-bold text-blue-400 hover:text-blue-300 transition duration-200 hover:translate-x-1.5 bg-transparent border-0">
+                                    <i class="fa-solid fa-arrows-rotate mr-2"></i>
+                                    Đồng bộ dữ liệu
+                                </button>
+                            </form>
+
                             <a href="#"
                                 class="block py-2.5 pl-3 text-[15px] font-bold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Log
                                 hàng đợi & Monitor lỗi</a>
@@ -183,32 +209,50 @@
                 @endif
 
                 {{-- NHÓM DROPDOWN 3: VÉ, HÓA ĐƠN & DỊCH VỤ QUẦY --}}
-                @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') || auth()->user()->can('soat_ve_vao_cua'))
-                @php
-                    $isGiaoDichActive = request()->routeIs('admin.food-invoices.*') || request()->routeIs('admin.ve-xem-phims.*') || request()->routeIs('admin.soat-ve.*');
-                @endphp
-                <div class="sidebar-dropdown-box {{ $isGiaoDichActive ? 'open' : '' }}">
-                    <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
-                        <span class="flex items-center gap-3.5">
-                            <i class="fa-solid fa-ticket w-5 text-center text-xl text-[#d99a32]"></i>
-                            <span>Nghiệp vụ quầy vé</span>
-                        </span>
-                        <i class="fa-solid fa-chevron-down text-[11px] text-gray-500 mr-1"></i>
-                    </button>
-                    <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                        @can('ban_ve_tai_quay')
-                            <a href="{{ route('admin.ve-xem-phims.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.ve-xem-phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Quản lý kho dữ liệu vé</a>
-                            <a href="#" class="block py-2.5 pl-3 text-[15px] font-semibold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Bán vé trực tiếp rạp</a>
-                        @endcan
-                        @can('soat_ve_vao_cua')
-                            <a href="{{ route('admin.soat-ve.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.soat-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Soát vé QR</a>
-                        @endcan
-                        @can('quan_ly_do_an_combo')
-                            <a href="{{ route('admin.food-invoices.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.food-invoices.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Hóa đơn đồ ăn & Combo</a>
-                        @endcan
-                        <a href="#" class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 hover:text-[#d99a32] transition duration-200 hover:translate-x-1.5 no-underline">+ Cấu hình Menu & Kho hàng</a>
-                        <a href="#" class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 hover:text-[#d99a32] transition duration-200 hover:translate-x-1.5 no-underline">+ Khuyến mãi & Voucher</a>
-                    </div>
+                @if (auth()->user()->can('ban_ve_tai_quay') ||
+                        auth()->user()->can('quan_ly_do_an_combo') ||
+                        auth()->user()->can('soat_ve_vao_cua'))
+                    @php
+                        $isGiaoDichActive =
+                            request()->routeIs('admin.food-invoices.*') ||
+                            request()->routeIs('admin.ve-xem-phims.*') ||
+                            request()->routeIs('admin.soat-ve.*');
+                    @endphp
+                    <div class="sidebar-dropdown-box {{ $isGiaoDichActive ? 'open' : '' }}">
+                        <button type="button"
+                            class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
+                            <span class="flex items-center gap-3.5">
+                                <i class="fa-solid fa-ticket w-5 text-center text-xl text-[#d99a32]"></i>
+                                <span>Nghiệp vụ quầy vé</span>
+                            </span>
+                            <i class="fa-solid fa-chevron-down text-[11px] text-gray-500 mr-1"></i>
+                        </button>
+                        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
+                            @can('ban_ve_tai_quay')
+                                <a href="{{ route('admin.ve-xem-phims.index') }}"
+                                    class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.ve-xem-phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Quản
+                                    lý kho dữ liệu vé</a>
+                                <a href="#"
+                                    class="block py-2.5 pl-3 text-[15px] font-semibold text-gray-400 hover:text-white transition duration-200 hover:translate-x-1.5 no-underline">Bán
+                                    vé trực tiếp rạp</a>
+                            @endcan
+                            @can('soat_ve_vao_cua')
+                                <a href="{{ route('admin.soat-ve.index') }}"
+                                    class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.soat-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Soát
+                                    vé QR</a>
+                            @endcan
+                            @can('quan_ly_do_an_combo')
+                                <a href="{{ route('admin.food-invoices.index') }}"
+                                    class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.food-invoices.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Hóa
+                                    đơn đồ ăn & Combo</a>
+                            @endcan
+                            <a href="#"
+                                class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 hover:text-[#d99a32] transition duration-200 hover:translate-x-1.5 no-underline">+
+                                Cấu hình Menu & Kho hàng</a>
+                            <a href="#"
+                                class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 hover:text-[#d99a32] transition duration-200 hover:translate-x-1.5 no-underline">+
+                                Khuyến mãi & Voucher</a>
+                        </div>
                 @endif
 
                 {{-- NHÓM DROPDOWN 4: QUẢN LÝ TÀI KHOẢN & NHÂN LỰC --}}
