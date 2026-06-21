@@ -3,21 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\CaiDatHeThong as ModelCaiDatHeThong;
+use App\Models\CaiDatHeThong; // Gọi trực tiếp Model, không lo xung đột nhờ lớp Controller đã có hậu tố 'Controller'
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
-class CaiDatHeThong extends Controller
+class CaiDatHeThongController extends Controller
 {
     /**
      * Giao diện cấu hình tham số gốc hệ thống
      */
     public function index(): View
     {
-        // Tự động lấy bản ghi cấu hình ID = 1 hoặc khởi tạo mặc định nếu database trống
-        $settings = ModelCaiDatHeThong::firstOrCreate(
+        // LOGIC ĐẢM BẢO: Luôn lấy ra bản ghi duy nhất (ID = 1), nếu trống tự khởi tạo cấu hình nền để hệ thống không bị crash dữ liệu trống.
+        $settings = CaiDatHeThong::firstOrCreate(
             ['id' => 1],
             [
                 'ten_rap' => 'CineHome Cinema',
@@ -46,7 +46,7 @@ class CaiDatHeThong extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
-        $settings = ModelCaiDatHeThong::findOrFail(1);
+        $settings = CaiDatHeThong::findOrFail(1);
 
         $validated = $request->validate([
             'ten_rap' => 'required|string|max:255',
@@ -65,6 +65,7 @@ class CaiDatHeThong extends Controller
             'gia_cuoi_tuan' => 'required|numeric|min:0',
             'phu_thu_ghe_vip' => 'required|numeric|min:0',
             
+            // NGHIỆP VỤ PHỨC TẠP (Conditional Validation): Chỉ bắt buộc nhập dữ liệu cấu hình API khi Admin tích chọn kích hoạt (value = 1) cổng đó.
             'vnpay_tmn_code' => 'required_if:bat_tat_vnpay,1|nullable|string|max:50',
             'vnpay_hash_secret' => 'required_if:bat_tat_vnpay,1|nullable|string|max:255',
             
