@@ -121,7 +121,7 @@ Route::middleware(['auth'])
         Route::patch('/ve-xem-phim/{veXemPhim}/huy', [VeXemPhimController::class, 'cancel'])->name('ve_xem_phim.cancel');
         Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
         Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('thanh-vien.index');
-        
+
         // Danh sách voucher có thể đổi
         Route::get('/doi-diem', [VoucherController::class, 'index'])->name('voucher.index');
         // Xử lý đổi điểm
@@ -130,7 +130,8 @@ Route::middleware(['auth'])
         Route::get('/voucher-cua-toi', [VoucherController::class, 'myVoucher'])->name('voucher.my');
         Route::post('/nhan-voucher-sinh-nhat', [ChamSocKhachHangController::class, 'nhanVoucherSinhNhat'])->name('birthday.voucher.receive');
         Route::get('/user/thong-bao', [NotificationController::class, 'index'])
-    ->name('user.thong-bao.index');    });
+            ->name('user.thong-bao.index');
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -270,7 +271,10 @@ Route::middleware(['auth'])
             Route::put('/phan-quyen/cap-nhat/{id}', [PhanQuyenController::class, 'updateMatrix'])->name('phan-quyen.updateMatrix');
         });
 
-
+        // Form thêm khách hàng
+        Route::get('/khach-hang/tao-moi', [KhachHangController::class, 'create'])->name('khach-hang.create');
+        // Lưu khách hàng mới
+        Route::post('/khach-hang', [KhachHangController::class, 'store'])->name('khach-hang.store');
         // Quản lý thẻ thành viên và điểm khách hàng
         Route::get('/thanh-vien', [AdminThanhVienController::class, 'index'])->name('thanh-vien.index');
         Route::get('/thanh-vien/{thanhVien}', [AdminThanhVienController::class, 'show'])->name('thanh-vien.show');

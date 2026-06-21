@@ -147,10 +147,40 @@ class KhachHangController extends Controller
             'trang_thai_hoat_dong' => ['required', 'boolean'],
         ]);
 
+        // Nếu khách đã có ngày sinh thì giữ nguyên, không cho sửa lại
+        if ($khachHang->ngay_sinh) {
+            $data['ngay_sinh'] = $khachHang->ngay_sinh;
+        }
+
         $khachHang->update($data);
 
         return redirect()
             ->route('admin.khach-hang.show', $khachHang)
             ->with('success', 'Cập nhật thông tin khách hàng thành công.');
+    }
+
+    public function create()
+    {
+        return view('admin.khach_hang.create');
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'ho_ten' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:nguoi_dungs,email'],
+            'so_dien_thoai' => ['nullable', 'string', 'max:20', 'unique:nguoi_dungs,so_dien_thoai'],
+            'ngay_sinh' => ['nullable', 'date', 'before:today'],
+            'mat_khau' => ['required', 'string', 'min:6'],
+        ]);
+
+        $data['vai_tro'] = 'khach_hang';
+        $data['trang_thai_hoat_dong'] = true;
+
+        NguoiDung::create($data);
+
+        return redirect()
+            ->route('admin.khach-hang.index')
+            ->with('success', 'Thêm khách hàng thành công.');
     }
 }

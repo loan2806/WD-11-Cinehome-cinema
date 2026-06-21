@@ -50,9 +50,19 @@
 
     {{-- DANH SÁCH KHÁCH HÀNG --}}
     <div class="overflow-hidden rounded-3xl border border-white/10 bg-[#121212] shadow-2xl">
-        <div class="border-b border-white/10 px-6 py-5">
-            <h2 class="text-xl font-black text-white">Danh sách tài khoản</h2>
-            <p class="mt-1 text-sm text-gray-400">Theo dõi hồ sơ, trạng thái và lịch sử hoạt động khách hàng</p>
+        <div class="flex items-center justify-between border-b border-white/10 px-6 py-5">
+            <div>
+                <h2 class="text-xl font-black text-white">Danh sách tài khoản</h2>
+                <p class="mt-1 text-sm text-gray-400">
+                    Theo dõi hồ sơ, trạng thái và lịch sử hoạt động khách hàng
+                </p>
+            </div>
+
+            <a href="{{ route('admin.khach-hang.create') }}"
+                class="rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-black text-white no-underline transition hover:-translate-y-1">
+                <i class="fa-solid fa-user-plus mr-2"></i>
+                Thêm khách hàng
+            </a>
         </div>
 
         <div class="overflow-x-auto">

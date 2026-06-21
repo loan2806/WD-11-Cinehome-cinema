@@ -71,14 +71,25 @@
                     Ngày sinh
                 </label>
 
-                <input type="date" name="ngay_sinh"
-                    value="{{ old('ngay_sinh', $khachHang->ngay_sinh?->format('Y-m-d')) }}"
+                @if($khachHang->ngay_sinh)
+                {{-- Đã có ngày sinh thì khóa lại, tránh đổi ngày sinh để nhận voucher nhiều lần --}}
+                <input type="date" value="{{ $khachHang->ngay_sinh->format('Y-m-d') }}" disabled
+                    class="w-full cursor-not-allowed rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-gray-400 outline-none">
+
+                <input type="hidden" name="ngay_sinh" value="{{ $khachHang->ngay_sinh->format('Y-m-d') }}">
+
+                <p class="mt-2 text-xs text-yellow-400">
+                    Ngày sinh đã được khóa sau khi lưu để đảm bảo chính sách voucher sinh nhật.
+                </p>
+                @else
+                {{-- Chưa có ngày sinh thì admin được nhập một lần --}}
+                <input type="date" name="ngay_sinh" value="{{ old('ngay_sinh') }}"
                     class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
 
                 <p class="mt-2 text-xs text-gray-500">
-                    Admin được phép sửa ngày sinh để hỗ trợ khách hàng nhập sai. Người dùng thường không được tự sửa sau
-                    khi đã lưu.
+                    Ngày sinh chỉ được nhập một lần. Sau khi lưu sẽ không thể chỉnh sửa.
                 </p>
+                @endif
 
                 @error('ngay_sinh')
                 <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
