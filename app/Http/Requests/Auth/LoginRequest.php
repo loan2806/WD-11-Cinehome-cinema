@@ -43,7 +43,7 @@ class LoginRequest extends FormRequest
         // Chúng ta lấy dữ liệu từ ô 'mat_khau' và gán vào key 'password' để gửi cho Laravel đối chiếu với DB.
         $credentials = [
             'email' => $this->boolean('email') ? $this->email : $this->string('email'),
-            'password' => $this->string('mat_khau'), 
+            'password' => $this->string('mat_khau'),
         ];
 
         if (! Auth::attempt($credentials, $this->boolean('remember'))) {
@@ -51,6 +51,15 @@ class LoginRequest extends FormRequest
 
             throw ValidationException::withMessages([
                 'email' => __('auth.failed'),
+            ]);
+        }
+
+        // Nếu tài khoản bị khóa thì đăng xuất ngay
+        if (! Auth::user()->trang_thai_hoat_dong) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.',
             ]);
         }
 
@@ -85,6 +94,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
     }
 }
