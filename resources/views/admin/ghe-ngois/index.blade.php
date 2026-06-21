@@ -189,6 +189,14 @@
 
                                         </form>
 
+                                        <a href="{{ route('admin.ghe-ngois.baoTri', ['ghe_ngoi_id' => $ghe->id]) }}"
+                                            class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 transition hover:bg-blue-500/25"
+                                            title="Lịch sử bảo trì">
+
+                                            <i class="fa-solid fa-clock-rotate-left text-base leading-none"></i>
+
+                                        </a>
+
                                         <button type="button"
                                             class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25"
                                             title="Xóa ghế"

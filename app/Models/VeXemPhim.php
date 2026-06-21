@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\SystemSetting;
 
 class VeXemPhim extends Model
 {
@@ -36,7 +37,11 @@ class VeXemPhim extends Model
 
     public function canCancel(): bool
     {
-        return $this->created_at->diffInMinutes(now()) <= 5;
+        $minutes = (int) SystemSetting::getValue('ticket_cancel_minutes', 5);
+
+        return $this->trang_thai === 'da_thanh_toan'
+            && $this->created_at
+            && $this->created_at->diffInMinutes(now()) <= $minutes;
     }
 
     public function nguoiDung(): BelongsTo

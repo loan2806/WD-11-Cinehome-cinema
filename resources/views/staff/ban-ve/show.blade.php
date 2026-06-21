@@ -73,7 +73,7 @@
                                         @php
                                             $seatCode = strtoupper(trim($seat->ma_ghe));
                                             $isSold = $soldSeatCodes->contains($seatCode);
-                                            $isMaintenance = $seat->trang_thai === 'bao_tri';
+                                            $isMaintenance = $seat->trang_thai === 'bao_tri' || in_array($seatCode, $maintenanceSeatCodes, true);
                                         @endphp
 
                                         <button
@@ -81,6 +81,7 @@
                                             class="seat-btn {{ $isSold ? 'is-sold' : '' }} {{ $isMaintenance ? 'is-maintenance' : '' }}"
                                             data-seat="{{ $seatCode }}"
                                             {{ $isSold || $isMaintenance ? 'disabled' : '' }}
+                                            title="{{ $isMaintenance ? 'Ghế đang bảo trì' : ($isSold ? 'Đã bán' : 'Ghế trống') }}"
                                         >
                                             {{ $seat->ma_ghe }}
                                         </button>

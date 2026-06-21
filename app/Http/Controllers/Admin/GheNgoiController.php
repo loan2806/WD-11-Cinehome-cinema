@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreGheNgoiRequest;
 use App\Models\GheNgoi;
 use App\Models\HangGhe;
+use App\Models\LichBaoTriGheNgoi;
 use App\Models\LoaiGhe;
 use App\Models\PhongChieu;
 use App\Services\AdminNotificationService;
@@ -244,23 +245,57 @@ class GheNgoiController extends Controller
     }
 
     /**
-     * Toggle maintenance status for a seat.
+     * Check maintenance conflicts (AJAX).
      */
-    public function toggleMaintenance(GheNgoi $gheNgoi)
+    public function checkConflicts(Request $request, GheNgoi $gheNgoi)
     {
-        $isMaintenance = $gheNgoi->trang_thai !== 'bao_tri';
+        $service = app(SeatMaintenanceService::class);
+        $result = $service->canMaintainNow($gheNgoi);
+        $coupleSiblings = $service->getCoupleSiblings($gheNgoi);
 
-        $this->seatGenerator->toggleMaintenance($gheNgoi, $isMaintenance);
+        return response()->json([
+            'success' => true,
+            'can_maintain' => $result['can'],
+            'conflicts' => $result['conflicts'],
+            'couple_siblings' => $coupleSiblings,
+            'is_maintenance' => $gheNgoi->trang_thai === 'bao_tri',
+            'is_couple' => !empty($gheNgoi->couple_group_id),
+        ]);
+    }
+
+    /**
+     * Toggle maintenance status for a seat (AJAX) with conflict check.
+     */
+    public function toggleMaintenance(Request $request, GheNgoi $gheNgoi)
+    {
+        $service = app(SeatMaintenanceService::class);
+
+        if ($gheNgoi->trang_thai !== 'bao_tri') {
+            $result = $service->canMaintainNow($gheNgoi);
+            if (!$result['can']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $this->buildConflictMessage($result['conflicts']),
+                    'conflicts' => $result['conflicts'],
+                ], 422);
+            }
+        }
+
+        $isMaintenance = $gheNgoi->trang_thai !== 'bao_tri';
+        $service->maintainNow($gheNgoi, auth()->id());
 
         $message = $isMaintenance
             ? 'Ghế đã được đưa vào bảo trì.'
             : 'Ghế đã được kích hoạt trở lại.';
 
-        if (request()->expectsJson()) {
+        $this->ghiNhatKy($request, $isMaintenance ? 'Bảo trì ghế' : 'Kích hoạt lại ghế', 'Quản lý phòng & ghế', "{$message} {$gheNgoi->ma_ghe}");
+
+        if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => $message,
                 'trang_thai' => $gheNgoi->fresh()->trang_thai,
+                'is_maintenance' => $isMaintenance,
             ]);
         }
 
@@ -270,27 +305,119 @@ class GheNgoiController extends Controller
     }
 
     /**
-     * Bulk toggle maintenance status.
+     * Schedule maintenance for a seat (AJAX).
      */
-    public function bulkMaintenance(Request $request)
+    public function scheduleMaintenance(Request $request, GheNgoi $gheNgoi)
     {
         $request->validate([
-            'ghe_ids' => 'required|array',
-            'ghe_ids.*' => 'exists:ghe_ngois,id',
-            'trang_thai' => 'required|in:hoat_dong,bao_tri',
+            'thoi_gian_bat_dau' => ['required', 'date', 'after:now'],
+            'thoi_gian_ket_thuc' => ['nullable', 'date', 'after:thoi_gian_bat_dau'],
+            'ly_do' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $updated = GheNgoi::whereIn('id', $request->ghe_ids)
-            ->update(['trang_thai' => $request->trang_thai]);
+        $service = app(SeatMaintenanceService::class);
+        $lich = $service->scheduleMaintenance(
+            $gheNgoi,
+            $request->date('thoi_gian_bat_dau'),
+            $request->filled('thoi_gian_ket_thuc') ? $request->date('thoi_gian_ket_thuc') : null,
+            auth()->id(),
+            $request->input('ly_do')
+        );
 
-        $message = "Đã cập nhật {$updated} ghế.";
+        $this->ghiNhatKy($request, 'Lên lịch bảo trì ghế', 'Quản lý phòng & ghế', "Lên lịch bảo trì ghế {$gheNgoi->ma_ghe} lúc {$lich->thoi_gian_bat_dau}");
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => $message]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã lên lịch bảo trì ghế thành công.',
+                'lich_id' => $lich->id,
+                'thoi_gian_bat_dau' => $lich->thoi_gian_bat_dau,
+            ]);
         }
 
         return redirect()
             ->back()
-            ->with('success', $message);
+            ->with('success', 'Đã lên lịch bảo trì ghế thành công.');
+    }
+
+    /**
+     * Complete maintenance for a seat (AJAX).
+     */
+    public function completeMaintenance(Request $request, LichBaoTriGheNgoi $lichBaoTriGheNgoi)
+    {
+        $request->validate([
+            'ghi_chu' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $service = app(SeatMaintenanceService::class);
+        $ghe = $service->completeMaintenance($lichBaoTriGheNgoi, auth()->id(), $request->input('ghi_chu'));
+
+        $this->ghiNhatKy($request, 'Kết thúc bảo trì ghế', 'Quản lý phòng & ghế', "Kết thúc bảo trì ghế {$ghe->ma_ghe}");
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã kích hoạt lại ghế thành công.',
+                'trang_thai' => $ghe->trang_thai,
+            ]);
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Đã kích hoạt lại ghế thành công.');
+    }
+
+    protected function buildConflictMessage(array $conflicts): string
+    {
+        if (empty($conflicts)) {
+            return 'Không thể bảo trì ghế lúc này.';
+        }
+
+        $count = count($conflicts);
+        $preview = implode(', ', array_slice(array_column($conflicts, 'ma_ve'), 0, 10));
+        $more = $count > 10 ? '...' : '';
+
+        return "Không thể bảo trì: có {$count} vé bị ảnh hưởng [{$preview}{$more}]. Vui lòng xử lý vé trước.";
+    }
+
+    public function baoTri(Request $request): View
+    {
+        $query = LichBaoTriGheNgoi::with(['gheNgoi.hangGhe', 'gheNgoi.phongChieu.rapChieuPhim', 'nguoiDung']);
+
+        if ($request->has('ghe_ngoi_id') && $request->ghe_ngoi_id) {
+            $query->where('ghe_ngoi_id', $request->ghe_ngoi_id);
+        }
+
+        if ($request->has('trang_thai') && $request->trang_thai) {
+            $query->where('trang_thai', $request->trang_thai);
+        }
+
+        if ($request->has('tu_ngay') && $request->tu_ngay) {
+            $query->whereDate('thoi_gian_bat_dau', '>=', $request->tu_ngay);
+        }
+
+        if ($request->has('den_ngay') && $request->den_ngay) {
+            $query->whereDate('thoi_gian_bat_dau', '<=', $request->den_ngay);
+        }
+
+        $lichBaoTriGheNgois = $query->orderByDesc('thoi_gian_bat_dau')->paginate(20);
+
+        return view('admin.ghe-ngois.bao-tri', compact('lichBaoTriGheNgois'));
+    }
+
+    protected function ghiNhatKy(Request $request, string $hanhDong, string $chucNang, string $moTa): void
+    {
+        try {
+            \App\Models\NhatKyHeThong::create([
+                'nguoi_dung_id' => auth()->id(),
+                'hanh_dong' => $hanhDong,
+                'chuc_nang' => $chucNang,
+                'mo_ta' => $moTa,
+                'dia_chi_ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        } catch (\Throwable $e) {
+            // Không chặn luồng chính nếu ghi log lỗi
+        }
     }
 }

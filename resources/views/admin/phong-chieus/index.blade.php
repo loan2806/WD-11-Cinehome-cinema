@@ -217,23 +217,6 @@
 
                                         </a>
 
-                                        <form action="{{ route('admin.phong-chieus.destroy', $phongChieu) }}" method="POST">
-
-                                            @csrf
-
-                                            @method('DELETE')
-
-                                            <button type="submit"
-                                                onclick="return confirm('Bạn có chắc muốn xóa phòng chiếu này?')"
-                                                class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25"
-                                                title="Xóa phòng chiếu">
-
-                                                <i class="fa-solid fa-trash text-base leading-none"></i>
-
-                                            </button>
-
-                                        </form>
-
                                     </div>
 
                                 </td>
