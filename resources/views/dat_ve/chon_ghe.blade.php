@@ -112,6 +112,7 @@
             >
 
             <h1 class="mt-5 text-2xl font-black text-[#d99a32]">{{ $suatChieu->phim->ten_phim }}</h1>
+
             <div class="mt-4 space-y-2 text-sm text-gray-300">
                 <p><strong>Rạp:</strong> {{ $suatChieu->rapChieuPhim->ten_rap }}</p>
                 <p><strong>Phòng:</strong> {{ $suatChieu->phongChieu->ten_phong ?? 'Phòng chiếu' }}</p>
@@ -133,6 +134,7 @@
 
             <form id="booking-form" method="POST" action="{{ route('user.bookings.store', $suatChieu) }}" class="mt-5">
                 @csrf
+
                 <input type="hidden" name="ghe_duoc_chon" id="ghe_duoc_chon" value="{{ old('ghe_duoc_chon') }}">
 
                 <div class="rounded-xl bg-white/5 p-4">
@@ -140,9 +142,11 @@
                         <span>Ghế đã chọn</span>
                         <strong id="count-seats" class="text-[#f4c56a]">0</strong>
                     </div>
+
                     <div id="selected-list" class="mt-3 flex min-h-10 flex-wrap gap-2 text-sm text-gray-400">
                         Chưa chọn ghế nào
                     </div>
+
                     <div class="mt-3 flex justify-between border-t border-white/10 pt-3 text-sm">
                         <span>Tổng tiền</span>
                         <strong class="text-[#f4c56a]"><span id="total-price">0</span>đ</strong>
@@ -151,6 +155,7 @@
 
                 <div class="mt-4 rounded-xl bg-white/5 p-4">
                     <div class="mb-3 text-sm font-black text-[#f4c56a]">Phương thức thanh toán</div>
+
                     <div class="grid gap-2">
                         @forelse($phuongThucThanhToan as $value => $label)
                             <label class="payment-option cursor-pointer">
@@ -161,6 +166,7 @@
                                     class="sr-only"
                                     @checked(old('payment_method', array_key_first($phuongThucThanhToan)) === $value)
                                 >
+
                                 <span class="block rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-bold text-gray-200 transition">
                                     {{ $label }}
                                 </span>
@@ -200,6 +206,7 @@
                     @foreach($gheTheoHang as $hang => $cacGhe)
                         <div class="flex items-center justify-center gap-2">
                             <span class="w-8 text-center text-sm font-black text-[#d99a32]">{{ $hang }}</span>
+
                             @foreach($cacGhe as $ghe)
                                 <div class="seat-wrapper relative" data-seat="{{ $ghe['ma_ghe'] }}">
                                     <button
@@ -213,6 +220,7 @@
                                     >
                                         <span>{{ $ghe['ma_ghe'] }}</span>
                                     </button>
+
                                     <div class="seat-tooltip">
                                         <div class="font-black text-[#f4c56a]">Ghế {{ $ghe['ma_ghe'] }}</div>
                                         <div class="mt-1 text-xs text-gray-300">Loại: {{ $ghe['loai_ghe'] }}</div>
@@ -223,6 +231,7 @@
                                     </div>
                                 </div>
                             @endforeach
+
                             <span class="w-8 text-center text-sm font-black text-[#d99a32]">{{ $hang }}</span>
                         </div>
                     @endforeach
@@ -233,10 +242,12 @@
                         <span class="inline-block h-5 w-5 rounded bg-[#2a2a2a] border border-white/20"></span>
                         Ghế trống
                     </span>
+
                     <span class="flex items-center gap-2">
                         <span class="inline-block h-5 w-5 rounded bg-gradient-to-br from-[#f4c56a] to-[#d99a32]"></span>
                         Đang chọn
                     </span>
+
                     <span class="flex items-center gap-2">
                         <span class="inline-block h-5 w-5 rounded bg-[#0e0e0e] border border-white/10"></span>
                         Đã đặt / bảo trì
@@ -257,6 +268,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const totalPrice = document.getElementById('total-price');
     const submitButton = document.getElementById('btn-dat-ve');
     const selectedList = document.getElementById('selected-list');
+
     let selectedSeats = selectedInput.value
         ? selectedInput.value.split(',').map((seat) => seat.trim()).filter(Boolean)
         : [];
@@ -268,6 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function selectedSeatData() {
         return selectedSeats.map((code) => {
             const button = document.querySelector(`.seat-button[data-seat="${code}"]`);
+
             return {
                 code,
                 price: Number(button?.dataset.price || 0),

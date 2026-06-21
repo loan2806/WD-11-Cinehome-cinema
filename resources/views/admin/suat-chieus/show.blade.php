@@ -111,7 +111,7 @@
 
                     <div>
                         <small class="text-xs text-gray-500">Ngày Tạo</small>
-                        <p class="text-white">{{ $suatChieu->created_at->format('d/m/Y H:i') }}</p>
+                        <p class="text-white">{{ $suatChieu->created_at ? $suatChieu->created_at->format('d/m/Y H:i') : '—' }}</p>
                     </div>
 
                 </div>

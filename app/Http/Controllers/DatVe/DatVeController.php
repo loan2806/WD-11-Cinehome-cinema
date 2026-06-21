@@ -37,7 +37,8 @@ class DatVeController extends Controller
 
     public function chonGhe($suat_chieu_id, DatVeXemPhimService $datVeXemPhimService)
     {
-        $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])->findOrFail($suat_chieu_id);
+        $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])
+            ->findOrFail($suat_chieu_id);
 
         abort_if($suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 

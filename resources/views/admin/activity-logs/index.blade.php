@@ -27,6 +27,7 @@
             <tr>
                 <th>Thời gian</th>
                 <th>Người dùng</th>
+                <th>Email</th>
                 <th>Chức năng</th>
                 <th>Hành động / Mô tả</th>
                 <th>Địa chỉ IP</th>
@@ -36,17 +37,19 @@
             @forelse($logs as $log)
                 <tr>
                     <td>{{ $log->created_at->format('d/m/Y H:i:s') }}</td>
-                    
+
                     <td>{{ $log->nguoiDung?->ho_ten ?? 'Hệ thống' }}</td>
-                    
+
+                    <td>{{ $log->nguoiDung?->email ?? '-' }}</td>
+
                     <td>{{ $log->chuc_nang ?? '-' }}</td>
-                    
+
                     <td><strong>{{ $log->hanh_dong }}</strong><br><small>{{ $log->mo_ta }}</small></td>
-                    
+
                     <td>{{ $log->dia_chi_ip }}</td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="text-center text-gray-400">Chưa có nhật ký hoạt động.</td></tr>
+                <tr><td colspan="6" class="text-center text-gray-400">Chưa có nhật ký hoạt động.</td></tr>
             @endforelse
         </tbody>
     </table>

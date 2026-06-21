@@ -193,8 +193,12 @@ Route::middleware(['auth'])
             Route::post('hang-ghes/{hang_ghe}/update-row-type', [HangGheController::class, 'updateRowType'])->name('hang-ghes.update-row-type');
             Route::get('phong-chieus/{phong_chieu}/hang-ghes', [HangGheController::class, 'byPhongChieu'])->name('phong-chieus.hang-ghes.index');
             Route::resource('loai-ghes', LoaiGheController::class);
+            Route::get('ghe-ngois/bao-tri', [GheNgoiController::class, 'baoTri'])->name('ghe-ngois.baoTri');
             Route::resource('ghe-ngois', GheNgoiController::class);
             Route::post('ghe-ngois/{ghe_ngoi}/toggle-maintenance', [GheNgoiController::class, 'toggleMaintenance'])->name('ghe-ngois.toggle-maintenance');
+            Route::post('ghe-ngois/{ghe_ngoi}/check-conflicts', [GheNgoiController::class, 'checkConflicts'])->name('ghe-ngois.check-conflicts');
+            Route::post('ghe-ngois/{ghe_ngoi}/schedule-maintenance', [GheNgoiController::class, 'scheduleMaintenance'])->name('ghe-ngois.schedule-maintenance');
+            Route::patch('lich-bao-tri-ghe-ngois/{lichBaoTriGheNgoi}/complete', [GheNgoiController::class, 'completeMaintenance'])->name('lich-bao-tri-ghe-ngois.complete');
         });
 
         // Khóa bảo vệ Module: Thao tác Bán Vé Tại Quầy & Quản lý thông tin vé của hệ thống
