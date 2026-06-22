@@ -66,16 +66,27 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full min-w-[1000px] text-left">
+            <table class="w-full min-w-[1200px] table-fixed text-left">
+                <colgroup>
+                    <col class="w-[15%]">
+                    <col class="w-[18%]">
+                    <col class="w-[12%]">
+                    <col class="w-[11%]">
+                    <col class="w-[10%]">
+                    <col class="w-[8%]">
+                    <col class="w-[12%]">
+                    <col class="w-[14%]">
+                </colgroup>
+
                 <thead class="bg-white/[0.04] text-xs uppercase tracking-wider text-gray-400">
                     <tr>
-                        <th class="px-6 py-4">Khách hàng</th>
-                        <th class="px-6 py-4">Email</th>
-                        <th class="px-6 py-4">SĐT</th>
-                        <th class="px-6 py-4">Ngày sinh</th>
-                        <th class="px-6 py-4">Hạng TV</th>
-                        <th class="px-6 py-4">Số vé</th>
-                        <th class="px-6 py-4">Trạng thái</th>
+                        <th class="px-6 py-4 text-left">Khách hàng</th>
+                        <th class="px-6 py-4 text-left">Email</th>
+                        <th class="px-6 py-4 text-left">SĐT</th>
+                        <th class="px-6 py-4 text-center">Ngày sinh</th>
+                        <th class="px-6 py-4 text-center">Hạng TV</th>
+                        <th class="px-6 py-4 text-center">Số vé</th>
+                        <th class="px-6 py-4 text-center">Trạng thái</th>
                         <th class="px-6 py-4 text-right">Thao tác</th>
                     </tr>
                 </thead>
@@ -83,45 +94,52 @@
                 <tbody class="divide-y divide-white/10">
                     @forelse($khachHangs as $item)
                     <tr class="transition duration-300 hover:bg-white/[0.04]">
-                        <td class="px-6 py-5 font-bold text-white">
-                            {{ $item->ho_ten }}
+                        <td class="px-6 py-5 align-middle">
+                            <div class="truncate font-bold text-white">
+                                {{ $item->ho_ten }}
+                            </div>
                         </td>
 
-                        <td class="px-6 py-5 text-gray-400">
-                            {{ $item->email }}
+                        <td class="px-6 py-5 align-middle">
+                            <div class="truncate text-gray-400">
+                                {{ $item->email }}
+                            </div>
                         </td>
 
-                        <td class="px-6 py-5 text-gray-400">
+                        <td class="px-6 py-5 align-middle text-gray-400">
                             {{ $item->so_dien_thoai ?? '---' }}
                         </td>
 
-                        <td class="px-6 py-5 text-gray-400">
+                        <td class="px-6 py-5 text-center align-middle text-gray-400">
                             {{ $item->ngay_sinh?->format('d/m/Y') ?? '---' }}
                         </td>
 
-                        <td class="px-6 py-5">
-                            <span class="rounded-full bg-[#d99a32]/15 px-3 py-1 text-xs font-black text-[#f4c56a]">
+                        <td class="px-6 py-5 text-center align-middle">
+                            <span
+                                class="inline-flex items-center justify-center rounded-full bg-[#d99a32]/15 px-3 py-1 text-xs font-black text-[#f4c56a]">
                                 {{ strtoupper($item->thanhVien->ten_hang ?? 'Chưa có') }}
                             </span>
                         </td>
 
-                        <td class="px-6 py-5 font-bold text-white">
+                        <td class="px-6 py-5 text-center align-middle font-bold text-white">
                             {{ number_format($item->ve_xem_phims_count) }}
                         </td>
 
-                        <td class="px-6 py-5">
+                        <td class="px-6 py-5 text-center align-middle">
                             @if($item->trang_thai_hoat_dong)
-                            <span class="rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-400">
+                            <span
+                                class="inline-flex items-center justify-center rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-400">
                                 Hoạt động
                             </span>
                             @else
-                            <span class="rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold text-red-400">
+                            <span
+                                class="inline-flex items-center justify-center rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold text-red-400">
                                 Bị khóa
                             </span>
                             @endif
                         </td>
 
-                        <td class="px-6 py-5 text-right">
+                        <td class="px-6 py-5 text-right align-middle">
                             <div class="flex justify-end gap-2">
                                 <a href="{{ route('admin.khach-hang.show', $item) }}"
                                     class="rounded-xl bg-[#d99a32] px-4 py-2 text-xs font-black text-black no-underline transition hover:bg-[#f4c56a]">
@@ -133,11 +151,10 @@
                                     @csrf
                                     @method('PATCH')
 
-                                    <button type="submit"
-                                        class="rounded-xl px-4 py-2 text-xs font-black transition
-                                            {{ $item->trang_thai_hoat_dong
-                                                ? 'bg-red-500/15 text-red-400 hover:bg-red-500 hover:text-white'
-                                                : 'bg-green-500/15 text-green-400 hover:bg-green-500 hover:text-white' }}">
+                                    <button type="submit" class="rounded-xl px-4 py-2 text-xs font-black transition
+                                        {{ $item->trang_thai_hoat_dong
+                                            ? 'bg-red-500/15 text-red-400 hover:bg-red-500 hover:text-white'
+                                            : 'bg-green-500/15 text-green-400 hover:bg-green-500 hover:text-white' }}">
                                         {{ $item->trang_thai_hoat_dong ? 'Khóa' : 'Mở khóa' }}
                                     </button>
                                 </form>
