@@ -25,7 +25,8 @@ class ThanhVienController extends Controller
                 $q->where('ma_thanh_vien', 'like', "%{$keyword}%")
                     ->orWhereHas('nguoiDung', function ($userQuery) use ($keyword) {
                         $userQuery->where('ho_ten', 'like', "%{$keyword}%")
-                            ->orWhere('email', 'like', "%{$keyword}%");
+                            ->orWhere('email', 'like', "%{$keyword}%")
+                            ->orWhere('so_dien_thoai', 'like', "%{$keyword}%"); // tìm theo SĐT
                     });
             });
         }
