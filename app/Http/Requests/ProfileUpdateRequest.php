@@ -25,6 +25,7 @@ class ProfileUpdateRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
+                'ngay_sinh' => ['nullable', 'date', 'before:today'],
                 Rule::unique(NguoiDung::class)->ignore($this->user()->id),
             ],
         ];

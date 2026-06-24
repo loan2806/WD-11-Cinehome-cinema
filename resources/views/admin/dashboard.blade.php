@@ -67,6 +67,7 @@
 
 </div>
 
+
 {{-- BIỂU NGỮ CHÀO MỪNG THÔNG MINH KHI TÀI KHOẢN KHÔNG CÓ QUYỀN XEM DOANH THU (NHÂN VIÊN QUẦY) --}}
 @if(!auth()->user()->can('thong_ke_doanh_thu'))
     <div class="rounded-2xl border border-white/10 bg-gradient-to-r from-[#1a0b04] to-[#2b1208] p-5 mb-4 shadow-xl">

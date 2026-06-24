@@ -68,39 +68,41 @@ class PhimsController extends Controller
     | STORE
     |--------------------------------------------------------------------------
     */
-    public function store(ThemmoiPhimsRequest $request)
-    {
-        $data = $request->validated();
+ public function store(ThemmoiPhimsRequest $request)
+{
+    $data = $request->validated();
 
-        if ($request->hasFile('poster')) {
-            $data['poster'] = $request->file('poster')->store('movies', 'public');
-        }
-
-        $data['slug'] = Str::slug($data['ten_phim']) . '-' . uniqid();
-
-        $movie = Phims::create($data);
-
-        $this->ghiNhatKy(
-            $request,
-            'Thêm phim mới',
-            'Quản lý phim & lịch chiếu',
-            "Thêm phim: {$data['ten_phim']}"
-        );
-
-        if (!empty($data['the_loai_id'])) {
-            $movie->genres()->sync($data['the_loai_id']);
-        }
-
-        AdminNotificationService::push(
-            '🎬 Phim mới được thêm',
-            'Đã thêm phim ' . $movie->ten_phim,
-            'Success'
-        );
-
-        return redirect()
-            ->route('admin.phims.index')
-            ->with('success', 'Thêm phim thành công');
+    // upload ảnh đúng cách
+    if ($request->hasFile('poster')) {
+        $data['poster'] = $request->file('poster')->store('movies', 'public');
     }
+
+    $data['slug'] = Str::slug($data['ten_phim']) . '-' . uniqid();
+
+    // tạo phim trước
+    $movie = Phims::create($data);
+
+    $this->ghiNhatKy(
+        $request,
+        'Thêm phim mới',
+        'Quản lý phim & lịch chiếu',
+        "Thêm phim: {$data['ten_phim']}"
+    );
+
+    if (!empty($data['the_loai_id'])) {
+        $movie->genres()->sync($data['the_loai_id']);
+    }
+
+    AdminNotificationService::push(
+        '🎬 Phim mới được thêm',
+        'Đã thêm phim ' . $movie->ten_phim,
+        'Success'
+    );
+
+    return redirect()
+        ->route('admin.phims.index')
+        ->with('success', 'Thêm phim thành công');
+}
 
     /*
     |--------------------------------------------------------------------------

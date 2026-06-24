@@ -12,7 +12,7 @@ use Illuminate\View\View;
 class ProfileController extends Controller
 {
     /**
-     * Display the user's profile form.
+     * Hiển thị giao diện chỉnh sửa hồ sơ người dùng.
      */
     public function edit(Request $request): View
     {
@@ -22,23 +22,38 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update the user's profile information.
+     * Cập nhật thông tin hồ sơ người dùng.
+     *
+     * Lưu ý nghiệp vụ:
+     * - Ngày sinh chỉ được cập nhật 1 lần.
+     * - Nếu tài khoản đã có ngày sinh thì không cho ghi đè nữa.
+     * - Mục đích: tránh khách hàng đổi ngày sinh nhiều lần để nhận voucher sinh nhật.
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $data = $request->validated();
+
+        // Nếu người dùng đã có ngày sinh thì không cho cập nhật lại ngày sinh
+        if ($user->ngay_sinh) {
+            unset($data['ngay_sinh']);
         }
 
-        $request->user()->save();
+        $user->fill($data);
+
+        // Nếu email thay đổi thì cần xác minh lại email
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
     /**
-     * Delete the user's account.
+     * Xóa tài khoản người dùng.
      */
     public function destroy(Request $request): RedirectResponse
     {
