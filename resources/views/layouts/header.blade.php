@@ -10,31 +10,24 @@
                 <a href="{{ route('home') }}" class="{{ request()->routeIs('home') ? 'active' : '' }}">
                     Trang chủ
                 </a>
-
                 <a href="{{ route('user.phims.index') }}" class="{{ request()->routeIs('user.phims.*') ? 'active' : '' }}">
                     Phim
                 </a>
-
                 <a href="{{ route('user.cinemas.index') }}" class="{{ request()->routeIs('user.cinemas.*') ? 'active' : '' }}">
                     Giới thiệu rạp
                 </a>
-
                 <a href="{{ route('user.cinemas.map') }}" class="{{ request()->routeIs('user.cinemas.map') ? 'active' : '' }}">
                     Bản đồ rạp
                 </a>
-
                 <a href="{{ route('user.showtimes.index') }}" class="{{ request()->routeIs('user.showtimes.*') ? 'active' : '' }}">
                     Lịch chiếu
                 </a>
-
                 <a href="{{ route('dat_ve.chon_rap') }}" class="{{ request()->routeIs('dat_ve.*') ? 'active' : '' }}">
                     Đặt vé
                 </a>
-
                 <a href="#" class="{{ request()->is('khuyen-mai*') ? 'active' : '' }}">
                     Khuyến mãi
                 </a>
-
                 <a href="{{ route('user.ve_xem_phim.index') }}" class="{{ request()->routeIs('user.ve_xem_phim.*') ? 'active' : '' }}">
                     Vé của tôi
                 </a>
@@ -44,10 +37,9 @@
                 <input type="text" class="search-box" placeholder="Tìm phim...">
 
                 @guest
-                        <button type="button" data-auth-open="login" class="font-bold text-white transition hover:text-[#d99a32]">
+                    <button type="button" data-auth-open="login" class="font-bold text-white transition hover:text-[#d99a32]">
                         Đăng nhập
                     </button>
-
                     <button type="button" data-auth-open="register" class="rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-2.5 font-bold text-white shadow-lg transition hover:scale-[1.02]">
                         Đăng ký
                     </button>
@@ -55,27 +47,22 @@
                     <div class="relative" id="userDropdownBox">
                         <button type="button" id="userDropdownBtn" class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white shadow-md transition bg-gradient-to-r from-[#8a4a21] to-[#d99a32] hover:scale-[1.02] hover:shadow-lg">
                             <i class="fa-solid fa-user text-sm"></i>
-
                             <span class="max-w-[105px] truncate">
                                 {{ Auth::user()->ho_ten }}
                             </span>
-
                             <i class="fa-solid fa-chevron-down text-[10px]"></i>
                         </button>
 
                         <div id="userDropdownMenu" class="absolute right-0 top-[120%] z-[9999] hidden w-56 overflow-hidden rounded-xl border border-[#d99a32]/30 bg-[#151515]/95 shadow-2xl backdrop-blur-md">
-
                             {{-- USER INFO --}}
                             <div class="flex items-center gap-3 border-b border-white/10 px-3 py-3">
                                 <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white">
                                     <i class="fa-solid fa-user text-sm"></i>
                                 </div>
-
                                 <div class="min-w-0">
                                     <div class="truncate text-sm font-bold text-white">
                                         {{ Auth::user()->ho_ten }}
                                     </div>
-
                                     <div class="truncate text-[11px] text-gray-400">
                                         {{ Auth::user()->email }}
                                     </div>
@@ -94,7 +81,6 @@
                                         <i class="fa-solid fa-ticket w-4 text-xs"></i>
                                         Vé của tôi
                                     </a>
-
                                     <a href="{{ route('user.notifications.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-bell w-4 text-xs"></i>
                                         Thông báo
@@ -106,7 +92,6 @@
                                     Danh sách phim
                                 </a>
 
-                                {{-- Nếu là Quản trị viên hoặc Quản lý hệ thống --}}
                                 @if (Auth::user()->hasRole('Quản trị viên') || Auth::user()->hasRole('Quản lý hệ thống') || Auth::user()->hasRole('Quản lý') || Auth::user()->vai_tro === 'admin')
                                     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-user-shield w-4 text-xs"></i>
@@ -114,7 +99,6 @@
                                     </a>
                                 @endif
 
-                                {{-- CHỈNH SỬA TẠI ĐÂY: Trỏ luồng Nhân viên về route hệ thống mới --}}
                                 @if (Auth::user()->hasRole('Nhân viên') || Auth::user()->vai_tro === 'nhan_vien')
                                     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-100 transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                                         <i class="fa-solid fa-user-tie w-4 text-xs"></i>
@@ -141,3 +125,26 @@
         </div>
     </div>
 </header>
+
+{{-- SỬA LỖI TRỰC TIẾP TẠI ĐÂY: Khối JS xử lý kích hoạt ẩn hiện menu mượt mà --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropdownBtn = document.getElementById('userDropdownBtn');
+        const dropdownMenu = document.getElementById('userDropdownMenu');
+
+        if (dropdownBtn && dropdownMenu) {
+            // Khi click vào button tài khoản: Đóng/Mở menu
+            dropdownBtn.addEventListener('click', function (event) {
+                event.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
+                dropdownMenu.classList.toggle('hidden');
+            });
+
+            // Khi click bất kỳ đâu ngoài màn hình: Tự động đóng menu ẩn đi để tối ưu UX
+            document.addEventListener('click', function (event) {
+                if (!dropdownBtn.contains(event.target) && !dropdownMenu.contains(event.target)) {
+                    dropdownMenu.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>

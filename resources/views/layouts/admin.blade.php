@@ -42,6 +42,26 @@
     </style>
 </head>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Thay đổi Selector ID cho phù hợp với cấu trúc trong file layouts/admin.blade.php của bạn
+        const adminBtn = document.getElementById('adminDropdownBtn') || document.querySelector('.admin-profile-btn');
+        const adminMenu = document.getElementById('adminDropdownMenu') || document.querySelector('.admin-profile-menu');
+
+        if (adminBtn && adminMenu) {
+            adminBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                adminMenu.classList.toggle('hidden'); // Nếu admin dùng class khác như 'show' thì sửa toggle tương ứng
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!adminBtn.contains(e.target) && !adminMenu.contains(e.target)) {
+                    adminMenu.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>
 <body class="overflow-x-hidden bg-[#080808] text-white">
     @include('components.preloader')
 
