@@ -180,26 +180,3 @@
         </div>
     </div>
 </header>
-
-{{-- SỬA LỖI TRỰC TIẾP TẠI ĐÂY: Khối JS xử lý kích hoạt ẩn hiện menu mượt mà --}}
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const dropdownBtn = document.getElementById('userDropdownBtn');
-        const dropdownMenu = document.getElementById('userDropdownMenu');
-
-        if (dropdownBtn && dropdownMenu) {
-            // Khi click vào button tài khoản: Đóng/Mở menu
-            dropdownBtn.addEventListener('click', function (event) {
-                event.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
-                dropdownMenu.classList.toggle('hidden');
-            });
-
-            // Khi click bất kỳ đâu ngoài màn hình: Tự động đóng menu ẩn đi để tối ưu UX
-            document.addEventListener('click', function (event) {
-                if (!dropdownBtn.contains(event.target) && !dropdownMenu.contains(event.target)) {
-                    dropdownMenu.classList.add('hidden');
-                }
-            });
-        }
-    });
-</script>

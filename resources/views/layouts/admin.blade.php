@@ -16,6 +16,8 @@
     {{-- CSS riêng Admin --}}
     <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
 
+    @stack('styles')
+
     {{-- ChartJS --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -304,7 +306,7 @@
                 {{-- NHÓM DROPDOWN 6: THIẾT LẬP HỆ THỐNG --}}
                 @if (auth()->user()->can('quan_ly_cau_hinh_he_thong'))
                     @php
-                        $isSystemActive = request()->routeIs('admin.notifications.*')
+                        $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
                             || request()->routeIs('admin.movie-reviews.*')
                             || request()->routeIs('admin.system-settings.*');
                     @endphp
@@ -318,7 +320,7 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="{{ route('admin.notifications.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.notifications.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thông báo đẩy</a>
+                            <a href="{{ route('admin.thong-bao-push.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thông báo đẩy</a>
                             <a href="{{ route('admin.movie-reviews.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.movie-reviews.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Kiểm duyệt đánh giá</a>
                             <a href="{{ route('admin.system-settings.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.system-settings.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Cấu hình tham số gốc</a>
                         </div>
