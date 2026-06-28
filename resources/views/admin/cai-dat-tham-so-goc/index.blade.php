@@ -47,20 +47,37 @@
                         <i class="fa-solid fa-building mr-1.5"></i> Cấu Hình Nhãn Hiệu & Thông Tin Liên Hệ
                     </h4>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
-                        {{-- Upload & Preview Logo Thương hiệu --}}
-                        <div class="space-y-2 flex flex-col items-center p-4 rounded-xl border border-white/5 bg-[#151515]">
-                            <label class="text-xs text-gray-400 font-bold uppercase tracking-wide">Logo Rạp Hiện Tại</label>
-                            <div class="my-3 h-28 w-28 rounded-2xl bg-white p-1 flex items-center justify-center overflow-hidden shadow-inner">
-                                <img id="logo_preview" src="{{ $settings->logo ? asset('storage/' . $settings->logo) : asset('assets/images/logo.png') }}" class="object-contain max-h-full max-w-full">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+                        
+                        {{-- KHỐI QUẢN LÝ TỆP TIN HÌNH ẢNH (LOGO & BACKGROUND) --}}
+                        <div class="space-y-4 flex flex-col">
+                            {{-- Upload & Preview Logo --}}
+                            <div class="flex flex-col items-center p-4 rounded-xl border border-white/5 bg-[#151515]">
+                                <label class="text-xs text-gray-400 font-bold uppercase tracking-wide">Logo Rạp Hiện Tại</label>
+                                <div class="my-3 h-24 w-24 rounded-2xl bg-white p-1 flex items-center justify-center overflow-hidden shadow-inner">
+                                    <img id="logo_preview" src="{{ $settings->logo ? asset('storage/' . $settings->logo) : asset('assets/images/logo.png') }}" class="object-contain max-h-full max-w-full">
+                                </div>
+                                <input type="file" name="logo" id="logo_input" accept="image/*" class="hidden">
+                                <button type="button" onclick="document.getElementById('logo_input').click()" class="px-3 py-1.5 rounded-lg bg-white/10 text-xs font-bold text-gray-200 hover:bg-[#d99a32] hover:text-[#2b1208] transition border-0 cursor-pointer">
+                                    Tải Logo Mới
+                                </button>
                             </div>
-                            <input type="file" name="logo" id="logo_input" accept="image/*" class="hidden">
-                            <button type="button" onclick="document.getElementById('logo_input').click()" class="px-3 py-1.5 rounded-lg bg-white/10 text-xs font-bold text-gray-200 hover:bg-[#d99a32] hover:text-[#2b1208] transition border-0 cursor-pointer">
-                                Tải Logo Mới
-                            </button>
+
+                            {{-- BỔ SUNG: Upload & Preview Ảnh nền Login --}}
+                            <div class="flex flex-col items-center p-4 rounded-xl border border-white/5 bg-[#151515]">
+                                <label class="text-xs text-gray-400 font-bold uppercase tracking-wide">Poster Nền Trang Đăng Nhập</label>
+                                <div class="my-3 h-28 w-full rounded-xl bg-[#222] p-1 flex items-center justify-center overflow-hidden border border-white/10 relative group">
+                                    <img id="bg_login_preview" src="{{ $settings->anh_nen_login ? asset('storage/' . $settings->anh_nen_login) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1025' }}" class="object-cover w-full h-full brightness-75 rounded-lg">
+                                </div>
+                                <input type="file" name="anh_nen_login" id="bg_login_input" accept="image/*" class="hidden">
+                                <button type="button" onclick="document.getElementById('bg_login_input').click()" class="px-3 py-1.5 rounded-lg bg-white/10 text-xs font-bold text-gray-200 hover:bg-[#d99a32] hover:text-[#2b1208] transition border-0 cursor-pointer">
+                                    Thay Poster Nền
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {{-- THÔNG TIN VĂN BẢN --}}
+                        <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="space-y-1.5">
                                 <label class="text-xs text-gray-400 font-bold">Tên Rạp Phim <span class="text-red-400">*</span></label>
                                 <input type="text" name="ten_rap" value="{{ old('ten_rap', $settings->ten_rap) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
@@ -91,7 +108,7 @@
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
-                            <label class="text-xs text-gray-400 font-bold">Thời Gian Giữ Ghế Tạm Thời (Phút) <span class="text-red-400">*</span></label>
+                            <label class="text-xs text-gray-400 font-bold">Thời Gian Giữ Ghế Tạm Temporarily (Phút) <span class="text-red-400">*</span></label>
                             <input type="number" name="thoi_gian_giu_ghe" value="{{ old('thoi_gian_giu_ghe', $settings->thoi_gian_giu_ghe) }}" required min="1" class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
                             <small class="text-xs text-gray-500 block">Sau số phút này, nếu khách chưa thanh toán, ghế sẽ tự động giải phóng.</small>
                         </div>
@@ -127,18 +144,18 @@
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-4">
-                    <div class="space-y-1.5">
-                        <label class="text-xs text-gray-400 font-bold">Thời gian chuyển sang "Đang chiếu" (Phút) <span class="text-red-400">*</span></label>
-                        <input type="number" name="so_phut_truoc_chieu_dang_chieu" value="{{ old('so_phut_truoc_chieu_dang_chieu', $settings->so_phut_truoc_chieu_dang_chieu) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                        <small class="text-xs text-gray-500 block">Ví dụ: Điền 15 thì trước giờ chiếu 15 phút trạng thái sẽ tự đổi thành "Đang chiếu".</small>
-                    </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs text-gray-400 font-bold">Thời gian chuyển sang "Đang chiếu" (Phút) <span class="text-red-400">*</span></label>
+                            <input type="number" name="so_phut_truoc_chieu_dang_chieu" value="{{ old('so_phut_truoc_chieu_dang_chieu', $settings->so_phut_truoc_chieu_dang_chieu) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
+                            <small class="text-xs text-gray-500 block">Ví dụ: Điền 15 thì trước giờ chiếu 15 phút trạng thái sẽ tự đổi thành "Đang chiếu".</small>
+                        </div>
 
-                    <div class="space-y-1.5">
-                        <label class="text-xs text-gray-400 font-bold">Mốc thời gian coi là Phim "Sắp ra mắt" (Ngày) <span class="text-red-400">*</span></label>
-                        <input type="number" name="so_ngay_truoc_chieu_sap_ra_mat" value="{{ old('so_ngay_truoc_chieu_sap_ra_mat', $settings->so_ngay_truoc_chieu_sap_ra_mat) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                        <small class="text-xs text-gray-500 block">Ví dụ: Điền 30 thì các suất chiếu cách ngày hiện tại xa hơn 1 tháng sẽ là "Sắp ra mắt".</small>
+                        <div class="space-y-1.5">
+                            <label class="text-xs text-gray-400 font-bold">Mốc thời gian coi là Phim "Sắp ra mắt" (Ngày) <span class="text-red-400">*</span></label>
+                            <input type="number" name="so_ngay_truoc_chieu_sap_ra_mat" value="{{ old('so_ngay_truoc_chieu_sap_ra_mat', $settings->so_ngay_truoc_chieu_sap_ra_mat) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
+                            <small class="text-xs text-gray-500 block">Ví dụ: Điền 30 thì các suất chiếu cách ngày hiện tại xa hơn 1 tháng sẽ là "Sắp ra mắt".</small>
+                        </div>
                     </div>
-                </div>
                 </div>
             </div>
 
@@ -171,19 +188,17 @@
             {{-- TAB 5: CỔNG THANH TOÁN TECH --}}
             <div id="tab-payment" class="tab-panel hidden space-y-5">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    
-                    {{-- Cấu hình VNPay --}}
+                    {{-- VNPay --}}
                     <div class="p-6 rounded-2xl border border-white/5 bg-[#121212]/60 space-y-4">
                         <div class="flex items-center justify-between border-b border-white/5 pb-3">
                             <h4 class="text-base font-black text-white uppercase tracking-wider m-0 flex items-center gap-2">
-                                <i class="fa-solid fa-wallet text-blue-400"></i> Cổng Quốc Tế VNPay
+                                <i class="fa-solid fa-wallet text-blue-400"></i> Cổng VNPay
                             </h4>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="bat_tat_vnpay" value="1" {{ old('bat_tat_vnpay', $settings->bat_tat_vnpay) ? 'checked' : '' }} class="sr-only peer">
                                 <div class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-[#d99a32] after:border-transparent after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#d99a32]/20 border border-white/10"></div>
                             </label>
                         </div>
-                        
                         <div class="space-y-3">
                             <div class="space-y-1.5">
                                 <label class="text-xs text-gray-400 font-semibold">Mã Website (vnp_TmnCode)</label>
@@ -196,7 +211,7 @@
                         </div>
                     </div>
 
-                    {{-- Cấu hình MoMo --}}
+                    {{-- MoMo --}}
                     <div class="p-6 rounded-2xl border border-white/5 bg-[#121212]/60 space-y-4">
                         <div class="flex items-center justify-between border-b border-white/5 pb-3">
                             <h4 class="text-base font-black text-white uppercase tracking-wider m-0 flex items-center gap-2">
@@ -207,7 +222,6 @@
                                 <div class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-400 peer-checked:after:bg-[#d99a32] after:border-transparent after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#d99a32]/20 border border-white/10"></div>
                             </label>
                         </div>
-                        
                         <div class="space-y-3">
                             <div class="space-y-1.5">
                                 <label class="text-xs text-gray-400 font-semibold">Mã Đối Tác (Partner Code)</label>
@@ -223,7 +237,6 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
@@ -249,7 +262,6 @@
                 btn.addEventListener('click', function() {
                     const target = this.dataset.target;
 
-                    // Reset trạng thái nút bấm
                     tabButtons.forEach(b => {
                         b.classList.remove('bg-[#d99a32]', 'text-[#2b1208]');
                         b.classList.add('bg-white/5', 'text-gray-400', 'font-bold');
@@ -257,7 +269,6 @@
                     this.classList.remove('bg-white/5', 'text-gray-400', 'font-bold');
                     this.classList.add('bg-[#d99a32]', 'text-[#2b1208]', 'font-black');
 
-                    // Ẩn / Hiện Panel tương ứng
                     tabPanels.forEach(panel => {
                         if (panel.id === target) {
                             panel.classList.remove('hidden');
@@ -281,6 +292,23 @@
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             logoPreview.src = e.target.result;
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            // 3. ENGINE XEM TRƯỚC POSTER NỀN LOGIN KHI CHỌN FILE
+            const bgLoginInput = document.getElementById('bg_login_input');
+            const bgLoginPreview = document.getElementById('bg_login_preview');
+
+            if (bgLoginInput && bgLoginPreview) {
+                bgLoginInput.addEventListener('change', function() {
+                    const file = this.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            bgLoginPreview.src = e.target.result;
                         }
                         reader.readAsDataURL(file);
                     }
