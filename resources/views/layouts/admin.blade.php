@@ -70,14 +70,21 @@
     @include('components.preloader')
 
     {{-- GLOBAL TOAST NOTIFICATIONS --}}
-    @if (session('success'))
-        <x-toast type="success" :message="session('success')" />
-    @endif
-    @if (session('error'))
-        <x-toast type="error" :message="session('error')" />
-    @endif
-    @if (session('warning'))
-        <x-toast type="warning" :message="session('warning')" />
+    @if (session('success') || session('error') || session('warning') || $errors->any())
+        <div style="position: fixed; top: 24px; right: 24px; z-index: 100000; display: flex; width: min(390px, calc(100vw - 32px)); flex-direction: column; gap: 12px; pointer-events: none;">
+            @if (session('success'))
+                <x-toast type="success" :message="session('success')" />
+            @endif
+            @if (session('error'))
+                <x-toast type="error" :message="session('error')" />
+            @endif
+            @if (session('warning'))
+                <x-toast type="warning" :message="session('warning')" />
+            @endif
+            @if ($errors->any())
+                <x-toast type="error" :message="$errors->first()" />
+            @endif
+        </div>
     @endif
 
     {{-- GLOBAL CONFIRM MODAL --}}
@@ -196,9 +203,13 @@
                 @endif
 
                 {{-- NHÓM DROPDOWN 3: VÉ, HÓA ĐƠN & DỊCH VỤ QUẦY --}}
-                @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') || auth()->user()->can('soat_ve_vao_cua'))
+                @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') || auth()->user()->can('soat_ve_vao_cua') || auth()->user()->can('quan_ly_khach_hang'))
                     @php
-                        $isGiaoDichActive = request()->routeIs('admin.food-invoices.*') || request()->routeIs('admin.ve-xem-phims.*') || request()->routeIs('admin.soat-ve.*');
+                        $isGiaoDichActive = request()->routeIs('admin.food-invoices.*')
+                            || request()->routeIs('admin.foods.*')
+                            || request()->routeIs('admin.vouchers.*')
+                            || request()->routeIs('admin.ve-xem-phims.*')
+                            || request()->routeIs('admin.soat-ve.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isGiaoDichActive ? 'open' : '' }}">
                         <button type="button"
@@ -229,8 +240,18 @@
                                     Hóa đơn đồ ăn & Combo
                                 </a>
                             @endcan
-                            <a href="#" class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 hover:text-[#d99a32] transition duration-200 hover:translate-x-1.5 no-underline">+ Cấu hình Menu & Kho hàng</a>
-                            <a href="#" class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 hover:text-[#d99a32] transition duration-200 hover:translate-x-1.5 no-underline">+ Khuyến mãi & Voucher</a>
+                            @can('quan_ly_do_an_combo')
+                                <a href="{{ route('admin.foods.index') }}"
+                                    class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.foods.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
+                                    + Cấu hình Menu & Kho hàng
+                                </a>
+                            @endcan
+                            @can('quan_ly_khach_hang')
+                                <a href="{{ route('admin.vouchers.index') }}"
+                                    class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.vouchers.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
+                                    + Khuyến mãi & Voucher
+                                </a>
+                            @endcan
                         </div>
                     </div>
                 @endif

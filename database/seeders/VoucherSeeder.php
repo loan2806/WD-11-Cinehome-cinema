@@ -9,7 +9,7 @@ class VoucherSeeder extends Seeder
 {
     public function run(): void
     {
-        Voucher::insert([
+        $vouchers = [
             [
                 'ma_voucher' => 'VE10K',
                 'ten_voucher' => 'Giảm 10.000 VNĐ tiền vé',
@@ -54,6 +54,13 @@ class VoucherSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+        ];
+
+        foreach ($vouchers as $voucher) {
+            Voucher::updateOrCreate(
+                ['ma_voucher' => $voucher['ma_voucher']],
+                collect($voucher)->except(['created_at'])->all()
+            );
+        }
     }
 }
