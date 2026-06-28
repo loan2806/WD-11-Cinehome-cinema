@@ -64,7 +64,7 @@
 
                     {{-- POSTER --}}
                     <a href="{{ route('user.phims.show', $movie->slug) }}">
-                        <img src="{{ asset('storage/' . $movie->poster) }}"
+                        <img src="{{ asset('storage/movies/' . $movie->poster) }}"
                             class="w-full h-[250px] object-cover">
                     </a>
 
