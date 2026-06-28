@@ -125,7 +125,7 @@
                         Poster
                     </h6>
 
-                    <img src="{{ asset('storage/' . $phim->poster) }}" alt="{{ $phim->ten_phim }}"
+                    <img src="{{ asset('storage/movies/' . $phim->poster) }}" alt="{{ $phim->ten_phim }}"
                         class="w-full rounded-2xl object-cover shadow-lg" style="height: 420px;">
 
                 </div>

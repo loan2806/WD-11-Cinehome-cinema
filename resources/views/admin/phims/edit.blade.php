@@ -302,7 +302,7 @@
 
                                     </div>
 
-                                    <img id="preview" src="{{ asset('storage/' . $phim->poster) }}"
+                                    <img id="preview" src="{{ asset('storage/movies/' . $phim->poster) }}"
                                         class="absolute inset-0 w-full h-full object-cover {{ $phim->poster ? '' : 'hidden' }}" />
 
                                 </label>
@@ -426,13 +426,12 @@
         const trailerInput = document.getElementById('trailer');
 
         const trailerBox = document.getElementById('trailerBox');
-        
+
         const trailerPreview = document.getElementById('trailerPreview');
 
+        function updateTrailerPreview() {
 
-        trailerInput.addEventListener('input', function() {
-
-            const url = this.value;
+            const url = trailerInput.value;
 
             const videoId = getYoutubeId(url);
 
@@ -446,23 +445,27 @@
 
                 trailerPreview.src = `https://www.youtube.com/embed/${videoId}`;
 
-
             } else {
+
                 trailerPreview.src = "";
 
                 trailerBox.classList.add('hidden');
-
 
                 if (url.length > 0) {
 
                     error.classList.remove('hidden');
 
                 } else {
-
+                    
                     error.classList.add('hidden');
                 }
             }
-        });
+        }
+
+        trailerInput.addEventListener('input', updateTrailerPreview);
+
+        // Hiển thị trailer ngay khi mở trang sửa
+        updateTrailerPreview();
     </script>
 
 @endsection

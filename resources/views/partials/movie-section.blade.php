@@ -88,7 +88,7 @@
             <div class="movie-poster relative overflow-hidden">
 
                 <img
-                    src="{{ asset('storage/' . $movie->poster) }}"
+                    src="{{ asset('storage/movies/' . $movie->poster) }}"
                     alt="{{ $movie->ten_phim }}"
                     class="w-full h-full object-cover"
                 >
