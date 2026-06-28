@@ -16,6 +16,8 @@
     {{-- CSS riêng Admin --}}
     <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
 
+    @stack('styles')
+
     {{-- ChartJS --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -44,18 +46,45 @@
     </style>
 </head>
 
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Thay đổi Selector ID cho phù hợp với cấu trúc trong file layouts/admin.blade.php của bạn
+        const adminBtn = document.getElementById('adminDropdownBtn') || document.querySelector('.admin-profile-btn');
+        const adminMenu = document.getElementById('adminDropdownMenu') || document.querySelector('.admin-profile-menu');
+
+        if (adminBtn && adminMenu) {
+            adminBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                adminMenu.classList.toggle('hidden'); // Nếu admin dùng class khác như 'show' thì sửa toggle tương ứng
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!adminBtn.contains(e.target) && !adminMenu.contains(e.target)) {
+                    adminMenu.classList.add('hidden');
+                }
+            });
+        }
+    });
+</script>
 <body class="overflow-x-hidden bg-[#080808] text-white">
     @include('components.preloader')
 
     {{-- GLOBAL TOAST NOTIFICATIONS --}}
-    @if (session('success'))
-        <x-toast type="success" :message="session('success')" />
-    @endif
-    @if (session('error'))
-        <x-toast type="error" :message="session('error')" />
-    @endif
-    @if (session('warning'))
-        <x-toast type="warning" :message="session('warning')" />
+    @if (session('success') || session('error') || session('warning') || $errors->any())
+        <div style="position: fixed; top: 24px; right: 24px; z-index: 100000; display: flex; width: min(390px, calc(100vw - 32px)); flex-direction: column; gap: 12px; pointer-events: none;">
+            @if (session('success'))
+                <x-toast type="success" :message="session('success')" />
+            @endif
+            @if (session('error'))
+                <x-toast type="error" :message="session('error')" />
+            @endif
+            @if (session('warning'))
+                <x-toast type="warning" :message="session('warning')" />
+            @endif
+            @if ($errors->any())
+                <x-toast type="error" :message="$errors->first()" />
+            @endif
+        </div>
     @endif
 
     {{-- GLOBAL CONFIRM MODAL --}}
@@ -185,14 +214,13 @@
                 @endif
 
                 {{-- NHÓM DROPDOWN 3: VÉ, HÓA ĐƠN & DỊCH VỤ QUẦY --}}
-                @if (auth()->user()->can('ban_ve_tai_quay') ||
-                        auth()->user()->can('quan_ly_do_an_combo') ||
-                        auth()->user()->can('soat_ve_vao_cua'))
+                @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') || auth()->user()->can('soat_ve_vao_cua') || auth()->user()->can('quan_ly_khach_hang'))
                     @php
-                        $isGiaoDichActive =
-                            request()->routeIs('admin.food-invoices.*') ||
-                            request()->routeIs('admin.ve-xem-phims.*') ||
-                            request()->routeIs('admin.soat-ve.*');
+                        $isGiaoDichActive = request()->routeIs('admin.food-invoices.*')
+                            || request()->routeIs('admin.foods.*')
+                            || request()->routeIs('admin.vouchers.*')
+                            || request()->routeIs('admin.ve-xem-phims.*')
+                            || request()->routeIs('admin.soat-ve.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isGiaoDichActive ? 'open' : '' }}">
                         <button type="button"
@@ -226,12 +254,18 @@
                                     Hóa đơn đồ ăn & Combo
                                 </a>
                             @endcan
-                            <a href="#"
-                                class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 hover:text-[#d99a32] transition duration-200 hover:translate-x-1.5 no-underline">+
-                                Cấu hình Menu & Kho hàng</a>
-                            <a href="#"
-                                class="block py-2.5 pl-3 text-[14px] font-medium text-gray-500 hover:text-[#d99a32] transition duration-200 hover:translate-x-1.5 no-underline">+
-                                Khuyến mãi & Voucher</a>
+                            @can('quan_ly_do_an_combo')
+                                <a href="{{ route('admin.foods.index') }}"
+                                    class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.foods.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
+                                    + Cấu hình Menu & Kho hàng
+                                </a>
+                            @endcan
+                            @can('quan_ly_khach_hang')
+                                <a href="{{ route('admin.vouchers.index') }}"
+                                    class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.vouchers.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
+                                    + Khuyến mãi & Voucher
+                                </a>
+                            @endcan
                         </div>
                     </div>
                 @endif
@@ -315,10 +349,9 @@
                 {{-- NHÓM DROPDOWN 6: THIẾT LẬP HỆ THỐNG --}}
                 @if (auth()->user()->can('quan_ly_cau_hinh_he_thong'))
                     @php
-                        $isSystemActive =
-                            request()->routeIs('admin.notifications.*') ||
-                            request()->routeIs('admin.movie-reviews.*') ||
-                            request()->routeIs('admin.system-settings.*');
+                        $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
+                            || request()->routeIs('admin.movie-reviews.*')
+                            || request()->routeIs('admin.system-settings.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isSystemActive ? 'open' : '' }}">
                         <button type="button"
@@ -330,15 +363,9 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="{{ route('admin.notifications.index') }}"
-                                class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.notifications.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thông
-                                báo đẩy</a>
-                            <a href="{{ route('admin.movie-reviews.index') }}"
-                                class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.movie-reviews.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Kiểm
-                                duyệt đánh giá</a>
-                            <a href="{{ route('admin.system-settings.index') }}"
-                                class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.system-settings.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Cấu
-                                hình tham số gốc</a>
+                            <a href="{{ route('admin.thong-bao-push.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thông báo đẩy</a>
+                            <a href="{{ route('admin.movie-reviews.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.movie-reviews.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Kiểm duyệt đánh giá</a>
+                            <a href="{{ route('admin.system-settings.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.system-settings.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Cấu hình tham số gốc</a>
                         </div>
                     </div>
                 @endif

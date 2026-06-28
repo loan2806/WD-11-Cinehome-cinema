@@ -9,6 +9,7 @@ use App\Models\SuatChieu;
 use App\Services\DatVeXemPhimService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Models\ThanhVien;
@@ -52,6 +53,14 @@ class BookingController extends Controller
             $vouchers = NguoiDungVoucher::with('voucher')
                 ->where('nguoi_dung_id', Auth::id())
                 ->where('da_su_dung', false)
+                ->where(function ($query) {
+                    $query->whereNull('ngay_het_han')
+                        ->orWhere('ngay_het_han', '>=', now());
+                })
+                ->whereHas('voucher', function ($query) {
+                    $query->where('trang_thai', true)
+                        ->whereDate('ngay_het_han', '>=', today());
+                })
                 ->get();
         }
 
@@ -102,44 +111,59 @@ class BookingController extends Controller
             ]);
         }
 
-        // Mặc định không giảm giá
-        $giamGia = 0;
+        $veXemPhim = DB::transaction(function () use ($data, $gheDuocChon, $showtime) {
+            $giamGia = 0;
+            $voucherCaNhan = null;
 
-        // Nếu khách chọn voucher
-        if (!empty($data['voucher_id'])) {
+            if (! empty($data['voucher_id'])) {
+                $voucherCaNhan = NguoiDungVoucher::with('voucher')
+                    ->where('id', $data['voucher_id'])
+                    ->where('nguoi_dung_id', Auth::id())
+                    ->where('da_su_dung', false)
+                    ->where(function ($query) {
+                        $query->whereNull('ngay_het_han')
+                            ->orWhere('ngay_het_han', '>=', now());
+                    })
+                    ->whereHas('voucher', function ($query) {
+                        $query->where('trang_thai', true)
+                            ->whereDate('ngay_het_han', '>=', today());
+                    })
+                    ->lockForUpdate()
+                    ->first();
 
-            $voucherCaNhan = \App\Models\NguoiDungVoucher::with('voucher')
-                ->where('id', $data['voucher_id'])
-                ->where('nguoi_dung_id', Auth::id())
-                ->where('da_su_dung', false)
-                ->first();
-
-            if ($voucherCaNhan) {
+                if (! $voucherCaNhan) {
+                    throw ValidationException::withMessages([
+                        'voucher_id' => 'Voucher không hợp lệ, đã dùng hoặc đã hết hạn.',
+                    ]);
+                }
 
                 $giamGia = $voucherCaNhan->voucher->gia_tri_giam;
+            }
 
-                // Đánh dấu voucher đã dùng
+            $veXemPhim = VeXemPhim::create([
+                'nguoi_dung_id' => Auth::id(),
+                'suat_chieu_id' => $showtime->id,
+                'ma_ve' => $this->taoMaVe(),
+                'ten_phim' => $showtime->phim->ten_phim,
+                'ten_rap' => $showtime->rapChieuPhim->ten_rap,
+                'ten_phong' => 'Phong 1',
+                'ma_ghe' => $gheDuocChon->join(', '),
+                'thoi_gian_chieu' => $showtime->thoi_gian_chieu,
+                'tong_tien' => max(($gheDuocChon->count() * (float) $showtime->gia_ve) - $giamGia, 0),
+                'loai_ve' => 'truc_tuyen',
+                'trang_thai' => 'da_thanh_toan',
+                'voucher_id' => $voucherCaNhan?->id,
+            ]);
+
+            if ($voucherCaNhan) {
                 $voucherCaNhan->update([
                     'da_su_dung' => true,
                     'ngay_su_dung' => now(),
                 ]);
             }
-        }
 
-        $veXemPhim = VeXemPhim::create([
-            'nguoi_dung_id' => Auth::id(),
-            'suat_chieu_id' => $showtime->id,
-            'ma_ve' => $this->taoMaVe(),
-            'ten_phim' => $showtime->phim->ten_phim,
-            'ten_rap' => $showtime->rapChieuPhim->ten_rap,
-            'ten_phong' => 'Phong 1',
-            'ma_ghe' => $gheDuocChon->join(', '),
-            'thoi_gian_chieu' => $showtime->thoi_gian_chieu,
-            'tong_tien' => max(($gheDuocChon->count() * (float) $showtime->gia_ve) - $giamGia, 0),
-            'loai_ve' => 'truc_tuyen',
-            'trang_thai' => 'da_thanh_toan',
-            'voucher_id' => $data['voucher_id'] ?? null,
-        ]);
+            return $veXemPhim;
+        });
 
         // Cộng điểm thành viên sau khi đặt vé thành công
         $this->congDiemThanhVien($veXemPhim);

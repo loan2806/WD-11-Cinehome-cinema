@@ -17,14 +17,6 @@
         'cancelled' => 'food-status-cancelled',
     ];
 
-    $quickFoods = [
-        ['name' => 'Bắp ngọt', 'price' => 45000],
-        ['name' => 'Bắp phô mai', 'price' => 55000],
-        ['name' => 'Coca Cola', 'price' => 25000],
-        ['name' => 'Pepsi', 'price' => 25000],
-        ['name' => 'Combo 1 bắp 2 nước', 'price' => 95000],
-        ['name' => 'Combo gia đình', 'price' => 155000],
-    ];
 @endphp
 
 @include('admin.partials.flash')
@@ -54,6 +46,16 @@
     </div>
 </div>
 
+@if (($lowStockFoods ?? collect())->isNotEmpty())
+    <div class="mb-5 rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-5 py-4 text-sm text-yellow-100">
+        <strong class="text-[#f4c56a]">Cảnh báo kho:</strong>
+        @foreach ($lowStockFoods as $food)
+            <span class="ml-2">{{ $food->name }} còn {{ $food->stock_quantity }}</span>
+        @endforeach
+        <a href="{{ route('admin.foods.index', ['status' => 'low']) }}" class="ml-3 font-black text-[#f4c56a] no-underline">Mở kho</a>
+    </div>
+@endif
+
 <div class="grid gap-6 xl:grid-cols-[460px_1fr]">
     <form method="POST" action="{{ route('admin.food-invoices.store') }}" class="admin-panel" id="foodInvoiceForm">
         @csrf
@@ -77,11 +79,23 @@
                 </div>
 
                 <div class="mb-3 flex flex-wrap gap-2">
-                    @foreach ($quickFoods as $food)
-                        <button type="button" class="food-chip" data-food-name="{{ $food['name'] }}" data-food-price="{{ $food['price'] }}">
-                            {{ $food['name'] }}
+                    @forelse ($quickFoods as $food)
+                        <button
+                            type="button"
+                            class="food-chip"
+                            data-food-id="{{ $food->id }}"
+                            data-food-name="{{ $food->name }}"
+                            data-food-price="{{ $food->price }}"
+                            title="Còn {{ $food->stock_quantity }} phần"
+                        >
+                            {{ $food->name }}
+                            <span class="ml-1 text-white/60">({{ $food->stock_quantity }})</span>
                         </button>
-                    @endforeach
+                    @empty
+                        <a href="{{ route('admin.foods.index') }}" class="food-chip no-underline">
+                            Chưa có món trong kho, mở cấu hình menu
+                        </a>
+                    @endforelse
                 </div>
 
                 <div id="foodItems" class="space-y-3"></div>
@@ -241,6 +255,7 @@
 
 <template id="foodItemTemplate">
     <div class="food-item-row grid gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-3 md:grid-cols-[1fr_90px_130px_36px]">
+        <input data-field="food_id" type="hidden" class="food-id">
         <input data-field="food_name" class="admin-input food-name" placeholder="Tên món" required>
         <input data-field="quantity" type="number" min="1" value="1" class="admin-input food-quantity" required>
         <input data-field="unit_price" type="number" min="0" class="admin-input food-price" placeholder="Đơn giá" required>
@@ -475,6 +490,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const fragment = template.content.cloneNode(true);
         const row = fragment.querySelector('.food-item-row');
 
+        row.querySelector('.food-id').value = food.id || '';
         row.querySelector('.food-name').value = food.name || '';
         row.querySelector('.food-quantity').value = food.quantity || 1;
         row.querySelector('.food-price').value = food.price || '';
@@ -495,6 +511,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-food-name]').forEach((button) => {
         button.addEventListener('click', function () {
             addRow({
+                id: button.dataset.foodId,
                 name: button.dataset.foodName,
                 price: button.dataset.foodPrice,
                 quantity: 1,

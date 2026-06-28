@@ -12,6 +12,7 @@ class FoodInvoiceItem extends Model
 
     protected $fillable = [
         'food_invoice_id',
+        'food_id',
         'food_name',
         'quantity',
         'unit_price',
@@ -21,5 +22,10 @@ class FoodInvoiceItem extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(FoodInvoice::class, 'food_invoice_id');
+    }
+
+    public function food(): BelongsTo
+    {
+        return $this->belongsTo(Food::class);
     }
 }

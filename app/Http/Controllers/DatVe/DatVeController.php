@@ -51,6 +51,14 @@ class DatVeController extends Controller
             ? NguoiDungVoucher::with('voucher')
             ->where('nguoi_dung_id', Auth::id())
             ->where('da_su_dung', false)
+            ->where(function ($query) {
+                $query->whereNull('ngay_het_han')
+                    ->orWhere('ngay_het_han', '>=', now());
+            })
+            ->whereHas('voucher', function ($query) {
+                $query->where('trang_thai', true)
+                    ->whereDate('ngay_het_han', '>=', today());
+            })
             ->get()
             : collect();
 

@@ -22,6 +22,8 @@ class VoucherController extends Controller
     {
         $vouchers = Voucher::where('trang_thai', true)
             ->where('loai_voucher', '!=', 'sinh_nhat')
+            ->whereDate('ngay_het_han', '>=', today())
+            ->orderBy('diem_can_doi')
             ->get();
 
         $thanhVien = Auth::user()->thanhVien;
@@ -52,6 +54,10 @@ class VoucherController extends Controller
          */
         if ($voucher->loai_voucher === 'sinh_nhat') {
             return back()->with('error', 'Voucher sinh nhật chỉ được hệ thống tự động tặng vào đúng ngày sinh nhật.');
+        }
+
+        if (! $voucher->trang_thai || $voucher->ngay_het_han->lt(today())) {
+            return back()->with('error', 'Voucher này đã tắt hoặc hết hạn.');
         }
 
         if ($thanhVien->diem_hien_tai < $voucher->diem_can_doi) {

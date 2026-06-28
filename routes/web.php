@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CaiDatThanhToanController as AdminCaiDatThanhToanController;
 use App\Http\Controllers\Admin\DanhGiaPhimController as AdminDanhGiaPhimController;
+use App\Http\Controllers\Admin\FoodController;
 use App\Http\Controllers\Admin\FoodInvoiceController;
 use App\Http\Controllers\Admin\GheNgoiController;
 use App\Http\Controllers\Admin\HangGheController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
 use App\Http\Controllers\Admin\CaiDatHeThongController; // ĐÃ SỬA CHUẨN: Gọi đúng Controller mới thay vì dùng Model làm class name
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
+use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\DatVe\DatVeController;
 use App\Http\Controllers\DongBoDuLieuController;
@@ -214,6 +216,19 @@ Route::middleware(['auth'])
             Route::patch('lich-bao-tri-ghe-ngois/{lichBaoTriGheNgoi}/complete', [GheNgoiController::class, 'completeMaintenance'])->name('lich-bao-tri-ghe-ngois.complete');
         });
 
+        Route::middleware(['permission:quan_ly_do_an_combo'])->group(function () {
+            Route::resource('foods', FoodController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::patch('foods/{food}/stock', [FoodController::class, 'updateStock'])->name('foods.update-stock');
+            Route::patch('foods/{food}/toggle-status', [FoodController::class, 'toggleStatus'])->name('foods.toggle-status');
+        });
+
+        Route::middleware(['permission:quan_ly_khach_hang'])->group(function () {
+            Route::resource('vouchers', AdminVoucherController::class)->only(['index', 'store', 'update', 'destroy']);
+            Route::patch('vouchers/{voucher}/toggle-status', [AdminVoucherController::class, 'toggleStatus'])->name('vouchers.toggle-status');
+            Route::post('vouchers/issue', [AdminVoucherController::class, 'issue'])->name('vouchers.issue');
+            Route::delete('vouchers/issued/{nguoiDungVoucher}', [AdminVoucherController::class, 'destroyIssued'])->name('vouchers.issued.destroy');
+        });
+
         Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
             Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])->name('food-invoices.index');
             Route::post('/food-invoices', [FoodInvoiceController::class, 'store'])->name('food-invoices.store');
@@ -248,6 +263,10 @@ Route::middleware(['auth'])
             Route::resource('notifications', AdminNotificationController::class)->only(['index', 'create', 'store', 'destroy']);
             Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead'])
                 ->name('notifications.markAllRead');
+            Route::resource('thong-bao-push', \App\Http\Controllers\Admin\ThongBaoPushController::class)
+                ->names('thong-bao-push');
+            Route::get('/thong-bao-push/users-by-role', [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'getUsersByRole'])
+                ->name('thong-bao-push.users-by-role');
             Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])->name('movie-reviews.index');
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
