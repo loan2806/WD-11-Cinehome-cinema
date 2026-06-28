@@ -1,72 +1,129 @@
 @props(['type' => 'success', 'message' => null])
 
 @php
-    $variant = match($type) {
+    $variant = match ($type) {
         'success' => [
-            'bg' => 'bg-gradient-to-r from-[#5a2d14] to-[#d99a32]',
-            'border' => 'border-[#d99a32]/50',
+            'bg' => 'bg-emerald-500/15',
+            'border' => 'border-emerald-500/40',
             'icon' => 'fa-circle-check',
-            'shadow' => 'shadow-[#d99a32]/30',
+            'iconColor' => 'text-emerald-300',
+            'text' => 'text-emerald-100',
+            'fallback' => 'Thao tác thành công',
         ],
         'error' => [
-            'bg' => 'bg-gradient-to-r from-[#5a2d14] to-[#ef4444]',
-            'border' => 'border-red-500/50',
+            'bg' => 'bg-red-500/15',
+            'border' => 'border-red-500/40',
             'icon' => 'fa-circle-exclamation',
-            'shadow' => 'shadow-red-500/30',
+            'iconColor' => 'text-red-300',
+            'text' => 'text-red-100',
+            'fallback' => 'Có lỗi xảy ra',
         ],
         'warning' => [
-            'bg' => 'bg-gradient-to-r from-[#5a2d14] to-[#f59e0b]',
-            'border' => 'border-amber-500/50',
+            'bg' => 'bg-amber-500/15',
+            'border' => 'border-amber-500/40',
             'icon' => 'fa-triangle-exclamation',
-            'shadow' => 'shadow-amber-500/30',
+            'iconColor' => 'text-amber-300',
+            'text' => 'text-amber-100',
+            'fallback' => 'Thông báo',
         ],
         default => [
-            'bg' => 'bg-gradient-to-r from-[#5a2d14] to-[#d99a32]',
-            'border' => 'border-[#d99a32]/50',
+            'bg' => 'bg-white/10',
+            'border' => 'border-white/20',
             'icon' => 'fa-circle-info',
-            'shadow' => 'shadow-[#d99a32]/30',
+            'iconColor' => 'text-[#d99a32]',
+            'text' => 'text-white',
+            'fallback' => 'Thông báo',
         ],
     };
 @endphp
 
 <div
-    x-data="{
-        show: true,
-        init() {
-            setTimeout(() => {
-                this.show = false
-            }, 3500);
-        }
-    }"
-    x-show="show"
-    x-transition:enter="transition ease-out duration-300"
-    x-transition:enter-start="opacity-0 translate-x-6"
-    x-transition:enter-end="opacity-100 translate-x-0"
-    x-transition:leave="transition ease-in duration-200"
-    x-transition:leave-start="opacity-100 translate-x-0"
-    x-transition:leave-end="opacity-0 translate-x-6"
-    class="fixed top-6 right-6 z-[99999] pointer-events-auto"
+    data-admin-toast
+    class="admin-toast"
 >
-    <div class="flex items-center gap-4 rounded-2xl border {{ $variant['border'] }} {{ $variant['bg'] }} px-6 py-4 shadow-2xl {{ $variant['shadow'] }}">
-        
-        {{-- ICON --}}
-        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/20">
-            <i class="fa-solid {{ $variant['icon'] }} text-2xl text-white"></i>
+    <div class="flex items-start gap-3 rounded-2xl border {{ $variant['border'] }} {{ $variant['bg'] }} bg-[#101010]/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-xl">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">
+            <i class="fa-solid {{ $variant['icon'] }} {{ $variant['iconColor'] }} text-lg"></i>
         </div>
 
-        {{-- MESSAGE --}}
-        <div class="pr-2">
-            <p class="text-base font-bold text-white leading-snug">
-                {{ $message ?? ($type === 'success' ? 'Thao tác thành công' : ($type === 'error' ? 'Có lỗi xảy ra' : 'Thông báo')) }}
-            </p>
-        </div>
+        <p class="{{ $variant['text'] }} min-w-0 flex-1 break-words pt-1 text-sm font-bold leading-snug">
+            {{ $message ?? $variant['fallback'] }}
+        </p>
 
-        {{-- CLOSE --}}
         <button
-            @click="show = false"
-            class="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white/80 hover:bg-white/25 hover:text-white transition"
+            type="button"
+            data-toast-close
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white"
+            aria-label="Đóng thông báo"
         >
             <i class="fa-solid fa-xmark text-sm"></i>
         </button>
     </div>
 </div>
+
+@once
+    <style>
+        .admin-toast {
+            pointer-events: auto;
+            width: 100%;
+            opacity: 1;
+            transform: translateX(0);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            animation: adminToastIn 0.28s ease both;
+        }
+
+        .admin-toast.is-hiding {
+            opacity: 0;
+            transform: translateX(16px);
+        }
+
+        @keyframes adminToastIn {
+            from {
+                opacity: 0;
+                transform: translateX(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+
+    <script>
+        (function() {
+            function bootAdminToasts() {
+                var toasts = document.querySelectorAll('[data-admin-toast]');
+
+                toasts.forEach(function(toast, index) {
+                    if (toast.dataset.toastReady === '1') {
+                        return;
+                    }
+
+                    toast.dataset.toastReady = '1';
+
+                    var dismiss = function() {
+                        toast.classList.add('is-hiding');
+                        setTimeout(function() {
+                            if (toast.parentElement) {
+                                toast.remove();
+                            }
+                        }, 300);
+                    };
+
+                    var closeButton = toast.querySelector('[data-toast-close]');
+                    if (closeButton) {
+                        closeButton.addEventListener('click', dismiss);
+                    }
+
+                    setTimeout(dismiss, 3500 + (index * 250));
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', bootAdminToasts);
+            } else {
+                bootAdminToasts();
+            }
+        })();
+    </script>
+@endonce
