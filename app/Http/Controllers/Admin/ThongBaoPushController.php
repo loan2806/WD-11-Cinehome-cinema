@@ -52,10 +52,10 @@ class ThongBaoPushController extends Controller
     public function create(): View
     {
         $loaiOptions = [
-            'info' => 'Thông tin (Info)',
-            'success' => 'Thành công (Success)',
-            'warning' => 'Cảnh báo (Warning)',
-            'error' => 'Lỗi (Error)',
+            'info' => 'Thông tin',
+            'success' => 'Thành công',
+            'warning' => 'Cảnh báo',
+            'danger' => 'Lỗi',
         ];
 
         $doiTuongOptions = [
@@ -111,9 +111,9 @@ class ThongBaoPushController extends Controller
 
             // Gửi thông báo admin
             AdminNotificationService::push(
-                '📢 Thông báo đẩy',
-                "Đã tạo thông báo: {$validated['tieu_de']}",
-                'Info'
+                '📢 Thông báo đẩy: ' . $validated['tieu_de'],
+                $validated['noi_dung'],
+                $validated['loai']
             );
 
             return redirect()

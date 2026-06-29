@@ -43,6 +43,15 @@
         .sidebar-dropdown-box.open>button .fa-chevron-down {
             transform: rotate(180deg);
         }
+
+        /* Line clamp for notification content */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     </style>
 </head>
 
