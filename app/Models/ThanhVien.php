@@ -14,6 +14,9 @@ class ThanhVien extends Model
     protected $fillable = [
         'nguoi_dung_id',
         'ma_thanh_vien',
+        'ma_gioi_thieu',
+        'nguoi_gioi_thieu_id',
+        'da_nhan_thuong',
         'hang_thanh_vien',
         'diem_hien_tai',
         'tong_diem_tich_luy',
@@ -24,6 +27,7 @@ class ThanhVien extends Model
         'ngay_tham_gia' => 'datetime',
         'diem_hien_tai' => 'integer',
         'tong_diem_tich_luy' => 'integer',
+        'da_nhan_thuong' => 'boolean',
     ];
 
     /**
@@ -236,5 +240,50 @@ class ThanhVien extends Model
             'platinum' => 'Platinum',
             default => 'Member',
         };
+    }
+
+    /**
+     * Người giới thiệu thành viên này
+     */
+    public function nguoiGioiThieu()
+    {
+        return $this->belongsTo(
+            ThanhVien::class,
+            'nguoi_gioi_thieu_id'
+        );
+    }
+
+
+    /**
+     * Danh sách người được thành viên này giới thiệu
+     */
+    public function thanhVienDuocGioiThieu()
+    {
+        return $this->hasMany(
+            ThanhVien::class,
+            'nguoi_gioi_thieu_id'
+        );
+    }
+
+
+    /**
+     * Tạo mã giới thiệu
+     */
+    public static function taoMaGioiThieu($id): string
+    {
+        return 'GT-TV' . str_pad(
+            $id,
+            6,
+            '0',
+            STR_PAD_LEFT
+        );
+    }
+
+    public function gioiThieus()
+    {
+        return $this->hasMany(
+            GioiThieuThanhVien::class,
+            'thanh_vien_id'
+        );
     }
 }
