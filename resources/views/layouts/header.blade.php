@@ -36,16 +36,6 @@
                 <a href="#" class="{{ request()->is('khuyen-mai*') ? 'active' : '' }}">
                     Khuyến mãi
                 </a>
-
-                <a href="{{ route('user.ve_xem_phim.index') }}"
-                    class="{{ request()->routeIs('user.ve_xem_phim.*') ? 'active' : '' }}">
-                    Vé của tôi
-                </a>
-
-                <a href="{{ route('user.thanh-vien.index') }}"
-                    class="{{ request()->routeIs('user.thanh-vien.*') ? 'active' : '' }}">
-                    Thẻ thành viên
-                </a>
             </nav>
 
             <div class="nav-action">
