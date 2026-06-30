@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\NguoiDung;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,17 +16,12 @@ use Illuminate\View\View;
 
 class NewPasswordController extends Controller
 {
-    /**
-     * Display the password reset view.
-     */
     public function create(Request $request): View
     {
-        return view('auth.reset-password', ['request' => $request]);
+        return view('auth.dat_lai_mat_khau', ['request' => $request]);
     }
 
     /**
-     * Handle an incoming new password request.
-     *
      * @throws ValidationException
      */
     public function store(Request $request): RedirectResponse
@@ -34,17 +29,27 @@ class NewPasswordController extends Controller
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'mat_khau' => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'token.required' => 'Mã xác thực không hợp lệ.',
+            'email.required' => 'Vui lòng nhập địa chỉ email.',
+            'email.email'    => 'Địa chỉ email không đúng định dạng.',
+            'mat_khau.required' => 'Vui lòng nhập mật khẩu mới.',
+            'mat_khau.confirmed' => 'Xác nhận mật khẩu mới không trùng khớp.',
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
+        $credentials = [
+            'token'                 => $request->token,
+            'email'                 => $request->email,
+            'password'              => $request->mat_khau,
+            'password_confirmation' => $request->mat_khau_confirmation,
+        ];
+
         $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
+            $credentials,
+            function (NguoiDung $user) use ($request) {
                 $user->forceFill([
-                    'password' => Hash::make($request->password),
+                    'password'       => Hash::make($request->mat_khau),
                     'remember_token' => Str::random(60),
                 ])->save();
 
@@ -52,12 +57,14 @@ class NewPasswordController extends Controller
             }
         );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        if ($status == Password::PASSWORD_RESET) {
+            return redirect()
+                ->route('login')
+                ->with('status', 'Mật khẩu của bạn đã được cập nhật thành công! Vui lòng tiến hành đăng nhập.');
+        }
+
+        return back()
+            ->withInput($request->only('email'))
+            ->withErrors(['email' => 'Đường dẫn xác thực này đã hết hạn hoặc không hợp lệ. Vui lòng gửi lại yêu cầu.']);
     }
 }
