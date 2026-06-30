@@ -11,9 +11,6 @@ use Illuminate\View\View;
 
 class CaiDatHeThongController extends Controller
 {
-    /**
-     * Giao diện cấu hình tham số gốc hệ thống
-     */
     public function index(): View
     {
         $settings = CaiDatHeThong::firstOrCreate(
@@ -41,9 +38,6 @@ class CaiDatHeThongController extends Controller
         return view('admin.cai-dat-tham-so-goc.index', compact('settings'));
     }
 
-    /**
-     * Cập nhật các tham số vận hành hạt nhân
-     */
     public function update(Request $request): RedirectResponse
     {
         $settings = CaiDatHeThong::findOrFail(1);
@@ -54,7 +48,7 @@ class CaiDatHeThongController extends Controller
             'email' => 'required|email|max:255',
             'dia_chi' => 'required|string|max:500',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'anh_nen_login' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096', // Cho phép dung lượng poster tối đa 4MB
+            'anh_nen_login' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
             
             'thoi_gian_giu_ghe' => 'required|integer|min:1|max:60',
             'so_ve_toi_da_don' => 'required|integer|min:1|max:20',
@@ -85,8 +79,14 @@ class CaiDatHeThongController extends Controller
             if ($settings->logo && Storage::disk('public')->exists($settings->logo)) {
                 Storage::disk('public')->delete($settings->logo);
             }
-            $path = $request->file('logo')->store('uploads/branding', 'public');
-            $validated['logo'] = $path;
+            $validated['logo'] = $request->file('logo')->store('uploads/branding', 'public');
+        }
+
+        if ($request->hasFile('anh_nen_login')) {
+            if ($settings->anh_nen_login && Storage::disk('public')->exists($settings->anh_nen_login)) {
+                Storage::disk('public')->delete($settings->anh_nen_login);
+            }
+            $validated['anh_nen_login'] = $request->file('anh_nen_login')->store('uploads/branding', 'public');
         }
 
         // Logic xử lý upload tệp tin Poster nền Đăng Nhập
@@ -99,7 +99,6 @@ class CaiDatHeThongController extends Controller
         }
 
         $settings->update($validated);
-
-        return redirect()->back()->with('success', 'Hệ thống đã ghi nhận và áp dụng tất cả các tham số cài đặt mới.');
+        return redirect()->back()->with('success', 'Hệ thống đã ghi nhận tất cả cài đặt mới.');
     }
 }

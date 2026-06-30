@@ -5,8 +5,6 @@
 
 @section('content')
     <div class="space-y-6">
-
-        {{-- NAVIGATIONAL TABS BAR --}}
         <div class="flex flex-wrap gap-2 border-b border-white/10 pb-3">
             <button type="button" data-target="tab-cinema" class="tab-btn px-4 py-2.5 rounded-xl text-sm font-black transition duration-200 bg-[#d99a32] text-[#2b1208] border-0 cursor-pointer flex items-center gap-2">
                 <i class="fa-solid fa-building"></i> Nhóm Rạp Phim
@@ -25,7 +23,6 @@
             </button>
         </div>
 
-        {{-- MASTER FORM CONTROL --}}
         <form action="{{ route('admin.system-settings.update') }}" method="POST" enctype="multipart/form-data" class="m-0 space-y-6">
             @csrf
             @method('PATCH')
@@ -48,10 +45,7 @@
                     </h4>
                     
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
-                        
-                        {{-- KHỐI QUẢN LÝ TỆP TIN HÌNH ẢNH (LOGO & BACKGROUND) --}}
                         <div class="space-y-4 flex flex-col">
-                            {{-- Upload & Preview Logo --}}
                             <div class="flex flex-col items-center p-4 rounded-xl border border-white/5 bg-[#151515]">
                                 <label class="text-xs text-gray-400 font-bold uppercase tracking-wide">Logo Rạp Hiện Tại</label>
                                 <div class="my-3 h-24 w-24 rounded-2xl bg-white p-1 flex items-center justify-center overflow-hidden shadow-inner">
@@ -63,7 +57,6 @@
                                 </button>
                             </div>
 
-                            {{-- BỔ SUNG: Upload & Preview Ảnh nền Login --}}
                             <div class="flex flex-col items-center p-4 rounded-xl border border-white/5 bg-[#151515]">
                                 <label class="text-xs text-gray-400 font-bold uppercase tracking-wide">Poster Nền Trang Đăng Nhập</label>
                                 <div class="my-3 h-28 w-full rounded-xl bg-[#222] p-1 flex items-center justify-center overflow-hidden border border-white/10 relative group">
@@ -76,7 +69,6 @@
                             </div>
                         </div>
 
-                        {{-- THÔNG TIN VĂN BẢN --}}
                         <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="space-y-1.5">
                                 <label class="text-xs text-gray-400 font-bold">Tên Rạp Phim <span class="text-red-400">*</span></label>
@@ -105,18 +97,14 @@
                     <h4 class="text-lg font-black text-[#f4c56a] uppercase tracking-wider m-0 border-b border-white/5 pb-3">
                         <i class="fa-solid fa-ticket mr-1.5"></i> Tham Số Giới Hạn Phiên Đặt Vé
                     </h4>
-                    
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
                             <label class="text-xs text-gray-400 font-bold">Thời Gian Giữ Ghế Tạm Temporarily (Phút) <span class="text-red-400">*</span></label>
                             <input type="number" name="thoi_gian_giu_ghe" value="{{ old('thoi_gian_giu_ghe', $settings->thoi_gian_giu_ghe) }}" required min="1" class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                            <small class="text-xs text-gray-500 block">Sau số phút này, nếu khách chưa thanh toán, ghế sẽ tự động giải phóng.</small>
                         </div>
-
                         <div class="space-y-1.5">
                             <label class="text-xs text-gray-400 font-bold">Số Lượng Vé Tối Đa Trên Mỗi Đơn Hàng <span class="text-red-400">*</span></label>
                             <input type="number" name="so_ve_toi_da_don" value="{{ old('so_ve_toi_da_don', $settings->so_ve_toi_da_don) }}" required min="1" class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                            <small class="text-xs text-gray-500 block">Chốt chặn kỹ thuật ngăn ngừa tình trạng ôm vé, đầu cơ vé chợ đen.</small>
                         </div>
                     </div>
                 </div>
@@ -128,32 +116,24 @@
                     <h4 class="text-lg font-black text-[#f4c56a] uppercase tracking-wider m-0 border-b border-white/5 pb-3">
                         <i class="fa-solid fa-clapperboard mr-1.5"></i> Quy Tắc Điều Phối Suất Chiếu
                     </h4>
-                    
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
                             <label class="text-xs text-gray-400 font-bold">Khoảng Cách Thời Gian Dọn Phòng (Phút) <span class="text-red-400">*</span></label>
                             <input type="number" name="thoi_gian_don_phong" value="{{ old('thoi_gian_don_phong', $settings->thoi_gian_don_phong) }}" required min="0" class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                            <small class="text-xs text-gray-500 block">Quỹ thời gian an toàn gối đầu giữa các suất chiếu để vệ sinh rạp.</small>
                         </div>
-
                         <div class="space-y-1.5">
                             <label class="text-xs text-gray-400 font-bold">Số Ngày Tối Đa Cho Khách Đặt Vé Trước <span class="text-red-400">*</span></label>
                             <input type="number" name="so_ngay_duoc_dat_ve_truoc" value="{{ old('so_ngay_duoc_dat_ve_truoc', $settings->so_ngay_duoc_dat_ve_truoc) }}" required min="1" class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                            <small class="text-xs text-gray-500 block">Giới hạn khoảng thời gian hiển thị lịch chiếu trên website khách hàng.</small>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-4">
                         <div class="space-y-1.5">
                             <label class="text-xs text-gray-400 font-bold">Thời gian chuyển sang "Đang chiếu" (Phút) <span class="text-red-400">*</span></label>
                             <input type="number" name="so_phut_truoc_chieu_dang_chieu" value="{{ old('so_phut_truoc_chieu_dang_chieu', $settings->so_phut_truoc_chieu_dang_chieu) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                            <small class="text-xs text-gray-500 block">Ví dụ: Điền 15 thì trước giờ chiếu 15 phút trạng thái sẽ tự đổi thành "Đang chiếu".</small>
                         </div>
-
                         <div class="space-y-1.5">
                             <label class="text-xs text-gray-400 font-bold">Mốc thời gian coi là Phim "Sắp ra mắt" (Ngày) <span class="text-red-400">*</span></label>
                             <input type="number" name="so_ngay_truoc_chieu_sap_ra_mat" value="{{ old('so_ngay_truoc_chieu_sap_ra_mat', $settings->so_ngay_truoc_chieu_sap_ra_mat) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                            <small class="text-xs text-gray-500 block">Ví dụ: Điền 30 thì các suất chiếu cách ngày hiện tại xa hơn 1 tháng sẽ là "Sắp ra mắt".</small>
                         </div>
                     </div>
                 </div>
@@ -165,30 +145,26 @@
                     <h4 class="text-lg font-black text-[#f4c56a] uppercase tracking-wider m-0 border-b border-white/5 pb-3">
                         <i class="fa-solid fa-tags mr-1.5"></i> Ma Trận Giá Sàn Hệ Thống (VND)
                     </h4>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                         <div class="space-y-1.5">
-                            <label class="text-xs text-gray-400 font-bold">Giá Vé Sàn Ngày Thường (Thứ 2 → Thứ 5)</label>
+                            <label class="text-xs text-gray-400 font-bold">Giá Vé Sàn Ngày Thường</label>
                             <input type="number" name="gia_ngay_thuong" value="{{ old('gia_ngay_thuong', (int)$settings->gia_ngay_thuong) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-[#f4c56a] font-bold outline-none focus:border-[#d99a32] transition">
                         </div>
-
                         <div class="space-y-1.5">
-                            <label class="text-xs text-gray-400 font-bold">Giá Vé Sàn Cuối Tuần (Thứ 6 → Chủ Nhật)</label>
+                            <label class="text-xs text-gray-400 font-bold">Giá Vé Sàn Cuối Tuần</label>
                             <input type="number" name="gia_cuoi_tuan" value="{{ old('gia_cuoi_tuan', (int)$settings->gia_cuoi_tuan) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-[#f4c56a] font-bold outline-none focus:border-[#d99a32] transition">
                         </div>
-
                         <div class="space-y-1.5">
-                            <label class="text-xs text-gray-400 font-bold">Mức Phụ Thu Cho Ghế Hạng VIP</label>
+                            <label class="text-xs text-gray-400 font-bold">Mức Phụ Thu Ghế VIP</label>
                             <input type="number" name="phu_thu_ghe_vip" value="{{ old('phu_thu_ghe_vip', (int)$settings->phu_thu_ghe_vip) }}" required class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-[#f4c56a] font-bold outline-none focus:border-[#d99a32] transition">
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- TAB 5: CỔNG THANH TOÁN TECH --}}
+            {{-- TAB 5: CỔNG THANH TOÁN --}}
             <div id="tab-payment" class="tab-panel hidden space-y-5">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {{-- VNPay --}}
                     <div class="p-6 rounded-2xl border border-white/5 bg-[#121212]/60 space-y-4">
                         <div class="flex items-center justify-between border-b border-white/5 pb-3">
                             <h4 class="text-base font-black text-white uppercase tracking-wider m-0 flex items-center gap-2">
@@ -201,21 +177,20 @@
                         </div>
                         <div class="space-y-3">
                             <div class="space-y-1.5">
-                                <label class="text-xs text-gray-400 font-semibold">Mã Website (vnp_TmnCode)</label>
-                                <input type="text" name="vnpay_tmn_code" value="{{ old('vnpay_tmn_code', $settings->vnpay_tmn_code) }}" placeholder="Nhập TMN CODE..." class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
+                                <label class="text-xs text-gray-400 font-semibold">vnp_TmnCode</label>
+                                <input type="text" name="vnpay_tmn_code" value="{{ old('vnpay_tmn_code', $settings->vnpay_tmn_code) }}" class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
                             </div>
                             <div class="space-y-1.5">
-                                <label class="text-xs text-gray-400 font-semibold">Chuỗi Bí Mật Ký Số (vnp_HashSecret)</label>
-                                <input type="password" name="vnpay_hash_secret" value="{{ old('vnpay_hash_secret', $settings->vnpay_hash_secret) }}" placeholder="Nhập HASH SECRET..." class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
+                                <label class="text-xs text-gray-400 font-semibold">vnp_HashSecret</label>
+                                <input type="password" name="vnpay_hash_secret" value="{{ old('vnpay_hash_secret', $settings->vnpay_hash_secret) }}" class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
                             </div>
                         </div>
                     </div>
 
-                    {{-- MoMo --}}
                     <div class="p-6 rounded-2xl border border-white/5 bg-[#121212]/60 space-y-4">
                         <div class="flex items-center justify-between border-b border-white/5 pb-3">
                             <h4 class="text-base font-black text-white uppercase tracking-wider m-0 flex items-center gap-2">
-                                <i class="fa-solid fa-wallet text-pink-500"></i> Ví Điện Tử MoMo
+                                <i class="fa-solid fa-wallet text-pink-500"></i> Ví MoMo
                             </h4>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" name="bat_tat_momo" value="1" {{ old('bat_tat_momo', $settings->bat_tat_momo) ? 'checked' : '' }} class="sr-only peer">
@@ -224,29 +199,27 @@
                         </div>
                         <div class="space-y-3">
                             <div class="space-y-1.5">
-                                <label class="text-xs text-gray-400 font-semibold">Mã Đối Tác (Partner Code)</label>
-                                <input type="text" name="momo_partner_code" value="{{ old('momo_partner_code', $settings->momo_partner_code) }}" placeholder="Nhập PARTNER CODE..." class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
+                                <label class="text-xs text-gray-400 font-semibold">Partner Code</label>
+                                <input type="text" name="momo_partner_code" value="{{ old('momo_partner_code', $settings->momo_partner_code) }}" class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
                             </div>
                             <div class="space-y-1.5">
-                                <label class="text-xs text-gray-400 font-semibold">Khóa Truy Cập (Access Key)</label>
-                                <input type="text" name="momo_access_key" value="{{ old('momo_access_key', $settings->momo_access_key) }}" placeholder="Nhập ACCESS KEY..." class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
+                                <label class="text-xs text-gray-400 font-semibold">Access Key</label>
+                                <input type="text" name="momo_access_key" value="{{ old('momo_access_key', $settings->momo_access_key) }}" class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
                             </div>
                             <div class="space-y-1.5">
-                                <label class="text-xs text-gray-400 font-semibold">Khóa Bí Mật (Secret Key)</label>
-                                <input type="password" name="momo_secret_key" value="{{ old('momo_secret_key', $settings->momo_secret_key) }}" placeholder="Nhập SECRET KEY..." class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
+                                <label class="text-xs text-gray-400 font-semibold">Secret Key</label>
+                                <input type="password" name="momo_secret_key" value="{{ old('momo_secret_key', $settings->momo_secret_key) }}" class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- SUBMIT FOOTER ACTIONS --}}
             <div class="flex items-center justify-end border-t border-white/10 pt-5">
-                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-8 h-12 text-sm font-black text-white shadow-lg border-0 cursor-pointer transition hover:scale-[1.01] active:scale-95 duration-150">
+                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-8 h-12 text-sm font-black text-white border-0 cursor-pointer transition hover:scale-[1.01] active:scale-95 duration-150">
                     <i class="fa-solid fa-cloud-arrow-up"></i> Lưu Toàn Bộ Cấu Hình Hệ Thống
                 </button>
             </div>
-
         </form>
     </div>
 @endsection
@@ -257,11 +230,9 @@
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabPanels = document.querySelectorAll('.tab-panel');
 
-            // 1. ENGINE CHUYỂN ĐỔI TAB ĐỘNG
             tabButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
                     const target = this.dataset.target;
-
                     tabButtons.forEach(b => {
                         b.classList.remove('bg-[#d99a32]', 'text-[#2b1208]');
                         b.classList.add('bg-white/5', 'text-gray-400', 'font-bold');
@@ -270,50 +241,28 @@
                     this.classList.add('bg-[#d99a32]', 'text-[#2b1208]', 'font-black');
 
                     tabPanels.forEach(panel => {
-                        if (panel.id === target) {
-                            panel.classList.remove('hidden');
-                            panel.classList.add('block');
-                        } else {
-                            panel.classList.remove('block');
-                            panel.classList.add('hidden');
-                        }
+                        panel.classList.toggle('hidden', panel.id !== target);
+                        panel.classList.toggle('block', panel.id === target);
                     });
                 });
             });
 
-            // 2. ENGINE XEM TRƯỚC ẢNH LOGO KHI CHỌN FILE
-            const logoInput = document.getElementById('logo_input');
-            const logoPreview = document.getElementById('logo_preview');
-
-            if (logoInput && logoPreview) {
-                logoInput.addEventListener('change', function() {
-                    const file = this.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            logoPreview.src = e.target.result;
+            const bindPreview = (inputId, previewId) => {
+                const input = document.getElementById(inputId);
+                const preview = document.getElementById(previewId);
+                if (input && preview) {
+                    input.addEventListener('change', function() {
+                        const file = this.files[0];
+                        if (file) {
+                            const reader = new FileReader();
+                            reader.onload = e => preview.src = e.target.result;
+                            reader.readAsDataURL(file);
                         }
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
-
-            // 3. ENGINE XEM TRƯỚC POSTER NỀN LOGIN KHI CHỌN FILE
-            const bgLoginInput = document.getElementById('bg_login_input');
-            const bgLoginPreview = document.getElementById('bg_login_preview');
-
-            if (bgLoginInput && bgLoginPreview) {
-                bgLoginInput.addEventListener('change', function() {
-                    const file = this.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            bgLoginPreview.src = e.target.result;
-                        }
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
+                    });
+                }
+            };
+            bindPreview('logo_input', 'logo_preview');
+            bindPreview('bg_login_input', 'bg_login_preview');
         });
     </script>
 @endpush
