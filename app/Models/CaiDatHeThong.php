@@ -9,7 +9,7 @@ class CaiDatHeThong extends Model
     protected $table = 'cai_dat_he_thongs';
 
     protected $fillable = [
-        'ten_rap', 'logo', 'hotline', 'email', 'dia_chi',
+        'ten_rap', 'logo', 'anh_nen_login', 'hotline', 'email', 'dia_chi',
         'thoi_gian_giu_ghe', 'so_ve_toi_da_don',
         'thoi_gian_don_phong', 'so_ngay_duoc_dat_ve_truoc',
         'gia_ngay_thuong', 'gia_cuoi_tuan', 'phu_thu_ghe_vip',
