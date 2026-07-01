@@ -409,10 +409,10 @@
                                                     data-couple-siblings='@json($siblings)'
                                                     data-couple-position="left"
                                                     title="{{ $ghe['ma_ghe'] }} - {{ $ghe['loai_ghe'] ?? 'Couple' }} ({{ number_format($ghe['phu_thu'] ?? 0) }}đ)">
-                                                    <span class="seat-couple-left seat-label" style="color: #1a0b04 !important; font-weight: 900 !important; font-size: 13px !important; z-index: 10 !important; position: relative !important;">{{ $tenHang }}{{ $ghe['display_number'] }}</span>
+                                                    <span class="seat-couple-left seat-label" style="color: #1a0b04 !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important;">{{ $tenHang }}{{ $ghe['display_number'] }}</span>
                                                     @if($gheRight)
-                                                        <span class="seat-couple-sep" style="color: rgba(0,0,0,0.45) !important; font-weight: 900 !important; font-size: 14px !important; z-index: 10 !important; position: relative !important; margin: 0 2px !important; user-select: none;">|</span>
-                                                        <span class="seat-couple-right seat-label" style="color: #1a0b04 !important; font-weight: 900 !important; font-size: 13px !important; z-index: 10 !important; position: relative !important;">{{ $tenHang }}{{ $gheRight['display_number'] }}</span>
+                                                        <span class="seat-couple-sep" style="color: rgba(0,0,0,0.45) !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important; margin: 0 2px !important; user-select: none;">|</span>
+                                                        <span class="seat-couple-right seat-label" style="color: #1a0b04 !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important;">{{ $tenHang }}{{ $gheRight['display_number'] }}</span>
                                                     @endif
                                                 </div>
                                                 @php $j = ($ghe['cot_end'] ?? ($j+1)) + 1; @endphp
@@ -1081,12 +1081,12 @@
         content: "✓" !important;
     }
 
-    /* Couple: 1 div to duy nhất chứa 2 nhãn ghế (H1 | H2)
-       Width = 208px (gấp đôi 104px trước) - dãn gấp đôi cả row H */
+    /* Couple: 1 div to duy nhất chứa 2 nhãn ghế (H1 | H2) */
     .seat-chip--couple {
-        width: 208px !important;
+        width: 105px !important;
+        height: 50px     !important;
         gap: 0;
-        padding: 0 16px 6px 16px !important;
+        padding: 0 6px !important;
         overflow: visible !important;
     }
     /* Vạch dashed ở giữa ghế couple */
@@ -1094,7 +1094,7 @@
         content: '';
         position: absolute;
         top: 18%;
-        bottom: 8px;
+        bottom: 10px;
         left: 50%;
         width: 0;
         border-left: 2px dashed rgba(0, 0, 0, 0.45);
@@ -1111,7 +1111,7 @@
         min-width: 0;
         z-index: 5;
         position: relative;
-        font-size: 16px !important;
+        font-size: 12px !important;
     }
     .seat-chip--couple .seat-couple-sep {
         display: flex;
@@ -1119,11 +1119,11 @@
         justify-content: center;
         color: rgba(0, 0, 0, 0.4);
         font-weight: 900;
-        font-size: 18px;
+        font-size: 13px;
         padding-bottom: 1px;
         z-index: 5;
         position: relative;
-        margin: 0 6px !important;
+        margin: 0 2px !important;
     }
 
     /* ==================== POPOVER STYLES ==================== */
@@ -1330,7 +1330,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.seat-interactive').forEach(seat => {
             // Ghế bảo trì: giữ style mặc định
             if (seat.classList.contains('seat-chip--maintenance')) return;
-            const mauSac = seat.dataset.mauSac;
+            const mauSac = seat.dataset.mauSac; 
             if (!mauSac) return;
             const lum = getLuminance(mauSac);
             // Nếu luminance > 0.5 (nền sáng) thì dùng chữ đen
@@ -1672,6 +1672,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
                 updateBulkToolbar();
                 bulkLoaiGheSelect.value = '';
+                setTimeout(() => location.reload(), 300);
             }
         })
         .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
@@ -1844,7 +1845,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const raw = seatEl.dataset.coupleSiblings;
         if (!raw) return [seatEl.dataset.gheId];
         try {
-            const arr = JSON.parse(raw);
+            const arr = (JSON.parse(raw) || []).filter(id => id !== null && id !== undefined && id !== '');
             return Array.isArray(arr) && arr.length > 0 ? arr : [seatEl.dataset.gheId];
         } catch (e) {
             return [seatEl.dataset.gheId];
@@ -1881,13 +1882,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.querySelectorAll('.seat-interactive').forEach(seat => {
-        seat.addEventListener('mouseenter', function() {
-            showHoverTooltip(this);
-        });
-        seat.addEventListener('mouseleave', function() {
-            hideHoverTooltip();
-        });
-
         seat.addEventListener('click', function(e) {
             // Lấy tất cả ID ghế cùng cặp (1 hoặc 2 id)
             const siblingIds = getCoupleSiblings(this);
@@ -1897,12 +1891,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.ctrlKey || e.metaKey) {
                 // Multi-select
                 if (isCoupleSeat) {
-                    // Toggle nguyên cặp: nếu đã chọn thì bỏ, ngược lại chọn
-                    if (selectedSeats.has(seatId)) {
+                    // Toggle nguyên cặp: kiểm tra xem TẤT CẢ ghế trong cặp đã được chọn chưa
+                    const allSelected = siblingIds.every(id => selectedSeats.has(id));
+                    if (allSelected) {
+                        // Bỏ chọn cả cặp
                         siblingIds.forEach(id => selectedSeats.delete(id));
                         this.classList.remove('selected');
                         syncSeatCheckMark(this);
                     } else {
+                        // Chọn cả cặp
                         siblingIds.forEach(id => selectedSeats.add(id));
                         this.classList.add('selected');
                         syncSeatCheckMark(this);
@@ -2054,6 +2051,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const el = findSeatEl(item.id);
                     if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
                 });
+                setTimeout(() => location.reload(), 300);
             }
         })
         .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
@@ -2254,10 +2252,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const ttMaGhe = document.getElementById('seatTooltipMaGhe');
     const ttLoai = document.getElementById('seatTooltipLoai');
     const ttPhuThu = document.getElementById('seatTooltipPhuThu');
+    let currentTooltipSeat = null;
 
     document.addEventListener('mouseover', function(e) {
         const seat = e.target.closest('.seat-interactive');
         if (!seat) return;
+        if (seat === currentTooltipSeat) return; // đã hiện rồi, không hiện lại
+        currentTooltipSeat = seat;
         const maGhe = seat.dataset.maGhe || '';
         const loaiGhe = seat.dataset.loaiGhe || 'Thường';
         const phuThu = parseInt(seat.dataset.phuThu || 0);
@@ -2289,7 +2290,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('mouseout', function(e) {
         const seat = e.target.closest('.seat-interactive');
         if (!seat) return;
+        // Chỉ ẩn khi chuột rời hoàn toàn khỏi ghế (không phải di chuyển vào phần tử con)
+        const related = e.relatedTarget;
+        if (seat.contains(related)) return;
         tooltip.style.opacity = '0';
+        currentTooltipSeat = null;
     });
 
     /* ============================================ */

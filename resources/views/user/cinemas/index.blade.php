@@ -26,33 +26,33 @@
     $showtimeUrl = route('user.showtimes.index', $rap ? ['rap_chieu_phim_id' => $rap->id] : []);
 
     $stats = [
-        ['icon' => 'fa-solid fa-door-open', 'value' => '5', 'label' => 'Phong chieu'],
-        ['icon' => 'fa-solid fa-couch', 'value' => '300+', 'label' => 'Ghe ngoi'],
-        ['icon' => 'fa-solid fa-ticket', 'value' => ($showtimeCount ?? 0) > 0 ? $showtimeCount . '+' : '20+', 'label' => 'Suat chieu/ngay'],
-        ['icon' => 'fa-solid fa-award', 'value' => '2018', 'label' => 'Nam hoat dong'],
+        ['icon' => 'fa-solid fa-door-open', 'value' => '5', 'label' => 'Phòng chiếu'],
+        ['icon' => 'fa-solid fa-couch', 'value' => '300+', 'label' => 'Ghế ngồi'],
+        ['icon' => 'fa-solid fa-ticket', 'value' => ($showtimeCount ?? 0) > 0 ? $showtimeCount . '+' : '20+', 'label' => 'Suất chiếu/ngày'],
+        ['icon' => 'fa-solid fa-award', 'value' => '2018', 'label' => 'Năm hoạt động'],
     ];
 
     $reasons = [
-        ['icon' => 'fa-solid fa-display', 'title' => 'Man hinh 4K'],
-        ['icon' => 'fa-solid fa-volume-high', 'title' => 'Am thanh Dolby Atmos'],
-        ['icon' => 'fa-solid fa-crown', 'title' => 'Ghe VIP cao cap'],
-        ['icon' => 'fa-solid fa-mobile-screen-button', 'title' => 'Dat ve online nhanh chong'],
-        ['icon' => 'fa-solid fa-square-parking', 'title' => 'Bai do xe rong rai'],
-        ['icon' => 'fa-solid fa-burger', 'title' => 'Khu vuc an uong'],
+        ['icon' => 'fa-solid fa-display', 'title' => 'Màn hình 4K'],
+        ['icon' => 'fa-solid fa-volume-high', 'title' => 'Âm thanh Dolby Atmos'],
+        ['icon' => 'fa-solid fa-crown', 'title' => 'Ghế VIP cao cấp'],
+        ['icon' => 'fa-solid fa-mobile-screen-button', 'title' => 'Đặt vé online nhanh chóng'],
+        ['icon' => 'fa-solid fa-square-parking', 'title' => 'Bãi đỗ xe rộng rãi'],
+        ['icon' => 'fa-solid fa-burger', 'title' => 'Khu vực ăn uống'],
     ];
 
     $gallery = [
-        ['image' => $cinemaImage, 'title' => 'Sanh don khach sang trong'],
-        ['image' => 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=1200', 'title' => 'Phong chieu hien dai'],
-        ['image' => 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?q=80&w=1200', 'title' => 'Khong gian cho tien nghi'],
-        ['image' => 'https://images.unsplash.com/photo-1513106580091-1d82408b8cd6?q=80&w=1200', 'title' => 'Khu vuc bap nuoc'],
+        ['image' => $cinemaImage, 'title' => 'Sảnh đón khách sang trọng'],
+        ['image' => 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=1200', 'title' => 'Phòng chiếu hiện đại'],
+        ['image' => 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?q=80&w=1200', 'title' => 'Không gian chờ tiện nghi'],
+        ['image' => 'https://images.unsplash.com/photo-1513106580091-1d82408b8cd6?q=80&w=1200', 'title' => 'Khu vực bắp nước'],
     ];
 
     $faqs = [
-        ['question' => 'CineHome co ho tro dat ve online khong?', 'answer' => 'Co, ban co the chon phim, suat chieu va ghe ngoi truc tiep tren website.'],
-        ['question' => 'Rap co bai gui xe khong?', 'answer' => 'Co, CineHome co khu vuc gui xe rong rai cho khach hang.'],
-        ['question' => 'Co ban bap nuoc va do an nhe khong?', 'answer' => 'Co, quay dich vu luon co nhieu combo tien loi cho ban lua chon.'],
-        ['question' => 'Rap mo cua vao khung gio nao?', 'answer' => 'Rap hoat dong moi ngay tu 08:00 den 23:30.'],
+        ['question' => 'CineHome có hỗ trợ đặt vé online không?', 'answer' => 'Có, bạn có thể chọn phim, suất chiếu và ghế ngồi trực tiếp trên website.'],
+        ['question' => 'Rạp có bãi gửi xe không?', 'answer' => 'Có, CineHome có khu vực gửi xe rộng rãi cho khách hàng.'],
+        ['question' => 'Có bán bắp nước và đồ ăn nhẹ không?', 'answer' => 'Có, quầy dịch vụ luôn có nhiều combo tiện lợi cho bạn lựa chọn.'],
+        ['question' => 'Rạp mở cửa vào khung giờ nào?', 'answer' => 'Rạp hoạt động mỗi ngày từ 08:00 đến 23:30.'],
     ];
 @endphp
 
@@ -253,24 +253,24 @@
                 <div class="col-12 col-xl-9">
                     <span class="cinema-badge">
                         <i class="fa-solid fa-star"></i>
-                        Trai nghiem dien anh cao cap tai {{ $cinemaCity }}
+                        Trải nghiệm điện ảnh cao cấp tại {{ $cinemaCity }}
                     </span>
 
                     <h1>{{ $cinemaName }}</h1>
 
                     <p>
-                        Diem hen giai tri hien dai voi khong gian sang trong, cong nghe trinh chieu tien tien,
-                        dich vu chuyen nghiep va trai nghiem dat ve muot ma danh cho moi tin do dien anh.
+                        Điểm hẹn giải trí hiện đại với không gian sang trọng, công nghệ trình chiếu tiên tiến,
+                        dịch vụ chuyên nghiệp và trải nghiệm đặt vé mượt mà dành cho mọi tín đồ điện ảnh.
                     </p>
 
                     <div class="d-flex flex-wrap gap-3 mt-4">
                         <a href="{{ $showtimeUrl }}" class="cinema-btn-primary">
                             <i class="fa-solid fa-ticket"></i>
-                            Dat ve ngay hom nay
+                            Đặt vé ngay hôm nay
                         </a>
                         <a href="#gioi-thieu-rap" class="cinema-btn-secondary">
                             <i class="fa-solid fa-circle-info"></i>
-                            Kham pha CineHome
+                            Khám phá CineHome
                         </a>
                     </div>
                 </div>
@@ -283,18 +283,18 @@
             <div class="row g-4 align-items-stretch">
                 <div class="col-12 col-lg-7">
                     <div class="cinema-card p-4 p-lg-5">
-                        <span class="cinema-badge">
-                            <i class="fa-solid fa-film"></i>
-                            Gioi thieu CineHome
-                        </span>
+                    <span class="cinema-badge">
+                        <i class="fa-solid fa-film"></i>
+                        Giới thiệu CineHome
+                    </span>
 
-                        <h2 class="cinema-title">Noi cam xuc dien anh thang hoa trong tung khung hinh</h2>
+                    <h2 class="cinema-title">Nơi cảm xúc điện ảnh thăng hoa trong từng khung hình</h2>
 
-                        <p class="cinema-text mt-4">
-                            CineHome duoc xay dung voi mong muon mang den mot diem den dien anh chuyen nghiep,
-                            hien dai va gan gui. Tu sanh cho sang trong, phong chieu chuan quoc te den dich vu
-                            cham soc khach hang tan tam, moi chi tiet deu duoc toi uu de tao nen mot hanh trinh xem phim tron ven.
-                        </p>
+                    <p class="cinema-text mt-4">
+                        CineHome được xây dựng với mong muốn mang đến một điểm đến điện ảnh chuyên nghiệp,
+                        hiện đại và gần gũi. Từ sảnh chờ sang trọng, phòng chiếu chuẩn quốc tế đến dịch vụ
+                        chăm sóc khách hàng tận tâm, mọi chi tiết đều được tối ưu để tạo nên một hành trình xem phim trọn vẹn.
+                    </p>
 
                         <div class="row g-3 mt-2">
                             <div class="col-12 col-md-6">
@@ -309,7 +309,7 @@
 
                             <div class="col-12 col-md-6">
                                 <div class="p-4 rounded-4" style="background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);">
-                                    <div class="text-secondary small">Lien he</div>
+                                    <div class="text-secondary small">Liên hệ</div>
                                     <div class="text-white fw-bold mt-2 lh-lg">
                                         <i class="fa-solid fa-phone-volume me-2" style="color:#f5a623;"></i>
                                         {{ $cinemaPhone }}
@@ -319,10 +319,10 @@
 
                             <div class="col-12">
                                 <div class="p-4 rounded-4" style="background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);">
-                                    <div class="text-secondary small">Gio hoat dong</div>
+                                    <div class="text-secondary small">Giờ hoạt động</div>
                                     <div class="text-white fw-bold mt-2 lh-lg">
                                         <i class="fa-solid fa-clock me-2" style="color:#f5a623;"></i>
-                                        08:00 - 23:30 moi ngay
+                                        08:00 - 23:30 mỗi ngày
                                     </div>
                                 </div>
                             </div>
@@ -342,8 +342,8 @@
     <section class="cinema-section pt-0">
         <div class="container">
             <div class="text-center mb-4">
-                <span class="cinema-badge"><i class="fa-solid fa-chart-column"></i> Thong ke noi bat</span>
-                <h2 class="cinema-title">CineHome bang con so</h2>
+                <span class="cinema-badge"><i class="fa-solid fa-chart-column"></i> Thống kê nổi bật</span>
+                <h2 class="cinema-title">CineHome bằng con số</h2>
             </div>
 
             <div class="row g-3">
@@ -363,8 +363,8 @@
     <section class="cinema-section pt-0">
         <div class="container">
             <div class="text-center mb-4">
-                <span class="cinema-badge"><i class="fa-solid fa-gem"></i> Tai sao chon CineHome</span>
-                <h2 class="cinema-title">Trai nghiem cao cap tai CineHome</h2>
+                <span class="cinema-badge"><i class="fa-solid fa-gem"></i> Tại sao chọn CineHome</span>
+                <h2 class="cinema-title">Trải nghiệm cao cấp tại CineHome</h2>
             </div>
 
             <div class="row g-3">
@@ -383,8 +383,8 @@
     <section class="cinema-section pt-0">
         <div class="container">
             <div class="text-center mb-5">
-                <span class="cinema-badge"><i class="fa-solid fa-images"></i> Hinh anh rap</span>
-                <h2 class="cinema-title">Kham pha khong gian hien dai tai CineHome</h2>
+                <span class="cinema-badge"><i class="fa-solid fa-images"></i> Hình ảnh rạp</span>
+                <h2 class="cinema-title">Khám phá không gian hiện đại tại CineHome</h2>
             </div>
 
             <div class="row g-4">
@@ -418,27 +418,27 @@
 
                 <div class="col-12 col-xl-5">
                     <div class="cinema-card p-4 p-lg-5">
-                        <span class="cinema-badge">
-                            <i class="fa-solid fa-location-crosshairs"></i>
-                            Ban do va lien he
-                        </span>
+                    <span class="cinema-badge">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                        Bản đồ và liên hệ
+                    </span>
 
-                        <h2 class="cinema-title">De dang tim den CineHome</h2>
-                        <p class="cinema-text mt-4">
-                            CineHome nam tai vi tri thuan tien, de di chuyen va phu hop cho khach di cung gia dinh,
-                            ban be hay dong nghiep.
-                        </p>
+                    <h2 class="cinema-title">Dễ dàng tìm đến CineHome</h2>
+                    <p class="cinema-text mt-4">
+                        CineHome nằm tại vị trí thuận tiện, dễ di chuyển và phù hợp cho khách đi cùng gia đình,
+                        bạn bè hay đồng nghiệp.
+                    </p>
 
-                        <div class="d-flex flex-wrap gap-3 mt-4">
-                            <a href="{{ $mapDirectionUrl }}" target="_blank" rel="noopener noreferrer" class="cinema-btn-primary">
-                                <i class="fa-solid fa-diamond-turn-right"></i>
-                                Mo Google Maps
-                            </a>
-                            <a href="{{ $showtimeUrl }}" class="cinema-btn-secondary">
-                                <i class="fa-solid fa-calendar-days"></i>
-                                Xem lich chieu
-                            </a>
-                        </div>
+                    <div class="d-flex flex-wrap gap-3 mt-4">
+                        <a href="{{ $mapDirectionUrl }}" target="_blank" rel="noopener noreferrer" class="cinema-btn-primary">
+                            <i class="fa-solid fa-diamond-turn-right"></i>
+                            Mở Google Maps
+                        </a>
+                        <a href="{{ $showtimeUrl }}" class="cinema-btn-secondary">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            Xem lịch chiếu
+                        </a>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -449,7 +449,7 @@
         <div class="container">
             <div class="text-center mb-5">
                 <span class="cinema-badge"><i class="fa-solid fa-circle-question"></i> FAQ</span>
-                <h2 class="cinema-title">Cau hoi thuong gap</h2>
+                <h2 class="cinema-title">Câu hỏi thường gặp</h2>
             </div>
 
             <div class="row g-4">
@@ -470,16 +470,16 @@
             <div class="cinema-cta">
                 <span class="cinema-badge">
                     <i class="fa-solid fa-bolt"></i>
-                    San sang cho suat chieu tiep theo?
+                    Sẵn sàng cho suất chiếu tiếp theo?
                 </span>
-                <h2 class="cinema-title mb-0">Dat ve ngay hom nay</h2>
+                <h2 class="cinema-title mb-0">Đặt vé ngay hôm nay</h2>
                 <p class="cinema-text mx-auto mt-4" style="max-width: 760px;">
-                    Kham pha nhung bo phim hap dan nhat tai CineHome, chon cho ngoi yeu thich va tan huong mot dem dien anh tron ven.
+                    Khám phá những bộ phim hấp dẫn nhất tại CineHome, chọn chỗ ngồi yêu thích và tận hưởng một đêm điện ảnh trọn vẹn.
                 </p>
                 <div class="mt-4">
                     <a href="{{ $showtimeUrl }}" class="cinema-btn-primary">
                         <i class="fa-solid fa-ticket"></i>
-                        Dat ve ngay hom nay
+                        Đặt vé ngay hôm nay
                     </a>
                 </div>
             </div>

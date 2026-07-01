@@ -22,6 +22,7 @@ class NguoiDung extends Authenticatable
         'vai_tro',
         'trang_thai_hoat_dong',
         'so_dien_thoai',
+        
     ];
 
     protected $hidden = [
@@ -86,5 +87,29 @@ class NguoiDung extends Authenticatable
     public function thongBaoCaNhans()
     {
         return $this->hasMany(ThongBaoCaNhan::class);
+    }
+
+    /**
+     * Danh sách tài khoản được người dùng này giới thiệu
+     */
+    public function nguoiDuocGioiThieu()
+    {
+        return $this->hasMany(
+            NguoiDung::class,
+            'nguoi_gioi_thieu_id',
+            'id'
+        );
+    }
+
+
+    /**
+     * Người giới thiệu tài khoản này
+     */
+    public function nguoiGioiThieu()
+    {
+        return $this->belongsTo(
+            NguoiDung::class,
+            'nguoi_gioi_thieu_id'
+        );
     }
 }

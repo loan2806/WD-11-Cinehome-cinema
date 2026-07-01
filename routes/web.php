@@ -18,14 +18,14 @@ use App\Http\Controllers\Admin\QuocGiaController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\SoatVeController as AdminSoatVeController;
 use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
-use App\Http\Controllers\Admin\CaiDatHeThongController; // ĐÃ SỬA CHUẨN: Gọi đúng Controller mới thay vì dùng Model làm class name
+use App\Http\Controllers\Admin\CaiDatHeThongController; 
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\DatVe\DatVeController;
 use App\Http\Controllers\DongBoDuLieuController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\HoSoController; 
 use App\Http\Controllers\Staff\BanVeController;
 use App\Http\Controllers\Staff\LichSuVeController;
 use App\Http\Controllers\Staff\SoatVeController;
@@ -204,6 +204,7 @@ Route::middleware(['auth'])
             Route::post('phong-chieus/{phong_chieu}/create-seat', [PhongChieuController::class, 'createSeat'])->name('phong-chieus.create-seat');
             Route::post('phong-chieus/{phong_chieu}/create-row', [PhongChieuController::class, 'createRow'])->name('phong-chieus.create-row');
 
+            // HÀNG GHẾ & LOẠI GHẾ
             Route::resource('hang-ghes', HangGheController::class);
             Route::post('hang-ghes/{hang_ghe}/update-row-type', [HangGheController::class, 'updateRowType'])->name('hang-ghes.update-row-type');
             Route::get('phong-chieus/{phong_chieu}/hang-ghes', [HangGheController::class, 'byPhongChieu'])->name('phong-chieus.hang-ghes.index');
@@ -232,6 +233,7 @@ Route::middleware(['auth'])
         Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
             Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])->name('food-invoices.index');
             Route::post('/food-invoices', [FoodInvoiceController::class, 'store'])->name('food-invoices.store');
+            // CẬP NHẬT TRẠNG THÁI HÓA ĐƠN
             Route::patch('/food-invoices/{foodInvoice}/status', [FoodInvoiceController::class, 'updateStatus'])->name('food-invoices.update-status');
             Route::delete('/food-invoices/{foodInvoice}', [FoodInvoiceController::class, 'destroy'])->name('food-invoices.destroy');
 
@@ -263,12 +265,15 @@ Route::middleware(['auth'])
             Route::resource('notifications', AdminNotificationController::class)->only(['index', 'create', 'store', 'destroy']);
             Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead'])
                 ->name('notifications.markAllRead');
+            Route::resource('thong-bao-push', \App\Http\Controllers\Admin\ThongBaoPushController::class)
+                ->names('thong-bao-push');
+            Route::get('/thong-bao-push/users-by-role', [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'getUsersByRole'])
+                ->name('thong-bao-push.users-by-role');
             Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])->name('movie-reviews.index');
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
             Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
             
-            // ĐÃ SỬA CHUẨN: Điều phối lại hành động trỏ thẳng về lớp CaiDatHeThongController mới đổi tên
             Route::get('/system-settings', [CaiDatHeThongController::class, 'index'])->name('system-settings.index');
             Route::patch('/system-settings', [CaiDatHeThongController::class, 'update'])->name('system-settings.update');
         });
@@ -279,89 +284,61 @@ Route::middleware(['auth'])
             Route::put('/phan-quyen/cap-nhat/{id}', [PhanQuyenController::class, 'updateMatrix'])->name('phan-quyen.updateMatrix');
         });
 
-        // Form thêm khách hàng
+        // QUẢN LÝ THÀNH VIÊN VÀ KHÁCH HÀNG
         Route::get('/khach-hang/tao-moi', [KhachHangController::class, 'create'])->name('khach-hang.create');
-        // Lưu khách hàng mới
         Route::post('/khach-hang', [KhachHangController::class, 'store'])->name('khach-hang.store');
-        // Quản lý thẻ thành viên và điểm khách hàng
         Route::get('/thanh-vien', [AdminThanhVienController::class, 'index'])->name('thanh-vien.index');
         Route::get('/thanh-vien/{thanhVien}', [AdminThanhVienController::class, 'show'])->name('thanh-vien.show');
 
-        // Quản lý tài khoản khách hàng
         Route::get('/khach-hang', [KhachHangController::class, 'index'])->name('khach-hang.index');
         Route::get('/khach-hang/{khachHang}', [KhachHangController::class, 'show'])->name('khach-hang.show');
         Route::patch('/khach-hang/{khachHang}/trang-thai', [KhachHangController::class, 'toggleStatus'])->name('khach-hang.toggle-status');
-        // Form sửa thông tin khách hàng
         Route::get('/khach-hang/{khachHang}/edit', [KhachHangController::class, 'edit'])->name('khach-hang.edit');
-        // Cập nhật thông tin khách hàng
         Route::patch('/khach-hang/{khachHang}', [KhachHangController::class, 'update'])->name('khach-hang.update');
 
-        // Admin tặng điểm thủ công cho thành viên
+        // ĐIỀU CHỈNH ĐIỂM THÀNH VIÊN THỦ CÔNG
         Route::post('/thanh-vien/{thanhVien}/tang-diem', [AdminThanhVienController::class, 'tangDiem'])->name('thanh-vien.tang-diem');
-        // Admin trừ điểm thủ công cho thành viên
         Route::post('/thanh-vien/{thanhVien}/tru-diem', [AdminThanhVienController::class, 'truDiem'])->name('thanh-vien.tru-diem');
+        
+        // HẠ TẦNG FIREBASE BACKUP
         Route::post('/sao-luu', function () {
-
             SaoLuuDuLieuService::saoLuu();
-
-            return back()->with(
-                'success',
-                'Đã sao lưu toàn bộ dữ liệu lên Firebase'
-            );
+            return back()->with('success', 'Đã sao lưu toàn bộ dữ liệu lên Firebase');
         })->name('backup');
 
-        // Khôi phục dữ liệu
         Route::post('/khoi-phuc', function () {
-
             $ketQua = SaoLuuDuLieuService::dongBo();
-
             if (!$ketQua) {
-                return back()->with(
-                    'error',
-                    'Không tìm thấy dữ liệu sao lưu trên Firebase'
-                );
+                return back()->with('error', 'Không tìm thấy dữ liệu sao lưu trên Firebase');
             }
-
-            return back()->with(
-                'success',
-                'Khôi phục dữ liệu thành công'
-            );
+            return back()->with('success', 'Khôi phục dữ liệu thành công');
         })->name('restore');
 
-        // Đồng bộ thủ công
-        Route::post(
-            '/dong-bo-du-lieu',
-            [DongBoDuLieuController::class, 'dongBo']
-        )->name('dong-bo-du-lieu');
+        Route::post('/dong-bo-du-lieu', [DongBoDuLieuController::class, 'dongBo'])->name('dong-bo-du-lieu');
     });
 
 Route::get('/test-firebase', function () {
-
     try {
-
         $auth = Firebase::auth();
-
         $users = [];
-
         foreach ($auth->listUsers() as $user) {
             $users[] = [
                 'uid' => $user->uid,
                 'email' => $user->email,
             ];
         }
-
         return response()->json([
             'count' => count($users),
             'users' => $users,
         ]);
     } catch (\Throwable $e) {
-
         return response()->json([
             'error' => $e->getMessage(),
             'class' => get_class($e),
         ]);
     }
 });
+
 /*
 |--------------------------------------------------------------------------
 | PHÂN HỆ ĐỊNH TUYẾN RIÊNG BIỆT CHO QUẢN LÝ HỆ THỐNG (SYSTEM PANEL)
@@ -371,12 +348,10 @@ Route::middleware(['auth'])
     ->prefix('system')
     ->name('system.')
     ->group(function () {
-
         Route::get('/dashboard', function () {
             return view('system.dashboard'); 
         })->name('dashboard');
 
-        // Các đặc quyền hạ tầng kỹ thuật gốc (Độc lập 100%)
         Route::get('/cai-dat-thanh-toan', [CaiDatThanhToanController::class, 'edit'])->name('payments');
         Route::patch('/cai-dat-thanh-toan', [CaiDatThanhToanController::class, 'update'])->name('payments.update');
         Route::get('/sao-luu-du-lieu', function () {
@@ -387,15 +362,11 @@ Route::middleware(['auth'])
         })->name('logs');
     });
 
-
 Schedule::call(function () {
     SaoLuuDuLieuService::saoLuu();
 })->everyMinute();
 
-Route::post(
-    '/dong-bo-du-lieu',
-    [DongBoDuLieuController::class, 'dongBo']
-)->name('dong-bo-du-lieu');
+Route::post('/dong-bo-du-lieu', [DongBoDuLieuController::class, 'dongBo'])->name('dong-bo-du-lieu');
 
 /*
 |--------------------------------------------------------------------------
@@ -403,14 +374,13 @@ Route::post(
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/thanh-vien', [ThanhVienController::class, 'index'])
-        ->name('user.thanh-vien.index');
-    // Trang thông báo cá nhân
-    Route::get('/user/thong-bao', [NotificationController::class, 'index'])
-        ->name('user.thong-bao.index');
+    // ĐÃ ĐỒNG BỘ: Điều phối toàn bộ luồng chỉnh sửa hồ sơ qua HoSoController mới của bạn
+    Route::get('/profile', [HoSoController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [HoSoController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [HoSoController::class, 'destroy'])->name('profile.destroy');
+    
+    Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('user.thanh-vien.index');
+    Route::get('/user/thong-bao', [NotificationController::class, 'index'])->name('user.thong-bao.index');
 });
 
 require __DIR__ . '/auth.php';

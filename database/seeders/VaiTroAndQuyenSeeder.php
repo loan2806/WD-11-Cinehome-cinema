@@ -34,8 +34,8 @@ class VaiTroAndQuyenSeeder extends Seeder
             ['name' => 'quan_ly_nhan_vien', 'description' => 'Quản lý hồ sơ, tài khoản và trạng thái nhân viên rạp'],
             ['name' => 'quan_ly_khach_hang', 'description' => 'Xem và quản lý danh sách tài khoản khách hàng (Người dùng)'],
 
-            // Cụm 2: Cấu hình thông số kỹ thuật
             ['name' => 'quan_ly_cau_hinh_he_thong', 'description' => 'Cấu hình thông số hệ thống, thông báo và đánh giá phim'],
+            ['name' => 'quan_ly_thong_bao_day', 'description' => 'Quản lý thông báo đẩy đến người dùng'],
 
             // Cụm 3: Vận hành rạp kinh doanh
             ['name' => 'thong_ke_doanh_thu', 'description' => 'Xem báo cáo và thống kê doanh thu rạp phim'],
@@ -76,6 +76,7 @@ class VaiTroAndQuyenSeeder extends Seeder
         // 2. Quản lý hệ thống: Có mọi quyền vận hành kỹ thuật và doanh thu (Loại trừ 3 quyền can thiệp nhân sự cấp cao)
         $systemManagerRole->syncPermissions([
             $createdPermissions['quan_ly_cau_hinh_he_thong'],
+            $createdPermissions['quan_ly_thong_bao_day'],
             $createdPermissions['thong_ke_doanh_thu'],
             $createdPermissions['quan_ly_ca_lam'],
             $createdPermissions['quan_ly_phim_suat_chieu'],

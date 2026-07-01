@@ -254,47 +254,115 @@
                 </div>
 
                 <div class="inline-block space-y-3">
+                    @php
+                        $loaiCouple = ['couple', 'đôi', 'doi'];
+                    @endphp
+
                     @foreach(($gheTheoHang ?? []) as $hang => $cacGhe)
-                        <div class="flex items-center justify-center gap-2">
-                            <span class="w-8 text-center text-sm font-black text-[#d99a32]">
+                        <div class="seat-row flex items-center justify-center gap-2">
+                            <span class="row-label w-8 text-center text-sm font-black text-[#d99a32]">
                                 {{ $hang }}
                             </span>
 
-                            @foreach($cacGhe as $ghe)
-                                <div class="seat-wrapper relative" data-seat="{{ $ghe['ma_ghe'] }}">
+                            @php
+                                $normalized = $cacGhe->map(fn ($ghe) => [
+                                    'ma_ghe' => $ghe['ma_ghe'],
+                                    'loai_ghe' => strtolower($ghe['loai_ghe'] ?? ''),
+                                    'mau_sac' => $ghe['mau_sac'] ?? '#2a2a2a',
+                                    'gia' => $ghe['gia'] ?? $suatChieu->gia_ve,
+                                    'da_dat' => $ghe['da_dat'] ?? false,
+                                    'bao_tri' => $ghe['bao_tri'] ?? false,
+                                    'chon_duoc' => $ghe['chon_duoc'] ?? false,
+                                    'la_couple' => false,
+                                ]);
+
+                                $merged = [];
+                                $i = 0;
+                                $count = $normalized->count();
+                                while ($i < $count) {
+                                    $current = $normalized[$i];
+                                    $isCouple = ! empty($current['loai_ghe']) && str_contains($current['loai_ghe'], 'couple') || str_contains($current['loai_ghe'], 'đôi');
+                                    $next = $isCouple && ($i + 1) < $count ? $normalized[$i + 1] : null;
+                                    $paired = $next && ! empty($next['loai_ghe']) && (str_contains($next['loai_ghe'], 'couple') || str_contains($next['loai_ghe'], 'đôi'));
+
+                                    if ($paired) {
+                                        $merged[] = [
+                                            'is_couple' => true,
+                                            'left' => $current,
+                                            'right' => $next,
+                                            'ma_ghe' => $current['ma_ghe'] . ' + ' . $next['ma_ghe'],
+                                            'mau_sac' => $current['mau_sac'],
+                                            'gia' => $current['gia'] + $next['gia'],
+                                            'da_dat' => $current['da_dat'] || $next['da_dat'],
+                                            'bao_tri' => $current['bao_tri'] || $next['bao_tri'],
+                                            'chon_duoc' => $current['chon_duoc'] && $next['chon_duoc'],
+                                        ];
+                                        $i += 2;
+                                    } else {
+                                        $merged[] = [
+                                            'is_couple' => false,
+                                            'left' => $current,
+                                            'right' => null,
+                                            'ma_ghe' => $current['ma_ghe'],
+                                            'mau_sac' => $current['mau_sac'],
+                                            'gia' => $current['gia'],
+                                            'da_dat' => $current['da_dat'],
+                                            'bao_tri' => $current['bao_tri'],
+                                            'chon_duoc' => $current['chon_duoc'],
+                                        ];
+                                        $i += 1;
+                                    }
+                                }
+                            @endphp
+
+                            @foreach($merged as $ghe)
+                                @php
+                                    $disabled = ! ($ghe['chon_duoc'] ?? false);
+                                    $isBooked = $ghe['da_dat'] ?? false;
+                                    $isMaintenance = $ghe['bao_tri'] ?? false;
+                                    $seatCodes = $ghe['is_couple']
+                                        ? ($ghe['left']['ma_ghe'] . ',' . $ghe['right']['ma_ghe'])
+                                        : $ghe['ma_ghe'];
+                                    $seatLabel = $ghe['is_couple']
+                                        ? ($ghe['left']['ma_ghe'] . ' | ' . $ghe['right']['ma_ghe'])
+                                        : $ghe['ma_ghe'];
+                                @endphp
+
+                                <div class="seat-wrapper relative {{ $ghe['is_couple'] ? 'seat-couple-wrapper' : '' }}" data-seat="{{ $ghe['ma_ghe'] }}" data-seat-codes="{{ $seatCodes }}">
                                     <button
                                         type="button"
-                                        class="seat-button {{ ($ghe['da_dat'] ?? false) ? 'booked' : '' }} {{ ($ghe['bao_tri'] ?? false) ? 'maintenance' : '' }}"
+                                        class="seat-button {{ $isBooked ? 'booked' : '' }} {{ $isMaintenance ? 'maintenance' : '' }} {{ $ghe['is_couple'] ? 'seat-button--couple' : '' }}"
                                         style="--seat-color: {{ $ghe['mau_sac'] ?? '#2a2a2a' }}"
                                         data-seat="{{ $ghe['ma_ghe'] }}"
-                                        data-price="{{ $ghe['gia'] ?? $suatChieu->gia_ve }}"
-                                        data-type="{{ $ghe['loai_ghe'] ?? 'Ghế thường' }}"
-                                        @disabled(! ($ghe['chon_duoc'] ?? false))
+                                        data-seat-codes="{{ $seatCodes }}"
+                                        data-price="{{ $ghe['gia'] }}"
+                                        data-type="{{ $ghe['is_couple'] ? 'Ghế đôi' : 'Ghế thường' }}"
+                                        @disabled($disabled)
                                     >
-                                        <span>{{ $ghe['ma_ghe'] }}</span>
+                                        <span>{{ $seatLabel }}</span>
                                     </button>
 
                                     <div class="seat-tooltip">
                                         <div class="font-black text-[#f4c56a]">
-                                            Ghế {{ $ghe['ma_ghe'] }}
+                                            {{ $ghe['is_couple'] ? 'Ghế đôi' : 'Ghế' }} {{ $seatLabel }}
                                         </div>
 
                                         <div class="mt-1 text-xs text-gray-300">
-                                            Loại: {{ $ghe['loai_ghe'] ?? 'Ghế thường' }}
+                                            {{ $ghe['is_couple'] ? 'Loại: Ghế đôi' : 'Loại: Ghế thường' }}
                                         </div>
 
                                         <div class="text-xs text-gray-300">
-                                            Giá: {{ number_format($ghe['gia'] ?? $suatChieu->gia_ve, 0, ',', '.') }}đ
+                                            Giá: {{ number_format($ghe['gia'], 0, ',', '.') }}đ
                                         </div>
 
-                                        <div class="text-xs {{ ($ghe['chon_duoc'] ?? false) ? 'text-green-300' : 'text-red-300' }}">
-                                            {{ ($ghe['da_dat'] ?? false) ? 'Đã đặt' : (($ghe['bao_tri'] ?? false) ? 'Bảo trì' : 'Còn trống') }}
+                                        <div class="text-xs {{ $ghe['chon_duoc'] ? 'text-green-300' : 'text-red-300' }}">
+                                            {{ $isBooked ? 'Đã đặt' : ($isMaintenance ? 'Bảo trì' : 'Còn trống') }}
                                         </div>
                                     </div>
                                 </div>
                             @endforeach
 
-                            <span class="w-8 text-center text-sm font-black text-[#d99a32]">
+                            <span class="row-label w-8 text-center text-sm font-black text-[#d99a32]">
                                 {{ $hang }}
                             </span>
                         </div>
@@ -324,6 +392,24 @@
 @endsection
 
 @section('scripts')
+<style>
+    .seat-button--couple {
+        width: 110px;
+        gap: 0;
+        padding: 0 10px 6px;
+        justify-content: center;
+    }
+
+    .seat-button--couple .seat-couple-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .seat-button--couple .seat-couple-sep {
+        opacity: .65;
+    }
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const seatButtons = document.querySelectorAll('.seat-button:not(:disabled)');
@@ -346,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function selectedSeatData() {
         return selectedSeats.map((code) => {
-            const button = document.querySelector(`.seat-button[data-seat="${code}"]`);
+            const button = document.querySelector(`.seat-button[data-seat-codes*="${code}"]`) || document.querySelector(`.seat-button[data-seat="${code}"]`);
 
             return {
                 code: code,
@@ -369,7 +455,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function render() {
         document.querySelectorAll('.seat-button').forEach((button) => {
-            button.classList.toggle('selected', selectedSeats.includes(button.dataset.seat));
+            const codes = (button.dataset.seatCodes || button.dataset.seat || '').split(',').map((item) => item.trim()).filter(Boolean);
+            const selected = codes.some((code) => selectedSeats.includes(code));
+            button.classList.toggle('selected', selected);
         });
 
         const seats = selectedSeatData();
@@ -407,11 +495,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
     seatButtons.forEach((button) => {
         button.addEventListener('click', function () {
-            const seat = button.dataset.seat;
+            const codes = (button.dataset.seatCodes || button.dataset.seat || '').split(',').map((item) => item.trim()).filter(Boolean);
 
-            selectedSeats = selectedSeats.includes(seat)
-                ? selectedSeats.filter((item) => item !== seat)
-                : [...selectedSeats, seat];
+            if (codes.length === 2) {
+                const [left, right] = codes;
+                const hasLeft = selectedSeats.includes(left);
+                const hasRight = selectedSeats.includes(right);
+
+                if (hasLeft && hasRight) {
+                    selectedSeats = selectedSeats.filter((item) => item !== left && item !== right);
+                } else {
+                    selectedSeats = selectedSeats.filter((item) => item !== left && item !== right);
+                    selectedSeats.push(left, right);
+                }
+            } else if (codes.length === 1) {
+                const seat = codes[0];
+
+                selectedSeats = selectedSeats.includes(seat)
+                    ? selectedSeats.filter((item) => item !== seat)
+                    : [...selectedSeats, seat];
+            }
 
             render();
         });
@@ -424,7 +527,11 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        selectedSeats = selectedSeats.filter((seat) => seat !== button.dataset.removeSeat);
+        const seat = button.dataset.removeSeat;
+        const targetButton = document.querySelector(`.seat-button[data-seat="${seat}"]`) || document.querySelector(`.seat-button[data-seat-codes*="${seat}"]`);
+        const relatedCodes = targetButton ? (targetButton.dataset.seatCodes || targetButton.dataset.seat || '').split(',').map((item) => item.trim()).filter(Boolean) : [seat];
+
+        selectedSeats = selectedSeats.filter((item) => !relatedCodes.includes(item));
         render();
     });
 

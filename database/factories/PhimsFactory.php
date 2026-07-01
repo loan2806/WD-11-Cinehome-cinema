@@ -4,12 +4,10 @@ namespace Database\Factories;
 
 use App\Models\Phims; // Gọi chuẩn tên Model Phims có chữ "s" của bạn để liên kết factory
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Phims>
- */
 class PhimsFactory extends Factory
 {
     // Chỉ định rõ ràng Model đích để Laravel nhận diện chính xác
@@ -35,11 +33,17 @@ class PhimsFactory extends Factory
             ]);
         }
 
+        $anh = File::files(public_path('storage/movies'));
+
+        $poster = collect($anh)
+            ->random()
+            ->getFilename();
+
         return [
             'ten_phim' => $tenPhim,
             'slug' => Str::slug($tenPhim) . '-' . Str::random(4),
             'mo_ta' => $this->faker->paragraph(2),
-            'poster' => 'poster-demo.jpg',
+            'poster' => $poster,
             'trailer' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
             'dao_dien' => $this->faker->name(),
             'dien_vien' => $this->faker->name() . ', ' . $this->faker->name(),
