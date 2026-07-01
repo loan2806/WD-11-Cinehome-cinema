@@ -111,7 +111,9 @@ class FoodInvoiceController extends Controller
         }
 
         $invoice = DB::transaction(function () use ($data, $items, $subtotal, $discount) {
-            if ($data['payment_status'] === 'paid') {
+            $inventoryDeducted = $data['payment_status'] !== 'cancelled';
+
+            if ($inventoryDeducted) {
                 $this->deductInventory($items);
             }
 
@@ -124,6 +126,7 @@ class FoodInvoiceController extends Controller
                 'discount' => $discount,
                 'total' => max($subtotal - $discount, 0),
                 'payment_status' => $data['payment_status'],
+                'inventory_deducted' => $inventoryDeducted,
                 'payment_method' => $data['payment_method'] ?? null,
                 'note' => $data['note'] ?? null,
             ]);
@@ -156,18 +159,22 @@ class FoodInvoiceController extends Controller
 
         $oldStatus = $foodInvoice->payment_status;
 
-        DB::transaction(function () use ($foodInvoice, $oldStatus, $data) {
+        DB::transaction(function () use ($foodInvoice, $data) {
             $foodInvoice->load('items');
+            $newStatus = $data['payment_status'];
 
-            if ($oldStatus !== 'paid' && $data['payment_status'] === 'paid') {
+            if (! $foodInvoice->inventory_deducted && $newStatus !== 'cancelled') {
                 $this->deductInventory($foodInvoice->items);
+                $foodInvoice->inventory_deducted = true;
             }
 
-            if ($oldStatus === 'paid' && $data['payment_status'] !== 'paid') {
+            if ($foodInvoice->inventory_deducted && $newStatus === 'cancelled') {
                 $this->restoreInventory($foodInvoice->items);
+                $foodInvoice->inventory_deducted = false;
             }
 
-            $foodInvoice->update(['payment_status' => $data['payment_status']]);
+            $foodInvoice->payment_status = $newStatus;
+            $foodInvoice->save();
         });
 
         $this->ghiNhatKy(
@@ -187,7 +194,7 @@ class FoodInvoiceController extends Controller
         DB::transaction(function () use ($foodInvoice) {
             $foodInvoice->load('items');
 
-            if ($foodInvoice->payment_status === 'paid') {
+            if ($foodInvoice->inventory_deducted) {
                 $this->restoreInventory($foodInvoice->items);
             }
 
@@ -247,7 +254,7 @@ class FoodInvoiceController extends Controller
 
             if ($food->stock_quantity < $quantity) {
                 throw ValidationException::withMessages([
-                    'items' => "Món {$food->name} chỉ còn {$food->stock_quantity}, không đủ để thanh toán {$quantity} phần.",
+                    'items' => "Món {$food->name} chỉ còn {$food->stock_quantity}, không đủ để lưu hóa đơn {$quantity} phần.",
                 ]);
             }
 
