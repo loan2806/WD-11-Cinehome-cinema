@@ -19,7 +19,7 @@ class DatVeController extends Controller
             ->orderBy('ten_rap')
             ->get();
 
-        return view('dat_ve.chon_rap', compact('danhSachRap'));
+        return view('user.dat_ve.chon_rap', compact('danhSachRap'));
     }
 
     public function chonPhim($rap_id)
@@ -34,7 +34,7 @@ class DatVeController extends Controller
 
         $suatChieuTheoPhim = $danhSachSuatChieu->groupBy('phim_id');
 
-        return view('dat_ve.chon_phim', compact('rap', 'suatChieuTheoPhim'));
+        return view('user.dat_ve.chon_phim', compact('rap', 'suatChieuTheoPhim'));
     }
 
     public function chonGhe($suat_chieu_id, DatVeXemPhimService $datVeXemPhimService)
@@ -62,6 +62,6 @@ class DatVeController extends Controller
             ->get()
             : collect();
 
-        return view('dat_ve.chon_ghe', $duLieuChonGhe);
+        return view('user.dat_ve.chon_ghe', $duLieuChonGhe);
     }
 }
