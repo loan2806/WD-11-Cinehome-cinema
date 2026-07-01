@@ -35,7 +35,7 @@ class BookingController extends Controller
             ->get()
             ->groupBy('phim_id');
 
-        return view('dat_ve.chon_phim', [
+        return view('user.dat_ve.chon_phim', [
             'rap' => $cinema,
             'suatChieuTheoPhim' => $suatChieuTheoPhim,
         ]);
@@ -66,7 +66,7 @@ class BookingController extends Controller
 
         $duLieuChonGhe['vouchers'] = $vouchers;
 
-        return view('dat_ve.chon_ghe', $duLieuChonGhe);
+        return view('user.dat_ve.chon_ghe', $duLieuChonGhe);
     }
 
     public function store(Request $request, SuatChieu $showtime, DatVeXemPhimService $datVeXemPhimService)
