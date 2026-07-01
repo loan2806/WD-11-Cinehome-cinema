@@ -21,6 +21,7 @@ class FoodInvoice extends Model
         'discount',
         'total',
         'payment_status',
+        'inventory_deducted',
         'payment_method',
         'note',
     ];
@@ -29,6 +30,7 @@ class FoodInvoice extends Model
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
         'total' => 'decimal:2',
+        'inventory_deducted' => 'boolean',
     ];
 
     public function items(): HasMany
