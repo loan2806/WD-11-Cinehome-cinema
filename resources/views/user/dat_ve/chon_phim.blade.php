@@ -1,13 +1,13 @@
 @extends('layouts.user')
 
-@section('title', 'Chon phim va suat chieu')
+@section('title', 'Chọn phim và suất chiếu')
 
 @section('content')
 <div class="min-h-screen bg-[#080808] px-6 pt-28 pb-12 text-white">
     <div class="mx-auto max-w-7xl">
         <div class="mb-8 text-center">
-            <h1 class="text-3xl font-black">Phim dang chieu tai <span class="text-[#d99a32]">{{ $rap->ten_rap }}</span></h1>
-            <p class="mt-2 text-gray-400">{{ $rap->dia_chi }}</p>
+            <h1 class="text-3xl font-black">Chọn phim và suất chiếu</h1>
+            <p class="mt-2 text-gray-400">{{ $rap->ten_rap }}{{ $rap->dia_chi ? ' · ' . $rap->dia_chi : '' }}</p>
         </div>
 
         <div class="space-y-6">
@@ -54,15 +54,9 @@
                 </div>
             @empty
                 <div class="rounded-2xl border border-white/10 bg-[#121212] p-10 text-center text-gray-400">
-                    Hien chua co suat chieu nao tai rap nay.
+                    Hiện chưa có suất chiếu nào.
                 </div>
             @endforelse
-        </div>
-
-        <div class="mt-8 text-center">
-            <a href="{{ route('dat_ve.chon_rap') }}" class="inline-flex rounded-xl bg-white/10 px-5 py-3 font-bold text-white hover:bg-white/15">
-                Quay lai chon rap
-            </a>
         </div>
     </div>
 </div>

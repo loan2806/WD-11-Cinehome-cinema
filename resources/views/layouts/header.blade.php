@@ -30,7 +30,7 @@
                     class="{{ request()->routeIs('user.showtimes.*') ? 'active' : '' }}">
                     Lịch chiếu
                 </a>
-                <a href="{{ route('dat_ve.chon_rap') }}" class="{{ request()->routeIs('dat_ve.*') ? 'active' : '' }}">
+                <a href="{{ route('dat_ve.chon_phim') }}" class="{{ request()->routeIs('dat_ve.*') ? 'active' : '' }}">
                     Đặt vé
                 </a>
                 <a href="#" class="{{ request()->is('khuyen-mai*') ? 'active' : '' }}">
