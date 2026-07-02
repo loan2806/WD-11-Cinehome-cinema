@@ -5,6 +5,8 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\Voucher;
 use App\Models\NguoiDungVoucher;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -105,5 +107,49 @@ class VoucherController extends Controller
             'user.voucher.my-voucher',
             compact('vouchers')
         );
+    }
+
+    /**
+     * Lưu voucher tạm vào session khi nhấn "Sử dụng ngay"
+     */
+    public function saveTam(Request $request): JsonResponse
+    {
+        $voucherId = $request->voucher_id;
+
+        if (!$voucherId) {
+            return response()->json(['success' => false, 'message' => 'Voucher không hợp lệ']);
+        }
+
+        $voucher = Voucher::find($voucherId);
+
+        if (!$voucher) {
+            return response()->json(['success' => false, 'message' => 'Voucher không tồn tại']);
+        }
+
+        if (!$voucher->trang_thai) {
+            return response()->json(['success' => false, 'message' => 'Voucher đã bị tắt']);
+        }
+
+        if ($voucher->ngay_het_han && $voucher->ngay_het_han->lt(now())) {
+            return response()->json(['success' => false, 'message' => 'Voucher đã hết hạn']);
+        }
+
+        // Lưu voucher vào session
+        session(['voucher_tam' => $voucherId]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã lưu voucher, đang chuyển đến trang đặt vé...'
+        ]);
+    }
+
+    /**
+     * Xóa voucher tạm khỏi session
+     */
+    public function xoaVoucherTam(): JsonResponse
+    {
+        session()->forget('voucher_tam');
+
+        return response()->json(['success' => true]);
     }
 }

@@ -32,24 +32,33 @@
         <div class="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-6 py-4">
             <div class="flex items-center gap-3">
                 @php
+                    $loaiLabels = [
+                        'info' => 'Thông tin',
+                        'success' => 'Thành công',
+                        'warning' => 'Cảnh báo',
+                        'promo' => 'Khuyến mãi',
+                        'system' => 'Hệ thống',
+                    ];
                     $badgeClass = match ($thongBaoPush->loai) {
                         'info' => 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
                         'success' => 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
                         'warning' => 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-                        'error' => 'bg-red-500/20 text-red-400 border border-red-500/30',
+                        'promo' => 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+                        'system' => 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
                         default => 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
                     };
                     $icon = match ($thongBaoPush->loai) {
                         'info' => 'fa-info-circle',
                         'success' => 'fa-circle-check',
                         'warning' => 'fa-triangle-exclamation',
-                        'error' => 'fa-circle-xmark',
+                        'promo' => 'fa-gift',
+                        'system' => 'fa-gear',
                         default => 'fa-bell',
                     };
                 @endphp
                 <span class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-bold {{ $badgeClass }}">
                     <i class="fa-solid {{ $icon }}"></i>
-                    {{ ucfirst($thongBaoPush->loai) }}
+                    {{ $loaiLabels[$thongBaoPush->loai] ?? ucfirst($thongBaoPush->loai) }}
                 </span>
                 
                 @if ($thongBaoPush->trang_thai === 'da_gui')
@@ -96,10 +105,14 @@
                     <p class="mt-1 font-medium text-white">
                         @switch($thongBaoPush->doi_tuong_nhan)
                             @case('all') Tất cả @break
+                            @case('user') Người dùng @break
+                            @case('vip') VIP @break
+                            @case('staff') Nhân viên @break
+                            @case('admin') Quản trị @break
+                            @case('nguoi_dung_cu_the') Người dùng cụ thể @break
                             @case('khach_hang') Khách hàng @break
                             @case('nhan_vien') Nhân viên @break
                             @case('quan_tri_vien') Quản trị @break
-                            @case('nguoi_dung_cu_the') Cụ thể @break
                             @default {{ $thongBaoPush->doi_tuong_nhan }}
                         @endswitch
                     </p>

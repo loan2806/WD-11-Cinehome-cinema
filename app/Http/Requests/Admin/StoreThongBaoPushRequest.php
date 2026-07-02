@@ -17,8 +17,8 @@ class StoreThongBaoPushRequest extends FormRequest
         return [
             'tieu_de' => ['required', 'string', 'max:255'],
             'noi_dung' => ['required', 'string'],
-            'loai' => ['required', Rule::in(['info', 'success', 'warning', 'danger'])],
-            'doi_tuong_nhan' => ['required', Rule::in(['all', 'khach_hang', 'nhan_vien', 'quan_tri_vien', 'nguoi_dung_cu_the'])],
+            'loai' => ['required', Rule::in(['info', 'success', 'warning', 'promo', 'system'])],
+            'doi_tuong_nhan' => ['required', Rule::in(['all', 'user', 'vip', 'staff', 'admin', 'nguoi_dung_cu_the'])],
             'nguoi_dung_cu_the' => ['nullable', 'integer', 'exists:nguoi_dungs,id'],
         ];
     }
