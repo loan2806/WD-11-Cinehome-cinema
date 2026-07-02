@@ -41,6 +41,11 @@ class ThongBaoPushController extends Controller
             $query->where('trang_thai', $request->trang_thai);
         }
 
+        // Lọc theo đối tượng nhận
+        if ($request->has('doi_tuong_nhan') && $request->doi_tuong_nhan) {
+            $query->where('doi_tuong_nhan', $request->doi_tuong_nhan);
+        }
+
         $thongBaos = $query->latest()->paginate(15)->withQueryString();
 
         return view('admin.thong-bao-push.index', compact('thongBaos'));
@@ -55,14 +60,16 @@ class ThongBaoPushController extends Controller
             'info' => 'Thông tin',
             'success' => 'Thành công',
             'warning' => 'Cảnh báo',
-            'danger' => 'Lỗi',
+            'promo' => 'Khuyến mãi',
+            'system' => 'Hệ thống',
         ];
 
         $doiTuongOptions = [
             'all' => 'Tất cả người dùng',
-            'khach_hang' => 'Khách hàng',
-            'nhan_vien' => 'Nhân viên',
-            'quan_tri_vien' => 'Quản trị viên',
+            'user' => 'Khách hàng thường',
+            'vip' => 'Khách hàng VIP',
+            'staff' => 'Nhân viên',
+            'admin' => 'Quản trị viên',
             'nguoi_dung_cu_the' => 'Người dùng cụ thể',
         ];
 
@@ -205,20 +212,27 @@ class ThongBaoPushController extends Controller
         $query = NguoiDung::query();
 
         switch ($role) {
-            case 'khach_hang':
+            case 'user':
                 $query->where('vai_tro', 'user');
                 break;
-            case 'nhan_vien':
+            case 'staff':
                 $query->where('vai_tro', 'nhan_vien');
                 break;
-            case 'quan_tri_vien':
+            case 'admin':
                 $query->where(function ($q) {
                     $q->where('vai_tro', 'admin')
                         ->orWhere('vai_tro', 'quan_ly_he_thong');
                 });
                 break;
+            case 'vip':
+                $query->where('vai_tro', 'vip');
+                break;
+            case 'nguoi_dung_cu_the':
+                // Lấy tất cả người dùng để chọn
+                $query->where('id', '>', 0);
+                break;
             default:
-                $query->where('id', '<=', 0); // Trả về rỗng
+                $query->where('id', '<=', 0);
                 break;
         }
 
@@ -234,27 +248,26 @@ class ThongBaoPushController extends Controller
     {
         switch ($doiTuongNhan) {
             case 'all':
-                // Gửi đến tất cả người dùng
                 $this->guiDenTatCaNguoiDung($thongBao);
                 break;
 
-            case 'khach_hang':
-                // Gửi đến khách hàng
+            case 'user':
                 $this->guiDenKhachHang($thongBao);
                 break;
 
-            case 'nhan_vien':
-                // Gửi đến nhân viên
+            case 'vip':
+                $this->guiDenVip($thongBao);
+                break;
+
+            case 'staff':
                 $this->guiDenNhanVien($thongBao);
                 break;
 
-            case 'quan_tri_vien':
-                // Gửi đến quản trị viên
+            case 'admin':
                 $this->guiDenQuanTriVien($thongBao);
                 break;
 
             case 'nguoi_dung_cu_the':
-                // Gửi đến người dùng cụ thể
                 if ($nguoiDungCuThe) {
                     ThongBaoPushNguoiDung::create([
                         'thong_bao_push_id' => $thongBao->id,
@@ -281,7 +294,7 @@ class ThongBaoPushController extends Controller
     }
 
     /**
-     * Gửi thông báo đến khách hàng.
+     * Gửi thông báo đến khách hàng thường.
      */
     private function guiDenKhachHang(ThongBaoPush $thongBao): void
     {
@@ -291,6 +304,21 @@ class ThongBaoPushController extends Controller
             ThongBaoPushNguoiDung::create([
                 'thong_bao_push_id' => $thongBao->id,
                 'nguoi_dung_id' => $khachHang->id,
+            ]);
+        }
+    }
+
+    /**
+     * Gửi thông báo đến khách hàng VIP.
+     */
+    private function guiDenVip(ThongBaoPush $thongBao): void
+    {
+        $vipUsers = NguoiDung::where('vai_tro', 'vip')->select('id')->get();
+
+        foreach ($vipUsers as $vip) {
+            ThongBaoPushNguoiDung::create([
+                'thong_bao_push_id' => $thongBao->id,
+                'nguoi_dung_id' => $vip->id,
             ]);
         }
     }

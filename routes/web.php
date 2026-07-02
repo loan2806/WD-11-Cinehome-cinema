@@ -85,6 +85,11 @@ Route::post('/phims/{movie}/reviews', [DanhGiaPhimController::class, 'store'])
     ->middleware('auth')
     ->name('user.phims.reviews.store');
 
+// Tin tức & Khuyến mãi
+Route::get('/tin-tuc', [\App\Http\Controllers\User\TinTucController::class, 'index'])->name('user.tin-tuc.index');
+Route::get('/tin-tuc/{slug}', [\App\Http\Controllers\User\TinTucController::class, 'show'])->name('user.tin-tuc.show');
+Route::get('/khuyen-mai', [\App\Http\Controllers\User\TinTucController::class, 'voucherIndex'])->name('user.khuyen-mai.index');
+
 Route::get('/cinemas', [RapChieuPhimController::class, 'index'])->name('user.cinemas.index');
 Route::get('/cinemas/{rapChieuPhim}', [RapChieuPhimController::class, 'show'])->name('user.cinemas.show');
 Route::get('/cinemas/map', BandoRapController::class)->name('user.cinemas.map');
@@ -104,6 +109,14 @@ Route::middleware('auth')
         Route::get('{showtime}/select-seats', [BookingController::class, 'selectSeats'])->name('selectSeats');
         Route::post('{showtime}/store', [BookingController::class, 'store'])->name('store');
     });
+
+// Voucher - Lưu voucher tạm khi nhấn "Sử dụng ngay"
+Route::post('/voucher/save-tam', [\App\Http\Controllers\User\VoucherController::class, 'saveTam'])
+    ->middleware('auth')
+    ->name('user.voucher.save-tam');
+
+Route::post('/voucher/xoa-tam', [\App\Http\Controllers\User\VoucherController::class, 'xoaVoucherTam'])
+    ->name('user.voucher.xoa-tam');
 
 /*
 |--------------------------------------------------------------------------
