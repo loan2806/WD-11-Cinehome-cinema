@@ -104,7 +104,7 @@
             <div class="movie-body">
 
                 {{-- TITLE --}}
-                <h3 class="movie-title">
+                <h3 class="movie-title line-clamp-2 min-h-[56px]">
                     {{ $movie->ten_phim }}
                 </h3>
 

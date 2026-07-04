@@ -4,170 +4,381 @@
 
 @section('content')
 
-    <section class="min-h-screen bg-[#0b0705] text-white overflow-hidden">
+    <section x-data="{ tab: 'description' }" class="relative min-h-screen bg-black text-white overflow-hidden">
 
-        <div class="min-h-screen grid grid-cols-1 lg:grid-cols-2">
+        {{-- BACKDROP --}}
+        <div class="absolute inset-0">
 
-            {{-- LEFT - POSTER --}}
-            <div class="relative min-h-screen flex items-center justify-center overflow-hidden px-8 py-24 bg-black">
+            <img src="{{ $movie->poster }}" class="w-full h-full object-cover opacity-20 blur-md">
 
-                <div class="absolute inset-0 bg-cover bg-center scale-110 opacity-25 blur-md"
-                    style="background-image: url('{{ $movie->poster }}');">
-                </div>
-
-                <div class="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-[#0b0705]"></div>
-
-                <div class="relative flex flex-col items-center">
-
-                    {{-- POSTER --}}
-                    <img src="{{ $movie->poster }}" alt="{{ $movie->ten_phim }}"
-                        class="poster-pop-left relative z-10 w-[320px] md:w-[410px] lg:w-[450px] h-[520px] md:h-[620px] object-cover rounded-3xl shadow-2xl border border-white/10">
-
-                    {{-- BUTTONS --}}
-                    <div class="relative z-10 mt-6 w-[320px] md:w-[410px] lg:w-[450px] space-y-3">
-
-                        {{-- TRAILER --}}
-                        <a href="{{ $movie->trailer_url }}" target="_blank"
-                            class="w-full flex items-center justify-center gap-2 bg-white/10 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/20 transition">
-                            <i class="fa-solid fa-play"></i>
-                            Xem trailer
-                        </a>
-
-                        @php
-                            $status = optional($movie->showtimes->sortBy('thoi_gian_chieu')->first())?->trang_thai;
-                        @endphp
-
-                        {{-- SẮP RA MẮT --}}
-                        @if ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT)
-                            <button
-                                class="w-full flex items-center justify-center gap-2 bg-pink-500 text-white font-extrabold px-6 py-3 rounded-xl hover:bg-pink-400 transition">
-                                <i class="fa-regular fa-heart"></i>
-                                Quan tâm
-                            </button>
-
-                            {{-- SẮP CHIẾU --}}
-                        @elseif ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
-                            <a href="{{ route('booking', $movie) }}"
-                                class="w-full flex items-center justify-center gap-2 bg-[#f5a623] text-black font-extrabold px-6 py-3 rounded-xl hover:bg-[#ffc04d] transition">
-                                <i class="fa-solid fa-ticket"></i>
-                                Đặt vé ngay
-                            </a>
-
-                            {{-- ĐANG CHIẾU --}}
-                        @elseif ($status === \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU)
-                            <div
-                                class="w-full flex items-center justify-center gap-2 bg-white/10 text-white font-extrabold px-6 py-3 rounded-xl border border-white/10">
-                                <i class="fa-solid fa-film"></i>
-                                Đang chiếu
-                            </div>
-                        @else
-                            <div
-                                class="w-full flex items-center justify-center gap-2 bg-gray-700 text-white font-extrabold px-6 py-3 rounded-xl">
-                                Không xác định
-                            </div>
-                        @endif
-
-                    </div>
-
-                </div>
+            <div class="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black">
             </div>
 
-            {{-- RIGHT - CONTENT --}}
-            <div class="relative min-h-screen flex items-center px-8 md:px-14 lg:px-20 py-24 bg-[#0b0705]">
+        </div>
 
-                <div class="content-fade-right max-w-2xl">
+        <div class="relative max-w-7xl mx-auto px-6 lg:px-12 pt-32 pb-20">
 
-                    <div class="flex flex-wrap items-center gap-3 mb-8">
+            <div class="grid lg:grid-cols-12 gap-12">
 
-                        <a href="{{ route('home') }}"
-                            class="group inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-gray-300 hover:border-[#f5a623]/60 hover:bg-[#f5a623]/10 hover:text-[#f5a623] transition">
+                {{-- LEFT --}}
+                <div class="lg:col-span-3">
 
-                            <span
-                                class="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 group-hover:bg-[#f5a623] group-hover:text-black transition">
-                                <i class="fa-solid fa-arrow-left"></i>
-                            </span>
+                    <img src="{{ asset('storage/movies/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}"
+                        class="w-full aspect-[2/3.4] object-cover rounded-2xl shadow-2xl">
 
-                            Quay lại
+                    <div class="mt-5 space-y-3">
+
+                        @if ($movie->trailer)
+                            <a href="{{ $movie->trailer }}" target="_blank"
+                                class="w-full flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-500 px-5 py-3 rounded-xl font-bold transition">
+
+                                <i class="fa-solid fa-play"></i>
+
+                                Xem Trailer
+                            </a>
+                        @endif
+
+                        <a href="{{ route('booking', $movie) }}"
+                            class="w-full flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-black px-5 py-3 rounded-xl font-bold transition">
+
+                            <i class="fa-solid fa-ticket"></i>
+
+                            Đặt Vé
                         </a>
 
                     </div>
 
-                    <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold text-[#f5a623] mb-6 leading-tight">
+                </div>
+
+                {{-- RIGHT --}}
+                <div class="lg:col-span-9">
+
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-3">
+
                         {{ $movie->ten_phim }}
+
                     </h1>
 
-                    <p class="text-gray-300 leading-relaxed mb-8 text-lg">
-                        {{ $movie->mo_ta }}
-                    </p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
 
-                        <div class="bg-white/10 rounded-2xl p-4">
-                            <p class="text-gray-400 text-sm mb-1">Thể loại</p>
-                            <p class="font-bold">{{ $movie->genres->pluck('ten_the_loai')->join(', ') }}</p>
+                    {{-- RATING --}}
+                    {{-- <div class="bg-white/5 border border-white/10 rounded-xl p-4 mb-8">
+
+                        <div class="flex flex-col md:flex-row md:items-center gap-3">
+
+                            <div class="text-yellow-400 text-2xl tracking-wider">
+
+                                ★★★★★★★★☆
+
+                            </div>
+
+                            <div class="text-2xl font-bold text-yellow-400">
+
+                                8.5/10
+
+                            </div>
+
                         </div>
 
-                        <div class="bg-white/10 rounded-2xl p-4">
-                            <p class="text-gray-400 text-sm mb-1">Quốc gia</p>
-                            <p class="font-bold">{{ $movie->country->ten_quoc_gia }}</p>
+                    </div> --}}
+
+                    {{-- TAB MENU --}}
+                    <div class="flex gap-8 border-b border-white/10 mb-8 overflow-x-auto">
+
+                        <button @click="tab='description'"
+                            :class="tab == 'description' ?
+'border-yellow-400 text-yellow-400' :
+                                'border-transparent text-gray-400'"
+                            class="pb-4 border-b-2 font-bold whitespace-nowrap">
+
+                            MÔ TẢ
+
+                        </button>
+
+                        <button @click="tab='review'"
+                            :class="tab == 'review' ?
+                                'border-yellow-400 text-yellow-400' :
+                                'border-transparent text-gray-400'"
+                            class="pb-4 border-b-2 font-bold whitespace-nowrap">
+
+                            ĐÁNH GIÁ
+
+                        </button>
+
+                        <button @click="tab='cast'"
+                            :class="tab == 'cast' ?
+                                'border-yellow-400 text-yellow-400' :
+                                'border-transparent text-gray-400'"
+                            class="pb-4 border-b-2 font-bold whitespace-nowrap">
+
+                            CAST & CREW
+
+                        </button>
+
+                    </div>
+
+                    {{-- DESCRIPTION --}}
+                    <div x-show="tab=='description'" x-transition>
+
+                        <div class="grid lg:grid-cols-3 gap-10">
+
+                            {{-- LEFT CONTENT --}}
+                            <div class="lg:col-span-2">
+
+                                <h3 class="text-sm uppercase tracking-widest text-yellow-400 mb-4">
+                                    Mô tả
+                                </h3>
+
+                                <p class="text-gray-300 leading-8 mb-8">
+                                    {{ $movie->mo_ta }}
+                                </p>
+                            </div>
+
+                            {{-- RIGHT INFO --}}
+                            <div>
+
+                                <div class="space-y-6">
+
+                                    <div>
+                                        <p class="text-gray-500 text-sm mb-1">
+                                            Director
+                                        </p>
+
+                                        <p class="font-semibold text-white">
+                                            {{ $movie->dao_dien }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-gray-500 text-sm mb-1">
+                                            Stars
+                                        </p>
+
+                                        <p class="font-semibold text-white">
+                                            {{ $movie->dien_vien }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-gray-500 text-sm mb-1">
+                                            Genre
+</p>
+
+                                        <p class="font-semibold text-white">
+                                            {{ $movie->genres->pluck('ten_the_loai')->join(', ') }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-gray-500 text-sm mb-1">
+                                            Country
+                                        </p>
+
+                                        <p class="font-semibold text-white">
+                                            {{ optional($movie->country)->ten_quoc_gia }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-gray-500 text-sm mb-1">
+                                            Duration
+                                        </p>
+
+                                        <p class="font-semibold text-white">
+                                            {{ $movie->thoi_luong }} phút
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-gray-500 text-sm mb-1">
+                                            Age Rating
+                                        </p>
+
+                                        <p class="font-semibold text-white">
+                                            {{ $movie->gioi_han_tuoi }}
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <p class="text-gray-500 text-sm mb-1">
+                                            Release Date
+                                        </p>
+
+                                        <p class="font-semibold text-white">
+                                            {{ \Carbon\Carbon::parse($movie->ngay_khoi_chieu)->format('d/m/Y') }}
+                                        </p>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
                         </div>
 
-                        <div class="bg-white/10 rounded-2xl p-4">
-                            <p class="text-gray-400 text-sm mb-1">Thời lượng</p>
-                            <p class="font-bold">{{ $movie->thoi_luong }} phút</p>
-                        </div>
+                    </div>
 
-                        <div class="bg-white/10 rounded-2xl p-4">
-                            <p class="text-gray-400 text-sm mb-1">Độ tuổi</p>
-                            <p class="font-bold">{{ $movie->gioi_han_tuoi }}</p>
-                        </div>
+                    {{-- REVIEW --}}
+                    <div x-show="tab=='review'" x-transition class="space-y-4">
 
-                        <div class="bg-white/10 rounded-2xl p-4 md:col-span-2">
-                            <p class="text-gray-400 text-sm mb-1">Diễn viên</p>
-                            <p class="font-bold">
-                                @if (is_array($movie->dien_vien) || is_object($movie->dien_vien))
-                                    {{ implode(', ', (array) $movie->dien_vien) }}
-                                @else
-                                    {{ $movie->dien_vien }}
-                                @endif
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+
+                            <div class="flex items-center justify-between mb-2">
+
+                                <h3 class="font-bold">
+                                    Nguyễn Văn A
+                                </h3>
+
+                                <span class="text-yellow-400">
+                                    ★★★★★
+                                </span>
+
+                            </div>
+
+                            <p class="text-gray-400">
+Phim rất hay, kỹ xảo đẹp và đáng xem.
                             </p>
+
                         </div>
 
-                        <div class="bg-white/10 rounded-2xl p-4 md:col-span-2">
-                            <p class="text-gray-400 text-sm mb-1">Ngày khởi chiếu</p>
-                            <p class="font-bold">
-                                {{ $movie->ngay_khoi_chieu ? \Carbon\Carbon::parse($movie->ngay_khoi_chieu)->format('d/m/Y') : 'Chưa có' }}
+                        <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+
+                            <div class="flex items-center justify-between mb-2">
+
+                                <h3 class="font-bold">
+                                    Trần Văn B
+                                </h3>
+
+                                <span class="text-yellow-400">
+                                    ★★★★☆
+                                </span>
+
+                            </div>
+
+                            <p class="text-gray-400">
+                                Nội dung cuốn hút, diễn xuất tốt.
                             </p>
+
+                        </div>
+
+                    </div>
+
+                    <div x-show="tab=='cast'" x-transition>
+
+                        {{-- DIRECTOR --}}
+                        <div class="mb-10">
+
+                            <h3 class="text-yellow-400 font-bold uppercase tracking-wider mb-6">
+                                Director
+                            </h3>
+
+                            <div class="flex items-center gap-4">
+
+                                <div
+                                    class="w-16 h-16 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-xl">
+
+                                    {{ strtoupper(substr($movie->dao_dien, 0, 1)) }}
+
+                                </div>
+
+                                <div>
+
+                                    <h4 class="text-xl font-semibold">
+                                        {{ $movie->dao_dien }}
+                                    </h4>
+
+                                    <p class="text-gray-500">
+                                        Director
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {{-- CAST --}}
+                        <div>
+
+                            <h3 class="text-yellow-400 font-bold uppercase tracking-wider mb-6">
+                                Cast
+                            </h3>
+
+                            <div class="grid md:grid-cols-2 gap-4">
+
+                                @foreach (explode(',', $movie->dien_vien) as $actor)
+                                    <div class="flex items-center gap-4 border-b border-white/10 pb-4">
+
+                                        <div
+                                            class="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center font-bold">
+
+                                            {{ strtoupper(substr(trim($actor), 0, 1)) }}
+                                        </div>
+
+                                        <div>
+
+                                            <h4 class="font-semibold">
+{{ trim($actor) }}
+                                            </h4>
+
+                                            <p class="text-gray-500 text-sm">
+                                                Actor
+                                            </p>
+
+                                        </div>
+
+                                    </div>
+                                @endforeach
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    {{-- MEDIA --}}
+                    <div x-show="tab=='media'" x-transition>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                            <img src="{{ $movie->poster }}" class="rounded-xl">
+
+                            <img src="{{ $movie->poster }}" class="rounded-xl">
+
+                            <img src="{{ $movie->poster }}" class="rounded-xl">
+
+                            <img src="{{ $movie->poster }}" class="rounded-xl">
+
                         </div>
 
                     </div>
 
                 </div>
+
             </div>
 
         </div>
 
     </section>
 
-    {{-- RELATED MOVIES --}}
-    <section class="bg-[#0b0705] text-white py-20">
-        <div class="container-fluid px-8">
+    {{-- PHIM LIÊN QUAN --}}
+    <section class="bg-black py-20 text-white">
 
-            <div class="section-title-wrap mb-8">
-                <h2 class="section-title">
-                    Phim <span>liên quan</span>
-                </h2>
-            </div>
+        <div class="max-w-7xl mx-auto px-6">
 
-            @if (isset($relatedMovies) && $relatedMovies->isNotEmpty())
-                @include('partials.movie-section', ['movies' => $relatedMovies])
-            @else
-                <div class="text-center text-gray-400 py-14">
-                    Không tìm thấy phim liên quan.
-                </div>
+            <h2 class="text-3xl font-bold mb-8">
+
+                Phim liên quan
+
+            </h2>
+
+            @if (isset($relatedMovies) && $relatedMovies->count())
+                @include('partials.movie-section', [
+                    'movies' => $relatedMovies,
+                ])
             @endif
 
         </div>
+
     </section>
 
 @endsection

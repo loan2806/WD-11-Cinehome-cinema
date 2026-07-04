@@ -74,7 +74,8 @@ class PhimsController extends Controller
 
     // upload ảnh đúng cách
     if ($request->hasFile('poster')) {
-        $data['poster'] = $request->file('poster')->store('movies', 'public');
+        $path = $data['poster'] = $request->file('poster')->store('movies', 'public');
+        $data['poster'] = basename($path);
     }
 
     $data['slug'] = Str::slug($data['ten_phim']) . '-' . uniqid();
