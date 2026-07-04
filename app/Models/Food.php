@@ -16,19 +16,13 @@ class Food extends Model
         'sku',
         'name',
         'image',
-        'price',
-        'category',
+        'category_id',
         'description',
-        'stock_quantity',
-        'min_stock_quantity',
         'is_active',
         'sort_order',
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'stock_quantity' => 'integer',
-        'min_stock_quantity' => 'integer',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
@@ -43,30 +37,18 @@ class Food extends Model
         return $query->where('is_active', true);
     }
 
-    public function getStockStatusAttribute(): string
+    public function variants(): HasMany
     {
-        if (! $this->is_active) {
-            return 'inactive';
-        }
-
-        if ($this->stock_quantity <= 0) {
-            return 'out';
-        }
-
-        if ($this->stock_quantity <= $this->min_stock_quantity) {
-            return 'low';
-        }
-
-        return 'available';
+        return $this->hasMany(FoodVariant::class);
     }
-
-    public function getStockStatusLabelAttribute(): string
+    public function comboItems(): HasMany
     {
-        return match ($this->stock_status) {
-            'inactive' => 'Tạm ẩn',
-            'out' => 'Hết hàng',
-            'low' => 'Sắp hết',
-            default => 'Đang bán',
-        };
+        return $this->hasMany(ComboItem::class, 'combo_food_id');
     }
+    public function category()
+    {
+        return $this->belongsTo(FoodCategory::class);
+    }
+    
+    
 }

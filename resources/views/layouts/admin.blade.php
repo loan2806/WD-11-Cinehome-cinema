@@ -79,7 +79,7 @@
     @include('components.preloader')
 
     {{-- GLOBAL TOAST NOTIFICATIONS --}}
-    @if (session('success') || session('error') || session('warning') || $errors->any())
+    @if (session('success') || session('error') || session('warning'))
         <div style="position: fixed; top: 24px; right: 24px; z-index: 100000; display: flex; width: min(390px, calc(100vw - 32px)); flex-direction: column; gap: 12px; pointer-events: none;">
             @if (session('success'))
                 <x-toast type="success" :message="session('success')" />
@@ -89,9 +89,6 @@
             @endif
             @if (session('warning'))
                 <x-toast type="warning" :message="session('warning')" />
-            @endif
-            @if ($errors->any())
-                <x-toast type="error" :message="$errors->first()" />
             @endif
         </div>
     @endif

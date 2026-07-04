@@ -22,7 +22,7 @@ class BookingController extends Controller
 {
     public function index(Phims $movie)
     {
-        return redirect()->route('user.phims.show', $movie);
+        return redirect()->route('user.dat_ve.chon_ghe', $movie);
     }
 
     public function showtimes(Phims $movie, RapChieuPhim $cinema)
@@ -41,33 +41,32 @@ class BookingController extends Controller
         ]);
     }
 
-    public function selectSeats(SuatChieu $showtime, DatVeXemPhimService $datVeXemPhimService)
-    {
-        abort_if($showtime->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
+    // {
+    //     abort_if($showtime->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
 
-        $duLieuChonGhe = $datVeXemPhimService->duLieuChonGhe($showtime);
+    //     $duLieuChonGhe = $datVeXemPhimService->duLieuChonGhe($showtime);
 
-        $vouchers = [];
+    //     $vouchers = [];
 
-        if (Auth::check()) {
-            $vouchers = NguoiDungVoucher::with('voucher')
-                ->where('nguoi_dung_id', Auth::id())
-                ->where('da_su_dung', false)
-                ->where(function ($query) {
-                    $query->whereNull('ngay_het_han')
-                        ->orWhere('ngay_het_han', '>=', now());
-                })
-                ->whereHas('voucher', function ($query) {
-                    $query->where('trang_thai', true)
-                        ->whereDate('ngay_het_han', '>=', today());
-                })
-                ->get();
-        }
+    //     if (Auth::check()) {
+    //         $vouchers = NguoiDungVoucher::with('voucher')
+    //             ->where('nguoi_dung_id', Auth::id())
+    //             ->where('da_su_dung', false)
+    //             ->where(function ($query) {
+    //                 $query->whereNull('ngay_het_han')
+    //                     ->orWhere('ngay_het_han', '>=', now());
+    //             })
+    //             ->whereHas('voucher', function ($query) {
+    //                 $query->where('trang_thai', true)
+    //                     ->whereDate('ngay_het_han', '>=', today());
+    //             })
+    //             ->get();
+    //     }
 
-        $duLieuChonGhe['vouchers'] = $vouchers;
+    //     $duLieuChonGhe['vouchers'] = $vouchers;
 
-        return view('user.dat_ve.chon_ghe', $duLieuChonGhe);
-    }
+    //     return view('user.dat_ve.chon_ghe', $duLieuChonGhe);
+    // }
 
     public function store(Request $request, SuatChieu $showtime, DatVeXemPhimService $datVeXemPhimService)
     {

@@ -18,14 +18,16 @@ use App\Http\Controllers\Admin\QuocGiaController;
 use App\Http\Controllers\Admin\RevenueReportController;
 use App\Http\Controllers\Admin\SoatVeController as AdminSoatVeController;
 use App\Http\Controllers\Admin\SuatChieuController as AdminSuatChieuController;
-use App\Http\Controllers\Admin\CaiDatHeThongController; 
+use App\Http\Controllers\Admin\CaiDatHeThongController;
 use App\Http\Controllers\Admin\TheloaisController;
+use App\Http\Controllers\Admin\FoodCategoryController;
+use App\Http\Controllers\Admin\FoodVariantController;
 use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\DatVe\DatVeController;
 use App\Http\Controllers\DongBoDuLieuController;
-use App\Http\Controllers\HoSoController; 
+use App\Http\Controllers\HoSoController;
 use App\Http\Controllers\Staff\BanVeController;
 use App\Http\Controllers\Staff\LichSuVeController;
 use App\Http\Controllers\Staff\SoatVeController;
@@ -111,9 +113,33 @@ Route::middleware('auth')
 |--------------------------------------------------------------------------
 */
 Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
-    Route::get('/chon-rap', [DatVeController::class, 'chonRap'])->name('chon_rap');
-    Route::get('/chon-phim/{rap_id?}', [DatVeController::class, 'chonPhim'])->name('chon_phim');
-    Route::get('/chon-ghe/{suat_chieu_id}', [DatVeController::class, 'chonGhe'])->name('chon_ghe');
+
+    // Ai cũng xem được
+    Route::get('/chon-phim/{rap_id?}', [DatVeController::class, 'chonPhim'])
+        ->name('chon_phim');
+
+    // Phải đăng nhập mới được
+    Route::middleware('auth')->group(function () {
+
+        Route::get('/chon-ghe/{suat_chieu_id}', [DatVeController::class, 'chonGhe'])
+            ->name('chon_ghe');
+
+        Route::get('/chon-do-an/{suat_chieu_id}', [DatVeController::class, 'chonDoAn'])
+            ->name('chon_do_an');
+
+        Route::get('/checkout/{suat_chieu_id}', [DatVeController::class, 'checkout'])
+            ->name('checkout');
+
+        // Seat lock APIs
+        Route::get('/seat-locks/{suat_chieu}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'index'])
+            ->name('seat_locks.index');
+
+        Route::post('/seat-locks/{suat_chieu}/{seat}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'reserve'])
+            ->name('seat_locks.reserve');
+
+        Route::delete('/seat-locks/{suat_chieu}/{seat}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'release'])
+            ->name('seat_locks.release');
+    });
 });
 
 Route::middleware(['auth'])
@@ -218,9 +244,58 @@ Route::middleware(['auth'])
         });
 
         Route::middleware(['permission:quan_ly_do_an_combo'])->group(function () {
-            Route::resource('foods', FoodController::class)->only(['index', 'store', 'update', 'destroy']);
-            Route::patch('foods/{food}/stock', [FoodController::class, 'updateStock'])->name('foods.update-stock');
-            Route::patch('foods/{food}/toggle-status', [FoodController::class, 'toggleStatus'])->name('foods.toggle-status');
+
+            Route::prefix('foods')->name('foods.categories.')->group(function () {
+                Route::get('categories', [FoodCategoryController::class, 'index'])->name('index');
+                Route::get('categories/create', [FoodCategoryController::class, 'create'])->name('create');
+                Route::post('categories', [FoodCategoryController::class, 'store'])->name('store');
+                Route::get('categories/{category}/edit', [FoodCategoryController::class, 'edit'])->name('edit');
+                Route::patch('categories/{category}', [FoodCategoryController::class, 'update'])->name('update');
+                Route::delete('categories/{category}', [FoodCategoryController::class, 'destroy'])->name('destroy');
+            });
+
+            Route::resource('foods', FoodController::class)
+                ->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
+
+            Route::patch('foods/{food}/stock', [FoodController::class, 'updateStock'])
+                ->name('foods.update-stock');
+
+            Route::patch('foods/{food}/toggle-status', [FoodController::class, 'toggleStatus'])
+                ->name('foods.toggle-status');
+
+            // ===========================
+            // QUẢN LÝ BIẾN THỂ
+            // ===========================
+
+            Route::get(
+                'foods/{food}/variants',
+                [FoodVariantController::class, 'index']
+            )->name('foods.variants.index');
+
+            Route::get(
+                'foods/{food}/variants/create',
+                [FoodVariantController::class, 'create']
+            )->name('foods.variants.create');
+
+            Route::post(
+                'foods/{food}/variants',
+                [FoodVariantController::class, 'store']
+            )->name('foods.variants.store');
+
+            Route::get(
+                'foods/{food}/variants/{variant}/edit',
+                [FoodVariantController::class, 'edit']
+            )->name('foods.variants.edit');
+
+            Route::patch(
+                'foods/{food}/variants/{variant}',
+                [FoodVariantController::class, 'update']
+            )->name('foods.variants.update');
+
+            Route::delete(
+                'foods/{food}/variants/{variant}',
+                [FoodVariantController::class, 'destroy']
+            )->name('foods.variants.destroy');
         });
 
         Route::middleware(['permission:quan_ly_khach_hang'])->group(function () {
@@ -238,7 +313,7 @@ Route::middleware(['auth'])
             Route::delete('/food-invoices/{foodInvoice}', [FoodInvoiceController::class, 'destroy'])->name('food-invoices.destroy');
 
             Route::resource('ve-xem-phims', AdminVeXemPhimController::class)->only(['index', 'show', 'edit', 'update'])->names('ve-xem-phims');
-            
+
             Route::patch('ve-xem-phims/{veXemPhim}/huy', [AdminVeXemPhimController::class, 'huy'])->name('ve-xem-phims.huy');
             Route::patch('ve-xem-phims/{veXemPhim}/su-dung', [AdminVeXemPhimController::class, 'suDung'])->name('ve-xem-phims.su-dung');
             Route::patch('ve-xem-phims/{veXemPhim}/cap-nhat-trang-thai', [AdminVeXemPhimController::class, 'capNhatTrangThai'])->name('ve-xem-phims.cap-nhat-trang-thai');
@@ -273,7 +348,7 @@ Route::middleware(['auth'])
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
             Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
-            
+
             Route::get('/system-settings', [CaiDatHeThongController::class, 'index'])->name('system-settings.index');
             Route::patch('/system-settings', [CaiDatHeThongController::class, 'update'])->name('system-settings.update');
         });
@@ -299,7 +374,7 @@ Route::middleware(['auth'])
         // ĐIỀU CHỈNH ĐIỂM THÀNH VIÊN THỦ CÔNG
         Route::post('/thanh-vien/{thanhVien}/tang-diem', [AdminThanhVienController::class, 'tangDiem'])->name('thanh-vien.tang-diem');
         Route::post('/thanh-vien/{thanhVien}/tru-diem', [AdminThanhVienController::class, 'truDiem'])->name('thanh-vien.tru-diem');
-        
+
         // HẠ TẦNG FIREBASE BACKUP
         Route::post('/sao-luu', function () {
             SaoLuuDuLieuService::saoLuu();
@@ -349,7 +424,7 @@ Route::middleware(['auth'])
     ->name('system.')
     ->group(function () {
         Route::get('/dashboard', function () {
-            return view('system.dashboard'); 
+            return view('system.dashboard');
         })->name('dashboard');
 
         Route::get('/cai-dat-thanh-toan', [CaiDatThanhToanController::class, 'edit'])->name('payments');
@@ -378,7 +453,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [HoSoController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [HoSoController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [HoSoController::class, 'destroy'])->name('profile.destroy');
-    
+
     Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('user.thanh-vien.index');
     Route::get('/user/thong-bao', [NotificationController::class, 'index'])->name('user.thong-bao.index');
 });

@@ -98,9 +98,7 @@
                             <td class="px-5 py-5">
                                 <div class="flex items-center gap-4">
 
-                                    <img src="{{ Str::startsWith($movie->poster, 'http')
-                                        ? $movie->poster
-                                        : asset('storage/movies/' . $movie->poster) }}"
+                                    <img src="{{ asset('storage/movies/' . $movie->poster) }}"
                                         class="h-20 w-14 rounded-xl object-cover">
 
                                     <div class="text-white font-bold">

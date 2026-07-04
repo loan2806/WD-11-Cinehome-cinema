@@ -1,0 +1,175 @@
+<?php
+
+namespace App\Http\Requests\Admin;
+
+use App\Models\Food;
+use App\Models\FoodCategory;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+class CapnhatFoodRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'sku' => filled($this->sku)
+                ? strtoupper(trim($this->sku))
+                : null,
+
+            'name' => trim($this->name),
+
+
+            'category_id' => $this->category_id,
+
+            'description' => filled($this->description)
+                ? trim($this->description)
+                : null,
+
+            'sort_order' => (int) ($this->sort_order ?? 0),
+
+            'is_active' => $this->boolean('is_active'),
+        ]);
+    }
+
+    public function rules(): array
+    {
+        /** @var Food $food */
+        $food = $this->route('food');
+
+        return [
+            'sku' => [
+                'nullable',
+                'string',
+                'max:50',
+                'regex:/^[A-Z0-9_-]+$/i',
+                Rule::unique('foods', 'sku')->ignore($food),
+            ],
+
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+
+            'category_id' => [
+                'required',
+                'exists:food_categories,id',
+            ],
+
+            'image' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+
+            'description' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            'sort_order' => [
+                'nullable',
+                'integer',
+                'min:0',
+            ],
+
+            'is_active' => [
+                'boolean',
+            ],
+            'combo_items' => [
+                'nullable',
+                'array',
+            ],
+
+            'combo_items.*.variant_id' => [
+                'required_if:type,combo',
+                'exists:food_variants,id',
+            ],
+
+            'combo_items.*.quantity' => [
+                'required_if:type,combo',
+                'integer',
+                'min:1',
+            ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'sku.unique' => 'SKU đã tồn tại.',
+            'sku.regex' => 'SKU chỉ gồm chữ, số, dấu - hoặc _.',
+            'sku.max' => 'SKU không được vượt quá 50 ký tự.',
+
+            'name.required' => 'Vui lòng nhập tên món.',
+            'name.max' => 'Tên món không được vượt quá 255 ký tự.',
+
+
+            'category_id.required' => 'Vui lòng chọn danh mục.',
+            'category_id.exists' => 'Danh mục không tồn tại.',
+
+            'image.image' => 'Vui lòng chọn đúng định dạng ảnh.',
+            'image.mimes' => 'Ảnh chỉ được phép có định dạng JPG, JPEG, PNG hoặc WEBP.',
+            'image.max' => 'Kích thước ảnh không được vượt quá 2MB.',
+
+            'description.string' => 'Mô tả không hợp lệ.',
+            'description.max' => 'Mô tả không được vượt quá 1000 ký tự.',
+
+            'combo_items.*.variant_id.required_if' => 'Vui lòng chọn biến thể.',
+            'combo_items.*.variant_id.exists' => 'Biến thể không tồn tại.',
+
+            'combo_items.*.quantity.required_if' => 'Vui lòng nhập số lượng.',
+            'combo_items.*.quantity.integer' => 'Số lượng phải là số.',
+            'combo_items.*.quantity.min' => 'Số lượng phải lớn hơn 0.',
+
+            'sort_order.integer' => 'Thứ tự phải là số.',
+            'sort_order.min' => 'Thứ tự phải lớn hơn hoặc bằng 0.',
+
+            'is_active.boolean' => 'Trạng thái hiển thị không hợp lệ.',
+        ];
+    }
+    protected function isComboCategory(): bool
+    {
+        $category = FoodCategory::find($this->input('category_id'));
+
+        return $category &&
+            str_contains(strtolower($category->name), 'combo');
+    }
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+
+            if (!$this->isComboCategory()) {
+                return;
+            }
+
+            $selected = [];
+
+            foreach ($this->input('combo_items', []) as $index => $item) {
+
+                $variantId = $item['variant_id'] ?? null;
+
+                if (!$variantId) {
+                    continue;
+                }
+
+                if (in_array($variantId, $selected)) {
+                    $validator->errors()->add(
+                        "combo_items.$index.variant_id",
+                        "Biến thể này đã được chọn."
+                    );
+                }
+
+                $selected[] = $variantId;
+            }
+        });
+    }
+}

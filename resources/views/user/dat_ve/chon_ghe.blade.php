@@ -3,543 +3,665 @@
 @section('title', 'Chọn ghế - ' . $suatChieu->phim->ten_phim)
 
 @push('styles')
-<style>
-    .dat-ve-page {
-        --gold: #d99a32;
-        --gold-light: #f4c56a;
-        color: #fff;
-    }
+    <style>
+        .dat-ve-page {
+            --gold: #d99a32;
+            --gold-light: #f4c56a;
+            color: #fff;
+        }
 
-    .seat-button {
-        position: relative;
-        width: 46px;
-        height: 42px;
-        border-radius: 9px 9px 5px 5px;
-        border: 1px solid rgba(255, 255, 255, .16);
-        background: var(--seat-color, #2a2a2a);
-        color: #fff;
-        font-size: 11px;
-        font-weight: 900;
-        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, opacity .18s ease;
-    }
+        .seat-button {
+            position: relative;
+            width: 46px;
+            height: 42px;
+            border-radius: 9px 9px 5px 5px;
+            border: 1px solid rgba(255, 255, 255, .16);
+            background: var(--seat-color, #2a2a2a);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 900;
+            transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, opacity .18s ease;
+        }
 
-    .seat-button:hover:not(:disabled) {
-        transform: translateY(-2px);
-        border-color: rgba(244, 197, 106, .7);
-        box-shadow: 0 8px 20px rgba(217, 154, 50, .2);
-    }
+        .seat-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            border-color: rgba(244, 197, 106, .7);
+            box-shadow: 0 8px 20px rgba(217, 154, 50, .2);
+        }
 
-    .seat-button.selected {
-        background: linear-gradient(135deg, var(--gold-light), var(--gold));
-        border-color: var(--gold-light);
-        color: #2b1208;
-        box-shadow: 0 0 0 3px rgba(244, 197, 106, .2), 0 10px 24px rgba(217, 154, 50, .34);
-        transform: translateY(-2px);
-    }
+        .seat-button.selected {
+            background: linear-gradient(135deg, var(--gold-light), var(--gold));
+            border-color: var(--gold-light);
+            color: #2b1208;
+            box-shadow: 0 0 0 3px rgba(244, 197, 106, .2), 0 10px 24px rgba(217, 154, 50, .34);
+            transform: translateY(-2px);
+        }
 
-    .seat-button.booked,
-    .seat-button.maintenance {
-        cursor: not-allowed;
-        opacity: .55;
-        background: #0e0e0e;
-        color: #666;
-    }
+        .seat-button.booked,
+        .seat-button.maintenance {
+            cursor: not-allowed;
+            opacity: .55;
+            background: #0e0e0e;
+            color: #666;
+        }
 
-    .seat-button.booked::after,
-    .seat-button.maintenance::after {
-        content: "×";
-        position: absolute;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        color: #777;
-        font-size: 20px;
-    }
+        .seat-button.booked::after,
+        .seat-button.maintenance::after {
+            content: "×";
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            color: #777;
+            font-size: 20px;
+        }
 
-    .seat-button.booked span,
-    .seat-button.maintenance span {
-        opacity: 0;
-    }
+        .seat-button.booked span,
+        .seat-button.maintenance span {
+            opacity: 0;
+        }
 
-    .seat-tooltip {
-        pointer-events: none;
-        position: absolute;
-        bottom: calc(100% + 10px);
-        left: 50%;
-        z-index: 30;
-        min-width: 190px;
-        transform: translateX(-50%) translateY(6px);
-        border: 1px solid rgba(217, 154, 50, .55);
-        border-radius: 12px;
-        background: #171717;
-        padding: 10px 12px;
-        text-align: left;
-        opacity: 0;
-        box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
-        transition: opacity .18s ease, transform .18s ease;
-    }
+        .seat-tooltip {
+            pointer-events: none;
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            z-index: 30;
+            min-width: 190px;
+            transform: translateX(-50%) translateY(6px);
+            border: 1px solid rgba(217, 154, 50, .55);
+            border-radius: 12px;
+            background: #171717;
+            padding: 10px 12px;
+            text-align: left;
+            opacity: 0;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+            transition: opacity .18s ease, transform .18s ease;
+        }
 
-    .seat-wrapper:hover .seat-tooltip {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
+        .seat-wrapper:hover .seat-tooltip {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
 
-    .screen-line {
-        height: 34px;
-        border-radius: 50% 50% 0 0;
-        background: linear-gradient(180deg, rgba(244, 197, 106, .92), rgba(217, 154, 50, .16));
-        box-shadow: 0 18px 40px rgba(217, 154, 50, .25);
-    }
+        .screen-line {
+            height: 34px;
+            border-radius: 50% 50% 0 0;
+            background: linear-gradient(180deg, rgba(244, 197, 106, .92), rgba(217, 154, 50, .16));
+            box-shadow: 0 18px 40px rgba(217, 154, 50, .25);
+        }
 
-    .payment-option input:checked + span {
-        border-color: rgba(244, 197, 106, .8);
-        background: rgba(217, 154, 50, .14);
-        color: #f4c56a;
-    }
-</style>
+        .payment-option input:checked+span {
+            border-color: rgba(244, 197, 106, .8);
+            background: rgba(217, 154, 50, .14);
+            color: #f4c56a;
+        }
+    </style>
 @endpush
 
+<!-- cspell:disable -->
 @section('content')
-<div class="dat-ve-page min-h-screen bg-[#080808] px-6 pt-28 pb-12">
-    <div class="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[370px_1fr]">
+    <div class="dat-ve-page min-h-screen bg-[#080808] px-6 pt-28 pb-12" lang="vi" spellcheck="false">
+        <div class="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[320px_1fr_370px]">
 
-        <aside class="rounded-2xl border border-white/10 bg-[#121212] p-5">
-            <img
-                src="{{ $suatChieu->phim->poster ?? 'https://via.placeholder.com/300x450?text=Poster' }}"
-                class="h-[420px] w-full rounded-xl object-cover"
-                alt="{{ $suatChieu->phim->ten_phim }}"
-            >
+            {{-- LEFT: film info + poster (vertical) --}}
+            <aside class="rounded-2xl border border-white/10 bg-[#121212] p-5">
+                <div class="flex flex-col items-start gap-4">
+                    <img src="{{ asset('storage/movies/' . $suatChieu->phim->poster) }}"
+                        alt="{{ $suatChieu->phim->ten_phim }}" class="w-full rounded-lg object-cover">
 
-            <h1 class="mt-5 text-2xl font-black text-[#d99a32]">
-                {{ $suatChieu->phim->ten_phim }}
-            </h1>
-
-            <div class="mt-4 space-y-2 text-sm text-gray-300">
-                <p><strong>Rạp:</strong> {{ $suatChieu->rapChieuPhim->ten_rap }}</p>
-                <p><strong>Phòng:</strong> {{ $suatChieu->phongChieu->ten_phong ?? 'Phòng chiếu' }}</p>
-                <p><strong>Suất chiếu:</strong> {{ $suatChieu->thoi_gian_chieu->format('H:i d/m/Y') }}</p>
-                <p><strong>Giá cơ bản:</strong> {{ number_format((float) $suatChieu->gia_ve, 0, ',', '.') }}đ</p>
-            </div>
-
-            @if($errors->any())
-                <div class="mt-4 rounded-xl bg-red-500/15 px-4 py-3 text-sm text-red-300">
-                    {{ $errors->first() }}
-                </div>
-            @endif
-
-            @isset($coSoDoGheThat)
-                @if(! $coSoDoGheThat)
-                    <div class="mt-4 rounded-xl bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">
-                        Phòng chiếu chưa có sơ đồ ghế trong admin, hệ thống đang dùng sơ đồ mặc định để test đặt vé.
-                    </div>
-                @endif
-            @endisset
-
-            <form id="booking-form" method="POST" action="{{ route('user.bookings.store', $suatChieu) }}" class="mt-5">
-                @csrf
-
-                <input
-                    type="hidden"
-                    name="ghe_duoc_chon"
-                    id="ghe_duoc_chon"
-                    value="{{ old('ghe_duoc_chon') }}"
-                >
-
-                <div class="rounded-xl bg-white/5 p-4">
-                    <div class="flex justify-between text-sm">
-                        <span>Ghế đã chọn</span>
-                        <strong id="count-seats" class="text-[#f4c56a]">0</strong>
-                    </div>
-
-                    <div id="selected-list" class="mt-3 flex min-h-10 flex-wrap gap-2 text-sm text-gray-400">
-                        Chưa chọn ghế nào
-                    </div>
-
-                    <div class="mt-4 border-t border-white/10 pt-4">
-                        <label class="mb-2 block text-sm font-bold">
-                            Voucher
-                        </label>
-
-                        <select
-                            id="voucher_select"
-                            name="voucher_id"
-                            class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] p-3 text-white"
-                        >
-                            <option value="">Không sử dụng voucher</option>
-
-                            @foreach(($vouchers ?? []) as $voucherCaNhan)
-                                <option
-                                    value="{{ $voucherCaNhan->id }}"
-                                    data-discount="{{ $voucherCaNhan->voucher->gia_tri_giam ?? 0 }}"
-                                >
-                                    {{ $voucherCaNhan->ma_voucher_ca_nhan }}
-                                    - Giảm {{ number_format($voucherCaNhan->voucher->gia_tri_giam ?? 0, 0, ',', '.') }}đ
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="mt-4 space-y-2 text-sm">
-                        <div class="flex justify-between">
-                            <span>Tạm tính</span>
-                            <span id="subtotal-price">0đ</span>
-                        </div>
-
-                        <div class="flex justify-between text-green-400">
-                            <span>Giảm giá</span>
-                            <span id="discount-price">0đ</span>
-                        </div>
-
-                        <div class="flex justify-between border-t border-white/10 pt-2 text-base font-black">
-                            <span>Thanh toán</span>
-                            <span class="text-[#f4c56a]" id="final-price">0đ</span>
+                    <div class="w-full rounded-2xl border border-white/10 bg-zinc-900 p-4">
+                        <h2 class="text-lg font-black text-yellow-500 mb-2">{{ $suatChieu->phim->ten_phim }}</h2>
+                        <div class="text-sm text-gray-300">
+                            <div><strong>Rạp:</strong> {{ $suatChieu->rapChieuPhim->ten_rap }}</div>
+                            <div><strong>Phòng:</strong> {{ $suatChieu->phongChieu->ten_phong ?? 'Phòng chiếu' }}</div>
+                            <div><strong>Suất chiếu:</strong> {{ $suatChieu->thoi_gian_chieu->format('H:i d/m/Y') }}</div>
+                            <div><strong>Giá từ:</strong> {{ number_format($suatChieu->gia_ve, 0, ',', '.') }}đ</div>
                         </div>
                     </div>
                 </div>
+            </aside>
 
-                <div class="mt-4 rounded-xl bg-white/5 p-4">
-                    <div class="mb-3 text-sm font-black text-[#f4c56a]">
-                        Phương thức thanh toán
+            @php
+                // derive seat prices for legend (case-insensitive)
+                $flatSeats = collect($gheTheoHang ?? [])
+                    ->flatten(1)
+                    ->map(function ($s) {
+                        $s['loai_ghe'] = mb_strtolower($s['loai_ghe'] ?? '');
+                        return $s;
+                    });
+
+                $normalSeat = $flatSeats->first(
+                    fn($s) => str_contains($s['loai_ghe'] ?? '', 'thường') || $s['loai_ghe'] === 'normal',
+                );
+                $vipSeat = $flatSeats->first(fn($s) => str_contains($s['loai_ghe'] ?? '', 'vip'));
+                $doubleSeat = $flatSeats->first(
+                    fn($s) => str_contains($s['loai_ghe'] ?? '', 'couple') ||
+                        str_contains($s['loai_ghe'] ?? '', 'doi') ||
+                        str_contains($s['loai_ghe'] ?? '', 'đôi') ||
+                        str_contains($s['loai_ghe'] ?? '', 'double'),
+                );
+
+                $hasNormal = !is_null($normalSeat);
+                $hasVip = !is_null($vipSeat);
+                $hasDouble = !is_null($doubleSeat);
+
+                $normalPrice = $normalSeat['gia'] ?? ($suatChieu->gia_ve ?? 0);
+                $vipPrice = $vipSeat['gia'] ?? $normalPrice;
+                $doublePrice = ($doubleSeat['gia'] ?? $suatChieu->gia_ve * 2) + ($doubleSeat['phu_thu'] ?? 0);
+
+                // colors from seat data (fallbacks)
+                $normalColor = $normalSeat['mau_sac'] ?? '#2a2a2a';
+                $vipColor = $vipSeat['mau_sac'] ?? '#b91c1c';
+                $doubleColor = $doubleSeat['mau_sac'] ?? '#db2777';
+            @endphp
+
+            <section class="rounded-2xl border border-white/10 bg-[#121212] p-6">
+                {{-- center: countdown + screen + seats --}}
+
+                {{-- COUNTDOWN: thời gian giữ ghế (7 phút) --}}
+                <div class="mb-6 flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-900 p-4">
+
+                    <div>
+                        <p class="text-[10px] uppercase tracking-[0.3em] text-gray-500">Thời gian giữ ghế</p>
+                        <p class="text-sm text-gray-400 mt-1">Ghế sẽ tự động huỷ khi hết thời gian</p>
                     </div>
 
-                    <div class="grid gap-2">
-                        @forelse(($phuongThucThanhToan ?? ['online' => 'Thanh toán online']) as $value => $label)
-                            <label class="payment-option cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="payment_method"
-                                    value="{{ $value }}"
-                                    class="sr-only"
-                                    @checked(old('payment_method', array_key_first($phuongThucThanhToan ?? ['online' => 'Thanh toán online'])) === $value)
-                                >
+                    <div class="flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-2">
+                        <div
+                            class="w-11 h-11 rounded-full bg-black/40 border border-white/10 flex items-center justify-center text-lg">
+                            ⏰</div>
+                        <div id="countdown" class="text-3xl font-black tracking-[0.15em] text-red-400">07:00</div>
+                    </div>
 
-                                <span class="block rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm font-bold text-gray-200 transition">
-                                    {{ $label }}
+                </div>
+
+                <div class="mx-auto max-w-5xl text-center">
+                    <div class="mx-auto mb-10 w-4/5">
+                        <div class="screen-line"></div>
+                        <div class="mt-2 text-xs font-bold uppercase tracking-[0.3em] text-[#f4c56a]">
+                            Màn hình
+                        </div>
+                    </div>
+
+                    <div class="inline-block space-y-3">
+                        @php
+                            $loaiCouple = ['couple', 'đôi', 'doi'];
+                        @endphp
+
+                        @foreach ($gheTheoHang ?? [] as $hang => $cacGhe)
+                            <div class="seat-row flex items-center justify-center flex-nowrap gap-2">
+                                <span class="row-label w-8 text-center text-sm font-black text-[#d99a32]">
+                                    {{ $hang }}
                                 </span>
-                            </label>
-                        @empty
-                            <div class="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                                Chưa bật phương thức thanh toán nào trong cấu hình hệ thống.
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-
-                @auth
-                    <button
-                        id="btn-dat-ve"
-                        class="mt-5 w-full rounded-xl bg-[#d99a32] px-5 py-3 font-black text-[#2b1208] opacity-60 transition hover:bg-[#f4c56a]"
-                        disabled
-                    >
-                        Xác nhận đặt vé
-                    </button>
-                @else
-                    <a
-                        href="{{ route('login') }}"
-                        class="mt-5 flex w-full items-center justify-center rounded-xl bg-[#d99a32] px-5 py-3 font-black text-[#2b1208] transition hover:bg-[#f4c56a]"
-                    >
-                        Đăng nhập để đặt vé
-                    </a>
-                @endauth
-            </form>
-        </aside>
-
-        <section class="rounded-2xl border border-white/10 bg-[#121212] p-6">
-            <div class="mx-auto max-w-5xl text-center">
-                <div class="mx-auto mb-10 w-4/5">
-                    <div class="screen-line"></div>
-                    <div class="mt-2 text-xs font-bold uppercase tracking-[0.3em] text-[#f4c56a]">
-                        Màn hình
-                    </div>
-                </div>
-
-                <div class="inline-block space-y-3">
-                    @php
-                        $loaiCouple = ['couple', 'đôi', 'doi'];
-                    @endphp
-
-                    @foreach(($gheTheoHang ?? []) as $hang => $cacGhe)
-                        <div class="seat-row flex items-center justify-center gap-2">
-                            <span class="row-label w-8 text-center text-sm font-black text-[#d99a32]">
-                                {{ $hang }}
-                            </span>
-
-                            @php
-                                $normalized = $cacGhe->map(fn ($ghe) => [
-                                    'ma_ghe' => $ghe['ma_ghe'],
-                                    'loai_ghe' => strtolower($ghe['loai_ghe'] ?? ''),
-                                    'mau_sac' => $ghe['mau_sac'] ?? '#2a2a2a',
-                                    'gia' => $ghe['gia'] ?? $suatChieu->gia_ve,
-                                    'da_dat' => $ghe['da_dat'] ?? false,
-                                    'bao_tri' => $ghe['bao_tri'] ?? false,
-                                    'chon_duoc' => $ghe['chon_duoc'] ?? false,
-                                    'la_couple' => false,
-                                ]);
-
-                                $merged = [];
-                                $i = 0;
-                                $count = $normalized->count();
-                                while ($i < $count) {
-                                    $current = $normalized[$i];
-                                    $isCouple = ! empty($current['loai_ghe']) && str_contains($current['loai_ghe'], 'couple') || str_contains($current['loai_ghe'], 'đôi');
-                                    $next = $isCouple && ($i + 1) < $count ? $normalized[$i + 1] : null;
-                                    $paired = $next && ! empty($next['loai_ghe']) && (str_contains($next['loai_ghe'], 'couple') || str_contains($next['loai_ghe'], 'đôi'));
-
-                                    if ($paired) {
-                                        $merged[] = [
-                                            'is_couple' => true,
-                                            'left' => $current,
-                                            'right' => $next,
-                                            'ma_ghe' => $current['ma_ghe'] . ' + ' . $next['ma_ghe'],
-                                            'mau_sac' => $current['mau_sac'],
-                                            'gia' => $current['gia'] + $next['gia'],
-                                            'da_dat' => $current['da_dat'] || $next['da_dat'],
-                                            'bao_tri' => $current['bao_tri'] || $next['bao_tri'],
-                                            'chon_duoc' => $current['chon_duoc'] && $next['chon_duoc'],
-                                        ];
-                                        $i += 2;
-                                    } else {
-                                        $merged[] = [
-                                            'is_couple' => false,
-                                            'left' => $current,
-                                            'right' => null,
-                                            'ma_ghe' => $current['ma_ghe'],
-                                            'mau_sac' => $current['mau_sac'],
-                                            'gia' => $current['gia'],
-                                            'da_dat' => $current['da_dat'],
-                                            'bao_tri' => $current['bao_tri'],
-                                            'chon_duoc' => $current['chon_duoc'],
-                                        ];
-                                        $i += 1;
-                                    }
-                                }
-                            @endphp
-
-                            @foreach($merged as $ghe)
                                 @php
-                                    $disabled = ! ($ghe['chon_duoc'] ?? false);
-                                    $isBooked = $ghe['da_dat'] ?? false;
-                                    $isMaintenance = $ghe['bao_tri'] ?? false;
-                                    $seatCodes = $ghe['is_couple']
-                                        ? ($ghe['left']['ma_ghe'] . ',' . $ghe['right']['ma_ghe'])
-                                        : $ghe['ma_ghe'];
-                                    $seatLabel = $ghe['is_couple']
-                                        ? ($ghe['left']['ma_ghe'] . ' | ' . $ghe['right']['ma_ghe'])
-                                        : $ghe['ma_ghe'];
+                                    $merged = [];
+                                    $skip = false;
+
+                                    for ($i = 0; $i < count($cacGhe); $i++) {
+                                        if ($skip) {
+                                            $skip = false;
+                                            continue;
+                                        }
+
+                                        $ghe = $cacGhe[$i];
+                                        $type = strtolower($ghe['loai_ghe'] ?? '');
+
+                                        $isCouple =
+                                            str_contains($type, 'couple') ||
+                                            str_contains($type, 'đôi') ||
+                                            str_contains($type, 'doi');
+
+                                        if (
+                                            $isCouple &&
+                                            isset($cacGhe[$i + 1]) &&
+                                            strtolower($cacGhe[$i + 1]['loai_ghe']) == $type
+                                        ) {
+                                            $ghe2 = $cacGhe[$i + 1];
+
+                                            $merged[] = [
+                                                'ma_ghe' => $ghe['ma_ghe'] . ' | ' . $ghe2['ma_ghe'],
+                                                'seat_codes' => $ghe['ma_ghe'] . ',' . $ghe2['ma_ghe'],
+                                                'loai_ghe' => $ghe['loai_ghe'],
+                                                'gia' => $ghe['gia'] + $ghe['phu_thu'],
+                                                'mau_sac' => $ghe['mau_sac'],
+                                                'da_dat' => $ghe['da_dat'] || $ghe2['da_dat'],
+                                                'bao_tri' => $ghe['bao_tri'] || $ghe2['bao_tri'],
+                                                'chon_duoc' => $ghe['chon_duoc'] && $ghe2['chon_duoc'],
+                                                'is_couple' => true,
+                                            ];
+
+                                            $skip = true;
+                                        } else {
+                                            $merged[] = [
+                                                'ma_ghe' => $ghe['ma_ghe'],
+                                                'seat_codes' => $ghe['ma_ghe'],
+                                                'loai_ghe' => $ghe['loai_ghe'],
+                                                'gia' => $ghe['gia'],
+                                                'mau_sac' => $ghe['mau_sac'],
+                                                'da_dat' => $ghe['da_dat'],
+                                                'bao_tri' => $ghe['bao_tri'],
+                                                'chon_duoc' => $ghe['chon_duoc'],
+                                                'is_couple' => false,
+                                            ];
+                                        }
+                                    }
                                 @endphp
 
-                                <div class="seat-wrapper relative {{ $ghe['is_couple'] ? 'seat-couple-wrapper' : '' }}" data-seat="{{ $ghe['ma_ghe'] }}" data-seat-codes="{{ $seatCodes }}">
-                                    <button
-                                        type="button"
-                                        class="seat-button {{ $isBooked ? 'booked' : '' }} {{ $isMaintenance ? 'maintenance' : '' }} {{ $ghe['is_couple'] ? 'seat-button--couple' : '' }}"
-                                        style="--seat-color: {{ $ghe['mau_sac'] ?? '#2a2a2a' }}"
-                                        data-seat="{{ $ghe['ma_ghe'] }}"
-                                        data-seat-codes="{{ $seatCodes }}"
-                                        data-price="{{ $ghe['gia'] }}"
-                                        data-type="{{ $ghe['is_couple'] ? 'Ghế đôi' : 'Ghế thường' }}"
-                                        @disabled($disabled)
-                                    >
-                                        <span>{{ $seatLabel }}</span>
-                                    </button>
+                                @foreach ($merged as $ghe)
+                                    @php
+                                        $disabled = !($ghe['chon_duoc'] ?? false);
+                                        $isBooked = $ghe['da_dat'];
+                                        $isMaintenance = $ghe['bao_tri'];
 
-                                    <div class="seat-tooltip">
-                                        <div class="font-black text-[#f4c56a]">
-                                            {{ $ghe['is_couple'] ? 'Ghế đôi' : 'Ghế' }} {{ $seatLabel }}
-                                        </div>
+                                        $seatCodes = $ghe['seat_codes'];
+                                        $seatLabel = $ghe['ma_ghe'];
 
-                                        <div class="mt-1 text-xs text-gray-300">
-                                            {{ $ghe['is_couple'] ? 'Loại: Ghế đôi' : 'Loại: Ghế thường' }}
-                                        </div>
+                                        $isCouple = $ghe['is_couple'];
 
-                                        <div class="text-xs text-gray-300">
-                                            Giá: {{ number_format($ghe['gia'], 0, ',', '.') }}đ
-                                        </div>
+                                        $codes = explode(',', $seatCodes);
+                                    @endphp
 
-                                        <div class="text-xs {{ $ghe['chon_duoc'] ? 'text-green-300' : 'text-red-300' }}">
-                                            {{ $isBooked ? 'Đã đặt' : ($isMaintenance ? 'Bảo trì' : 'Còn trống') }}
-                                        </div>
+                                    <div class="seat-wrapper relative">
+
+                                        @foreach ($codes as $seat)
+                                            <input type="checkbox" class="js-seat sr-only" value="{{ trim($seat) }}"
+                                                {{ $disabled ? 'disabled' : '' }}>
+                                        @endforeach
+
+                                        <button type="button"
+                                            class="seat-button
+                {{ $isCouple ? 'seat-button--couple' : '' }}
+                {{ $isBooked ? 'booked' : '' }}
+                {{ $isMaintenance ? 'maintenance' : '' }}"
+                                            style="--seat-color: {{ $ghe['mau_sac'] }}" data-seat="{{ $seatLabel }}"
+                                            data-seat-codes="{{ $seatCodes }}" data-price="{{ $ghe['gia'] }}"
+                                            data-type="{{ $ghe['loai_ghe'] }}" @disabled($disabled)>
+
+                                            @if ($isCouple)
+                                                <div class="seat-couple-label">
+                                                    {{ trim($codes[0]) }} | {{ trim($codes[1]) }}
+                                                </div>
+                                            @else
+                                                <span>{{ $seatLabel }}</span>
+                                            @endif
+
+                                        </button>
+
                                     </div>
-                                </div>
-                            @endforeach
+                                @endforeach
 
-                            <span class="row-label w-8 text-center text-sm font-black text-[#d99a32]">
-                                {{ $hang }}
-                            </span>
-                        </div>
-                    @endforeach
+                                <span class="row-label w-8 text-center text-sm font-black text-[#d99a32]">
+                                    {{ $hang }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div
+                        class="mt-8 flex flex-wrap justify-center gap-5 border-t border-white/10 pt-5 text-sm text-gray-300">
+                        <span class="flex items-center gap-2">
+                            <span class="inline-block h-5 w-5 rounded bg-[#2a2a2a] border border-white/20"></span>
+                            Ghế trống
+                        </span>
+
+                        <span class="flex items-center gap-2">
+                            <span class="inline-block h-5 w-5 rounded bg-gradient-to-br from-[#f4c56a] to-[#d99a32]"></span>
+                            Đang chọn
+                        </span>
+
+                        <span class="flex items-center gap-2">
+                            <span class="inline-block h-5 w-5 rounded bg-[#0e0e0e] border border-white/10"></span>
+                            Đã đặt / bảo trì
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="rounded-2xl border border-white/10 bg-[#121212] p-5">
+                {{-- poster removed from sidebar (moved to left) --}}
+
+                {{-- Legend: seat types --}}
+                <div class="bg-zinc-900 border border-white/40 rounded-2xl p-4 mb-4">
+                    <p class="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-3">Loại ghế</p>
+                    <div class="space-y-2 text-[13px] text-gray-300">
+
+                        @if ($hasNormal)
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-2">
+                                    <span
+                                        class="inline-block h-3.5 w-3.5 rounded border border-white/20 bg-[#2a2a2a]"></span>
+                                    Thường
+                                </span>
+                                <b>{{ number_format($normalPrice) }}đ</b>
+                            </div>
+                        @endif
+
+                        @if ($hasVip)
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-2">
+                                    <span
+                                        class="inline-block h-3.5 w-3.5 rounded bg-gradient-to-br from-[#f4c56a] to-[#d99a32]"></span>
+                                    VIP
+                                </span>
+                                <b>{{ number_format($vipPrice) }}đ</b>
+                            </div>
+                        @endif
+
+                        @if ($hasDouble)
+                            <div class="flex items-center justify-between">
+                                <span class="flex items-center gap-2">
+                                    <span
+                                        class="inline-block h-3.5 w-3.5 rounded border border-white/10 bg-[#0e0e0e]"></span>
+                                    Đôi
+                                </span>
+                                <b>{{ number_format($doublePrice) }}đ/cặp</b>
+                            </div>
+                        @endif
+
+                    </div>
                 </div>
 
-                <div class="mt-8 flex flex-wrap justify-center gap-5 border-t border-white/10 pt-5 text-sm text-gray-300">
-                    <span class="flex items-center gap-2">
-                        <span class="inline-block h-5 w-5 rounded bg-[#2a2a2a] border border-white/20"></span>
-                        Ghế trống
-                    </span>
+                {{-- Selected seats info --}}
+                <div class="bg-zinc-900 border border-white/40 rounded-2xl p-4 mb-4">
+                    <p class="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-3">Vé đã chọn</p>
 
-                    <span class="flex items-center gap-2">
-                        <span class="inline-block h-5 w-5 rounded bg-gradient-to-br from-[#f4c56a] to-[#d99a32]"></span>
-                        Đang chọn
-                    </span>
+                    <div class="flex justify-between border-b border-white/10 pb-2 text-xs">
+                        <span class="text-gray-500">Số ghế</span>
+                        <strong id="seatCount">0 ghế</strong>
+                    </div>
 
-                    <span class="flex items-center gap-2">
-                        <span class="inline-block h-5 w-5 rounded bg-[#0e0e0e] border border-white/10"></span>
-                        Đã đặt / bảo trì
-                    </span>
+                    <div class="flex justify-between gap-2 pt-2 text-xs">
+                        <span class="text-gray-500">Vị trí</span>
+                        <strong id="seatLabels" class="text-right text-gray-400 break-words">—</strong>
+                    </div>
                 </div>
-            </div>
-        </section>
+
+                {{-- Total price --}}
+                <div class="rounded-2xl border border-yellow-500/40 bg-yellow-500/10 p-4 text-center mb-4">
+                    <p class="text-gray-500 text-[10px] uppercase tracking-widest font-bold mb-1">Tổng thanh toán</p>
+                    <div id="totalPrice" class="text-3xl font-black text-yellow-500">0đ</div>
+                </div>
+
+                {{-- Buttons --}}
+                <button type="button" id="btnFood" disabled
+                    class="w-full rounded-xl bg-yellow-500 py-2.5 text-sm text-black font-black opacity-30 cursor-not-allowed transition mb-2">
+                    Tiếp tục chọn đồ ăn
+                </button>
+
+                <a href="{{ route('dat_ve.chon_phim') }}"
+                    class="block text-center rounded-xl border border-white/30 bg-white/5 py-2.5 text-sm text-gray-400 hover:bg-white/10 transition">
+                    ← Quay lại
+                </a>
+
+            </aside>
+
+        </div>
     </div>
-</div>
 @endsection
+<!-- cspell:enable -->
 
 @section('scripts')
-<style>
-    .seat-button--couple {
-        width: 110px;
-        gap: 0;
-        padding: 0 10px 6px;
-        justify-content: center;
-    }
-
-    .seat-button--couple .seat-couple-label {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .seat-button--couple .seat-couple-sep {
-        opacity: .65;
-    }
-</style>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const seatButtons = document.querySelectorAll('.seat-button:not(:disabled)');
-    const selectedInput = document.getElementById('ghe_duoc_chon');
-    const countSeats = document.getElementById('count-seats');
-    const subtotalPrice = document.getElementById('subtotal-price');
-    const discountPrice = document.getElementById('discount-price');
-    const finalPrice = document.getElementById('final-price');
-    const submitButton = document.getElementById('btn-dat-ve');
-    const selectedList = document.getElementById('selected-list');
-    const voucherSelect = document.getElementById('voucher_select');
-
-    let selectedSeats = selectedInput.value
-        ? selectedInput.value.split(',').map((seat) => seat.trim()).filter(Boolean)
-        : [];
-
-    function money(value) {
-        return Number(value || 0).toLocaleString('vi-VN') + 'đ';
-    }
-
-    function selectedSeatData() {
-        return selectedSeats.map((code) => {
-            const button = document.querySelector(`.seat-button[data-seat-codes*="${code}"]`) || document.querySelector(`.seat-button[data-seat="${code}"]`);
-
-            return {
-                code: code,
-                price: Number(button?.dataset.price || 0),
-                type: button?.dataset.type || 'Ghế',
-            };
-        });
-    }
-
-    function currentDiscount(subtotal) {
-        if (!voucherSelect || !voucherSelect.value) {
-            return 0;
+    <style>
+        /* Ghế thường */
+        .seat-button {
+            width: 46px;
+            height: 42px;
+            border-radius: 9px 9px 5px 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex: 0 0 46px;
         }
 
-        const option = voucherSelect.options[voucherSelect.selectedIndex];
-        const discount = Number(option?.dataset.discount || 0);
-
-        return Math.min(discount, subtotal);
-    }
-
-    function render() {
-        document.querySelectorAll('.seat-button').forEach((button) => {
-            const codes = (button.dataset.seatCodes || button.dataset.seat || '').split(',').map((item) => item.trim()).filter(Boolean);
-            const selected = codes.some((code) => selectedSeats.includes(code));
-            button.classList.toggle('selected', selected);
-        });
-
-        const seats = selectedSeatData();
-        const subtotal = seats.reduce((sum, seat) => sum + seat.price, 0);
-        const discount = currentDiscount(subtotal);
-        const finalTotal = Math.max(subtotal - discount, 0);
-
-        selectedInput.value = selectedSeats.join(',');
-        countSeats.textContent = selectedSeats.length;
-
-        subtotalPrice.textContent = money(subtotal);
-        discountPrice.textContent = '-' + money(discount);
-        finalPrice.textContent = money(finalTotal);
-
-        if (submitButton) {
-            submitButton.disabled = selectedSeats.length === 0;
-            submitButton.classList.toggle('opacity-60', selectedSeats.length === 0);
+        /* Ghế đôi */
+        .seat-button--couple {
+            width: 100px;
+            /* 46 + 46 + gap(8px) */
+            height: 42px;
+            flex: 0 0 100px;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        if (seats.length === 0) {
-            selectedList.innerHTML = 'Chưa chọn ghế nào';
-            return;
+        .seat-button--couple .seat-couple-label {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 700;
         }
 
-        selectedList.innerHTML = seats.map((seat) => `
-            <button
-                type="button"
-                data-remove-seat="${seat.code}"
-                class="rounded-full bg-[#d99a32] px-3 py-1 text-xs font-black text-[#2b1208]"
-            >
-                ${seat.code} · ${money(seat.price)}
-            </button>
-        `).join('');
-    }
+        .seat-button--couple .seat-couple-sep {
+            opacity: .6;
+        }
 
-    seatButtons.forEach((button) => {
-        button.addEventListener('click', function () {
-            const codes = (button.dataset.seatCodes || button.dataset.seat || '').split(',').map((item) => item.trim()).filter(Boolean);
+        /* Hàng ghế */
+        .seat-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
 
-            if (codes.length === 2) {
-                const [left, right] = codes;
-                const hasLeft = selectedSeats.includes(left);
-                const hasRight = selectedSeats.includes(right);
+        .row-label {
+            width: 28px;
+            text-align: center;
+            font-weight: 700;
+            color: #d99a32;
+            flex-shrink: 0;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
-                if (hasLeft && hasRight) {
-                    selectedSeats = selectedSeats.filter((item) => item !== left && item !== right);
-                } else {
-                    selectedSeats = selectedSeats.filter((item) => item !== left && item !== right);
-                    selectedSeats.push(left, right);
-                }
-            } else if (codes.length === 1) {
-                const seat = codes[0];
+            const seatButtons = document.querySelectorAll('.seat-button');
+            const btnFood = document.getElementById('btnFood');
+            const selectedList = document.getElementById('selected-list');
+            const seatLabels = document.getElementById('seatLabels');
+            const seatCountEl = document.getElementById('seatCount');
+            const totalPriceEl = document.getElementById('totalPrice');
 
-                selectedSeats = selectedSeats.includes(seat)
-                    ? selectedSeats.filter((item) => item !== seat)
-                    : [...selectedSeats, seat];
+            let selectedSeats = [];
+            // Lấy ghế từ URL (?ghe=A1,A2,B3)
+            const params = new URLSearchParams(window.location.search);
+            const seatParam = params.get('ghe');
+
+            if (seatParam) {
+                selectedSeats = seatParam
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(Boolean);
             }
 
-            render();
+            const showtimeId = '{{ $suatChieu->id }}';
+
+            function money(v) {
+                return Number(v || 0).toLocaleString('vi-VN') + 'đ';
+            }
+
+            function getSeatsFromButton(btn) {
+                return (btn.dataset.seatCodes || btn.dataset.seat)
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(Boolean);
+            }
+
+            function updateUI() {
+
+                // update selected state UI
+                seatButtons.forEach(btn => {
+                    const codes = getSeatsFromButton(btn);
+                    const isSelected = codes.some(c => selectedSeats.includes(c));
+                    btn.classList.toggle('selected', isSelected);
+                });
+
+                if (seatCountEl) {
+                    seatCountEl.textContent = `${selectedSeats.length} ghế`;
+                }
+
+                // labels
+                if (seatLabels) {
+                    seatLabels.textContent = selectedSeats.join(', ') || '—';
+                }
+
+                // list
+                if (selectedList) {
+                    selectedList.innerHTML = selectedSeats.length ?
+                        selectedSeats.map(s => `
+                    <button type="button"
+                        data-remove-seat="${s}"
+                        class="rounded-full bg-[#d99a32] px-3 py-1 text-xs font-black text-[#2b1208]">
+                        ${s}
+                    </button>
+                `).join('') :
+                        'Chưa chọn ghế nào';
+                }
+
+                // total
+                if (totalPriceEl) {
+                    const total = Array.from(seatButtons).reduce((sum, btn) => {
+                        const codes = getSeatsFromButton(btn);
+                        const isSelected = codes.some(code => selectedSeats.includes(code));
+                        return isSelected ? sum + Number(btn.dataset.price || 0) : sum;
+                    }, 0);
+
+                    totalPriceEl.textContent = money(total);
+                }
+
+                // button FOOD logic (QUAN TRỌNG)
+                if (btnFood) {
+                    const hasSeat = selectedSeats.length > 0;
+
+                    btnFood.disabled = !hasSeat;
+                    btnFood.classList.toggle('opacity-30', !hasSeat);
+                    btnFood.classList.toggle('cursor-not-allowed', !hasSeat);
+                }
+            }
+
+            // CLICK GHẾ
+            seatButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+
+                    const codes = getSeatsFromButton(btn);
+
+                    codes.forEach(code => {
+                        if (selectedSeats.includes(code)) {
+                            selectedSeats = selectedSeats.filter(x => x !== code);
+                        } else {
+                            selectedSeats.push(code);
+                        }
+                    });
+
+                    updateUI();
+                });
+            });
+
+            // CLICK FOOD → FIX CHẮC CHẮN CHUYỂN TRANG
+            if (btnFood) {
+                btnFood.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    if (selectedSeats.length === 0) return;
+
+                    const seatsQuery = encodeURIComponent(selectedSeats.join(','));
+
+                    const url =
+                        `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seatsQuery}`;
+                    window.location.href = url;
+                });
+            }
+
+            // REMOVE SEAT
+            if (selectedList) {
+                selectedList.addEventListener('click', function(e) {
+                    const btn = e.target.closest('[data-remove-seat]');
+                    if (!btn) return;
+
+                    const seat = btn.dataset.removeSeat;
+                    selectedSeats = selectedSeats.filter(s => s !== seat);
+
+                    updateUI();
+                });
+            }
+
+            updateUI();
         });
-    });
+    </script>
+    <script>
+        (function() {
+            const countdownEl = document.getElementById('countdown');
+            if (!countdownEl) return;
 
-    selectedList.addEventListener('click', function (event) {
-        const button = event.target.closest('[data-remove-seat]');
+            const storageKey = 'booking_deadline_{{ $suatChieu->id }}';
 
-        if (!button) {
-            return;
-        }
+            function getStoredDeadline() {
+                try {
+                    return Number(localStorage.getItem(storageKey)) || null;
+                } catch (e) {
+                    return null;
+                }
+            }
 
-        const seat = button.dataset.removeSeat;
-        const targetButton = document.querySelector(`.seat-button[data-seat="${seat}"]`) || document.querySelector(`.seat-button[data-seat-codes*="${seat}"]`);
-        const relatedCodes = targetButton ? (targetButton.dataset.seatCodes || targetButton.dataset.seat || '').split(',').map((item) => item.trim()).filter(Boolean) : [seat];
+            function setStoredDeadline(deadline) {
+                try {
+                    localStorage.setItem(storageKey, String(deadline));
+                } catch (e) {}
+            }
 
-        selectedSeats = selectedSeats.filter((item) => !relatedCodes.includes(item));
-        render();
-    });
+            function clearStoredDeadline() {
+                try {
+                    localStorage.removeItem(storageKey);
+                } catch (e) {}
+            }
 
-    if (voucherSelect) {
-        voucherSelect.addEventListener('change', render);
-    }
+            let deadline = getStoredDeadline();
+            if (!deadline || deadline <= Date.now()) {
+                deadline = Date.now() + 7 * 60 * 1000;
+            }
+            setStoredDeadline(deadline);
 
-    render();
-});
-</script>
+            function updateCountdown() {
+                const remaining = deadline - Date.now();
+
+                if (remaining <= 0) {
+                    clearStoredDeadline();
+                    countdownEl.innerText = '00:00';
+                    countdownEl.classList.add('animate-pulse');
+
+                    const checked = Array.from(document.querySelectorAll('.js-seat:checked')).map(i => i.value);
+                    const showtimeId =
+                        "{{ $suatChieu->id ?? ($showtime->id ?? (request()->route('suat_chieu') ?? request()->route('suatChieu'))) }}";
+                    checked.forEach(function(seatId) {
+                        try {
+                            navigator.sendBeacon("{{ url('/dat-ve/seat-locks') }}/" + showtimeId + '/' +
+                                seatId + '?_method=DELETE&token={{ csrf_token() }}');
+                        } catch (e) {}
+                    });
+
+                    window.location.href = '/';
+                    return;
+                }
+
+                const minutes = Math.floor(remaining / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+                countdownEl.innerText = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+
+                if (remaining <= 60 * 1000) {
+                    countdownEl.classList.add('animate-pulse');
+                }
+            }
+
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        })();
+    </script>
 @endsection

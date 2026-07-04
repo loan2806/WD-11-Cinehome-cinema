@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class SuatChieu extends Model
 {
     use HasFactory;
@@ -60,4 +60,8 @@ class SuatChieu extends Model
     {
         return $this->belongsTo(PhongChieu::class, 'phong_chieu_id');
     }
+    public function veXemPhims(): HasMany
+{
+    return $this->hasMany(VeXemPhim::class, 'suat_chieu_id');
+}
 }

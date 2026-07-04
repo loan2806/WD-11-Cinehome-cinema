@@ -28,7 +28,10 @@ class DatabaseSeeder extends Seeder
             VeXemPhimSeeder::class,
             NhanVienSeeder::class,
             CaiDatHeThongSeeder::class,
+            FoodCategorySeeder::class,
             FoodSeeder::class,
+            FoodVariantSeeder::class,
+            ComboFakeSeeder::class,
         ]);
 
         // --- TỰ ĐỘNG ĐỒNG BỘ VAI TRÒ SPATIE CHO TẤT CẢ TÀI KHOẢN VỪA TẠO ---
