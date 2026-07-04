@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Food;
 use App\Models\FoodInvoice;
+use App\Models\FoodVariant;
 use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -55,17 +56,28 @@ class FoodInvoiceController extends Controller
 
         $invoices = $query->paginate(10)->withQueryString();
 
-        $quickFoods = Food::active()
-            ->where('stock_quantity', '>', 0)
+        $foodsForSale = Food::active()
+            ->with([
+                'category',
+                'variants' => fn ($variantQuery) => $variantQuery
+                    ->where('is_active', true)
+                    ->orderBy('price')
+                    ->orderBy('id'),
+                'comboItems.variant',
+            ])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
-        $lowStockFoods = Food::active()
-            ->whereColumn('stock_quantity', '<=', 'min_stock_quantity')
-            ->orderBy('stock_quantity')
+        $quickFoods = $foodsForSale
+            ->filter(fn (Food $food) => $food->stock_quantity > 0)
+            ->values();
+
+        $lowStockFoods = $foodsForSale
+            ->filter(fn (Food $food) => $food->stock_quantity > 0 && $food->stock_quantity <= $food->min_stock_quantity)
+            ->sortBy('stock_quantity')
             ->take(5)
-            ->get();
+            ->values();
 
         return view('admin.food-invoices.index', compact('invoices', 'summary', 'quickFoods', 'lowStockFoods'));
     }
@@ -215,7 +227,17 @@ class FoodInvoiceController extends Controller
             ->unique()
             ->values();
 
-        $foods = Food::whereIn('id', $foodIds)->get()->keyBy('id');
+        $foods = Food::with([
+            'category',
+            'variants' => fn ($variantQuery) => $variantQuery
+                ->where('is_active', true)
+                ->orderBy('price')
+                ->orderBy('id'),
+            'comboItems.variant',
+        ])
+            ->whereIn('id', $foodIds)
+            ->get()
+            ->keyBy('id');
 
         return collect($items)
             ->map(function ($item) use ($foods) {
@@ -246,19 +268,28 @@ class FoodInvoiceController extends Controller
             ->map(fn ($group) => $group->sum(fn ($item) => (int) data_get($item, 'quantity')));
 
         foreach ($quantities as $foodId => $quantity) {
-            $food = Food::lockForUpdate()->find($foodId);
+            $food = Food::with(['category', 'comboItems.variant'])->lockForUpdate()->find($foodId);
 
             if (! $food) {
                 continue;
             }
 
-            if ($food->stock_quantity < $quantity) {
+            if ($food->isCombo()) {
+                $this->deductComboInventory($food, $quantity);
+                continue;
+            }
+
+            $variant = $this->saleVariantForUpdate($food);
+
+            if (! $variant || $variant->stock_quantity < $quantity) {
+                $available = (int) ($variant?->stock_quantity ?? 0);
+
                 throw ValidationException::withMessages([
-                    'items' => "Món {$food->name} chỉ còn {$food->stock_quantity}, không đủ để lưu hóa đơn {$quantity} phần.",
+                    'items' => "Món {$food->name} chỉ còn {$available}, không đủ để lưu hóa đơn {$quantity} phần.",
                 ]);
             }
 
-            $food->decrement('stock_quantity', $quantity);
+            $variant->decrement('stock_quantity', $quantity);
         }
     }
 
@@ -270,7 +301,64 @@ class FoodInvoiceController extends Controller
             ->map(fn ($group) => $group->sum(fn ($item) => (int) data_get($item, 'quantity')));
 
         foreach ($quantities as $foodId => $quantity) {
-            Food::whereKey($foodId)->increment('stock_quantity', $quantity);
+            $food = Food::with(['category', 'comboItems.variant'])->find($foodId);
+
+            if (! $food) {
+                continue;
+            }
+
+            if ($food->isCombo()) {
+                $this->restoreComboInventory($food, $quantity);
+                continue;
+            }
+
+            $variant = $this->saleVariantForUpdate($food);
+
+            if ($variant) {
+                $variant->increment('stock_quantity', $quantity);
+            }
+        }
+    }
+
+    private function saleVariantForUpdate(Food $food): ?FoodVariant
+    {
+        return $food->variants()
+            ->where('is_active', true)
+            ->orderBy('price')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->first();
+    }
+
+    private function deductComboInventory(Food $food, int $quantity): void
+    {
+        if ($food->comboItems->isEmpty()) {
+            throw ValidationException::withMessages([
+                'items' => "Combo {$food->name} chưa có thành phần, không thể bán.",
+            ]);
+        }
+
+        foreach ($food->comboItems as $comboItem) {
+            $needed = (int) $comboItem->quantity * $quantity;
+            $variant = FoodVariant::lockForUpdate()->find($comboItem->food_variant_id);
+
+            if (! $variant || $variant->stock_quantity < $needed) {
+                $available = (int) ($variant?->stock_quantity ?? 0);
+
+                throw ValidationException::withMessages([
+                    'items' => "Combo {$food->name} không đủ kho thành phần, cần {$needed} nhưng chỉ còn {$available}.",
+                ]);
+            }
+
+            $variant->decrement('stock_quantity', $needed);
+        }
+    }
+
+    private function restoreComboInventory(Food $food, int $quantity): void
+    {
+        foreach ($food->comboItems as $comboItem) {
+            FoodVariant::whereKey($comboItem->food_variant_id)
+                ->increment('stock_quantity', (int) $comboItem->quantity * $quantity);
         }
     }
 }
