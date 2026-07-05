@@ -6,10 +6,10 @@
 
     <div class="min-h-screen bg-black text-white pt-32 pb-24 px-10">
 
-        <div class="max-w-7xl mx-auto relative">
+        <div class="max-w-7xl mx-auto flex gap-10 relative">
 
             {{-- LEFT --}}
-            <section class="space-y-10 xl:pr-[420px]">
+            <section class="flex-1 space-y-10 pr-[360px]">
 
                 {{-- HEADER --}}
                 <div>
@@ -134,7 +134,7 @@
                                                 data-item-price="{{ $food['price'] ?? 0 }}"
                                                 data-item-image="{{ $food['image'] }}" data-item-type="combo"
                                                 type="button">
-                                                 Thêm
+                                                Thêm
                                             </button>
                                         </div>
 
@@ -227,7 +227,7 @@
                                                     data-item-image="{{ $food['image'] }}"
                                                     data-item-stock="{{ $variant['stock'] }}" data-item-type="variant"
                                                     type="button">
-                                                     Thêm
+                                                    Thêm
                                                 </button>
                                             </div>
 
@@ -244,41 +244,52 @@
             </section>
 
             {{-- RIGHT SIDEBAR (FIXED SCROLL) --}}
-            <aside
-                class="fixed top-56 left-1/2 translate-x-[420px] w-[320px] space-y-4 max-h-[calc(100vh-180px)] overflow-y-auto">
-                <div class="bg-zinc-900 border border-white/10 rounded-3xl p-5">
 
-                    <p class="text-xs text-gray-500 uppercase tracking-widest">Đơn hàng</p>
 
-                    <div id="cartItems" class="mt-3 space-y-3 text-sm">
-                        <p class="text-gray-500">Chưa có món nào</p>
+
+            <aside class="fixed top-32 right-10 w-[320px] max-h-[calc(100vh-160px)] space-y-4">
+
+                <!-- CART -->
+                <div class="rounded-3xl bg-zinc-900 border border-white/10 overflow-hidden shadow-xl">
+
+                    <div class="border-b border-white/10 px-5 py-4">
+                        <p class="text-xs uppercase tracking-widest text-gray-500">
+                            Đơn hàng
+                        </p>
+                    </div>
+
+                    <div id="cartItems"
+                        class="max-h-[350px] overflow-y-auto overflow-x-hidden px-5 py-4 space-y-3
+               scrollbar-thin scrollbar-thumb-yellow-400 scrollbar-track-transparent">
+
+                        <p class="text-gray-500">
+                            Chưa có món nào
+                        </p>
+
                     </div>
 
                 </div>
 
+                <!-- TOTAL -->
                 <div class="bg-zinc-900 border border-white/10 rounded-3xl p-5 text-center">
-
                     <p class="text-xs text-gray-500">Tổng tiền</p>
                     <div id="subtotalPrice" class="text-3xl font-black text-yellow-400">
                         0đ
                     </div>
-
                 </div>
 
+                <!-- CHECKOUT -->
                 <a id="btnCheckout"
-                    href="{{ route('dat_ve.checkout', [
-                        'suat_chieu_id' => $suatChieu->id,
-                        'ghe' => request('ghe'),
-                    ]) }}"
-                    class="block w-full rounded-2xl bg-yellow-400 py-3 text-center font-black uppercase tracking-[0.2em] text-black transition hover:bg-yellow-300">
+                    class="block w-full rounded-2xl bg-yellow-400 py-3 text-center font-black uppercase tracking-[0.2em] text-black hover:bg-yellow-300">
                     Checkout
                 </a>
 
-                <a onclick="clearBookingData()"
-                    href="{{ route('dat_ve.chon_ghe', ['movie' => $suatChieu->phim->slug]) }}{{ request('ghe') ? '?ghe=' . request('ghe') : '' }}"
-                    class="mt-2 inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-gray-300 transition hover:bg-white/10">
+                <!-- BACK -->
+                <a
+                    class="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300 hover:bg-white/10">
                     ← Quay lại chọn ghế
                 </a>
+
             </aside>
 
         </div>
