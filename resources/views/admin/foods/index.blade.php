@@ -75,7 +75,7 @@
                         {{-- IMAGE --}}
                         <div class="h-20 w-20 rounded-2xl overflow-hidden bg-white/5 flex items-center justify-center">
                             @if ($food->image)
-                                <img src="{{ asset('storage/' . $food->image) }}" class="object-cover w-full h-full">
+                                <img src="{{ asset('storage/foods/' . $food->image) }}" class="object-cover w-full h-full">
                             @else
                                 <i class="fa-solid fa-burger text-[#d99a32] text-xl"></i>
                             @endif

@@ -388,10 +388,8 @@
                     class="w-full rounded-xl bg-yellow-500 py-2.5 text-sm text-black font-black opacity-30 cursor-not-allowed transition mb-2">
                     Tiếp tục chọn đồ ăn
                 </button>
-
-                <a href="{{ url()->previous() }}"
-                    class="block text-center rounded-xl border border-white/30 bg-white/5 py-2.5 text-sm text-gray-400 hover:bg-white/10 transition">
-                    ← Quay lại
+                <a href="/" onclick="clearBookingData()" class="block text-center rounded-xl border border-white/30 bg-white/5 py-2.5 text-sm text-gray-400 hover:bg-white/10 transition">
+                    ← Trang chủ
                 </a>
 
             </aside>

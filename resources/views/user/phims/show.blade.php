@@ -37,6 +37,19 @@
                                 Xem Trailer
                             </a>
                         @endif
+                        @if ($status === \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU || $status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
+                            <a href="{{ route('dat_ve.chon_ghe', $movie->slug) }}"
+                                class="booking-link w-full flex items-center justify-center gap-2 bg-yellow-500 text-black px-5 py-3 rounded-xl font-bold hover:bg-yellow-400 transition">
+                                <i class="fa-solid fa-ticket"></i>
+                                Đặt vé
+                            </a>
+                        @else
+                            <button
+                                class="w-full flex items-center justify-center gap-2 bg-gray-600 text-white px-5 py-3 rounded-xl cursor-not-allowed"
+                                disabled>
+                                Không thể đặt vé
+                            </button>
+                        @endif
 
                         @if ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
                             <button

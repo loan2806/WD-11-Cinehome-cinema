@@ -61,7 +61,7 @@
                         </div>
 
                         @if ($food->image)
-                            <img id="current-image" src="{{ asset('storage/' . $food->image) }}"
+                            <img id="current-image" src="{{ asset('storage/foods/' . $food->image) }}"
                                 class="absolute inset-0 h-full w-full object-cover rounded-2xl">
                         @else
                             <div id="upload-placeholder"

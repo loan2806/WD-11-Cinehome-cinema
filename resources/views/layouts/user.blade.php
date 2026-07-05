@@ -41,35 +41,61 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
-            const bookingPages = [
-                '/dat_ve/chon_ghe',
-                '/dat_ve/chon_do_an',
-                '/dat_ve/checkout'
-            ];
+            /* ================= STORAGE ================= */
+            function clearBookingData() {
+                localStorage.removeItem('food_cart');
 
-            document.querySelectorAll('a[href]').forEach(link => {
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('booking_deadline_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+            }
 
+            function isBookingPage() {
+                return window.location.pathname.includes('/dat-ve');
+            }
+
+            function isHomePage() {
+                return window.location.pathname === '/';
+            }
+
+            /* ================= RESET RULES ================= */
+
+            // 1. Click về HOME => xoá toàn bộ booking
+            document.querySelectorAll('a[href="/"], a[href="{{ url('/') }}"]').forEach(link => {
                 link.addEventListener('click', function() {
+                    clearBookingData();
+                });
+            });
 
+            // 2. Click menu ngoài booking => xoá
+            document.querySelectorAll('header a[href]').forEach(link => {
+                link.addEventListener('click', function() {
                     const href = this.getAttribute('href');
 
-                    if (!href) return;
-
-                    // Không reset nếu vẫn ở trong quy trình đặt vé
-                    const isBookingPage = bookingPages.some(page => href.includes(page));
-
-                    if (isBookingPage) return;
-
-                    // Reset tất cả timer booking
-                    Object.keys(localStorage).forEach(key => {
-                        if (key.startsWith('booking_deadline_')) {
-                            localStorage.removeItem(key);
-                        }
-                    });
-
+                    if (href === '/' || href === '/home') {
+                        clearBookingData();
+                    }
                 });
-
             });
+
+            // 3. Click nút đặt vé mới => reset session cũ
+            document.querySelectorAll('.booking-link').forEach(link => {
+                link.addEventListener('click', clearBookingData);
+            });
+
+            // 4. Chỉ reset khi THOÁT HẲN booking (không phải back trong flow)
+            window.addEventListener('beforeunload', function() {
+                if (!isBookingPage()) {
+                    clearBookingData();
+                }
+            });
+
+            // 5. Nếu đang ở HOME thì auto clear luôn
+            if (isHomePage()) {
+                clearBookingData();
+            }
 
         });
     </script>
