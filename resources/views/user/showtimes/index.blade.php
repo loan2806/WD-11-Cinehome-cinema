@@ -45,7 +45,7 @@
             @forelse($suatChieus as $suatChieu)
                 <article class="flex min-h-[430px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#151515]">
                     <img
-                        src="{{ $suatChieu->phim->poster ?? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800' }}"
+                        src="{{ asset('storage/movies/' .  $suatChieu->phim->poster)  }}"
                         alt="{{ $suatChieu->phim->ten_phim }}"
                         class="h-52 w-full object-cover"
                     >
