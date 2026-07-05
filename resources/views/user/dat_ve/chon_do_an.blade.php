@@ -6,10 +6,10 @@
 
     <div class="min-h-screen bg-black text-white pt-32 pb-24 px-10">
 
-        <div class="max-w-7xl mx-auto relative">
+        <div class="max-w-7xl mx-auto flex gap-10 relative">
 
             {{-- LEFT --}}
-            <section class="space-y-10 xl:pr-[420px]">
+            <section class="flex-1 space-y-10 pr-[360px]">
 
                 {{-- HEADER --}}
                 <div>
@@ -94,15 +94,37 @@
 
                                         <div class="mt-3 space-y-2">
                                             <div
-                                                class="flex items-center justify-between rounded-full border border-white/10 bg-white/5 px-2 py-1">
+                                                class="flex items-center justify-between gap-2 rounded-2xl border border-white/10
+           bg-black/30 px-2 py-1 shadow-inner backdrop-blur-md">
+
+                                                <!-- minus -->
                                                 <button
-                                                    class="btn-qty-decrease h-7 w-7 rounded-full bg-white/10 text-sm font-bold text-white"
-                                                    type="button">-</button>
-                                                <span
-                                                    class="item-qty min-w-5 text-center text-sm font-black text-white">0</span>
+                                                    class="btn-qty-decrease flex h-9 w-9 items-center justify-center rounded-xl
+               bg-white/5 text-white text-lg font-bold
+               transition hover:bg-white/15 active:scale-95"
+                                                    type="button">
+                                                    −
+                                                </button>
+
+                                                <!-- input (clean, no box) -->
+                                                <input type="number" min="0" value="0"
+                                                    class="item-qty w-12 bg-transparent text-center text-sm font-black text-white
+               border-0 outline-none ring-0 shadow-none
+               focus:outline-none focus:ring-0
+               appearance-none
+               [&::-webkit-outer-spin-button]:appearance-none
+               [&::-webkit-inner-spin-button]:appearance-none
+               [-moz-appearance:textfield]" />
+
+                                                <!-- plus -->
                                                 <button
-                                                    class="btn-qty-increase h-7 w-7 rounded-full bg-yellow-400 text-sm font-black text-black"
-                                                    type="button">+</button>
+                                                    class="btn-qty-increase flex h-9 w-9 items-center justify-center rounded-xl
+               bg-yellow-400 text-black text-lg font-black
+               transition hover:bg-yellow-300 active:scale-95 shadow-md"
+                                                    type="button">
+                                                    +
+                                                </button>
+
                                             </div>
 
                                             <button
@@ -112,7 +134,7 @@
                                                 data-item-price="{{ $food['price'] ?? 0 }}"
                                                 data-item-image="{{ $food['image'] }}" data-item-type="combo"
                                                 type="button">
-                                                + Thêm
+                                                Thêm
                                             </button>
                                         </div>
 
@@ -164,25 +186,48 @@
                                             </div>
                                             <div class="mt-3 space-y-2">
                                                 <div
-                                                    class="flex items-center justify-between rounded-full border border-white/10 bg-white/5 px-2 py-1">
+                                                    class="flex items-center justify-between gap-2 rounded-2xl border border-white/10
+           bg-black/30 px-2 py-1 shadow-inner backdrop-blur-md">
+
+                                                    <!-- minus -->
                                                     <button
-                                                        class="btn-qty-decrease h-7 w-7 rounded-full bg-white/10 text-sm font-bold text-white"
-                                                        type="button">-</button>
-                                                    <span
-                                                        class="item-qty min-w-5 text-center text-sm font-black text-white">0</span>
+                                                        class="btn-qty-decrease flex h-9 w-9 items-center justify-center rounded-xl
+               bg-white/5 text-white text-lg font-bold
+               transition hover:bg-white/15 active:scale-95"
+                                                        type="button">
+                                                        −
+                                                    </button>
+
+                                                    <!-- input (clean, no box) -->
+                                                    <input type="number" min="0" value="0"
+                                                        class="item-qty w-12 bg-transparent text-center text-sm font-black text-white
+               border-0 outline-none ring-0 shadow-none
+               focus:outline-none focus:ring-0
+               appearance-none
+               [&::-webkit-outer-spin-button]:appearance-none
+               [&::-webkit-inner-spin-button]:appearance-none
+               [-moz-appearance:textfield]" />
+
+                                                    <!-- plus -->
                                                     <button
-                                                        class="btn-qty-increase h-7 w-7 rounded-full bg-yellow-400 text-sm font-black text-black"
-                                                        type="button">+</button>
+                                                        class="btn-qty-increase flex h-9 w-9 items-center justify-center rounded-xl
+               bg-yellow-400 text-black text-lg font-black
+               transition hover:bg-yellow-300 active:scale-95 shadow-md"
+                                                        type="button">
+                                                        +
+                                                    </button>
+
                                                 </div>
 
                                                 <button
                                                     class="btn-add-to-cart w-full rounded-xl bg-yellow-400 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-black transition hover:bg-yellow-300"
                                                     data-item-key="variant-{{ $variant['id'] }}"
-                                                    data-item-name="{{ $food['name'] }}{{ !empty($variant['value']) ? ' - ' . $variant['value'] : '' }}"
+                                                    data-item-name="{{ $food['name'] }}"
                                                     data-item-price="{{ $variant['price'] }}"
-                                                    data-item-image="{{ $food['image'] }}" data-item-type="variant"
+                                                    data-item-image="{{ $food['image'] }}"
+                                                    data-item-stock="{{ $variant['stock'] }}" data-item-type="variant"
                                                     type="button">
-                                                    + Thêm
+                                                    Thêm
                                                 </button>
                                             </div>
 
@@ -199,41 +244,52 @@
             </section>
 
             {{-- RIGHT SIDEBAR (FIXED SCROLL) --}}
-            <aside
-                class="fixed top-56 left-1/2 translate-x-[420px] w-[320px] space-y-4 max-h-[calc(100vh-180px)] overflow-y-auto">
-                <div class="bg-zinc-900 border border-white/10 rounded-3xl p-5">
 
-                    <p class="text-xs text-gray-500 uppercase tracking-widest">Đơn hàng</p>
 
-                    <div id="cartItems" class="mt-3 space-y-3 text-sm">
-                        <p class="text-gray-500">Chưa có món nào</p>
+
+            <aside class="fixed top-32 right-10 w-[320px] max-h-[calc(100vh-160px)] space-y-4">
+
+                <!-- CART -->
+                <div class="rounded-3xl bg-zinc-900 border border-white/10 overflow-hidden shadow-xl">
+
+                    <div class="border-b border-white/10 px-5 py-4">
+                        <p class="text-xs uppercase tracking-widest text-gray-500">
+                            Đơn hàng
+                        </p>
+                    </div>
+
+                    <div id="cartItems"
+                        class="max-h-[350px] overflow-y-auto overflow-x-hidden px-5 py-4 space-y-3
+               scrollbar-thin scrollbar-thumb-yellow-400 scrollbar-track-transparent">
+
+                        <p class="text-gray-500">
+                            Chưa có món nào
+                        </p>
+
                     </div>
 
                 </div>
 
+                <!-- TOTAL -->
                 <div class="bg-zinc-900 border border-white/10 rounded-3xl p-5 text-center">
-
                     <p class="text-xs text-gray-500">Tổng tiền</p>
                     <div id="subtotalPrice" class="text-3xl font-black text-yellow-400">
                         0đ
                     </div>
-
                 </div>
 
+                <!-- CHECKOUT -->
                 <a id="btnCheckout"
-                    href="{{ route('dat_ve.checkout', [
-                        'suat_chieu_id' => $suatChieu->id,
-                        'ghe' => request('ghe'),
-                    ]) }}"
-                    class="block w-full rounded-2xl bg-yellow-400 py-3 text-center font-black uppercase tracking-[0.2em] text-black transition hover:bg-yellow-300">
+                    class="block w-full rounded-2xl bg-yellow-400 py-3 text-center font-black uppercase tracking-[0.2em] text-black hover:bg-yellow-300">
                     Checkout
                 </a>
 
-                <a onclick="clearBookingData()"
-                    href="{{ route('dat_ve.chon_ghe', ['movie' => $suatChieu->phim->slug]) }}{{ request('ghe') ? '?ghe=' . request('ghe') : '' }}"
-                    class="mt-2 inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-gray-300 transition hover:bg-white/10">
+                <!-- BACK -->
+                <a
+                    class="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300 hover:bg-white/10">
                     ← Quay lại chọn ghế
                 </a>
+
             </aside>
 
         </div>
@@ -270,6 +326,7 @@
         if (!cartItems || !subtotalPrice) return;
 
         const items = Object.values(cart).filter(i => i.qty > 0);
+
         let html = '';
         let total = 0;
 
@@ -277,25 +334,25 @@
             total += item.qty * item.price;
 
             html += `
-                <div class="border-b border-white/10 py-3">
-                    <p class="text-sm font-bold text-white">${escapeHtml(item.name)}</p>
+            <div class="border-b border-white/10 py-3">
+                <p class="text-sm font-bold text-white">${escapeHtml(item.name)}</p>
 
-                    <div class="mt-2 flex items-center justify-between">
-                        <span class="text-yellow-400 font-semibold">
-                            ${formatCurrency(item.price)}
-                        </span>
+                <div class="mt-2 flex items-center justify-between">
+                    <span class="text-yellow-400 font-semibold">
+                        ${formatCurrency(item.price)}
+                    </span>
 
-                        <div class="flex items-center gap-2">
-                            <button class="btn-cart-decrease w-7 h-7 rounded-full bg-white/10"
-                                data-item-key="${item.key}">-</button>
+                    <div class="flex items-center gap-2">
+                        <button class="btn-cart-decrease w-7 h-7 rounded-full bg-white/10"
+                            data-item-key="${item.key}">-</button>
 
-                            <span class="w-6 text-center">${item.qty}</span>
+                        <span class="w-6 text-center">${item.qty}</span>
 
-                            <button class="btn-cart-increase w-7 h-7 rounded-full bg-yellow-400 text-black"
-                                data-item-key="${item.key}">+</button>
-                        </div>
+                        <button class="btn-cart-increase w-7 h-7 rounded-full bg-yellow-400 text-black"
+                            data-item-key="${item.key}">+</button>
                     </div>
-                </div>`;
+                </div>
+            </div>`;
         });
 
         cartItems.innerHTML = html || '<p class="text-gray-500">Chưa có món nào</p>';
@@ -310,17 +367,28 @@
     function addToCart(item) {
         if (countdownExpired) return;
 
+        const stock = Number(item.stock);
+
         if (!cart[item.key]) {
             cart[item.key] = {
                 key: item.key,
                 name: item.name,
                 price: Number(item.price),
                 image: item.image,
+                stock: stock,
                 qty: 0
             };
         }
 
-        cart[item.key].qty += Number(item.qty || 1);
+        const currentQty = cart[item.key].qty;
+        const addQty = Number(item.qty);
+
+        if (currentQty + addQty > stock) {
+            alert('Số lượng vượt tồn kho.');
+            return;
+        }
+
+        cart[item.key].qty += addQty;
 
         renderCart();
     }
@@ -329,8 +397,6 @@
     function updateCheckoutButton() {
         const btn = document.getElementById('btnCheckout');
         if (!btn) return;
-
-        const hasItem = Object.values(cart).some(i => i.qty > 0);
 
         if (countdownExpired) {
             btn.classList.add('opacity-50', 'pointer-events-none');
@@ -391,43 +457,75 @@
     }
 
     /* ================= EVENTS ================= */
+    document.addEventListener('input', function(event) {
+        const input = event.target.closest('.item-qty');
+        if (!input) return;
+
+        const card = input.closest('.bg-zinc-900');
+        const addBtn = card.querySelector('.btn-add-to-cart');
+
+        const stock = Number(addBtn.dataset.itemStock);
+        let value = Number(input.value);
+
+        if (value > stock) input.value = stock;
+        if (value < 0 || isNaN(value)) input.value = 0;
+    });
+
     document.addEventListener('click', function(event) {
 
+        /* ================= ADD TO CART ================= */
         const addButton = event.target.closest('.btn-add-to-cart');
         if (addButton) {
             event.preventDefault();
 
             const card = addButton.closest('.bg-zinc-900');
-            const qtyEl = card ? card.querySelector('.item-qty') : null;
-            const qty = qtyEl ? Math.max(1, Number(qtyEl.textContent || 0)) : 1;
+            const qtyEl = card.querySelector('.item-qty');
+
+            const qty = qtyEl ? Math.max(1, Number(qtyEl.value || 0)) : 1;
 
             addToCart({
                 key: addButton.dataset.itemKey,
                 name: addButton.dataset.itemName,
                 price: addButton.dataset.itemPrice,
                 image: addButton.dataset.itemImage,
+                stock: addButton.dataset.itemStock,
                 qty: qty
             });
 
+            if (qtyEl) qtyEl.value = 0;
             return;
         }
 
+        /* ================= PLUS / MINUS UI ================= */
         const minus = event.target.closest('.btn-qty-decrease');
         if (minus) {
             const card = minus.closest('.bg-zinc-900');
-            const qtyEl = card ? card.querySelector('.item-qty') : null;
-            if (qtyEl) qtyEl.textContent = Math.max(0, Number(qtyEl.textContent || 0) - 1);
+            const qtyEl = card.querySelector('.item-qty');
+
+            let qty = Number(qtyEl.value);
+            qtyEl.value = Math.max(0, qty - 1);
             return;
         }
 
         const plus = event.target.closest('.btn-qty-increase');
         if (plus) {
             const card = plus.closest('.bg-zinc-900');
-            const qtyEl = card ? card.querySelector('.item-qty') : null;
-            if (qtyEl) qtyEl.textContent = Number(qtyEl.textContent || 0) + 1;
+            const qtyEl = card.querySelector('.item-qty');
+            const addBtn = card.querySelector('.btn-add-to-cart');
+
+            const stock = Number(addBtn.dataset.itemStock);
+            let qty = Number(qtyEl.value);
+
+            if (qty >= stock) {
+                alert("Đã đạt số lượng tối đa.");
+                return;
+            }
+
+            qtyEl.value = qty + 1;
             return;
         }
 
+        /* ================= CART +/- ================= */
         const dec = event.target.closest('.btn-cart-decrease');
         if (dec) {
             const key = dec.dataset.itemKey;
@@ -442,14 +540,21 @@
         const inc = event.target.closest('.btn-cart-increase');
         if (inc) {
             const key = inc.dataset.itemKey;
+
             if (cart[key]) {
+                if (cart[key].qty >= cart[key].stock) {
+                    alert("Đã đạt số lượng tối đa.");
+                    return;
+                }
+
                 cart[key].qty++;
                 renderCart();
             }
+            return;
         }
     });
 
-    /* ================= CHECKOUT FIX ================= */
+    /* ================= CHECKOUT ================= */
     document.addEventListener('DOMContentLoaded', function() {
         const checkoutBtn = document.getElementById('btnCheckout');
 
@@ -458,8 +563,8 @@
                 e.preventDefault();
 
                 const cartData = encodeURIComponent(JSON.stringify(cart));
-
                 const baseUrl = this.getAttribute('href');
+
                 const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'food_cart=' + cartData;
 
                 window.location.href = url;
@@ -469,19 +574,9 @@
 
     /* ================= INIT ================= */
     document.addEventListener('DOMContentLoaded', function() {
-
         cart = JSON.parse(localStorage.getItem('food_cart') || '{}');
 
         renderCart();
         startCountdown();
-
-        document.querySelectorAll('.bg-zinc-900').forEach(card => {
-            const key = card.querySelector('.btn-add-to-cart')?.dataset.itemKey;
-            const qtyEl = card.querySelector('.item-qty');
-
-            if (!qtyEl) return;
-
-            qtyEl.textContent = (key && cart[key]) ? cart[key].qty : 0;
-        });
     });
 </script>

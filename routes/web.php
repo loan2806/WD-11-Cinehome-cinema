@@ -128,8 +128,8 @@ Route::post('/voucher/xoa-tam', [\App\Http\Controllers\User\VoucherController::c
 Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
 
     // Ai cũng xem được
-    Route::get('/chon-phim/{rap_id?}', [DatVeController::class, 'chonPhim'])
-        ->name('chon_phim');
+    Route::get('/chon-phim', [DatVeController::class, 'chonPhim'])
+    ->name('chon_phim');
 
     // Phải đăng nhập mới được
     Route::middleware('auth')->group(function () {
