@@ -10,7 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
 class DatVeXemPhimService
@@ -80,7 +80,7 @@ class DatVeXemPhimService
 
             $tongTien = $chiTietGhe->sum('gia');
 
-            return VeXemPhim::create([
+            $ve = VeXemPhim::create([
                 'nguoi_dung_id' => $nguoiDungId,
                 'nhan_vien_id' => null,
                 'suat_chieu_id' => $lockedShowtime->id,
@@ -95,6 +95,31 @@ class DatVeXemPhimService
                 'loai_ve' => 'truc_tuyen',
                 'trang_thai' => 'da_thanh_toan',
             ]);
+            $setKey = "seat_lock_set:suat:{$lockedShowtime->id}";
+
+            $seatIds = Cache::get($setKey, []);
+
+            foreach ($maGheDuocChon as $seat) {
+
+                Cache::forget(
+                    "seat_lock:suat:{$lockedShowtime->id}:seat:{$seat}"
+                );
+
+                $seatIds = array_values(
+                    array_filter(
+                        $seatIds,
+                        fn($s) => strtoupper($s) !== strtoupper($seat)
+                    )
+                );
+            }
+
+            Cache::put(
+                $setKey,
+                $seatIds,
+                now()->addMinutes(30)
+            );
+
+            return $ve;
         });
     }
 
@@ -102,7 +127,7 @@ class DatVeXemPhimService
     {
         $suatChieu->loadMissing(['phim', 'rapChieuPhim']);
 
-        return VeXemPhim::query()
+        $gheDaDat = VeXemPhim::query()
             ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung'])
             ->where(function ($query) use ($suatChieu) {
                 $query->where('suat_chieu_id', $suatChieu->id)
@@ -111,13 +136,46 @@ class DatVeXemPhimService
                             ->whereNull('suat_chieu_id')
                             ->where('ten_phim', $suatChieu->phim->ten_phim)
                             ->where('ten_rap', $suatChieu->rapChieuPhim->ten_rap)
-                            ->where('thoi_gian_chieu', $suatChieu->thoi_gian_chieu->format('Y-m-d H:i:s'));
+                            ->where(
+                                'thoi_gian_chieu',
+                                $suatChieu->thoi_gian_chieu->format('Y-m-d H:i:s')
+                            );
                     });
             })
             ->pluck('ma_ghe')
-            ->flatMap(fn($seats) => explode(',', (string) $seats))
+            ->flatMap(fn($seats) => explode(',', (string)$seats))
             ->map(fn($seat) => strtoupper(trim($seat)))
             ->filter()
+            ->unique()
+            ->values();
+
+        // ==========================
+        // THÊM GHẾ ĐANG GIỮ
+        // ==========================
+
+        $setKey = "seat_lock_set:suat:{$suatChieu->id}";
+
+        $seatIds = Cache::get($setKey, []);
+
+        $lockedSeats = collect();
+
+        foreach ($seatIds as $seat) {
+
+            $lock = Cache::get("seat_lock:suat:{$suatChieu->id}:seat:{$seat}");
+
+            if ($lock) {
+
+                $identifier = auth()->id() ?? session()->getId();
+
+                if (($lock['identifier'] ?? null) != $identifier) {
+
+                    $lockedSeats->push(strtoupper($seat));
+                }
+            }
+        }
+
+        return $gheDaDat
+            ->merge($lockedSeats)
             ->unique()
             ->values()
             ->all();
