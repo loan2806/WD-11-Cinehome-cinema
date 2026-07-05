@@ -17,19 +17,37 @@ class PhimsController extends Controller
      */
     private function getStatus($movie)
     {
-        if ($movie->showtimes->contains('trang_thai', SuatChieu::TRANG_THAI_DANG_CHIEU)) {
-            return SuatChieu::TRANG_THAI_DANG_CHIEU;
+        $now = now('Asia/Ho_Chi_Minh');
+
+        $showtimes = $movie->showtimes
+            ->whereNotNull('thoi_gian_chieu')
+            ->sortBy('thoi_gian_chieu');
+
+        if ($showtimes->isEmpty()) {
+            return \App\Models\SuatChieu::TRANG_THAI_DA_CHIEU;
         }
 
-        if ($movie->showtimes->contains('trang_thai', SuatChieu::TRANG_THAI_SAP_CHIEU)) {
-            return SuatChieu::TRANG_THAI_SAP_CHIEU;
+        foreach ($showtimes as $showtime) {
+
+            $start = \Carbon\Carbon::parse($showtime->thoi_gian_chieu);
+
+            $end = $start->copy()
+                ->addMinutes((int) ($movie->thoi_luong ?? 0));
+
+            // 🎬 ĐANG CHIẾU (đúng theo real-time)
+            if ($start->lte($now) && $end->gte($now)) {
+                return \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU;
+            }
         }
 
-        if ($movie->showtimes->contains('trang_thai', SuatChieu::TRANG_THAI_SAP_RA_MAT)) {
-            return SuatChieu::TRANG_THAI_SAP_RA_MAT;
+        // 🟡 Nếu chưa có suất nào đang chạy → check gần nhất
+        $nextShowtime = $showtimes->first();
+
+        if ($nextShowtime && \Carbon\Carbon::parse($nextShowtime->thoi_gian_chieu)->gt($now)) {
+            return \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU;
         }
 
-        return SuatChieu::TRANG_THAI_DA_CHIEU;
+        return \App\Models\SuatChieu::TRANG_THAI_DA_CHIEU;
     }
 
     /*
@@ -150,6 +168,7 @@ class PhimsController extends Controller
     | MOVIE DETAIL
     |--------------------------------------------------------------------------
     */
+
     public function show(Phims $movie)
     {
         $now = Carbon::now('Asia/Ho_Chi_Minh');

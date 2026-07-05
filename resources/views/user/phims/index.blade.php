@@ -101,7 +101,7 @@
 
                                 @if ($canBook)
                                     <a href="{{ route('dat_ve.chon_ghe', $movie->slug) }}"
-                                        class="flex-1 text-center bg-[#f5a623] text-black font-bold py-3 rounded-xl shadow-lg hover:bg-[#ffca40] transition">
+                                        class="booking-link flex-1 text-center bg-[#f5a623] font-bold py-3 rounded-xl shadow-lg hover:bg-[#ffca40] transition">
                                         <i class="fa-solid fa-ticket mr-2"></i>
                                         Đặt vé
                                     </a>
