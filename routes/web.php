@@ -143,15 +143,19 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
         Route::get('/checkout/{suat_chieu_id}', [DatVeController::class, 'checkout'])
             ->name('checkout');
 
-        // Seat lock APIs
+        // Lấy danh sách ghế đang khóa
         Route::get('/seat-locks/{suat_chieu}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'index'])
             ->name('seat_locks.index');
 
+        // Khóa 1 ghế (Tạo mới một khóa ghế)
         Route::post('/seat-locks/{suat_chieu}/{seat}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'reserve'])
             ->name('seat_locks.reserve');
 
+        // Hủy khóa 1 ghế cụ thể
         Route::delete('/seat-locks/{suat_chieu}/{seat}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'release'])
             ->name('seat_locks.release');
+
+            // Hủy khóa TOÀN BỘ ghế của user này trong suất chiếu (Đổi từ POST sang DELETE và sửa URL)
             Route::post('/seat-locks/{suat_chieu}/release-all', [\App\Http\Controllers\DatVe\SeatLockController::class, 'releaseAll']);
     });
 });

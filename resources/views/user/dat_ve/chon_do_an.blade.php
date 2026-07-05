@@ -5,159 +5,75 @@
 @section('content')
 
     <div class="min-h-screen bg-black text-white pt-32 pb-24 px-10">
+        <div id="bookingWrapper" class="relative">
+            <div class="max-w-7xl mx-auto grid grid-cols-[1fr_320px] gap-10 items-start">
+                {{-- LEFT --}}
+                <section class="space-y-10">
+                    {{-- HEADER --}}
+                    <div>
+                        <h1 class="text-4xl md:text-5xl font-black uppercase tracking-wide">
+                            Chọn <span class="text-yellow-400">Đồ Ăn</span>
+                        </h1>
+                        <p class="text-gray-500 mt-2 text-sm">
+                            {{ $suatChieu->phim->ten_phim }} · {{ $suatChieu->rapChieuPhim->ten_rap }}
+                        </p>
+                    </div>
 
-        <div class="max-w-7xl mx-auto flex gap-10 relative">
-
-            {{-- LEFT --}}
-            <section class="flex-1 space-y-10 pr-[360px]">
-
-                {{-- HEADER --}}
-                <div>
-                    <h1 class="text-4xl md:text-5xl font-black uppercase tracking-wide">
-                        Chọn <span class="text-yellow-400">Đồ Ăn</span>
-                    </h1>
-                    <p class="text-gray-500 mt-2 text-sm">
-                        {{ $suatChieu->phim->ten_phim }} · {{ $suatChieu->rapChieuPhim->ten_rap }}
-                    </p>
-                </div>
-
-                <div class="rounded-2xl border border-white/10 bg-zinc-900 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                            <p class="text-[10px] uppercase tracking-[0.35em] text-gray-500">Tiến trình đặt vé</p>
-                            <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-400">
-                                <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-gray-300">1. Chọn
-                                    ghế</span>
-                                <span
-                                    class="rounded-full bg-yellow-400/15 px-3 py-1 text-xs font-semibold text-yellow-300">2.
-                                    Chọn đồ ăn</span>
-                                <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-gray-400">3.
-                                    Thanh toán</span>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-2">
-                            <div
-                                class="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-lg">
-                                ⏰</div>
+                    <div
+                        class="rounded-2xl border border-white/10 bg-zinc-900 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                                <p class="text-[10px] uppercase tracking-[0.3em] text-gray-500">Thời gian còn lại</p>
-                                <div id="countdown" class="text-2xl font-black tracking-[0.2em] text-red-400">07:00</div>
+                                <p class="text-[10px] uppercase tracking-[0.35em] text-gray-500">Tiến trình đặt vé</p>
+                                <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-400">
+                                    <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-gray-300">1.
+                                        Chọn
+                                        ghế</span>
+                                    <span
+                                        class="rounded-full bg-yellow-400/15 px-3 py-1 text-xs font-semibold text-yellow-300">2.
+                                        Chọn đồ ăn</span>
+                                    <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-gray-400">3.
+                                        Thanh toán</span>
+                                </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-                        <div id="countdownBar"
-                            class="h-full rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 transition-all duration-1000"
-                            style="width: 100%"></div>
-                    </div>
-                </div>
-
-                @foreach ($menu as $category)
-                    <div class="space-y-5">
-
-                        {{-- CATEGORY TITLE --}}
-                        <div class="flex items-center gap-3">
-                            <div class="text-2xl">
-                                {{ $category['category'] === 'Đồ ăn' ? '🍿' : ($category['category'] === 'Đồ uống' ? '🥤' : '🎁') }}
-                            </div>
-                            <h2 class="text-xl font-black text-yellow-400 uppercase tracking-[0.25em]">
-                                {{ $category['category'] }}
-                            </h2>
-                        </div>
-
-                        {{-- GRID 5 CỘT --}}
-                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-
-                            @foreach ($category['foods'] as $food)
-                                {{-- ================= COMBO ================= --}}
-                                @if (!empty($food['is_combo']))
-                                    <div
-                                        class="bg-zinc-900 border border-white/10 rounded-2xl p-3 hover:-translate-y-1 hover:border-yellow-400/40 transition">
-
-                                        <div
-                                            class="bg-black rounded-xl h-28 flex items-center justify-center p-2 mb-2 overflow-hidden">
-                                            <img src="{{ asset('storage/foods/' . $food['image']) }}"
-                                                class="h-full object-contain">
-                                        </div>
-
-                                        <h3
-                                            class="mt-2 text-center font-semibold text-sm min-h-[40px] flex items-center justify-center leading-5">
-                                            {{ $food['name'] }}
-                                        </h3>
-
-                                        <p class="mt-2 text-center text-yellow-400 font-black text-lg">
-                                            {{ number_format($food['price']) }}đ
-                                        </p>
-
-
-                                        <div class="mt-3 space-y-2">
-                                            <div
-                                                class="flex items-center justify-between gap-2 rounded-2xl border border-white/10
-           bg-black/30 px-2 py-1 shadow-inner backdrop-blur-md">
-
-                                                <!-- minus -->
-                                                <button
-                                                    class="btn-qty-decrease flex h-9 w-9 items-center justify-center rounded-xl
-               bg-white/5 text-white text-lg font-bold
-               transition hover:bg-white/15 active:scale-95"
-                                                    type="button">
-                                                    −
-                                                </button>
-
-                                                <!-- input (clean, no box) -->
-                                                <input type="number" min="0" value="0"
-                                                    class="item-qty w-12 bg-transparent text-center text-sm font-black text-white
-               border-0 outline-none ring-0 shadow-none
-               focus:outline-none focus:ring-0
-               appearance-none
-               [&::-webkit-outer-spin-button]:appearance-none
-               [&::-webkit-inner-spin-button]:appearance-none
-               [-moz-appearance:textfield]" />
-
-                                                <!-- plus -->
-                                                <button
-                                                    class="btn-qty-increase flex h-9 w-9 items-center justify-center rounded-xl
-               bg-yellow-400 text-black text-lg font-black
-               transition hover:bg-yellow-300 active:scale-95 shadow-md"
-                                                    type="button">
-                                                    +
-                                                </button>
-
-                                            </div>
-
-                                            <button
-                                                class="btn-add-to-cart w-full rounded-xl bg-yellow-400 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-black transition hover:bg-yellow-300"
-                                                data-item-key="combo-{{ $food['id'] }}"
-                                                data-item-name="{{ $food['name'] }}"
-                                                data-item-price="{{ $food['price'] ?? 0 }}"
-                                                data-item-image="{{ $food['image'] }}" data-item-type="combo"
-                                                type="button">
-                                                Thêm
-                                            </button>
-                                        </div>
-
+                            <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-2">
+                                <div
+                                    class="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-lg">
+                                    ⏰</div>
+                                <div>
+                                    <p class="text-[10px] uppercase tracking-[0.3em] text-gray-500">Thời gian còn lại</p>
+                                    <div id="countdown" class="text-2xl font-black tracking-[0.2em] text-red-400">07:00
                                     </div>
+                                </div>
+                            </div>
+                        </div>
 
-                                    {{-- ================= FOOD + VARIANT ================= --}}
-                                @else
-                                    @php
-                                        $variants = $food['variants'] ?? [];
+                        <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
+                            <div id="countdownBar"
+                                class="h-full rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 transition-all duration-1000"
+                                style="width: 100%"></div>
+                        </div>
+                    </div>
 
-                                        if (count($variants) == 0) {
-                                            $variants = [
-                                                [
-                                                    'id' => $food['id'],
-                                                    'value' => '',
-                                                    'price' => $food['price'] ?? 0,
-                                                    'stock' => $food['stock'] ?? 999,
-                                                ],
-                                            ];
-                                        }
-                                    @endphp
+                    @foreach ($menu as $category)
+                        <div class="space-y-5">
 
-                                    @foreach ($variants as $variant)
+                            {{-- CATEGORY TITLE --}}
+                            <div class="flex items-center gap-3">
+                                <div class="text-2xl">
+                                    {{ $category['category'] === 'Đồ ăn' ? '🍿' : ($category['category'] === 'Đồ uống' ? '🥤' : '🎁') }}
+                                </div>
+                                <h2 class="text-xl font-black text-yellow-400 uppercase tracking-[0.25em]">
+                                    {{ $category['category'] }}
+                                </h2>
+                            </div>
+
+                            {{-- GRID 5 CỘT --}}
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+
+                                @foreach ($category['foods'] as $food)
+                                    {{-- ================= COMBO ================= --}}
+                                    @if (!empty($food['is_combo']))
                                         <div
                                             class="bg-zinc-900 border border-white/10 rounded-2xl p-3 hover:-translate-y-1 hover:border-yellow-400/40 transition">
 
@@ -167,23 +83,16 @@
                                                     class="h-full object-contain">
                                             </div>
 
-                                            <div class="text-center mt-2">
-                                                <h3
-                                                    class="font-semibold text-sm min-h-[40px] flex items-center justify-center leading-5">
-                                                    {{ $food['name'] }}
-                                                    @if (!empty($variant['value']))
-                                                        - {{ $variant['value'] }}
-                                                    @endif
-                                                </h3>
+                                            <h3
+                                                class="mt-2 text-center font-semibold text-sm min-h-[40px] flex items-center justify-center leading-5">
+                                                {{ $food['name'] }}
+                                            </h3>
 
-                                                <p class="mt-2 text-yellow-400 font-black text-lg">
-                                                    {{ number_format($variant['price']) }}đ
-                                                </p>
+                                            <p class="mt-2 text-center text-yellow-400 font-black text-lg">
+                                                {{ number_format($food['price']) }}đ
+                                            </p>
 
-                                                <p class="mt-1 text-[10px] text-gray-500">
-                                                    Còn: {{ $variant['stock'] }}
-                                                </p>
-                                            </div>
+
                                             <div class="mt-3 space-y-2">
                                                 <div
                                                     class="flex items-center justify-between gap-2 rounded-2xl border border-white/10
@@ -221,77 +130,170 @@
 
                                                 <button
                                                     class="btn-add-to-cart w-full rounded-xl bg-yellow-400 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-black transition hover:bg-yellow-300"
-                                                    data-item-key="variant-{{ $variant['id'] }}"
+                                                    data-item-key="combo-{{ $food['id'] }}"
                                                     data-item-name="{{ $food['name'] }}"
-                                                    data-item-price="{{ $variant['price'] }}"
-                                                    data-item-image="{{ $food['image'] }}"
-                                                    data-item-stock="{{ $variant['stock'] }}" data-item-type="variant"
+                                                    data-item-price="{{ $food['price'] ?? 0 }}"
+                                                    data-item-image="{{ $food['image'] }}" data-item-type="combo"
                                                     type="button">
                                                     Thêm
                                                 </button>
                                             </div>
 
                                         </div>
-                                    @endforeach
-                                @endif
-                            @endforeach
+
+                                        {{-- ================= FOOD + VARIANT ================= --}}
+                                    @else
+                                        @php
+                                            $variants = $food['variants'] ?? [];
+
+                                            if (count($variants) == 0) {
+                                                $variants = [
+                                                    [
+                                                        'id' => $food['id'],
+                                                        'value' => '',
+                                                        'price' => $food['price'] ?? 0,
+                                                        'stock' => $food['stock'] ?? 999,
+                                                    ],
+                                                ];
+                                            }
+                                        @endphp
+
+                                        @foreach ($variants as $variant)
+                                            <div
+                                                class="bg-zinc-900 border border-white/10 rounded-2xl p-3 hover:-translate-y-1 hover:border-yellow-400/40 transition">
+
+                                                <div
+                                                    class="bg-black rounded-xl h-28 flex items-center justify-center p-2 mb-2 overflow-hidden">
+                                                    <img src="{{ asset('storage/foods/' . $food['image']) }}"
+                                                        class="h-full object-contain">
+                                                </div>
+
+                                                <div class="text-center mt-2">
+                                                    <h3
+                                                        class="font-semibold text-sm min-h-[40px] flex items-center justify-center leading-5">
+                                                        {{ $food['name'] }}
+                                                        @if (!empty($variant['value']))
+                                                            - {{ $variant['value'] }}
+                                                        @endif
+                                                    </h3>
+
+                                                    <p class="mt-2 text-yellow-400 font-black text-lg">
+                                                        {{ number_format($variant['price']) }}đ
+                                                    </p>
+
+                                                    <p class="mt-1 text-[10px] text-gray-500">
+                                                        Còn: {{ $variant['stock'] }}
+                                                    </p>
+                                                </div>
+                                                <div class="mt-3 space-y-2">
+                                                    <div
+                                                        class="flex items-center justify-between gap-2 rounded-2xl border border-white/10
+           bg-black/30 px-2 py-1 shadow-inner backdrop-blur-md">
+
+                                                        <!-- minus -->
+                                                        <button
+                                                            class="btn-qty-decrease flex h-9 w-9 items-center justify-center rounded-xl
+               bg-white/5 text-white text-lg font-bold
+               transition hover:bg-white/15 active:scale-95"
+                                                            type="button">
+                                                            −
+                                                        </button>
+
+                                                        <!-- input (clean, no box) -->
+                                                        <input type="number" min="0" value="0"
+                                                            class="item-qty w-12 bg-transparent text-center text-sm font-black text-white
+               border-0 outline-none ring-0 shadow-none
+               focus:outline-none focus:ring-0
+               appearance-none
+               [&::-webkit-outer-spin-button]:appearance-none
+               [&::-webkit-inner-spin-button]:appearance-none
+               [-moz-appearance:textfield]" />
+
+                                                        <!-- plus -->
+                                                        <button
+                                                            class="btn-qty-increase flex h-9 w-9 items-center justify-center rounded-xl
+               bg-yellow-400 text-black text-lg font-black
+               transition hover:bg-yellow-300 active:scale-95 shadow-md"
+                                                            type="button">
+                                                            +
+                                                        </button>
+
+                                                    </div>
+
+                                                    <button
+                                                        class="btn-add-to-cart w-full rounded-xl bg-yellow-400 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-black transition hover:bg-yellow-300"
+                                                        data-item-key="variant-{{ $variant['id'] }}"
+                                                        data-item-name="{{ $food['name'] }}"
+                                                        data-item-price="{{ $variant['price'] }}"
+                                                        data-item-image="{{ $food['image'] }}"
+                                                        data-item-stock="{{ $variant['stock'] }}" data-item-type="variant"
+                                                        type="button">
+                                                        Thêm
+                                                    </button>
+                                                </div>
+
+                                            </div>
+                                        @endforeach
+                                    @endif
+                                @endforeach
+
+                            </div>
+
+                        </div>
+                    @endforeach
+
+                </section>
+
+                {{-- RIGHT SIDEBAR (FIXED SCROLL) --}}
+
+
+
+                <aside id="bookingSidebar" class="fixed top-48 right-10 w-[320px] space-y-4">
+
+                    <!-- CART -->
+                    <div class="rounded-3xl bg-zinc-900 border border-white/10 overflow-hidden shadow-xl">
+
+                        <div class="border-b border-white/10 px-5 py-4">
+                            <p class="text-xs uppercase tracking-widest text-gray-500">
+                                Đơn hàng
+                            </p>
+                        </div>
+
+                        <div id="cartItems"
+                            class="max-h-[350px] overflow-y-auto overflow-x-hidden px-5 py-4 space-y-3
+               scrollbar-thin scrollbar-thumb-yellow-400 scrollbar-track-transparent">
+
+                            <p class="text-gray-500">
+                                Chưa có món nào
+                            </p>
 
                         </div>
 
                     </div>
-                @endforeach
 
-            </section>
-
-            {{-- RIGHT SIDEBAR (FIXED SCROLL) --}}
-
-
-
-            <aside class="fixed top-32 right-10 w-[320px] max-h-[calc(100vh-160px)] space-y-4">
-
-                <!-- CART -->
-                <div class="rounded-3xl bg-zinc-900 border border-white/10 overflow-hidden shadow-xl">
-
-                    <div class="border-b border-white/10 px-5 py-4">
-                        <p class="text-xs uppercase tracking-widest text-gray-500">
-                            Đơn hàng
-                        </p>
+                    <!-- TOTAL -->
+                    <div class="bg-zinc-900 border border-white/10 rounded-3xl p-5 text-center">
+                        <p class="text-xs text-gray-500">Tổng tiền</p>
+                        <div id="subtotalPrice" class="text-3xl font-black text-yellow-400">
+                            0đ
+                        </div>
                     </div>
 
-                    <div id="cartItems"
-                        class="max-h-[350px] overflow-y-auto overflow-x-hidden px-5 py-4 space-y-3
-               scrollbar-thin scrollbar-thumb-yellow-400 scrollbar-track-transparent">
+                    <!-- CHECKOUT -->
+                    <a id="btnCheckout"
+                        class="block w-full rounded-2xl bg-yellow-400 py-3 text-center font-black uppercase tracking-[0.2em] text-black hover:bg-yellow-300">
+                        Checkout
+                    </a>
 
-                        <p class="text-gray-500">
-                            Chưa có món nào
-                        </p>
+                    <!-- BACK -->
+                    <a
+                        class="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300 hover:bg-white/10">
+                        ← Quay lại chọn ghế
+                    </a>
 
-                    </div>
+                </aside>
 
-                </div>
-
-                <!-- TOTAL -->
-                <div class="bg-zinc-900 border border-white/10 rounded-3xl p-5 text-center">
-                    <p class="text-xs text-gray-500">Tổng tiền</p>
-                    <div id="subtotalPrice" class="text-3xl font-black text-yellow-400">
-                        0đ
-                    </div>
-                </div>
-
-                <!-- CHECKOUT -->
-                <a id="btnCheckout"
-                    class="block w-full rounded-2xl bg-yellow-400 py-3 text-center font-black uppercase tracking-[0.2em] text-black hover:bg-yellow-300">
-                    Checkout
-                </a>
-
-                <!-- BACK -->
-                <a
-                    class="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300 hover:bg-white/10">
-                    ← Quay lại chọn ghế
-                </a>
-
-            </aside>
-
+            </div>
         </div>
 
     </div>
@@ -481,7 +483,11 @@
             const card = addButton.closest('.bg-zinc-900');
             const qtyEl = card.querySelector('.item-qty');
 
-            const qty = qtyEl ? Math.max(1, Number(qtyEl.value || 0)) : 1;
+            const qty = qtyEl ? Number(qtyEl.value || 0) : 0;
+
+            if (qty === 0) {
+                return; // Không làm gì cả
+            }
 
             addToCart({
                 key: addButton.dataset.itemKey,
@@ -578,5 +584,38 @@
 
         renderCart();
         startCountdown();
+    });
+    document.addEventListener('DOMContentLoaded', function() {
+
+        const sidebar = document.getElementById('bookingSidebar');
+        const footer = document.querySelector('.cine-footer');
+
+        function updateSidebar() {
+
+            const footerTop = footer.getBoundingClientRect().top + window.scrollY;
+            const sidebarHeight = sidebar.offsetHeight;
+
+            const stopPoint = footerTop - sidebarHeight - 30;
+
+            if (window.scrollY + 128 >= stopPoint) {
+
+                sidebar.style.position = 'absolute';
+                sidebar.style.top = stopPoint + 'px';
+                sidebar.style.right = '40px';
+
+            } else {
+
+                sidebar.style.position = 'fixed';
+                sidebar.style.top = '128px';
+                sidebar.style.right = '40px';
+
+            }
+        }
+
+        window.addEventListener('scroll', updateSidebar);
+        window.addEventListener('resize', updateSidebar);
+
+        updateSidebar();
+
     });
 </script>
