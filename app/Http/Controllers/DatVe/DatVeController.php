@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\NguoiDungVoucher;
 use Carbon\Carbon;
 use App\Models\GheNgoi;
+use App\Models\Phims;
 
 class DatVeController extends Controller
 {
@@ -103,18 +104,22 @@ class DatVeController extends Controller
         return view('user.dat_ve.chon_phim', compact('rap', 'suatChieuTheoPhim', 'dateOptions', 'selectedDate'));
     }
 
-    public function chonGhe($suat_chieu_id, DatVeXemPhimService $datVeXemPhimService)
+    public function chonGhe(Phims $movie, DatVeXemPhimService $datVeXemPhimService)
     {
         $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])
-            ->findOrFail($suat_chieu_id);
+            ->where('phim_id', $movie->id)
+            ->where('thoi_gian_chieu', '>=', now('Asia/Ho_Chi_Minh'))
+            ->orderBy('thoi_gian_chieu')
+            ->firstOrFail();
 
         abort_if($suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')), 404);
+
         session([
             'reservation_expires_at' => now('Asia/Ho_Chi_Minh')->addMinutes(7)->timestamp
         ]);
+
         $duLieuChonGhe = $datVeXemPhimService->duLieuChonGhe($suatChieu);
 
-        // Lấy voucher chưa sử dụng của khách đang đăng nhập
         $duLieuChonGhe['vouchers'] = Auth::check()
             ? NguoiDungVoucher::with('voucher')
             ->where('nguoi_dung_id', Auth::id())

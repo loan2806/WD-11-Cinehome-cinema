@@ -100,7 +100,6 @@ Route::get('/api/cinemas', BandoRapApiController::class)->name('api.cinemas.inde
 Route::get('/showtime', [UserSuatChieuController::class, 'index'])->name('user.showtimes.index');
 Route::get('/showtime/{suatChieu}', [UserSuatChieuController::class, 'show'])->name('user.showtimes.show');
 
-Route::get('/booking/{movie}', [BookingController::class, 'index'])->name('booking');
 Route::get('/showtimes/{movie}/{cinema}', [BookingController::class, 'showtimes'])->name('booking.showtimes');
 
 Route::middleware('auth')
@@ -122,9 +121,10 @@ Route::post('/voucher/xoa-tam', [\App\Http\Controllers\User\VoucherController::c
 
 /*
 |--------------------------------------------------------------------------
-| TÍNH NĂNG ĐẶT VÉ (TIẾNG VIỆT)
+| ĐẶT VÉ
 |--------------------------------------------------------------------------
 */
+
 Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
 
     // Ai cũng xem được
@@ -134,9 +134,9 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
     // Phải đăng nhập mới được
     Route::middleware('auth')->group(function () {
 
-        Route::get('/chon-ghe/{suat_chieu_id}', [DatVeController::class, 'chonGhe'])
+        // Chọn ghế theo slug phim
+        Route::get('/chon-ghe/{movie:slug}', [DatVeController::class, 'chonGhe'])
             ->name('chon_ghe');
-
         Route::get('/chon-do-an/{suat_chieu_id}', [DatVeController::class, 'chonDoAn'])
             ->name('chon_do_an');
 

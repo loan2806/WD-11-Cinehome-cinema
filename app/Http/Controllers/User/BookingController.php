@@ -22,7 +22,16 @@ class BookingController extends Controller
 {
     public function index(Phims $movie)
     {
-        return redirect()->route('user.dat_ve.chon_ghe', $movie);
+        $showtime = SuatChieu::where('phim_id', $movie->id)
+            ->where('thoi_gian_chieu', '>=', now('Asia/Ho_Chi_Minh'))
+            ->orderBy('thoi_gian_chieu')
+            ->first();
+
+        if (!$showtime) {
+            return back()->with('error', 'Hiện chưa có suất chiếu cho phim này.');
+        }
+
+        return redirect()->route('dat_ve.chon_ghe', $showtime->id);
     }
 
     public function showtimes(Phims $movie, RapChieuPhim $cinema)
