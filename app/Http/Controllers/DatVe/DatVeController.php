@@ -18,16 +18,12 @@ class DatVeController extends Controller
 {
     public function chonRap()
     {
-        return redirect()->route('dat_ve.chon_phim', [
-            'rap_id' => $this->rapDatVeMacDinh()->id,
-        ]);
+        return redirect()->route('dat_ve.chon_phim');
     }
 
-    public function chonPhim($rap_id = null)
+    public function chonPhim()
     {
-        $rap = $rap_id
-            ? RapChieuPhim::findOrFail($rap_id)
-            : $this->rapDatVeMacDinh();
+        $rap = RapChieuPhim::firstOrFail();
 
         $now = now('Asia/Ho_Chi_Minh');
         $today = today('Asia/Ho_Chi_Minh');
@@ -276,15 +272,6 @@ class DatVeController extends Controller
         ]);
     }
 
-    private function rapDatVeMacDinh(): RapChieuPhim
-    {
-        return RapChieuPhim::whereHas('suatChieus', function ($query) {
-            $query->where('thoi_gian_chieu', '>=', now('Asia/Ho_Chi_Minh'));
-        })
-            ->orderBy('ten_rap')
-            ->first()
-            ?? RapChieuPhim::orderBy('ten_rap')->firstOrFail();
-    }
     public function checkout($suat_chieu_id)
     {
         $suatChieu = SuatChieu::with([
