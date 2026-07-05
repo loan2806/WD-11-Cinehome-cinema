@@ -123,4 +123,5 @@ class Phims extends Model
         $firstShowtime = $this->showtimes()->min('thoi_gian_chieu');
         return $firstShowtime ? Carbon::parse($firstShowtime)->toDateString() : null;
     }
+    
 }

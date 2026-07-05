@@ -17,11 +17,19 @@ class PhimsController extends Controller
      */
     private function getStatus($movie)
     {
-        return optional(
-            $movie->showtimes
-                ->sortBy('thoi_gian_chieu')
-                ->first()
-        )?->trang_thai;
+        if ($movie->showtimes->contains('trang_thai', SuatChieu::TRANG_THAI_DANG_CHIEU)) {
+            return SuatChieu::TRANG_THAI_DANG_CHIEU;
+        }
+
+        if ($movie->showtimes->contains('trang_thai', SuatChieu::TRANG_THAI_SAP_CHIEU)) {
+            return SuatChieu::TRANG_THAI_SAP_CHIEU;
+        }
+
+        if ($movie->showtimes->contains('trang_thai', SuatChieu::TRANG_THAI_SAP_RA_MAT)) {
+            return SuatChieu::TRANG_THAI_SAP_RA_MAT;
+        }
+
+        return SuatChieu::TRANG_THAI_DA_CHIEU;
     }
 
     /*
@@ -100,7 +108,8 @@ class PhimsController extends Controller
 
         $movies = $query->orderBy('created_at', 'desc')
             ->get()
-            ->filter(fn($movie) =>
+            ->filter(
+                fn($movie) =>
                 $this->getStatus($movie) !== SuatChieu::TRANG_THAI_DA_CHIEU
             );
 
@@ -119,7 +128,8 @@ class PhimsController extends Controller
 
                 $movies = $query->orderBy('created_at', 'desc')
                     ->get()
-                    ->filter(fn($movie) =>
+                    ->filter(
+                        fn($movie) =>
                         $this->getStatus($movie) !== SuatChieu::TRANG_THAI_DA_CHIEU
                     );
             }
@@ -175,12 +185,13 @@ class PhimsController extends Controller
             ->distinct()
             ->take(6)
             ->get();
-
+        $status = $this->getStatus($movie);
         return view('user.phims.show', compact(
             'movie',
             'showtimes',
             'now',
-            'relatedMovies'
+            'relatedMovies',
+            'status'
         ));
     }
 }

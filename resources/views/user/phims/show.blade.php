@@ -38,13 +38,19 @@
                             </a>
                         @endif
 
-                        <a href="{{ route('booking', $movie) }}"
-                            class="w-full flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-black px-5 py-3 rounded-xl font-bold transition">
-
-                            <i class="fa-solid fa-ticket"></i>
-
-                            Đặt Vé
-                        </a>
+                        @if ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
+                            <button
+                                class="w-full flex items-center justify-center gap-2 bg-blue-500 text-white px-5 py-3 rounded-xl cursor-not-allowed"
+                                disabled>
+                                Sắp chiếu
+                            </button>
+                        @elseif ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT)
+                            <button
+                                class="w-full flex items-center justify-center gap-2 bg-purple-500 text-white px-5 py-3 rounded-xl cursor-not-allowed"
+                                disabled>
+                                Sắp ra mắt
+                            </button>
+                        @endif
 
                     </div>
 
@@ -52,6 +58,13 @@
 
                 {{-- RIGHT --}}
                 <div class="lg:col-span-9">
+                    <div class="mb-6">
+                        <a href="{{ url()->previous() }}"
+                            class="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            Quay lại
+                        </a>
+                    </div>
 
                     <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-3">
 
@@ -87,7 +100,7 @@
 
                         <button @click="tab='description'"
                             :class="tab == 'description' ?
-'border-yellow-400 text-yellow-400' :
+                                'border-yellow-400 text-yellow-400' :
                                 'border-transparent text-gray-400'"
                             class="pb-4 border-b-2 font-bold whitespace-nowrap">
 
@@ -162,7 +175,7 @@
                                     <div>
                                         <p class="text-gray-500 text-sm mb-1">
                                             Genre
-</p>
+                                        </p>
 
                                         <p class="font-semibold text-white">
                                             {{ $movie->genres->pluck('ten_the_loai')->join(', ') }}
@@ -235,7 +248,7 @@
                             </div>
 
                             <p class="text-gray-400">
-Phim rất hay, kỹ xảo đẹp và đáng xem.
+                                Phim rất hay, kỹ xảo đẹp và đáng xem.
                             </p>
 
                         </div>
@@ -317,7 +330,7 @@ Phim rất hay, kỹ xảo đẹp và đáng xem.
                                         <div>
 
                                             <h4 class="font-semibold">
-{{ trim($actor) }}
+                                                {{ trim($actor) }}
                                             </h4>
 
                                             <p class="text-gray-500 text-sm">

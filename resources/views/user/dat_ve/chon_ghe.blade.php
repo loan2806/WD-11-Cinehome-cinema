@@ -389,7 +389,7 @@
                     Tiếp tục chọn đồ ăn
                 </button>
 
-                <a href="{{ route('dat_ve.chon_phim') }}"
+                <a href="{{ url()->previous() }}"
                     class="block text-center rounded-xl border border-white/30 bg-white/5 py-2.5 text-sm text-gray-400 hover:bg-white/10 transition">
                     ← Quay lại
                 </a>
