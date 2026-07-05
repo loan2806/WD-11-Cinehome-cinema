@@ -12,6 +12,7 @@ use App\Models\NguoiDungVoucher;
 use Carbon\Carbon;
 use App\Models\GheNgoi;
 use App\Models\Phims;
+use Illuminate\Support\Facades\Cache;
 
 class DatVeController extends Controller
 {
@@ -143,16 +144,39 @@ class DatVeController extends Controller
         $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])
             ->findOrFail($suat_chieu_id);
 
-        abort_if(
-            $suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')),
-            404
-        );
+        $identifier = Auth::id() ?? session()->getId();
 
         $selectedSeats = collect(explode(',', request('ghe')))
             ->map(fn($seat) => strtoupper(trim($seat)))
             ->filter()
             ->unique()
             ->values();
+
+        foreach ($selectedSeats as $seat) {
+
+            $lock = Cache::get("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
+
+            foreach ($selectedSeats as $seat) {
+
+                $lock = Cache::get("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
+
+                if (
+                    !$lock ||
+                    ($lock['identifier'] ?? null) != $identifier ||
+                    ($lock['expires_at'] ?? 0) < now()->timestamp
+                ) {
+
+                    return redirect()
+                        ->route('dat_ve.chon_ghe', $suatChieu->phim->slug)
+                        ->with('error', 'Ghế đã hết thời gian giữ, vui lòng chọn lại.');
+                }
+            }
+        }
+
+        abort_if(
+            $suatChieu->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh')),
+            404
+        );
 
         $foods = Food::active()
             ->with([
@@ -269,11 +293,30 @@ class DatVeController extends Controller
             'phongChieu'
         ])->findOrFail($suat_chieu_id);
 
-        // ================= SEATS =================
+        $identifier = Auth::id() ?? session()->getId();
+
         $selectedSeats = collect(explode(',', request('ghe')))
             ->map(fn($seat) => strtoupper(trim($seat)))
             ->filter()
+            ->unique()
             ->values();
+
+        foreach ($selectedSeats as $seat) {
+
+            $lock = Cache::get("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
+
+            if (
+                !$lock ||
+                ($lock['identifier'] ?? null) != $identifier ||
+                ($lock['expires_at'] ?? 0) < now()->timestamp
+            ) {
+
+                return redirect()
+                    ->route('dat_ve.chon_ghe', $suatChieu->phim->slug)
+                    ->with('error', 'Ghế đã hết thời gian giữ, vui lòng chọn lại.');
+            }
+        }
+
 
         $seatModels = GheNgoi::with('loaiGhe')
             ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
