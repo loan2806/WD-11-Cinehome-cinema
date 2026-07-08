@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
-use App\Models\ComboItem;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-class FoodVariant extends Model
+
+class BienTheDoAn extends Model
 {
     use HasFactory;
+
+    protected $table = 'food_variants'; // Giữ nguyên tên bảng cấu trúc cũ trong database
 
     protected $fillable = [
         'food_id',
@@ -25,16 +27,13 @@ class FoodVariant extends Model
         'is_active' => 'boolean',
     ];
 
-    public function food(): BelongsTo
+    public function doAn(): BelongsTo
     {
-        return $this->belongsTo(Food::class);
+        return $this->belongsTo(DoAn::class, 'food_id');
     }
 
-    public function comboItems(): HasMany
-{
-    return $this->hasMany(
-        ComboItem::class,
-        'food_variant_id'
-    );
-}
+    public function chiTietCombos(): HasMany
+    {
+        return $this->hasMany(ChiTietCombo::class, 'food_variant_id');
+    }
 }

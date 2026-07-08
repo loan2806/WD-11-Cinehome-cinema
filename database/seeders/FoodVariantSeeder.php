@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\BienTheDoAn;
+use App\Models\DoAn;
 use App\Models\Food;
 use App\Models\FoodVariant;
 use Illuminate\Database\Seeder;
@@ -95,7 +97,7 @@ class FoodVariantSeeder extends Seeder
 
         foreach ($variants as $variant) {
 
-            $food = Food::where(
+            $food = DoAn::where(
                 'sku',
                 $variant['food_sku']
             )->first();
@@ -104,7 +106,7 @@ class FoodVariantSeeder extends Seeder
                 continue;
             }
 
-            FoodVariant::updateOrCreate(
+            BienTheDoAn::updateOrCreate(
                 [
                     'food_id' => $food->id,
                     'value' => $variant['value'],

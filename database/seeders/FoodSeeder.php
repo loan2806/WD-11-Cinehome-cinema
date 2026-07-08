@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\DanhMucDoAn;
+use App\Models\DoAn;
 use App\Models\Food;
 use App\Models\FoodCategory;
 use Illuminate\Database\Seeder;
@@ -59,12 +61,12 @@ class FoodSeeder extends Seeder
         $images = File::files(public_path('storage/foods'));
         foreach ($foods as $food) {
 
-            $category = FoodCategory::firstOrCreate(
+            $category = DanhMucDoAn::firstOrCreate(
                 ['name' => $food['category_name']],
                 ['slug' => Str::slug($food['category_name'])]
             );
 
-            Food::updateOrCreate(
+            DoAn::updateOrCreate(
                 ['sku' => $food['sku']],
                 [
                     'name' => $food['name'],
