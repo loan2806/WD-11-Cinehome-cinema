@@ -4,7 +4,7 @@
 
 @section('content')
 
-    <div class="min-h-screen bg-[#080808] pt-24 pb-12 text-white">
+    <div class="min-h-screen bg-[#080808] pt-24 pb-12 text-white" lang="vi" spellcheck="false">
 
         <div class="mx-auto max-w-7xl px-4 lg:px-6">
 
@@ -31,9 +31,7 @@
                     </div>
 
                     <div class="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-2">
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-lg">
-                            ⏰</div>
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-lg">⏰</div>
                         <div>
                             <p class="text-[10px] uppercase tracking-[0.3em] text-gray-500">Thời gian còn lại</p>
                             <div id="countdown" class="text-2xl font-black tracking-[0.2em] text-red-400">07:00</div>
@@ -44,16 +42,14 @@
 
                 <div class="grid lg:grid-cols-[380px_1fr]">
 
-                    {{-- ================= LEFT ================= --}}
+                    {{-- ================= LEFT: THÔNG TIN KHÁCH HÀNG & PHIM ================= --}}
                     <div class="border-r border-white/10 p-8">
 
                         {{-- USER --}}
                         <div class="pb-6">
 
                             <div class="mb-4 flex items-center gap-4">
-                                <div
-                                    class="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-400 text-black text-xl">
-                                    👤</div>
+                                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-400 text-black text-xl">👤</div>
                                 <div>
                                     <h2 class="text-xl font-black text-yellow-400">Thông tin người đặt</h2>
                                     <p class="text-sm text-gray-400">Tài khoản</p>
@@ -70,7 +66,7 @@
                         {{-- FILM --}}
                         <div class="border-t border-white/10 pt-6 mt-6">
 
-                            <h2 class="text-lg font-black text-yellow-400 mb-3"> Thông tin Phim</h2>
+                            <h2 class="text-lg font-black text-yellow-400 mb-3">Thông tin Phim</h2>
 
                             <div class="rounded-xl overflow-hidden border border-white/10">
                                 <img src="{{ asset('storage/movies/' . $suatChieu->phim->poster) }}"
@@ -78,17 +74,16 @@
                             </div>
 
                             <div class="mt-4 text-sm space-y-2 text-gray-300">
-                                <div>Tên rạp : {{ $suatChieu->rapChieuPhim->ten_rap }}</div>
-                                <div> Tên Phim : {{ $suatChieu->phim->ten_phim }}</div>
-                                <div>Suất chiếu: {{ $suatChieu->thoi_gian_chieu->format('d/m/Y H:i') }}</div>
+                                <div><strong>Rạp chiếu:</strong> {{ $suatChieu->rapChieuPhim->ten_rap }}</div>
+                                <div><strong>Tên Phim:</strong> {{ $suatChieu->phim->ten_phim }}</div>
+                                <div><strong>Suất chiếu:</strong> {{ $suatChieu->thoi_gian_chieu->format('d/m/Y H:i') }}</div>
                             </div>
 
                         </div>
 
-
                     </div>
 
-                    {{-- ================= RIGHT ================= --}}
+                    {{-- ================= RIGHT: CHI TIẾT ĐƠN HÀNG & PHƯƠNG THỨC THANH TOÁN ================= --}}
                     <div class="p-8">
 
                         {{-- ITEMS --}}
@@ -96,7 +91,6 @@
 
                             <h2 class="text-2xl font-black text-yellow-400 mb-4">Danh sách đặt</h2>
 
-                            {{-- GHẾ GRID 3 CỘT --}}
                             <div class="py-6 border-b border-white/10">
 
                                 <div class="flex justify-between">
@@ -109,15 +103,12 @@
                                 @forelse($foodItems as $item)
                                     <div class="flex justify-between items-center mt-3">
                                         <div class="flex items-center gap-3">
-
                                             @if (!empty($item['image']))
                                                 <img src="{{ asset('storage/foods/' . $item['image']) }}"
                                                     class="w-16 h-16 object-contain rounded">
                                             @endif
-
                                             <span>{{ $item['name'] }}</span>
                                         </div>
-
                                         <span>x{{ $item['qty'] }}</span>
                                     </div>
                                 @empty
@@ -130,7 +121,6 @@
                             </div>
 
                         </div>
-
 
                         {{-- TOTAL --}}
                         <div class="py-6 border-b border-white/10">
@@ -147,15 +137,12 @@
 
                         </div>
 
-                        {{-- ================= VOUCHER ================= --}}
+                        {{-- VOUCHER --}}
                         <div class="py-6 border-b border-white/10">
 
-                            <h3 class="mb-4 text-lg font-black text-yellow-400">
-                                Mã giảm giá
-                            </h3>
+                            <h3 class="mb-4 text-lg font-black text-yellow-400">Mã giảm giá</h3>
 
                             <div class="flex gap-2">
-
                                 <input type="text" id="voucherCode" placeholder="Nhập mã voucher..."
                                     class="flex-1 rounded-2xl border border-white/10 bg-[#1d1d1d] px-4 py-3 text-white outline-none focus:border-yellow-400">
 
@@ -163,7 +150,6 @@
                                     class="rounded-2xl bg-yellow-400 px-5 font-black text-black hover:bg-yellow-300">
                                     Áp dụng
                                 </button>
-
                             </div>
 
                             <div id="voucherResult"
@@ -171,35 +157,56 @@
                                 ✔ Voucher đã áp dụng
                             </div>
 
-                            <div
-                                class="border-t border-white/10 mt-4 pt-4 flex justify-between text-yellow-400 text-2xl font-black">
+                            <div class="border-t border-white/10 mt-4 pt-4 flex justify-between text-yellow-400 text-2xl font-black">
                                 <span>Tổng</span>
                                 <span id="grandTotal">{{ number_format($grandTotal, 0, ',', '.') }}đ</span>
                             </div>
 
                         </div>
 
-
-                        {{-- PAYMENT --}}
+                        {{-- PAYMENT METHOD REFACTOR --}}
                         <div class="pt-6">
 
-                            <h2 class="text-xl font-black text-yellow-400 mb-4">Thanh toán</h2>
+                            <h2 class="text-xl font-black text-yellow-400 mb-4">Chọn phương thức thanh toán</h2>
 
                             <form id="paymentForm" action="{{ url('/dat-ve/xu-ly-thanh-toan/' . $suatChieu->id) }}" method="POST">
                                 @csrf
-                                {{-- Các input ẩn chứa thông tin cần gửi lên backend --}}
                                 <input type="hidden" name="ghe" value="{{ request('ghe') }}">
                                 <input type="hidden" name="food_cart" value="{{ request('food_cart') }}">
                                 <input type="hidden" id="submitVoucherCode" name="voucher_code" value="">
 
-                                <label
-                                    class="flex items-center gap-3 border border-yellow-400 bg-yellow-400/10 p-4 rounded-2xl cursor-pointer">
-                                    <input type="radio" checked name="payment_method" value="online" class="accent-yellow-400">
-                                    <span>Online (VNPay / MoMo)</span>
-                                </label>
+                                <div class="space-y-3">
+                                    {{-- LỰA CHỌN 1: CỔNG VNPAY --}}
+                                    <label class="payment-method-label flex items-center justify-between border border-yellow-400 bg-yellow-400/10 p-4 rounded-2xl cursor-pointer transition dynamics-duration-200">
+                                        <div class="flex items-center gap-3">
+                                            <input type="radio" checked name="payment_method" value="online" class="accent-yellow-400 w-5 h-5">
+                                            <div class="ml-1">
+                                                <span class="block font-bold text-gray-100">Cổng thanh toán VNPAY</span>
+                                                <span class="block text-xs text-gray-400 mt-0.5">Thanh toán qua ATM, Thẻ quốc tế hoặc ứng dụng ngân hàng</span>
+                                            </div>
+                                        </div>
+                                        <div class="bg-white px-2 py-1 rounded-lg flex items-center justify-center shadow-sm">
+                                            <img src="{{ asset('assets/images/logo-vnpay.webp') }}" class="h-5 w-16 object-contain" alt="VNPAY Logo">
+                                        </div>
+                                    </label>
+
+                                    {{-- LỰA CHỌN 2: CHUYỂN KHOẢN VIETQR --}}
+                                    <label class="payment-method-label flex items-center justify-between border border-white/10 bg-zinc-900/30 p-4 rounded-2xl cursor-pointer transition dynamics-duration-200 hover:border-white/20">
+                                        <div class="flex items-center gap-3">
+                                            <input type="radio" name="payment_method" value="vietqr" class="accent-yellow-400 w-5 h-5">
+                                            <div class="ml-1">
+                                                <span class="block font-bold text-gray-200">Chuyển khoản nhanh VietQR</span>
+                                                <span class="block text-xs text-gray-400 mt-0.5">Tạo mã QR bốc động số tiền, quét để chuyển khoản an toàn</span>
+                                            </div>
+                                        </div>
+                                        <div class="bg-white px-2 py-1 rounded-lg flex items-center justify-center shadow-sm">
+                                            <img src="{{ asset('assets/images/logo-vietqr.png') }}" class="h-5 w-16 object-contain" alt="VietQR Logo">
+                                        </div>
+                                    </label>
+                                </div>
 
                                 <button type="submit"
-                                    class="mt-6 w-full rounded-2xl bg-yellow-400 py-4 font-black text-black hover:bg-yellow-300">
+                                    class="mt-6 w-full rounded-2xl bg-yellow-400 py-4 font-black text-black hover:bg-yellow-300 transition duration-200 shadow-lg shadow-yellow-400/10">
                                     THANH TOÁN NGAY
                                 </button>
                             </form>
@@ -238,21 +245,18 @@
             return;
         }
 
-        // Demo dữ liệu voucher
         appliedVoucher = {
             code: code,
             discount: 20000
         };
 
-        // Gắn mã voucher vào thẻ input ẩn của form để gửi lên server khi submit
         const submitVoucherInput = document.getElementById('submitVoucherCode');
         if (submitVoucherInput) {
             submitVoucherInput.value = code;
         }
 
         result.classList.remove('hidden');
-        result.innerHTML =
-            `✔ Đã áp dụng: <b>${code}</b> (-${appliedVoucher.discount.toLocaleString('vi-VN')}đ)`;
+        result.innerHTML = `✔ Đã áp dụng: <b>${code}</b> (-${appliedVoucher.discount.toLocaleString('vi-VN')}đ)`;
 
         const final = Math.max(0, baseTotal - appliedVoucher.discount);
         totalEl.innerText = final.toLocaleString('vi-VN') + 'đ';
@@ -260,29 +264,48 @@
 
     document.addEventListener('DOMContentLoaded', function () {
 
+        // ==========================================
+        // EFFECT LOGIC: Xử lý đổi màu viền động khi click chọn ví
+        // ==========================================
+        const paymentLabels = document.querySelectorAll('.payment-method-label');
+        paymentLabels.forEach(label => {
+            const radio = label.querySelector('input[type="radio"]');
+            
+            radio.addEventListener('change', function() {
+                // Reset toàn bộ các label về trạng thái mặc định viền tối
+                paymentLabels.forEach(l => {
+                    l.classList.remove('border-yellow-400', 'bg-yellow-400/10');
+                    l.classList.add('border-white/10', 'bg-zinc-900/30');
+                    l.querySelector('span').classList.remove('text-gray-100');
+                    l.querySelector('span').classList.add('text-gray-200');
+                });
+
+                // Kích hoạt màu vàng gold sáng rực rỡ cho tùy chọn vừa click
+                if (this.checked) {
+                    label.classList.add('border-yellow-400', 'bg-yellow-400/10');
+                    label.classList.remove('border-white/10', 'bg-zinc-900/30');
+                    label.querySelector('span').classList.add('text-gray-100');
+                    label.querySelector('span').classList.remove('text-gray-200');
+                }
+            });
+        });
+
+        // COUNTDOWN TIMER LOGIC
         const countdownEl = document.getElementById('countdown');
         if (!countdownEl) return;
 
         const storageKey = 'booking_deadline_{{ $suatChieu->id }}';
 
         function getStoredDeadline() {
-            try {
-                return Number(localStorage.getItem(storageKey)) || null;
-            } catch (e) {
-                return null;
-            }
+            try { return Number(localStorage.getItem(storageKey)) || null; } catch (e) { return null; }
         }
 
         function setStoredDeadline(deadline) {
-            try {
-                return localStorage.setItem(storageKey, String(deadline));
-            } catch (e) {}
+            try { return localStorage.setItem(storageKey, String(deadline)); } catch (e) {}
         }
 
         function clearStoredDeadline() {
-            try {
-                return localStorage.removeItem(storageKey);
-            } catch (e) {}
+            try { return localStorage.removeItem(storageKey); } catch (e) {}
         }
 
         let deadline = getStoredDeadline();
@@ -293,16 +316,12 @@
         }
 
         function updateCountdown() {
-
             const remaining = deadline - Date.now();
 
             if (remaining <= 0) {
-
                 clearStoredDeadline();
-
                 countdownEl.innerText = '00:00';
                 countdownEl.classList.add('animate-pulse');
-
                 window.location.href = "{{ route('home') }}";
                 return;
             }
@@ -310,10 +329,7 @@
             const minutes = Math.floor(remaining / 60000);
             const seconds = Math.floor((remaining % 60000) / 1000);
 
-            countdownEl.innerText =
-                String(minutes).padStart(2, '0') +
-                ':' +
-                String(seconds).padStart(2, '0');
+            countdownEl.innerText = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
 
             if (remaining <= 60000) {
                 countdownEl.classList.add('animate-pulse');
@@ -322,7 +338,6 @@
 
         updateCountdown();
         setInterval(updateCountdown, 1000);
-
     });
 </script>
 @endsection
