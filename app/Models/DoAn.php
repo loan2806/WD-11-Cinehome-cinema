@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class Food extends Model
+class DoAn extends Model
 {
     use HasFactory;
 
-    private const LOW_STOCK_THRESHOLD = 10;
+    private const NGUONG_TON_KHO_THAP = 10;
 
     protected $table = 'foods';
 
@@ -32,7 +32,7 @@ class Food extends Model
 
     public function invoiceItems(): HasMany
     {
-        return $this->hasMany(FoodInvoiceItem::class);
+        return $this->hasMany(ChiTietHoaDonDoAn::class, 'food_id');
     }
 
     public function scopeActive($query)
@@ -42,12 +42,12 @@ class Food extends Model
 
     public function variants(): HasMany
     {
-        return $this->hasMany(FoodVariant::class);
+        return $this->hasMany(BienTheDoAn::class, 'food_id');
     }
 
     public function defaultVariant(): HasOne
     {
-        return $this->hasOne(FoodVariant::class)
+        return $this->hasOne(BienTheDoAn::class, 'food_id')
             ->where('is_active', true)
             ->orderBy('price')
             ->orderBy('id');
@@ -56,7 +56,7 @@ class Food extends Model
     public function getPriceAttribute(): float
     {
         if ($this->isCombo()) {
-            return (float) $this->comboItems->sum(function (ComboItem $item) {
+            return (float) $this->comboItems->sum(function ($item) {
                 return (float) ($item->variant?->price ?? 0) * (int) ($item->quantity ?? 1);
             });
         }
@@ -72,7 +72,7 @@ class Food extends Model
             }
 
             return (int) $this->comboItems
-                ->map(function (ComboItem $item) {
+                ->map(function ($item) {
                     $quantity = max((int) ($item->quantity ?? 1), 1);
                     $stock = (int) ($item->variant?->stock_quantity ?? 0);
 
@@ -86,7 +86,7 @@ class Food extends Model
 
     public function getMinStockQuantityAttribute(): int
     {
-        return self::LOW_STOCK_THRESHOLD;
+        return self::NGUONG_TON_KHO_THAP;
     }
 
     public function isCombo(): bool
@@ -94,7 +94,7 @@ class Food extends Model
         return str_contains(strtolower($this->category?->name ?? ''), 'combo');
     }
 
-    public function saleVariant(): ?FoodVariant
+    public function saleVariant(): ?BienTheDoAn
     {
         if ($this->relationLoaded('defaultVariant')) {
             return $this->defaultVariant;
@@ -115,12 +115,11 @@ class Food extends Model
 
     public function comboItems(): HasMany
     {
-        return $this->hasMany(ComboItem::class, 'combo_food_id');
+        return $this->hasMany(ChiTietCombo::class, 'combo_food_id');
     }
+
     public function category()
     {
-        return $this->belongsTo(FoodCategory::class);
+        return $this->belongsTo(DanhMucDoAn::class, 'category_id');
     }
-    
-    
 }

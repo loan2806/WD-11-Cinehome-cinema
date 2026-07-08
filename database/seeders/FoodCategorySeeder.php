@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\DanhMucDoAn;
 use App\Models\FoodCategory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -18,7 +19,7 @@ class FoodCategorySeeder extends Seeder
         ];
 
         foreach ($categories as $name) {
-            FoodCategory::updateOrCreate(
+            DanhMucDoAn::updateOrCreate(
                 ['name' => $name],
                 [   
                     'slug' => Str::slug($name),

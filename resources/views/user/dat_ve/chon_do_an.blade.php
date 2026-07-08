@@ -79,7 +79,7 @@
 
                                             <div
                                                 class="bg-black rounded-xl h-28 flex items-center justify-center p-2 mb-2 overflow-hidden">
-                                                <img src="{{ asset('storage/foods/' . $food['image']) }}"
+                                                <img src="{{ asset('storage/' . $food['image']) }}"
                                                     class="h-full object-contain">
                                             </div>
 
@@ -96,32 +96,30 @@
                                             <div class="mt-3 space-y-2">
                                                 <div
                                                     class="flex items-center justify-between gap-2 rounded-2xl border border-white/10
-           bg-black/30 px-2 py-1 shadow-inner backdrop-blur-md">
+                                           bg-black/30 px-2 py-1 shadow-inner backdrop-blur-md">
 
-                                                    <!-- minus -->
                                                     <button
                                                         class="btn-qty-decrease flex h-9 w-9 items-center justify-center rounded-xl
-               bg-white/5 text-white text-lg font-bold
-               transition hover:bg-white/15 active:scale-95"
+                               bg-white/5 text-white text-lg font-bold
+                               transition hover:bg-white/15 active:scale-95"
                                                         type="button">
                                                         −
                                                     </button>
 
-                                                    <!-- input (clean, no box) -->
-                                                    <input type="number" min="0" value="0"
+                                                    {{-- CHUẨN NGHIỆP VỤ: Đổi min=1 và giá trị mặc định ban đầu là 1 --}}
+                                                    <input type="number" min="1" value="1"
                                                         class="item-qty w-12 bg-transparent text-center text-sm font-black text-white
-               border-0 outline-none ring-0 shadow-none
-               focus:outline-none focus:ring-0
-               appearance-none
-               [&::-webkit-outer-spin-button]:appearance-none
-               [&::-webkit-inner-spin-button]:appearance-none
-               [-moz-appearance:textfield]" />
+                               border-0 outline-none ring-0 shadow-none
+                               focus:outline-none focus:ring-0
+                               appearance-none
+                               [&::-webkit-outer-spin-button]:appearance-none
+                               [&::-webkit-inner-spin-button]:appearance-none
+                               [-moz-appearance:textfield]" />
 
-                                                    <!-- plus -->
                                                     <button
                                                         class="btn-qty-increase flex h-9 w-9 items-center justify-center rounded-xl
-               bg-yellow-400 text-black text-lg font-black
-               transition hover:bg-yellow-300 active:scale-95 shadow-md"
+                               bg-yellow-400 text-black text-lg font-black
+                               transition hover:bg-yellow-300 active:scale-95 shadow-md"
                                                         type="button">
                                                         +
                                                     </button>
@@ -134,6 +132,7 @@
                                                     data-item-name="{{ $food['name'] }}"
                                                     data-item-price="{{ $food['price'] ?? 0 }}"
                                                     data-item-image="{{ $food['image'] }}" data-item-type="combo"
+                                                    data-item-stock="{{ $food['available'] ?? 999 }}"
                                                     type="button">
                                                     Thêm
                                                 </button>
@@ -164,7 +163,7 @@
 
                                                 <div
                                                     class="bg-black rounded-xl h-28 flex items-center justify-center p-2 mb-2 overflow-hidden">
-                                                    <img src="{{ asset('storage/foods/' . $food['image']) }}"
+                                                    <img src="{{ asset('storage/' . $food['image']) }}"
                                                         class="h-full object-contain">
                                                 </div>
 
@@ -188,32 +187,30 @@
                                                 <div class="mt-3 space-y-2">
                                                     <div
                                                         class="flex items-center justify-between gap-2 rounded-2xl border border-white/10
-           bg-black/30 px-2 py-1 shadow-inner backdrop-blur-md">
+                               bg-black/30 px-2 py-1 shadow-inner backdrop-blur-md">
 
-                                                        <!-- minus -->
                                                         <button
                                                             class="btn-qty-decrease flex h-9 w-9 items-center justify-center rounded-xl
-               bg-white/5 text-white text-lg font-bold
-               transition hover:bg-white/15 active:scale-95"
+                               bg-white/5 text-white text-lg font-bold
+                               transition hover:bg-white/15 active:scale-95"
                                                             type="button">
                                                             −
                                                         </button>
 
-                                                        <!-- input (clean, no box) -->
-                                                        <input type="number" min="0" value="0"
+                                                        {{-- CHUẨN NGHIỆP VỤ: Đổi min=1 và giá trị mặc định ban đầu là 1 --}}
+                                                        <input type="number" min="1" value="1"
                                                             class="item-qty w-12 bg-transparent text-center text-sm font-black text-white
-               border-0 outline-none ring-0 shadow-none
-               focus:outline-none focus:ring-0
-               appearance-none
-               [&::-webkit-outer-spin-button]:appearance-none
-               [&::-webkit-inner-spin-button]:appearance-none
-               [-moz-appearance:textfield]" />
+                               border-0 outline-none ring-0 shadow-none
+                               focus:outline-none focus:ring-0
+                               appearance-none
+                               [&::-webkit-outer-spin-button]:appearance-none
+                               [&::-webkit-inner-spin-button]:appearance-none
+                               [-moz-appearance:textfield]" />
 
-                                                        <!-- plus -->
                                                         <button
                                                             class="btn-qty-increase flex h-9 w-9 items-center justify-center rounded-xl
-               bg-yellow-400 text-black text-lg font-black
-               transition hover:bg-yellow-300 active:scale-95 shadow-md"
+                               bg-yellow-400 text-black text-lg font-black
+                               transition hover:bg-yellow-300 active:scale-95 shadow-md"
                                                             type="button">
                                                             +
                                                         </button>
@@ -223,7 +220,7 @@
                                                     <button
                                                         class="btn-add-to-cart w-full rounded-xl bg-yellow-400 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-black transition hover:bg-yellow-300"
                                                         data-item-key="variant-{{ $variant['id'] }}"
-                                                        data-item-name="{{ $food['name'] }}"
+                                                        data-item-name="{{ $food['name'] }}@if(!empty($variant['value'])) - {{ $variant['value'] }}@endif"
                                                         data-item-price="{{ $variant['price'] }}"
                                                         data-item-image="{{ $food['image'] }}"
                                                         data-item-stock="{{ $variant['stock'] }}" data-item-type="variant"
@@ -245,12 +242,8 @@
                 </section>
 
                 {{-- RIGHT SIDEBAR (FIXED SCROLL) --}}
-
-
-
                 <aside id="bookingSidebar" class="fixed top-48 right-10 w-[320px] space-y-4">
 
-                    <!-- CART -->
                     <div class="rounded-3xl bg-zinc-900 border border-white/10 overflow-hidden shadow-xl">
 
                         <div class="border-b border-white/10 px-5 py-4">
@@ -261,7 +254,7 @@
 
                         <div id="cartItems"
                             class="max-h-[350px] overflow-y-auto overflow-x-hidden px-5 py-4 space-y-3
-               scrollbar-thin scrollbar-thumb-yellow-400 scrollbar-track-transparent">
+                                scrollbar-thin scrollbar-thumb-yellow-400 scrollbar-track-transparent">
 
                             <p class="text-gray-500">
                                 Chưa có món nào
@@ -271,22 +264,19 @@
 
                     </div>
 
-                    <!-- TOTAL -->
                     <div class="bg-zinc-900 border border-white/10 rounded-3xl p-5 text-center">
                         <p class="text-xs text-gray-500">Tổng tiền</p>
                         <div id="subtotalPrice" class="text-3xl font-black text-yellow-400">
-                            0đ
+                            {{ number_format($seatTotalPrice) }}đ
                         </div>
                     </div>
 
-                    <!-- CHECKOUT -->
-                    <a id="btnCheckout"
+                    <a id="btnCheckout" href="{{ route('dat_ve.checkout', ['suat_chieu_id' => $suatChieu->id]) }}"
                         class="block w-full rounded-2xl bg-yellow-400 py-3 text-center font-black uppercase tracking-[0.2em] text-black hover:bg-yellow-300">
                         Checkout
                     </a>
 
-                    <!-- BACK -->
-                    <a
+                    <a href="{{ route('dat_ve.chon_ghe', ['movie' => $suatChieu->id]) }}?ghe={{ request()->query('ghe') }}"
                         class="inline-flex w-full items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300 hover:bg-white/10">
                         ← Quay lại chọn ghế
                     </a>
@@ -299,8 +289,10 @@
     </div>
 
 @endsection
+
 <script>
     const storageKey = 'booking_deadline_{{ $suatChieu->id }}';
+    const baseSeatPrice = parseInt("{{ $seatTotalPrice }}") || 0;
 
     let cart = {};
     let countdownInterval = null;
@@ -330,10 +322,10 @@
         const items = Object.values(cart).filter(i => i.qty > 0);
 
         let html = '';
-        let total = 0;
+        let foodTotal = 0;
 
         items.forEach(item => {
-            total += item.qty * item.price;
+            foodTotal += item.qty * item.price;
 
             html += `
             <div class="border-b border-white/10 py-3">
@@ -358,7 +350,9 @@
         });
 
         cartItems.innerHTML = html || '<p class="text-gray-500">Chưa có món nào</p>';
-        subtotalPrice.innerText = formatCurrency(total);
+        
+        let grandTotal = baseSeatPrice + foodTotal;
+        subtotalPrice.innerText = formatCurrency(grandTotal);
 
         localStorage.setItem('food_cart', JSON.stringify(cart));
 
@@ -470,7 +464,8 @@
         let value = Number(input.value);
 
         if (value > stock) input.value = stock;
-        if (value < 0 || isNaN(value)) input.value = 0;
+        // CHUẨN NGHIỆP VỤ: Không để số lượng nhỏ hơn 1 khi nhập trực tiếp
+        if (value < 1 || isNaN(value)) input.value = 1;
     });
 
     document.addEventListener('click', function(event) {
@@ -483,10 +478,10 @@
             const card = addButton.closest('.bg-zinc-900');
             const qtyEl = card.querySelector('.item-qty');
 
-            const qty = qtyEl ? Number(qtyEl.value || 0) : 0;
+            const qty = qtyEl ? Number(qtyEl.value || 1) : 1;
 
             if (qty === 0) {
-                return; // Không làm gì cả
+                return;
             }
 
             addToCart({
@@ -498,7 +493,8 @@
                 qty: qty
             });
 
-            if (qtyEl) qtyEl.value = 0;
+            // CHUẨN NGHIỆP VỤ: Sau khi thêm thành công, reset ô nhập liệu về số 1 thay vì số 0
+            if (qtyEl) qtyEl.value = 1;
             return;
         }
 
@@ -509,7 +505,8 @@
             const qtyEl = card.querySelector('.item-qty');
 
             let qty = Number(qtyEl.value);
-            qtyEl.value = Math.max(0, qty - 1);
+            // CHUẨN NGHIỆP VỤ: Giới hạn tối thiểu là 1, không cho phép giảm xuống 0
+            qtyEl.value = Math.max(1, qty - 1);
             return;
         }
 
@@ -568,10 +565,22 @@
             checkoutBtn.addEventListener('click', function(e) {
                 e.preventDefault();
 
-                const cartData = encodeURIComponent(JSON.stringify(cart));
+                const items = Object.values(cart).filter(i => i.qty > 0);
+                const cartData = encodeURIComponent(JSON.stringify(items));
                 const baseUrl = this.getAttribute('href');
 
-                const url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'food_cart=' + cartData;
+                if (!baseUrl || baseUrl === '#') {
+                    alert('Tuyến đường checkout chưa được thiết lập cấu hình.');
+                    return;
+                }
+
+                const currentParams = new URLSearchParams(window.location.search);
+                const seatParam = currentParams.get('ghe') || '';
+
+                let url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'food_cart=' + cartData;
+                if (seatParam) {
+                    url += '&ghe=' + encodeURIComponent(seatParam);
+                }
 
                 window.location.href = url;
             });
@@ -585,13 +594,15 @@
         renderCart();
         startCountdown();
     });
+    
     document.addEventListener('DOMContentLoaded', function() {
 
         const sidebar = document.getElementById('bookingSidebar');
         const footer = document.querySelector('.cine-footer');
 
         function updateSidebar() {
-
+            if (!sidebar) return;
+            if (!footer) return;
             const footerTop = footer.getBoundingClientRect().top + window.scrollY;
             const sidebarHeight = sidebar.offsetHeight;
 

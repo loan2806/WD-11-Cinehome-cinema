@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\ChiTietCombo;
 use App\Models\ComboItem;
+use App\Models\DoAn;
 use App\Models\Food;
 use Illuminate\Database\Seeder;
 
@@ -47,17 +49,17 @@ class ComboFakeSeeder extends Seeder
 
         foreach ($combos as $comboSku => $items) {
 
-            $combo = Food::where('sku', $comboSku)->first();
+            $combo = DoAn::where('sku', $comboSku)->first();
 
             if (!$combo) {
                 continue;
             }
 
-            ComboItem::where('combo_food_id', $combo->id)->delete();
+            ChiTietCombo::where('combo_food_id', $combo->id)->delete();
 
             foreach ($items as $item) {
 
-                $food = Food::where('sku', $item['sku'])->first();
+                $food = DoAn::where('sku', $item['sku'])->first();
 
                 if (!$food) {
                     continue;
@@ -71,7 +73,7 @@ class ComboFakeSeeder extends Seeder
                     continue;
                 }
 
-                ComboItem::create([
+                ChiTietCombo::create([
                     'combo_food_id'   => $combo->id,
                     'food_variant_id' => $variant->id,
                     'quantity'        => $item['qty'],

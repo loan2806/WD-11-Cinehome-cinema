@@ -129,90 +129,101 @@
 
                             </div>
 
+                        </div>
 
-                            {{-- TOTAL --}}
-                            {{-- TOTAL --}}
-                            <div class="py-6 border-b border-white/10">
 
-                                <div class="flex justify-between">
-                                    <span>Tiền ghế</span>
-                                    <span>{{ number_format($seatTotalPrice, 0, ',', '.') }}đ</span>
-                                </div>
+                        {{-- TOTAL --}}
+                        <div class="py-6 border-b border-white/10">
 
-                                <div class="flex justify-between mt-2">
-                                    <span>Tiền đồ ăn</span>
-                                    <span>{{ number_format($foodTotal, 0, ',', '.') }}đ</span>
-                                </div>
-
+                            <div class="flex justify-between">
+                                <span>Tiền ghế</span>
+                                <span>{{ number_format($seatTotalPrice, 0, ',', '.') }}đ</span>
                             </div>
 
-                            {{-- ================= VOUCHER ================= --}}
-                            <div class="py-6 border-b border-white/10">
-
-                                <h3 class="mb-4 text-lg font-black text-yellow-400">
-                                    Mã giảm giá
-                                </h3>
-
-                                <div class="flex gap-2">
-
-                                    <input type="text" id="voucherCode" placeholder="Nhập mã voucher..."
-                                        class="flex-1 rounded-2xl border border-white/10 bg-[#1d1d1d] px-4 py-3 text-white outline-none focus:border-yellow-400">
-
-                                    <button type="button" onclick="applyVoucher()"
-                                        class="rounded-2xl bg-yellow-400 px-5 font-black text-black hover:bg-yellow-300">
-                                        Áp dụng
-                                    </button>
-
-                                </div>
-
-                                <div id="voucherResult"
-                                    class="mt-3 hidden rounded-xl border border-yellow-400/30 bg-yellow-400/10 p-3 text-sm text-yellow-300">
-                                    ✔ Voucher đã áp dụng
-                                </div>
-
-
-
-                                <div
-                                    class="border-t border-white/10 mt-4 pt-4 flex justify-between text-yellow-400 text-2xl font-black">
-                                    <span>Tổng</span>
-                                    <span id="grandTotal">{{ number_format($grandTotal, 0, ',', '.') }}đ</span>
-                                </div>
-
-                            </div>
-
-
-                            {{-- PAYMENT --}}
-                            <div class="pt-6">
-
-                                <h2 class="text-xl font-black text-yellow-400 mb-4">Thanh toán</h2>
-
-                                <label
-                                    class="flex items-center gap-3 border border-yellow-400 bg-yellow-400/10 p-4 rounded-2xl">
-                                    <input type="radio" checked name="payment_method" class="accent-yellow-400">
-                                    <span>Online (VNPay / MoMo)</span>
-                                </label>
-
-                                <button
-                                    class="mt-6 w-full rounded-2xl bg-yellow-400 py-4 font-black text-black hover:bg-yellow-300">
-                                    THANH TOÁN NGAY
-                                </button>
-                                <a href="{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe={{ request('ghe') }}"
-                                    class="mt-3 flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/5 py-4 font-semibold text-gray-300 transition hover:border-white/40 hover:bg-white/10 hover:text-white">
-                                    ← Quay lại chọn đồ ăn
-                                </a>
-
+                            <div class="flex justify-between mt-2">
+                                <span>Tiền đồ ăn</span>
+                                <span>{{ number_format($foodTotal, 0, ',', '.') }}đ</span>
                             </div>
 
                         </div>
 
+                        {{-- ================= VOUCHER ================= --}}
+                        <div class="py-6 border-b border-white/10">
+
+                            <h3 class="mb-4 text-lg font-black text-yellow-400">
+                                Mã giảm giá
+                            </h3>
+
+                            <div class="flex gap-2">
+
+                                <input type="text" id="voucherCode" placeholder="Nhập mã voucher..."
+                                    class="flex-1 rounded-2xl border border-white/10 bg-[#1d1d1d] px-4 py-3 text-white outline-none focus:border-yellow-400">
+
+                                <button type="button" onclick="applyVoucher()"
+                                    class="rounded-2xl bg-yellow-400 px-5 font-black text-black hover:bg-yellow-300">
+                                    Áp dụng
+                                </button>
+
+                            </div>
+
+                            <div id="voucherResult"
+                                class="mt-3 hidden rounded-xl border border-yellow-400/30 bg-yellow-400/10 p-3 text-sm text-yellow-300">
+                                ✔ Voucher đã áp dụng
+                            </div>
+
+                            <div
+                                class="border-t border-white/10 mt-4 pt-4 flex justify-between text-yellow-400 text-2xl font-black">
+                                <span>Tổng</span>
+                                <span id="grandTotal">{{ number_format($grandTotal, 0, ',', '.') }}đ</span>
+                            </div>
+
+                        </div>
+
+
+                        {{-- PAYMENT --}}
+                        <div class="pt-6">
+
+                            <h2 class="text-xl font-black text-yellow-400 mb-4">Thanh toán</h2>
+
+                            <form id="paymentForm" action="{{ url('/dat-ve/xu-ly-thanh-toan/' . $suatChieu->id) }}" method="POST">
+                                @csrf
+                                {{-- Các input ẩn chứa thông tin cần gửi lên backend --}}
+                                <input type="hidden" name="ghe" value="{{ request('ghe') }}">
+                                <input type="hidden" name="food_cart" value="{{ request('food_cart') }}">
+                                <input type="hidden" id="submitVoucherCode" name="voucher_code" value="">
+
+                                <label
+                                    class="flex items-center gap-3 border border-yellow-400 bg-yellow-400/10 p-4 rounded-2xl cursor-pointer">
+                                    <input type="radio" checked name="payment_method" value="online" class="accent-yellow-400">
+                                    <span>Online (VNPay / MoMo)</span>
+                                </label>
+
+                                <button type="submit"
+                                    class="mt-6 w-full rounded-2xl bg-yellow-400 py-4 font-black text-black hover:bg-yellow-300">
+                                    THANH TOÁN NGAY
+                                </button>
+                            </form>
+
+                            <a href="{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe={{ request('ghe') }}"
+                                class="mt-3 flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/5 py-4 font-semibold text-gray-300 transition hover:border-white/40 hover:bg-white/10 hover:text-white">
+                                ← Quay lại chọn đồ ăn
+                            </a>
+
+                        </div>
+
                     </div>
+
                 </div>
 
             </div>
 
-        @endsection
+        </div>
 
-       @section('scripts')
+    </div>
+
+@endsection
+
+@section('scripts')
 <script>
     let appliedVoucher = null;
     let baseTotal = {{ $grandTotal }};
@@ -227,11 +238,17 @@
             return;
         }
 
-        // Demo
+        // Demo dữ liệu voucher
         appliedVoucher = {
             code: code,
             discount: 20000
         };
+
+        // Gắn mã voucher vào thẻ input ẩn của form để gửi lên server khi submit
+        const submitVoucherInput = document.getElementById('submitVoucherCode');
+        if (submitVoucherInput) {
+            submitVoucherInput.value = code;
+        }
 
         result.classList.remove('hidden');
         result.innerHTML =
@@ -258,13 +275,13 @@
 
         function setStoredDeadline(deadline) {
             try {
-                localStorage.setItem(storageKey, String(deadline));
+                return localStorage.setItem(storageKey, String(deadline));
             } catch (e) {}
         }
 
         function clearStoredDeadline() {
             try {
-                localStorage.removeItem(storageKey);
+                return localStorage.removeItem(storageKey);
             } catch (e) {}
         }
 
