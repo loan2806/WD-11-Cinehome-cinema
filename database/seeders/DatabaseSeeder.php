@@ -28,7 +28,10 @@ class DatabaseSeeder extends Seeder
             VeXemPhimSeeder::class,
             NhanVienSeeder::class,
             CaiDatHeThongSeeder::class,
+            FoodCategorySeeder::class,
             FoodSeeder::class,
+            FoodVariantSeeder::class,
+            ComboFakeSeeder::class,
             DanhMucTinSeeder::class,
             TinTucSeeder::class,
             VoucherSeeder::class,
@@ -39,8 +42,15 @@ class DatabaseSeeder extends Seeder
         $admins = NguoiDung::where('vai_tro', 'admin')->orWhere('email', 'like', '%admin%')->get();
         foreach ($admins as $admin) { $admin->assignRole('Quản trị viên'); }
         $managers = NguoiDung::where('vai_tro', 'quan_ly')->orWhere('vai_tro', 'manager')->get();
-        foreach ($managers as $manager) { $manager->assignRole('Quản lý'); }
+        foreach ($managers as $manager) { 
+            if ($manager->email !== 'cinemamanager@cinehome.vn') {
+                $manager->assignRole('Quản lý'); 
+            }
+        }
         $staffs = NguoiDung::where('vai_tro', 'nhan_vien')->orWhere('vai_tro', 'staff')->get();
         foreach ($staffs as $staff) { $staff->assignRole('Nhân viên'); }
+
+        // Tài khoản Quản lý phòng chiếu được tạo sau để tránh bị đè vai trò bởi logic đồng bộ admin ở trên
+        $this->call(CinemaManagerSeeder::class);
     }
 }

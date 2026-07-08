@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class GheNgoi extends Model
 {
     use HasFactory, SoftDeletes;
-
+    
     protected $table = 'ghe_ngois';
 
     protected $fillable = [

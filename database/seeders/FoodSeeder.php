@@ -2,8 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\Food;
+use App\Models\DanhMucDoAn;
+use App\Models\DoAn;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
 
 class FoodSeeder extends Seeder
 {
@@ -13,64 +16,58 @@ class FoodSeeder extends Seeder
             [
                 'sku' => 'POPCORN-SWEET',
                 'name' => 'Bắp ngọt',
-                'category' => 'Bắp rang',
-                'price' => 45000,
-                'stock_quantity' => 120,
-                'min_stock_quantity' => 20,
+                'category_name' => 'Đồ ăn',
                 'sort_order' => 10,
             ],
             [
                 'sku' => 'POPCORN-CHEESE',
                 'name' => 'Bắp phô mai',
-                'category' => 'Bắp rang',
-                'price' => 55000,
-                'stock_quantity' => 90,
-                'min_stock_quantity' => 15,
+                'category_name' => 'Đồ ăn',
                 'sort_order' => 20,
             ],
             [
-                'sku' => 'DRINK-COKE',
+                'sku' => 'COKE-330',
                 'name' => 'Coca Cola',
-                'category' => 'Nước uống',
-                'price' => 25000,
-                'stock_quantity' => 180,
-                'min_stock_quantity' => 30,
+                'category_name' => 'Nước uống',
                 'sort_order' => 30,
             ],
             [
-                'sku' => 'DRINK-PEPSI',
+                'sku' => 'PEPSI-330',
                 'name' => 'Pepsi',
-                'category' => 'Nước uống',
-                'price' => 25000,
-                'stock_quantity' => 160,
-                'min_stock_quantity' => 30,
+                'category_name' => 'Nước uống',
                 'sort_order' => 40,
             ],
             [
-                'sku' => 'COMBO-1CORN-2DRINK',
+                'sku' => 'COMBO-1',
                 'name' => 'Combo 1 bắp 2 nước',
-                'category' => 'Combo',
-                'price' => 95000,
-                'stock_quantity' => 80,
-                'min_stock_quantity' => 10,
+                'category_name' => 'Combo',
                 'sort_order' => 50,
             ],
             [
                 'sku' => 'COMBO-FAMILY',
                 'name' => 'Combo gia đình',
-                'category' => 'Combo',
-                'price' => 155000,
-                'stock_quantity' => 45,
-                'min_stock_quantity' => 8,
+                'category_name' => 'Combo',
                 'sort_order' => 60,
             ],
         ];
 
+        $images = collect(File::files(public_path('storage/foods')));
+
         foreach ($foods as $food) {
-            Food::updateOrCreate(
+            $category = DanhMucDoAn::firstOrCreate(
+                ['name' => $food['category_name']],
+                ['slug' => Str::slug($food['category_name'])]
+            );
+
+            DoAn::updateOrCreate(
                 ['sku' => $food['sku']],
-                $food + [
-                    'image' => null,
+                [
+                    'name' => $food['name'],
+                    'category_id' => $category->id,
+                    'sort_order' => $food['sort_order'],
+                    'image' => $images->isNotEmpty()
+                        ? $images->random()->getFilename()
+                        : 'placeholder.png',
                     'description' => null,
                     'is_active' => true,
                 ]

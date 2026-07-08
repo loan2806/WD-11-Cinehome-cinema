@@ -33,11 +33,11 @@ class PhimsFactory extends Factory
             ]);
         }
 
-        $anh = File::files(public_path('storage/movies'));
+        $anh = collect(File::files(public_path('storage/movies')));
 
-        $poster = collect($anh)
-            ->random()
-            ->getFilename();
+        $poster = $anh->isNotEmpty()
+            ? $anh->random()->getFilename()
+            : 'placeholder.jpg';
 
         return [
             'ten_phim' => $tenPhim,

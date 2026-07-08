@@ -45,7 +45,7 @@
             @forelse($suatChieus as $suatChieu)
                 <article class="flex min-h-[430px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#151515]">
                     <img
-                        src="{{ $suatChieu->phim->poster ?? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800' }}"
+                        src="{{ asset('storage/movies/' .  $suatChieu->phim->poster)  }}"
                         alt="{{ $suatChieu->phim->ten_phim }}"
                         class="h-52 w-full object-cover"
                     >
@@ -58,7 +58,7 @@
                         <p class="mt-2 text-sm text-gray-400"><i class="fa-solid fa-ticket text-[#f5a623]"></i> {{ number_format($suatChieu->gia_ve, 0, ',', '.') }} VND</p>
 
                         <div class="mt-auto flex gap-3 pt-5">
-                            <a href="{{ route('dat_ve.chon_ghe', ['suat_chieu_id' => $suatChieu->id]) }}" class="flex-1 rounded-xl bg-[#f5a623] py-2 text-center text-sm font-black text-black hover:bg-[#ffc04d]">
+                            <a href="{{route('dat_ve.chon_ghe', ['movie' => $movie->slug]) }}" class="flex-1 rounded-xl bg-[#f5a623] py-2 text-center text-sm font-black text-black hover:bg-[#ffc04d]">
                                 Dat ve
                             </a>
                             <a href="{{ route('user.showtimes.show', $suatChieu) }}" class="flex-1 rounded-xl bg-white/10 py-2 text-center text-sm font-bold text-white hover:bg-white/20">

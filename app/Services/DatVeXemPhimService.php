@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 
 class DatVeXemPhimService
@@ -25,11 +26,20 @@ class DatVeXemPhimService
         $gheDaDat = $this->gheDaDat($suatChieu);
         $gheTheoHang = $this->gheTheoHang($suatChieu, $gheDaDat);
 
+        $soCot = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
+            ->max('cot');
+
+        $soHang = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
+            ->distinct('hang_ghe_id')
+            ->count();
+
         return [
             'suatChieu' => $suatChieu,
             'gheTheoHang' => $gheTheoHang,
             'gheDaDat' => $gheDaDat,
-            'coSoDoGheThat' => $gheTheoHang->flatten(1)->contains(fn ($seat) => $seat['nguon'] === 'database'),
+            'soCot' => $soCot,
+            'soHang' => $soHang,
+            'coSoDoGheThat' => $gheTheoHang->flatten(1)->contains(fn($seat) => $seat['nguon'] === 'database'),
             'phuongThucThanhToan' => $this->phuongThucThanhToan(),
         ];
     }
@@ -70,7 +80,7 @@ class DatVeXemPhimService
 
             $tongTien = $chiTietGhe->sum('gia');
 
-            return VeXemPhim::create([
+            $ve = VeXemPhim::create([
                 'nguoi_dung_id' => $nguoiDungId,
                 'nhan_vien_id' => null,
                 'suat_chieu_id' => $lockedShowtime->id,
@@ -85,6 +95,31 @@ class DatVeXemPhimService
                 'loai_ve' => 'truc_tuyen',
                 'trang_thai' => 'da_thanh_toan',
             ]);
+            $setKey = "seat_lock_set:suat:{$lockedShowtime->id}";
+
+            $seatIds = Cache::get($setKey, []);
+
+            foreach ($maGheDuocChon as $seat) {
+
+                Cache::forget(
+                    "seat_lock:suat:{$lockedShowtime->id}:seat:{$seat}"
+                );
+
+                $seatIds = array_values(
+                    array_filter(
+                        $seatIds,
+                        fn($s) => strtoupper($s) !== strtoupper($seat)
+                    )
+                );
+            }
+
+            Cache::put(
+                $setKey,
+                $seatIds,
+                now()->addMinutes(30)
+            );
+
+            return $ve;
         });
     }
 
@@ -92,7 +127,7 @@ class DatVeXemPhimService
     {
         $suatChieu->loadMissing(['phim', 'rapChieuPhim']);
 
-        return VeXemPhim::query()
+        $gheDaDat = VeXemPhim::query()
             ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung'])
             ->where(function ($query) use ($suatChieu) {
                 $query->where('suat_chieu_id', $suatChieu->id)
@@ -101,13 +136,46 @@ class DatVeXemPhimService
                             ->whereNull('suat_chieu_id')
                             ->where('ten_phim', $suatChieu->phim->ten_phim)
                             ->where('ten_rap', $suatChieu->rapChieuPhim->ten_rap)
-                            ->where('thoi_gian_chieu', $suatChieu->thoi_gian_chieu->format('Y-m-d H:i:s'));
+                            ->where(
+                                'thoi_gian_chieu',
+                                $suatChieu->thoi_gian_chieu->format('Y-m-d H:i:s')
+                            );
                     });
             })
             ->pluck('ma_ghe')
-            ->flatMap(fn ($seats) => explode(',', (string) $seats))
-            ->map(fn ($seat) => strtoupper(trim($seat)))
+            ->flatMap(fn($seats) => explode(',', (string)$seats))
+            ->map(fn($seat) => strtoupper(trim($seat)))
             ->filter()
+            ->unique()
+            ->values();
+
+        // ==========================
+        // THÊM GHẾ ĐANG GIỮ
+        // ==========================
+
+        $setKey = "seat_lock_set:suat:{$suatChieu->id}";
+
+        $seatIds = Cache::get($setKey, []);
+
+        $lockedSeats = collect();
+
+        foreach ($seatIds as $seat) {
+
+            $lock = Cache::get("seat_lock:suat:{$suatChieu->id}:seat:{$seat}");
+
+            if ($lock) {
+
+                $identifier = auth()->id() ?? session()->getId();
+
+                if (($lock['identifier'] ?? null) != $identifier) {
+
+                    $lockedSeats->push(strtoupper($seat));
+                }
+            }
+        }
+
+        return $gheDaDat
+            ->merge($lockedSeats)
             ->unique()
             ->values()
             ->all();
@@ -148,9 +216,9 @@ class DatVeXemPhimService
 
             if ($gheTrongPhong->isNotEmpty()) {
                 return $gheTrongPhong
-                    ->map(fn (GheNgoi $ghe) => $this->payloadGhe($ghe, $suatChieu, $gheDaDat))
+                    ->map(fn(GheNgoi $ghe) => $this->payloadGhe($ghe, $suatChieu, $gheDaDat))
                     ->groupBy('hang')
-                    ->map(fn ($seats) => $seats->sortBy('cot')->values());
+                    ->map(fn($seats) => $seats->sortBy('cot')->values());
             }
         }
 
@@ -183,19 +251,53 @@ class DatVeXemPhimService
         $phuThu = (float) ($ghe->loaiGhe?->phu_thu ?? 0);
         $daDat = in_array(strtoupper($ghe->ma_ghe), $gheDaDat, true);
         $baoTri = $ghe->trang_thai !== 'hoat_dong';
+        $gia = (float) $suatChieu->gia_ve + $phuThu;
+
+        if ($ghe->loaiGhe?->la_couple) {
+            $gia = ($suatChieu->gia_ve * 2) + $phuThu;
+        }
 
         return [
+            'id' => $ghe->id,
+
             'nguon' => 'database',
+
             'ma_ghe' => strtoupper($ghe->ma_ghe),
-            'hang' => $ghe->hangGhe->ten_hang ?? strtoupper(substr($ghe->ma_ghe, 0, 1)),
-            'cot' => (int) $ghe->cot,
+
+            'hang' => $ghe->hangGhe->ten_hang
+                ?? strtoupper(substr($ghe->ma_ghe, 0, 1)),
+
+            'cot' => (int)$ghe->cot,
+
+            'display_number' => $ghe->cot,
+
             'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
-            'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#2a2a2a',
+
+            'loai_ghe_id' => $ghe->loai_ghe_id,
+
+            'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#666666',
+
             'phu_thu' => $phuThu,
-            'gia' => (float) $suatChieu->gia_ve + $phuThu,
+
+            'gia' => $gia,
+
             'da_dat' => $daDat,
+
             'bao_tri' => $baoTri,
-            'chon_duoc' => ! $daDat && ! $baoTri,
+
+            'chon_duoc' => !$daDat && !$baoTri,
+
+            'is_couple' => (bool)($ghe->loaiGhe?->la_couple),
+
+            'couple_position' => ($ghe->loaiGhe?->la_couple)
+                ? ($ghe->cot % 2 == 1 ? 'left' : 'right')
+                : null,
+
+            'cot_end' => ($ghe->loaiGhe?->la_couple)
+                ? $ghe->cot + 1
+                : null,
+
+            'trang_thai' => $ghe->trang_thai,
         ];
     }
 
@@ -223,7 +325,7 @@ class DatVeXemPhimService
     private function chuanHoaDanhSachGhe(string $rawSeats): Collection
     {
         $seats = collect(explode(',', $rawSeats))
-            ->map(fn ($seat) => strtoupper(trim($seat)))
+            ->map(fn($seat) => strtoupper(trim($seat)))
             ->filter()
             ->unique()
             ->values();
@@ -257,8 +359,8 @@ class DatVeXemPhimService
         }
 
         $gheKhongChonDuoc = $maGheDuocChon
-            ->map(fn ($maGhe) => $tatCaGhe[$maGhe])
-            ->filter(fn ($seat) => ! $seat['chon_duoc']);
+            ->map(fn($maGhe) => $tatCaGhe[$maGhe])
+            ->filter(fn($seat) => ! $seat['chon_duoc']);
 
         if ($gheKhongChonDuoc->isNotEmpty()) {
             throw ValidationException::withMessages([
@@ -266,7 +368,7 @@ class DatVeXemPhimService
             ]);
         }
 
-        return $maGheDuocChon->map(fn ($maGhe) => $tatCaGhe[$maGhe])->values();
+        return $maGheDuocChon->map(fn($maGhe) => $tatCaGhe[$maGhe])->values();
     }
 
     private function taoMaVe(): string

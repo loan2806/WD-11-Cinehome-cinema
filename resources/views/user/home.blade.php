@@ -53,7 +53,7 @@
                     <div class="hero-buttons">
 
                         @if ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
-                            <a href="{{ route('booking', $movie) }}" class="btn-book">
+                            <a href="{{ route('dat_ve.chon_ghe', ['movie' => $movie->slug]) }}" class="btn-book">
                                 <i class="fa-solid fa-ticket"></i> Đặt vé ngay
                             </a>
                         @else

@@ -41,8 +41,11 @@ class RoleMiddleware
             }
         }
 
-        // 2. SỬA: Đổi từ $user->role sang $user->vai_tro và so khớp với mảng đã map tiếng Việt
-        if (!in_array($user->vai_tro, $mappedRoles)) {
+        // 2. Ưu tiên vai_trò tiếng Việt; nếu không khớp thì bổ sung kiểm tra vai trò Spatie
+        $hasRole = in_array($user->vai_tro, $mappedRoles)
+            || $user->hasAnyRole($mappedRoles);
+
+        if (!$hasRole) {
             abort(403, 'Bạn không có quyền truy cập trang này.');
         }
 

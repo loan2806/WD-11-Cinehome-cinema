@@ -15,6 +15,7 @@ class TaiKhoanSeeder extends Seeder
         $roleSystem = Role::findOrCreate('Quản lý hệ thống', 'web');
         $roleAdmin  = Role::findOrCreate('Quản trị viên', 'web');
         $roleStaff  = Role::findOrCreate('Nhân viên', 'web');
+        $roleCinemaManager = Role::findOrCreate('Quản lý phòng chiếu', 'web');
 
         // 1. Tài khoản Quản lý hệ thống tách biệt
         $systemUser = NguoiDung::updateOrCreate(
@@ -28,7 +29,7 @@ class TaiKhoanSeeder extends Seeder
         );
         $systemUser->assignRole($roleSystem);
 
-        // 2. Tài khoản Admin điều hành rạp (Sub-Admin)
+        // 2. Tài khoản Admin điều hành rạp
         $adminUser = NguoiDung::updateOrCreate(
             ['email' => 'admin@cinehome.vn'],
             [
@@ -38,9 +39,21 @@ class TaiKhoanSeeder extends Seeder
                 'trang_thai_hoat_dong' => true,
             ]
         );
-        $adminUser->assignRole($roleAdmin); // Gán vai trò để vượt qua Gate::before
+        $adminUser->assignRole($roleAdmin);
 
-        // 3. Tài khoản Nhân viên quầy
+        // 3. Tài khoản Quản lý phòng chiếu
+        $cinemaManagerUser = NguoiDung::updateOrCreate(
+            ['email' => 'cinemamanager@cinehome.vn'],
+            [
+                'ho_ten' => 'Quản lý phòng chiếu CineHome',
+                'mat_khau' => Hash::make('12345678'),
+                'vai_tro' => 'quan_ly',
+                'trang_thai_hoat_dong' => true,
+            ]
+        );
+        $cinemaManagerUser->assignRole($roleCinemaManager);
+
+        // 4. Tài khoản Nhân viên quầy
         $staffUser = NguoiDung::updateOrCreate(
             ['email' => 'staff@cinehome.vn'],
             [
@@ -52,7 +65,7 @@ class TaiKhoanSeeder extends Seeder
         );
         $staffUser->assignRole($roleStaff);
 
-        // 4. Tài khoản Khách hàng
+        // 5. Tài khoản Khách hàng
         NguoiDung::updateOrCreate(
             ['email' => 'user@cinehome.vn'],
             [
