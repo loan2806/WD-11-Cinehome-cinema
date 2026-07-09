@@ -80,18 +80,16 @@
             <table class="w-full text-sm text-left">
                 <thead class="bg-[#1f1f1f] text-gray-300">
                     <tr>
-                        <th class="px-4 py-4 text-center">Tháng/Năm</th>
-                        <th class="px-4 py-4 text-left">Nhân viên</th>
-                        <th class="px-4 py-4 text-center">Công / Giờ làm</th>
-                        <th class="px-4 py-4 text-center">Tăng ca</th>
-                        <th class="px-4 py-4 text-center">Muộn / Sớm</th>
-                        <th class="px-4 py-4 text-center">Nghỉ (P/KP)</th>
-                        <th class="px-4 py-4 text-right">Lương cơ bản</th>
-                        <th class="px-4 py-4 text-right">Phụ cấp / Thưởng</th>
-                        <th class="px-4 py-4 text-right text-red-400">Phạt</th>
-                        <th class="px-4 py-4 text-right text-[#d99a32] font-black">Lương thực nhận</th>
-                        <th class="px-4 py-4 text-center">Thanh toán</th>
-                        <th class="px-4 py-4 text-center">Thao tác</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-center align-middle">Tháng/Năm</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-left align-middle">Nhân viên</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-center align-middle">Ngày công</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-center align-middle">Tăng ca</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-right align-middle">Lương cơ bản</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-right align-middle">Thưởng / Phụ cấp</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-right align-middle text-red-400">Phạt</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-right align-middle text-[#d99a32] font-black">Lương thực nhận</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-center align-middle">Trạng thái</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-center align-middle">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-white/10 text-white">
@@ -104,26 +102,17 @@
                                 <div class="font-bold">{{ $bl->nguoiDung->ho_ten }}</div>
                                 <div class="text-xs text-gray-400">{{ $bl->nguoiDung->email }}</div>
                             </td>
-                            <td class="px-4 py-4 text-center">
-                                <div class="font-semibold text-green-400">{{ $bl->tong_ngay_cong }} công</div>
-                                <div class="text-xs text-gray-400">({{ $bl->tong_gio_lam }} giờ)</div>
+                            <td class="px-4 py-4 text-center font-bold text-green-400">
+                                {{ $bl->tong_ngay_cong }}
                             </td>
                             <td class="px-4 py-4 text-center font-bold text-yellow-400">
                                 {{ $bl->tong_gio_tang_ca }}h
-                            </td>
-                            <td class="px-4 py-4 text-center text-xs">
-                                <span class="text-orange-400">Muộn: {{ $bl->so_lan_di_muon }}</span><br>
-                                <span class="text-yellow-500">Sớm: {{ $bl->so_lan_ve_som }}</span>
-                            </td>
-                            <td class="px-4 py-4 text-center text-xs">
-                                <span class="text-blue-400">Phép: {{ $bl->so_ngay_nghi_phep }}</span><br>
-                                <span class="text-red-400">KP: {{ $bl->so_ngay_nghi_khong_phep }}</span>
                             </td>
                             <td class="px-4 py-4 text-right font-medium">
                                 {{ number_format($bl->luong_co_ban, 0, ',', '.') }}đ
                             </td>
                             <td class="px-4 py-4 text-right text-xs">
-                                <span>Cấp: {{ number_format($bl->phu_cap, 0, ',', '.') }}đ</span><br>
+                                <span>Phụ cấp: {{ number_format($bl->phu_cap, 0, ',', '.') }}đ</span><br>
                                 <span class="text-green-400">Thưởng: {{ number_format($bl->thuong, 0, ',', '.') }}đ</span>
                             </td>
                             <td class="px-4 py-4 text-right font-medium text-red-400">
