@@ -83,7 +83,7 @@
                         <label for="gio_vao" class="mb-2 block text-sm font-bold text-gray-300">Giờ vào <span class="text-red-500">*</span></label>
                         <input type="time" name="gio_vao" id="gio_vao" 
                                value="{{ old('gio_vao', $chamCong->gio_vao ? \Carbon\Carbon::parse($chamCong->gio_vao)->format('H:i') : '08:00') }}"
-                               class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none [color-scheme:dark]">
+                               class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none cursor-pointer" style="color-scheme: dark;" onclick="this.showPicker()">
                         @error('gio_vao')
                             <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                         @enderror
@@ -92,7 +92,7 @@
                         <label for="gio_ra" class="mb-2 block text-sm font-bold text-gray-300">Giờ ra <span class="text-red-500">*</span></label>
                         <input type="time" name="gio_ra" id="gio_ra" 
                                value="{{ old('gio_ra', $chamCong->gio_ra ? \Carbon\Carbon::parse($chamCong->gio_ra)->format('H:i') : '17:00') }}"
-                               class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none [color-scheme:dark]">
+                               class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none cursor-pointer" style="color-scheme: dark;" onclick="this.showPicker()">
                         @error('gio_ra')
                             <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                         @enderror
