@@ -92,7 +92,7 @@
                             </a>
 
                             {{-- LỰA CHỌN 2: BIỆN PHÁP ĐIỀU PHỐI QUYỀN LỰC QUAY VỀ HẠ TẦNG QUẢN TRỊ --}}
-                            @if($user->hasRole('Quản trị viên') || $user->hasRole('Quản lý hệ thống') || $user->hasRole('Quản lý') || $user->hasRole('Nhân viên') || in_array($user->vai_tro, ['admin', 'quan_ly_he_thong', 'nhan_vien', 'sub_admin']))
+                            @if($user->hasRole('Quản trị viên') || $user->hasRole('Quản lý hệ thống') || $user->hasRole('Quản lý') || $user->hasRole('Quản lý phòng chiếu') || $user->hasRole('Nhân viên') || in_array($user->vai_tro, ['admin', 'quan_ly_he_thong', 'nhan_vien']))
                                 <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 w-full px-3 py-2.5 text-sm font-bold rounded-lg text-[#f4c56a] bg-[#d99a32]/10 hover:bg-[#d99a32]/20 hover:text-white transition text-decoration-none border border-[#d99a32]/10 my-1">
                                     <i class="fa-solid fa-gauge-high text-xs w-4"></i> Quay lại Quản trị
                                 </a>
