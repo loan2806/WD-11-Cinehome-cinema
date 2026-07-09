@@ -33,7 +33,7 @@
                 <a href="{{ route('dat_ve.chon_rap') }}" class="{{ request()->routeIs('dat_ve.*') ? 'active' : '' }}">
                     Đặt vé
                 </a>
-                <a href="#" class="{{ request()->is('khuyen-mai*') ? 'active' : '' }}">
+                <a href="{{ route('user.voucher.index') }}">
                     Khuyến mãi
                 </a>
             </nav>
