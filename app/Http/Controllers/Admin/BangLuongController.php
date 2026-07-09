@@ -11,10 +11,71 @@ use Carbon\Carbon;
 
 class BangLuongController extends Controller
 {
+    private function calculateProvisionalSalary($employee, $thang, $nam)
+    {
+        $chamCongs = ChamCong::where('nguoi_dung_id', $employee->id)
+            ->whereMonth('ngay', $thang)
+            ->whereYear('ngay', $nam)
+            ->get();
+
+        $tongNgayCong = $chamCongs->where('nghi_phep', false)->where('nghi_khong_phep', false)->count();
+        $tongGioLam = $chamCongs->sum('so_gio_lam');
+        $tongGioTangCa = $chamCongs->sum('so_gio_tang_ca');
+        $soLanDiMuon = $chamCongs->where('di_muon', true)->count();
+        $soLanVeSom = $chamCongs->where('ve_som', true)->count();
+        $soNgayNghiPhep = $chamCongs->where('nghi_phep', true)->count();
+        $soNgayNghiKhongPhep = $chamCongs->where('nghi_khong_phep', true)->count();
+
+        $luongCoBan = $employee->luong_co_ban;
+        
+        // Quy chuẩn: 26 ngày công chuẩn
+        $luongNgay = $luongCoBan / 26;
+        $luongGio = $luongNgay / 8;
+
+        $luongThoiGian = $luongNgay * $tongNgayCong;
+        $luongTangCa = $tongGioTangCa * $luongGio * 1.5;
+
+        // Tự động tính phạt
+        $phatDiMuon = $soLanDiMuon * 50000; // 50k/lần
+        $phatVeSom = $soLanVeSom * 50000;   // 50k/lần
+        $phatKhongPhep = $soNgayNghiKhongPhep * 200000; // 200k/ngày nghỉ không phép
+        $phatTuDong = $phatDiMuon + $phatVeSom + $phatKhongPhep;
+
+        $luongThucNhanTamTinh = max(0, $luongThoiGian + $luongTangCa - $phatTuDong);
+
+        return (object)[
+            'id' => null, // Không có id vì chưa lưu
+            'nguoi_dung_id' => $employee->id,
+            'nguoiDung' => $employee,
+            'thang' => $thang,
+            'nam' => $nam,
+            'tong_ngay_cong' => $tongNgayCong,
+            'tong_gio_lam' => $tongGioLam,
+            'tong_gio_tang_ca' => $tongGioTangCa,
+            'so_lan_di_muon' => $soLanDiMuon,
+            'so_lan_ve_som' => $soLanVeSom,
+            'so_ngay_nghi_phep' => $soNgayNghiPhep,
+            'so_ngay_nghi_khong_phep' => $soNgayNghiKhongPhep,
+            'luong_co_ban' => $luongCoBan,
+            'phu_cap' => 0,
+            'thuong' => 0,
+            'phat' => $phatTuDong,
+            'luong_thuc_nhan' => round($luongThucNhanTamTinh, 2),
+            'trang_thai' => 'tam_tinh',
+            'is_tam_tinh' => true,
+            // Thêm các thuộc tính cho chi tiết tính lương
+            'luong_thoi_gian' => round($luongThoiGian, 2),
+            'luong_tang_ca' => round($luongTangCa, 2),
+        ];
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();
         
+        $thang = $request->input('thang', date('m'));
+        $nam = $request->input('nam', date('Y'));
+
         // Lấy danh sách nhân viên thuộc chi nhánh để làm bộ lọc
         $nvQuery = NguoiDung::where('vai_tro', 'nhan_vien');
         if ($user->rap_chieu_phim_id !== null) {
@@ -22,40 +83,40 @@ class BangLuongController extends Controller
         }
         $nhanViens = $nvQuery->get();
 
-        $query = BangLuong::with('nguoiDung');
-
-        // Phân quyền theo chi nhánh
-        if ($user->rap_chieu_phim_id !== null) {
-            $query->whereHas('nguoiDung', function ($q) use ($user) {
-                $q->where('rap_chieu_phim_id', $user->rap_chieu_phim_id);
-            });
-        }
-
-        // Lọc
+        // Lọc nhân viên cho danh sách
+        $listQuery = clone $nvQuery;
         if ($request->filled('nhan_vien_id')) {
-            $query->where('nguoi_dung_id', $request->nhan_vien_id);
+            $listQuery->where('id', $request->nhan_vien_id);
         }
 
-        if ($request->filled('thang')) {
-            $query->where('thang', $request->thang);
-        }
+        $employeesPaginator = $listQuery->paginate(10);
+        
+        // Map data: lấy BangLuong đã chốt, nếu không có thì tạm tính
+        $bangLuongsData = $employeesPaginator->map(function ($emp) use ($thang, $nam) {
+            $bl = BangLuong::with('nguoiDung')->where('nguoi_dung_id', $emp->id)->where('thang', $thang)->where('nam', $nam)->first();
+            if ($bl) {
+                $bl->is_tam_tinh = false;
+                return $bl;
+            }
+            return $this->calculateProvisionalSalary($emp, $thang, $nam);
+        });
 
-        if ($request->filled('nam')) {
-            $query->where('nam', $request->nam);
-        }
+        // Tạo custom paginator để truyền ra view (chỉ fake dữ liệu items, giữ nguyên links)
+        $bangLuongs = new \Illuminate\Pagination\LengthAwarePaginator(
+            $bangLuongsData,
+            $employeesPaginator->total(),
+            $employeesPaginator->perPage(),
+            $employeesPaginator->currentPage(),
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
 
-        $bangLuongs = $query->orderBy('nam', 'desc')
-            ->orderBy('thang', 'desc')
-            ->paginate(10);
-
-        return view('admin.bang-luongs.index', compact('bangLuongs', 'nhanViens'));
+        return view('admin.bang-luongs.index', compact('bangLuongs', 'nhanViens', 'thang', 'nam'));
     }
 
     public function showCalculateForm(Request $request)
     {
         $user = auth()->user();
         
-        // Lấy danh sách nhân viên thuộc chi nhánh
         $nvQuery = NguoiDung::where('vai_tro', 'nhan_vien');
         if ($user->rap_chieu_phim_id !== null) {
             $nvQuery->where('rap_chieu_phim_id', $user->rap_chieu_phim_id);
@@ -72,58 +133,25 @@ class BangLuongController extends Controller
         if ($nhanVienSelectedId) {
             $nhanVienSelected = NguoiDung::find($nhanVienSelectedId);
             
-            // Bảo mật: check chi nhánh
             if ($user->rap_chieu_phim_id !== null && $nhanVienSelected->rap_chieu_phim_id !== $user->rap_chieu_phim_id) {
                 abort(403);
             }
 
-            // Quét dữ liệu chấm công
-            $chamCongs = ChamCong::where('nguoi_dung_id', $nhanVienSelectedId)
-                ->whereMonth('ngay', $thang)
-                ->whereYear('ngay', $nam)
-                ->get();
-
-            // Tổng hợp số liệu
-            $tongNgayCong = $chamCongs->where('nghi_phep', false)->where('nghi_khong_phep', false)->count();
-            $tongGioLam = $chamCongs->sum('so_gio_lam');
-            $tongGioTangCa = $chamCongs->sum('so_gio_tang_ca');
-            $soLanDiMuon = $chamCongs->where('di_muon', true)->count();
-            $soLanVeSom = $chamCongs->where('ve_som', true)->count();
-            $soNgayNghiPhep = $chamCongs->where('nghi_phep', true)->count();
-            $soNgayNghiKhongPhep = $chamCongs->where('nghi_khong_phep', true)->count();
-
-            // Tính lương
-            $luongCoBan = $nhanVienSelected->luong_co_ban;
+            $prov = $this->calculateProvisionalSalary($nhanVienSelected, $thang, $nam);
             
-            // Quy chuẩn: 26 ngày công chuẩn
-            $luongNgay = $luongCoBan / 26;
-            $luongGio = $luongNgay / 8;
-
-            $luongThoiGian = $luongNgay * $tongNgayCong;
-            $luongTangCa = $tongGioTangCa * $luongGio * 1.5;
-
-            // Tự động tính phạt
-            $phatDiMuon = $soLanDiMuon * 50000; // 50k/lần
-            $phatVeSom = $soLanVeSom * 50000;   // 50k/lần
-            $phatKhongPhep = $soNgayNghiKhongPhep * 200000; // 200k/ngày nghỉ không phép
-            $phatTuDong = $phatDiMuon + $phatVeSom + $phatKhongPhep;
-
-            // Lương thực nhận tạm tính
-            $luongThucNhanTamTinh = max(0, $luongThoiGian + $luongTangCa - $phatTuDong);
-
             $dataCalculated = [
-                'tong_ngay_cong' => $tongNgayCong,
-                'tong_gio_lam' => $tongGioLam,
-                'tong_gio_tang_ca' => $tongGioTangCa,
-                'so_lan_di_muon' => $soLanDiMuon,
-                'so_lan_ve_som' => $soLanVeSom,
-                'so_ngay_nghi_phep' => $soNgayNghiPhep,
-                'so_ngay_nghi_khong_phep' => $soNgayNghiKhongPhep,
-                'luong_co_ban' => $luongCoBan,
-                'luong_thoi_gian' => round($luongThoiGian, 2),
-                'luong_tang_ca' => round($luongTangCa, 2),
-                'phat_tu_dong' => round($phatTuDong, 2),
-                'luong_thuc_nhan_tam_tinh' => round($luongThucNhanTamTinh, 2),
+                'tong_ngay_cong' => $prov->tong_ngay_cong,
+                'tong_gio_lam' => $prov->tong_gio_lam,
+                'tong_gio_tang_ca' => $prov->tong_gio_tang_ca,
+                'so_lan_di_muon' => $prov->so_lan_di_muon,
+                'so_lan_ve_som' => $prov->so_lan_ve_som,
+                'so_ngay_nghi_phep' => $prov->so_ngay_nghi_phep,
+                'so_ngay_nghi_khong_phep' => $prov->so_ngay_nghi_khong_phep,
+                'luong_co_ban' => $prov->luong_co_ban,
+                'luong_thoi_gian' => $prov->luong_thoi_gian,
+                'luong_tang_ca' => $prov->luong_tang_ca,
+                'phat_tu_dong' => $prov->phat,
+                'luong_thuc_nhan_tam_tinh' => $prov->luong_thuc_nhan,
             ];
         }
 

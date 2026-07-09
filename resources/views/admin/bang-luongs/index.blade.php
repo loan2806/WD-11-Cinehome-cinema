@@ -133,37 +133,49 @@
                                 {{ number_format($bl->luong_thuc_nhan, 0, ',', '.') }}đ
                             </td>
                             <td class="px-4 py-4 text-center">
-                                <form method="POST" action="{{ route('admin.bang-luongs.toggle-payment', $bl) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    @if($bl->trang_thai === 'da_thanh_toan')
-                                        <button type="submit" class="rounded-full bg-green-500/20 px-3 py-1 text-xs font-bold text-green-400 hover:bg-green-500/30 transition">
-                                            Đã chi trả
-                                        </button>
-                                    @else
-                                        <button type="submit" class="rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-400 hover:bg-red-500/30 transition">
-                                            Chưa chi trả
-                                        </button>
-                                    @endif
-                                </form>
+                                @if(isset($bl->is_tam_tinh) && $bl->is_tam_tinh)
+                                    <span class="rounded-full bg-gray-500/20 px-3 py-1 text-xs font-bold text-gray-400">
+                                        Tạm tính
+                                    </span>
+                                @else
+                                    <form method="POST" action="{{ route('admin.bang-luongs.toggle-payment', $bl->id) }}">
+                                        @csrf
+                                        @method('PATCH')
+                                        @if($bl->trang_thai === 'da_thanh_toan')
+                                            <button type="submit" class="rounded-full bg-green-500/20 px-3 py-1 text-xs font-bold text-green-400 hover:bg-green-500/30 transition">
+                                                Đã chi trả
+                                            </button>
+                                        @else
+                                            <button type="submit" class="rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-400 hover:bg-red-500/30 transition">
+                                                Chưa chi trả
+                                            </button>
+                                        @endif
+                                    </form>
+                                @endif
                             </td>
                             <td class="px-4 py-4">
                                 <div class="flex justify-center gap-1">
-                                    <form method="POST" action="{{ route('admin.bang-luongs.destroy', $bl) }}"
-                                          onsubmit="return confirm('Bạn có chắc chắn muốn xóa bảng lương này?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="rounded-lg bg-red-500 px-3 py-2 text-white hover:bg-red-600 transition">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    </form>
+                                    <a href="{{ route('admin.bang-luongs.calculate', ['nhan_vien_id' => $bl->nguoi_dung_id, 'thang' => $bl->thang, 'nam' => $bl->nam]) }}"
+                                       class="rounded-lg bg-blue-500 px-3 py-2 text-white hover:bg-blue-600 transition" title="Xem chi tiết">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    @if(!isset($bl->is_tam_tinh) || !$bl->is_tam_tinh)
+                                        <form method="POST" action="{{ route('admin.bang-luongs.destroy', $bl->id) }}"
+                                              onsubmit="return confirm('Bạn có chắc chắn muốn xóa bảng lương này?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="rounded-lg bg-red-500 px-3 py-2 text-white hover:bg-red-600 transition">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="12" class="py-10 text-center text-gray-400">
-                                Chưa có dữ liệu bảng lương nào được chốt
+                                Không có dữ liệu
                             </td>
                         </tr>
                     @endforelse

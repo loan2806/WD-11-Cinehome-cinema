@@ -25,19 +25,21 @@
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
                     <input type="text" name="keyword" value="{{ request('keyword') }}"
-                           placeholder="Tên hoặc email nhân viên..."
+                           placeholder="VD: abc@cinehome.vn"
                            class="w-full rounded-xl border border-white/10 bg-[#101010] py-3 pl-11 pr-4 text-white focus:border-[#d99a32] focus:outline-none">
                 </div>
             </div>
             <div>
                 <label class="mb-2 block text-sm font-bold text-gray-300">Theo ngày</label>
-                <input type="date" name="ngay" value="{{ request('ngay') }}"
-                       class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none cursor-pointer" style="color-scheme: dark;" onclick="this.showPicker()">
+                <input type="{{ request('ngay') ? 'date' : 'text' }}" name="ngay" value="{{ request('ngay') }}" placeholder="Chọn ngày..."
+                       onfocus="(this.type='date'); this.showPicker()" onblur="if(!this.value) this.type='text'"
+                       class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none cursor-pointer" style="color-scheme: dark;" onclick="if(this.type==='date') this.showPicker()">
             </div>
             <div>
                 <label class="mb-2 block text-sm font-bold text-gray-300">Theo tháng</label>
-                <input type="month" name="thang" value="{{ request('thang') }}"
-                       class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none cursor-pointer" style="color-scheme: dark;" onclick="this.showPicker()">
+                <input type="{{ request('thang') ? 'month' : 'text' }}" name="thang" value="{{ request('thang') }}" placeholder="Chọn tháng..."
+                       onfocus="(this.type='month'); this.showPicker()" onblur="if(!this.value) this.type='text'"
+                       class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none cursor-pointer" style="color-scheme: dark;" onclick="if(this.type==='month') this.showPicker()">
             </div>
             <div class="flex items-end gap-2">
                 <button type="submit" class="w-full rounded-xl bg-[#d99a32] py-3 font-bold text-[#2b1208] transition hover:bg-[#d99a32]/85">

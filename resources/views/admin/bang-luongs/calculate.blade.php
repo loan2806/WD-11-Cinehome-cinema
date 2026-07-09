@@ -183,7 +183,8 @@
                         <!-- Lương thực nhận -->
                         <div class="border-t border-white/10 pt-4">
                             <label class="mb-2 block text-sm font-bold text-[#d99a32]">LƯƠNG THỰC NHẬN CHỐT (đ)</label>
-                            <input type="number" name="luong_thuc_nhan" id="luong_thuc_nhan" value="{{ (int)$dataCalculated['luong_thuc_nhan_tam_tinh'] }}" readonly
+                            <input type="hidden" name="luong_thuc_nhan" id="luong_thuc_nhan" value="{{ (int)$dataCalculated['luong_thuc_nhan_tam_tinh'] }}">
+                            <input type="text" id="luong_thuc_nhan_display" value="{{ number_format((int)$dataCalculated['luong_thuc_nhan_tam_tinh'], 0, ',', '.') }}" readonly
                                    class="w-full rounded-xl border-0 bg-[#2b1208]/50 px-4 py-4 text-[#d99a32] font-black text-xl text-right cursor-not-allowed">
                         </div>
 
@@ -204,6 +205,7 @@
                 const thuongInput = document.getElementById('thuong');
                 const phatInput = document.getElementById('phat');
                 const luongThucNhanInput = document.getElementById('luong_thuc_nhan');
+                const luongThucNhanDisplay = document.getElementById('luong_thuc_nhan_display');
 
                 function updateLuongThucNhan() {
                     const phuCap = parseFloat(phuCapInput.value) || 0;
@@ -211,7 +213,9 @@
                     const phat = parseFloat(phatInput.value) || 0;
 
                     const thucNhan = Math.max(0, luongThoiGian + luongTangCa + phuCap + thuong - phat);
-                    luongThucNhanInput.value = Math.round(thucNhan);
+                    const rounded = Math.round(thucNhan);
+                    luongThucNhanInput.value = rounded;
+                    luongThucNhanDisplay.value = new Intl.NumberFormat('vi-VN').format(rounded);
                 }
 
                 phuCapInput.addEventListener('input', updateLuongThucNhan);
