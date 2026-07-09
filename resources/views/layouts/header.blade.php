@@ -21,16 +21,16 @@
                     Giới thiệu rạp
                 </a>
 
-                <a href="{{ route('user.cinemas.map') }}"
-                    class="{{ request()->routeIs('user.cinemas.map') ? 'active' : '' }}">
-                    Bản đồ rạp
+                <a href="{{ route('user.tin-tuc.index') }}"
+                    class="{{ request()->routeIs('user.tin-tuc.*') || request()->routeIs('user.khuyen-mai.*') ? 'active' : '' }}">
+                    Tin tức
                 </a>
 
                 <a href="{{ route('user.showtimes.index') }}"
                     class="{{ request()->routeIs('user.showtimes.*') ? 'active' : '' }}">
                     Lịch chiếu
                 </a>
-                <a href="{{ route('dat_ve.chon_rap') }}" class="{{ request()->routeIs('dat_ve.*') ? 'active' : '' }}">
+                <a href="{{ route('dat_ve.chon_phim') }}" class="{{ request()->routeIs('dat_ve.*') ? 'active' : '' }}">
                     Đặt vé
                 </a>
                 <a href="{{ route('user.voucher.index') }}">

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>@yield('title', 'CineHome - Đặt vé xem phim')</title>
@@ -7,7 +8,7 @@
 
     {{-- Bootstrap --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
@@ -29,15 +30,76 @@
         @yield('content')
     </main>
     @guest
-    @include('components.auth-modal')
-@endguest
+        @include('components.auth-modal')
+    @endguest
 
-@include('layouts.footer')
+    @include('layouts.footer')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     {{-- JS riêng --}}
     <script src="{{ asset('assets/js/user-home.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
+            /* ================= STORAGE ================= */
+            function clearBookingData() {
+                localStorage.removeItem('food_cart');
+
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('booking_deadline_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+            }
+
+            function isBookingPage() {
+                return window.location.pathname.includes('/dat-ve');
+            }
+
+            function isHomePage() {
+                return window.location.pathname === '/';
+            }
+
+            /* ================= RESET RULES ================= */
+
+            // 1. Click về HOME => xoá toàn bộ booking
+            document.querySelectorAll('a[href="/"], a[href="{{ url('/') }}"]').forEach(link => {
+                link.addEventListener('click', function() {
+                    clearBookingData();
+                });
+            });
+
+            // 2. Click menu ngoài booking => xoá
+            document.querySelectorAll('header a[href]').forEach(link => {
+                link.addEventListener('click', function() {
+                    const href = this.getAttribute('href');
+
+                    if (href === '/' || href === '/home') {
+                        clearBookingData();
+                    }
+                });
+            });
+
+            // 3. Click nút đặt vé mới => reset session cũ
+            document.querySelectorAll('.booking-link').forEach(link => {
+                link.addEventListener('click', clearBookingData);
+            });
+
+            // 4. Chỉ reset khi THOÁT HẲN booking (không phải back trong flow)
+            window.addEventListener('beforeunload', function() {
+                if (!isBookingPage()) {
+                    clearBookingData();
+                }
+            });
+
+            // 5. Nếu đang ở HOME thì auto clear luôn
+            if (isHomePage()) {
+                clearBookingData();
+            }
+
+        });
+    </script>
     @yield('scripts')
 </body>
+
 </html>

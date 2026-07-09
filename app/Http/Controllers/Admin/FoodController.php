@@ -3,220 +3,344 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CapnhatFoodRequest;
+use App\Http\Requests\Admin\ThemmoiFoodRequest;
 use App\Models\Food;
+use App\Models\FoodCategory;
+use App\Models\FoodVariant;
 use App\Services\AdminNotificationService;
 use App\Traits\Loggable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
+use App\Models\ComboItem;
 
 class FoodController extends Controller
 {
     use Loggable;
 
+    public function type()
+    {
+        return view('admin.foods.type');
+    }
+
     public function index(Request $request)
     {
-        $query = Food::withCount('invoiceItems');
+        $query = Food::with(['variants', 'category'])
+            ->withCount('invoiceItems');
+
+        $foods = $query
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         if ($request->filled('q')) {
+
             $keyword = trim($request->q);
 
             $query->where(function ($q) use ($keyword) {
                 $q->where('name', 'like', "%{$keyword}%")
                     ->orWhere('sku', 'like', "%{$keyword}%")
-                    ->orWhere('category', 'like', "%{$keyword}%");
+                    ->orWhereHas('category', function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%");
+                    });
             });
         }
 
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
         }
 
         if ($request->filled('status')) {
+
             match ($request->status) {
+
                 'active' => $query->where('is_active', true),
+
                 'inactive' => $query->where('is_active', false),
-                'out' => $query->where('stock_quantity', 0),
-                'low' => $query->whereColumn('stock_quantity', '<=', 'min_stock_quantity')
-                    ->where('stock_quantity', '>', 0),
+
                 default => null,
             };
         }
 
-        $foods = $query
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->paginate(12)
-            ->withQueryString();
 
-        $categories = Food::query()
-            ->whereNotNull('category')
-            ->where('category', '!=', '')
-            ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
+        $categories = FoodCategory::orderBy('name')->get();
 
         $summary = [
             'total' => Food::count(),
             'active' => Food::where('is_active', true)->count(),
-            'low' => Food::whereColumn('stock_quantity', '<=', 'min_stock_quantity')
-                ->where('stock_quantity', '>', 0)
-                ->count(),
-            'out' => Food::where('stock_quantity', 0)->count(),
+            'inactive' => Food::where('is_active', false)->count(),
         ];
 
-        return view('admin.foods.index', compact('foods', 'categories', 'summary'));
+        return view(
+            'admin.foods.index',
+            compact(
+                'foods',
+                'categories',
+                'summary'
+            )
+        );
     }
 
-    public function store(Request $request)
+    public function create(Request $request)
     {
-        $data = $this->validatedData($request);
+
+        $categories = FoodCategory::orderBy('name')->get();
+
+        // Lấy tất cả món KHÔNG phải Combo
+
+        $variants = FoodVariant::with('food')
+            ->whereHas('food', function ($q) {
+                $q->whereHas('category', function ($q) {
+                    $q->where('name', 'not like', '%Combo%');
+                });
+            })
+            ->get();
+
+        return view('admin.foods.create', compact(
+            'categories',
+            'variants',
+        ));
+    }
+
+    public function show(Food $food)
+    {
+        $food->load('variants');
+
+        return view('admin.foods.show', compact('food'));
+    }
+
+    public function edit(Food $food)
+    {
+        $food->load('category', 'variants', 'comboItems');
+
+        $categories = FoodCategory::orderBy('name')->get();
+
+        $variants = FoodVariant::with('food')
+            ->whereHas('food', function ($q) {
+                $q->where('category_id', '!=', FoodCategory::where('name', 'Combo')->value('id'));
+            })
+            ->get();
+
+        return view('admin.foods.edit', compact(
+            'food',
+            'categories',
+            'variants'
+        ));
+    }
+
+    public function store(ThemmoiFoodRequest $request)
+    {
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('foods', 'public');
+        }
+        $category = FoodCategory::find($data['category_id']);
+
+        if ($category && str_contains(strtolower($category->name), 'combo')) {
+
+            $variantIds = collect($request->input('combo_items', []))
+                ->pluck('variant_id')
+                ->filter();
+
+            if ($variantIds->count() != $variantIds->unique()->count()) {
+
+                return back()
+                    ->withInput()
+                    ->with('error', 'Không được chọn trùng biến thể trong cùng một combo.');
+            }
+        }
 
         $food = Food::create($data);
 
+        $isCombo = str_contains(
+            strtolower($food->category->name),
+            'combo'
+        );
+
+        if ($isCombo) {
+
+
+
+            foreach ($request->input('combo_items', []) as $item) {
+
+                if (empty($item['variant_id'])) {
+                    continue;
+                }
+
+                ComboItem::create([
+                    'combo_food_id'   => $food->id,
+                    'food_variant_id' => $item['variant_id'],
+                    'quantity'        => $item['quantity'] ?? 1,
+                ]);
+            }
+        } else {
+
+            $variants = collect($request->input('variants', []))
+                ->map(function ($variant) {
+                    return [
+                        'value' => trim($variant['value'] ?? ''),
+                        'price' => (float) ($variant['price'] ?? 0),
+                        'stock_quantity' => (int) ($variant['stock_quantity'] ?? 0),
+                        'is_active' => true,
+                    ];
+                })
+                ->filter(function ($variant) {
+                    return $variant['value'] !== '';
+                })
+                ->values()
+                ->all();
+
+            if (! empty($variants)) {
+                $food->variants()->createMany($variants);
+            }
+        }
+
         AdminNotificationService::push(
-            'Thêm món mới vào menu',
-            "Đã thêm món {$food->name} vào menu quầy",
+            'Thêm món mới',
+            "Đã thêm {$food->name}",
             'Success'
         );
 
         $this->ghiNhatKy(
             $request,
-            'Thêm món menu & kho',
-            'Cấu hình Menu & Kho hàng',
-            "Thêm món {$food->name}, tồn kho {$food->stock_quantity}"
+            'Thêm món',
+            'Quản lý đồ ăn',
+            "Đã thêm {$food->name}"
         );
 
         return redirect()
             ->route('admin.foods.index')
-            ->with('success', 'Đã thêm món vào menu và kho hàng.');
+            ->with(
+                'success',
+                'Thêm món thành công.'
+            );
     }
 
-    public function update(Request $request, Food $food)
+    public function update(CapnhatFoodRequest $request, Food $food)
     {
-        $data = $this->validatedData($request, $food);
+        $data = $request->validated();
+
+        // Upload ảnh mới
+        if ($request->hasFile('image')) {
+
+            if ($food->image && Storage::disk('public')->exists($food->image)) {
+                Storage::disk('public')->delete($food->image);
+            }
+
+            $data['image'] = $request->file('image')->store('foods', 'public');
+        }
+
+
 
         $food->update($data);
 
+        // Nếu là combo thì cập nhật thành phần
+        $food->load('category');
+
+        if (str_contains(strtolower($food->category->name), 'combo')) {
+
+            $errors = [];
+            $seen = [];
+
+            foreach ($request->input('combo_items', []) as $index => $item) {
+
+                $variantId = $item['variant_id'] ?? null;
+
+                if (!$variantId) continue;
+
+                if (isset($seen[$variantId])) {
+
+                    $prevIndex = $seen[$variantId];
+
+                    $errors["combo_items.$index.variant_id"] = 'Biến thể bị trùng trong combo.';
+                    $errors["combo_items.$prevIndex.variant_id"] = 'Biến thể bị trùng trong combo.';
+                } else {
+                    $seen[$variantId] = $index;
+                }
+            }
+
+            if (!empty($errors)) {
+                return back()
+                    ->withInput()
+                    ->withErrors($errors);
+            }
+
+            $food->comboItems()->delete();
+
+            foreach ($request->input('combo_items', []) as $item) {
+
+                if (empty($item['variant_id'])) {
+                    continue;
+                }
+
+                $food->comboItems()->create([
+                    'food_variant_id' => $item['variant_id'],
+                    'quantity'        => $item['quantity'] ?? 1,
+                ]);
+            }
+        }
+
         $this->ghiNhatKy(
             $request,
-            'Cập nhật món menu & kho',
-            'Cấu hình Menu & Kho hàng',
-            "Cập nhật món {$food->name}"
+            'Cập nhật món',
+            'Quản lý đồ ăn',
+            "Cập nhật {$food->name}"
         );
 
         return redirect()
-            ->route('admin.foods.index', $request->query())
-            ->with('success', 'Đã cập nhật món và thông tin kho.');
+            ->route('admin.foods.index')
+            ->with('success', 'Cập nhật thành công.');
     }
 
-    public function updateStock(Request $request, Food $food)
-    {
-        $data = $request->validate([
-            'adjustment' => ['required', 'integer', 'not_in:0', 'min:-999999', 'max:999999'],
-            'note' => ['nullable', 'string', 'max:255'],
-        ], [
-            'adjustment.not_in' => 'Số lượng điều chỉnh phải khác 0.',
-        ]);
-
-        $newQuantity = $food->stock_quantity + (int) $data['adjustment'];
-
-        if ($newQuantity < 0) {
-            throw ValidationException::withMessages([
-                'adjustment' => 'Tồn kho sau điều chỉnh không được nhỏ hơn 0.',
-            ]);
-        }
-
-        $oldQuantity = $food->stock_quantity;
-        $food->update(['stock_quantity' => $newQuantity]);
-
-        $this->ghiNhatKy(
-            $request,
-            'Điều chỉnh tồn kho đồ ăn',
-            'Cấu hình Menu & Kho hàng',
-            "Điều chỉnh {$food->name}: {$oldQuantity} -> {$newQuantity}",
-            [
-                'adjustment' => (int) $data['adjustment'],
-                'note' => $data['note'] ?? null,
-            ]
-        );
-
-        return back()->with('success', 'Đã điều chỉnh tồn kho.');
-    }
-
-    public function toggleStatus(Request $request, Food $food)
-    {
+    public function toggleStatus(
+        Request $request,
+        Food $food
+    ) {
         $food->update([
             'is_active' => ! $food->is_active,
         ]);
 
         $this->ghiNhatKy(
             $request,
-            'Bật/tắt món trên menu',
-            'Cấu hình Menu & Kho hàng',
-            ($food->is_active ? 'Bật bán ' : 'Tạm ẩn ') . $food->name
+            'Đổi trạng thái',
+            'Quản lý đồ ăn',
+            ($food->is_active ? 'Bật ' : 'Ẩn ') . $food->name
         );
 
         return back()->with(
             'success',
-            $food->is_active ? 'Đã bật món trên menu.' : 'Đã tạm ẩn món khỏi menu.'
+            $food->is_active
+                ? 'Đã bật món.'
+                : 'Đã tạm ẩn món.'
         );
     }
-
-    public function destroy(Request $request, Food $food)
-    {
+    public function destroy(
+        Request $request,
+        Food $food
+    ) {
         if ($food->invoiceItems()->exists()) {
+
             return back()->with(
                 'error',
-                'Không thể xóa món đã phát sinh hóa đơn. Hãy tạm ẩn món để giữ đúng lịch sử bán hàng.'
+                'Không thể xóa món đã phát sinh hóa đơn.'
             );
         }
 
         $name = $food->name;
+
         $food->delete();
 
         $this->ghiNhatKy(
             $request,
-            'Xóa món menu & kho',
-            'Cấu hình Menu & Kho hàng',
-            "Xóa món {$name}"
+            'Xóa món',
+            'Quản lý đồ ăn',
+            "Đã xóa {$name}"
         );
 
-        return back()->with('success', 'Đã xóa món khỏi menu.');
-    }
-
-    private function validatedData(Request $request, ?Food $food = null): array
-    {
-        $data = $request->validate([
-            'sku' => [
-                'nullable',
-                'string',
-                'max:50',
-                'regex:/^[A-Z0-9_-]+$/i',
-                Rule::unique('foods', 'sku')->ignore($food?->id),
-            ],
-            'name' => ['required', 'string', 'max:255'],
-            'category' => ['nullable', 'string', 'max:100'],
-            'image' => ['nullable', 'string', 'max:2048'],
-            'price' => ['required', 'numeric', 'min:0', 'max:999999999'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'stock_quantity' => ['required', 'integer', 'min:0', 'max:999999'],
-            'min_stock_quantity' => ['required', 'integer', 'min:0', 'max:999999'],
-            'sort_order' => ['nullable', 'integer', 'min:0', 'max:999999'],
-            'is_active' => ['nullable', 'boolean'],
-        ], [
-            'sku.regex' => 'Mã SKU chỉ gồm chữ, số, dấu gạch ngang hoặc gạch dưới.',
-        ]);
-
-        $data['sku'] = filled($data['sku'] ?? null) ? Str::upper(trim($data['sku'])) : null;
-        $data['name'] = trim($data['name']);
-        $data['category'] = filled($data['category'] ?? null) ? trim($data['category']) : null;
-        $data['image'] = filled($data['image'] ?? null) ? trim($data['image']) : null;
-        $data['description'] = filled($data['description'] ?? null) ? trim($data['description']) : null;
-        $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
-        $data['is_active'] = $request->boolean('is_active');
-
-        return $data;
+        return back()->with(
+            'success',
+            'Đã xóa món thành công.'
+        );
     }
 }

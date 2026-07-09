@@ -219,4 +219,12 @@
         background-color: rgba(27, 23, 20, 0.9) !important;
         accent-color: #d99a32;
     }
+    .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
 }

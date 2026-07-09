@@ -200,7 +200,7 @@
                                         Hãy chọn phim và đặt vé để bắt đầu trải nghiệm CineHome.
                                     </p>
 
-                                    <a href="{{ route('dat_ve.chon_rap') }}"
+                                    <a href="{{ route('dat_ve.chon_phim') }}"
                                        class="mt-5 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-black text-white no-underline transition hover:-translate-y-1 hover:shadow-lg hover:shadow-[#d99a32]/30">
                                         <i class="fa-solid fa-plus"></i>
                                         Đặt vé ngay

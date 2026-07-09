@@ -13,17 +13,14 @@ return new class extends Migration
                 $table->id();
                 $table->string('sku', 50)->nullable()->unique();
                 $table->string('name');
-                $table->string('image')->nullable();
-                $table->decimal('price', 12, 2)->default(0);
+                $table->string('image');
                 $table->string('category', 100)->nullable()->index();
                 $table->text('description')->nullable();
-                $table->unsignedInteger('stock_quantity')->default(0);
-                $table->unsignedInteger('min_stock_quantity')->default(5);
                 $table->boolean('is_active')->default(true);
                 $table->unsignedInteger('sort_order')->default(0);
                 $table->timestamps();
 
-                $table->index(['is_active', 'stock_quantity']);
+                $table->index(['is_active']);
             });
         } else {
             Schema::table('foods', function (Blueprint $table) {
@@ -39,16 +36,11 @@ return new class extends Migration
                     $table->text('description')->nullable()->after('category');
                 }
 
-                if (! Schema::hasColumn('foods', 'stock_quantity')) {
-                    $table->unsignedInteger('stock_quantity')->default(0)->after('description');
-                }
 
-                if (! Schema::hasColumn('foods', 'min_stock_quantity')) {
-                    $table->unsignedInteger('min_stock_quantity')->default(5)->after('stock_quantity');
-                }
+
 
                 if (! Schema::hasColumn('foods', 'is_active')) {
-                    $table->boolean('is_active')->default(true)->after('min_stock_quantity');
+                    $table->boolean('is_active')->default(true)->after('description');
                 }
 
                 if (! Schema::hasColumn('foods', 'sort_order')) {
