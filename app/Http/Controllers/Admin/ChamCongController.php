@@ -107,26 +107,26 @@ class ChamCongController extends Controller
 
             // Tính toán đi muộn / về sớm
             // Quy chuẩn: Vào ca lúc 08:00, ra ca lúc 17:00
-            $gioVaoChuan = Carbon::createFromFormat('H:i', '08:00');
-            $gioRaChuan = Carbon::createFromFormat('H:i', '17:00');
+            $gioVaoChuan = Carbon::parse('08:00');
+            $gioRaChuan = Carbon::parse('17:00');
             
-            $timeVao = Carbon::createFromFormat('H:i', $gioVao);
-            $timeRa = Carbon::createFromFormat('H:i', $gioRa);
+            $timeVao = Carbon::parse($gioVao);
+            $timeRa = Carbon::parse($gioRa);
 
-            $data['di_muon'] = $timeVao->gt($gioVaoChuan->addMinutes(5)); // Đi muộn nếu sau 08:05
-            $data['ve_som'] = $timeRa->lt($gioRaChuan);
+            $data['di_muon'] = clone $timeVao > (clone $gioVaoChuan)->addMinutes(5); // Đi muộn nếu sau 08:05
+            $data['ve_som'] = $timeRa < $gioRaChuan;
 
             // Tính giờ làm thực tế (trừ 1 tiếng nghỉ trưa từ 12:00 - 13:00)
-            $phutLam = $timeRa->diffInMinutes($timeVao);
+            $phutLam = $timeVao->diffInMinutes($timeRa, true); // absolute difference
             
             // Nếu giờ làm bao phủ qua thời gian nghỉ trưa, trừ 60 phút
-            $lunchStart = Carbon::createFromFormat('H:i', '12:00');
-            $lunchEnd = Carbon::createFromFormat('H:i', '13:00');
-            if ($timeVao->lt($lunchStart) && $timeRa->gt($lunchEnd)) {
+            $lunchStart = Carbon::parse('12:00');
+            $lunchEnd = Carbon::parse('13:00');
+            if ($timeVao < $lunchStart && $timeRa > $lunchEnd) {
                 $phutLam -= 60;
             }
 
-            $soGioLam = round($phutLam / 60, 2);
+            $soGioLam = round(max(0, $phutLam) / 60, 2);
             $data['so_gio_lam'] = max(0, min(8, $soGioLam)); // Giờ làm chuẩn tối đa 8 tiếng
 
             // Tính giờ tăng ca tự động hoặc lấy từ input
@@ -134,8 +134,8 @@ class ChamCongController extends Controller
                 $data['so_gio_tang_ca'] = $request->so_gio_tang_ca;
             } else {
                 // Tự động tính tăng ca nếu làm sau 17:00
-                if ($timeRa->gt($gioRaChuan)) {
-                    $phutTangCa = $timeRa->diffInMinutes($gioRaChuan);
+                if ($timeRa > $gioRaChuan) {
+                    $phutTangCa = $gioRaChuan->diffInMinutes($timeRa, true);
                     $data['so_gio_tang_ca'] = round($phutTangCa / 60, 2);
                 } else {
                     $data['so_gio_tang_ca'] = 0.00;
@@ -209,31 +209,31 @@ class ChamCongController extends Controller
             $data['gio_vao'] = $gioVao;
             $data['gio_ra'] = $gioRa;
 
-            $gioVaoChuan = Carbon::createFromFormat('H:i', '08:00');
-            $gioRaChuan = Carbon::createFromFormat('H:i', '17:00');
+            $gioVaoChuan = Carbon::parse('08:00');
+            $gioRaChuan = Carbon::parse('17:00');
             
-            $timeVao = Carbon::createFromFormat('H:i', $gioVao);
-            $timeRa = Carbon::createFromFormat('H:i', $gioRa);
+            $timeVao = Carbon::parse($gioVao);
+            $timeRa = Carbon::parse($gioRa);
 
-            $data['di_muon'] = $timeVao->gt($gioVaoChuan->addMinutes(5));
-            $data['ve_som'] = $timeRa->lt($gioRaChuan);
+            $data['di_muon'] = clone $timeVao > (clone $gioVaoChuan)->addMinutes(5);
+            $data['ve_som'] = $timeRa < $gioRaChuan;
 
-            $phutLam = $timeRa->diffInMinutes($timeVao);
+            $phutLam = $timeVao->diffInMinutes($timeRa, true);
             
-            $lunchStart = Carbon::createFromFormat('H:i', '12:00');
-            $lunchEnd = Carbon::createFromFormat('H:i', '13:00');
-            if ($timeVao->lt($lunchStart) && $timeRa->gt($lunchEnd)) {
+            $lunchStart = Carbon::parse('12:00');
+            $lunchEnd = Carbon::parse('13:00');
+            if ($timeVao < $lunchStart && $timeRa > $lunchEnd) {
                 $phutLam -= 60;
             }
 
-            $soGioLam = round($phutLam / 60, 2);
+            $soGioLam = round(max(0, $phutLam) / 60, 2);
             $data['so_gio_lam'] = max(0, min(8, $soGioLam));
 
             if ($request->filled('so_gio_tang_ca')) {
                 $data['so_gio_tang_ca'] = $request->so_gio_tang_ca;
             } else {
-                if ($timeRa->gt($gioRaChuan)) {
-                    $phutTangCa = $timeRa->diffInMinutes($gioRaChuan);
+                if ($timeRa > $gioRaChuan) {
+                    $phutTangCa = $gioRaChuan->diffInMinutes($timeRa, true);
                     $data['so_gio_tang_ca'] = round($phutTangCa / 60, 2);
                 } else {
                     $data['so_gio_tang_ca'] = 0.00;

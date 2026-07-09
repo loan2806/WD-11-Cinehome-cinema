@@ -32,12 +32,12 @@
             <div>
                 <label class="mb-2 block text-sm font-bold text-gray-300">Theo ngày</label>
                 <input type="date" name="ngay" value="{{ request('ngay') }}"
-                       class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                       class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none [color-scheme:dark]">
             </div>
             <div>
                 <label class="mb-2 block text-sm font-bold text-gray-300">Theo tháng</label>
                 <input type="month" name="thang" value="{{ request('thang') }}"
-                       class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                       class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none [color-scheme:dark]">
             </div>
             <div class="flex items-end gap-2">
                 <button type="submit" class="w-full rounded-xl bg-[#d99a32] py-3 font-bold text-[#2b1208] transition hover:bg-[#d99a32]/85">

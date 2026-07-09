@@ -48,7 +48,7 @@
                 <div>
                     <label for="ngay" class="mb-2 block text-sm font-bold text-gray-300">Ngày chấm công <span class="text-red-500">*</span></label>
                     <input type="date" name="ngay" id="ngay" value="{{ old('ngay', date('Y-m-d')) }}" required
-                           class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                           class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none [color-scheme:dark]">
                     @error('ngay')
                         <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                     @enderror
@@ -86,7 +86,7 @@
                     <div>
                         <label for="gio_vao" class="mb-2 block text-sm font-bold text-gray-300">Giờ vào <span class="text-red-500">*</span></label>
                         <input type="time" name="gio_vao" id="gio_vao" value="{{ old('gio_vao', '08:00') }}"
-                               class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                               class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none [color-scheme:dark]">
                         @error('gio_vao')
                             <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                         @enderror
@@ -94,7 +94,7 @@
                     <div>
                         <label for="gio_ra" class="mb-2 block text-sm font-bold text-gray-300">Giờ ra <span class="text-red-500">*</span></label>
                         <input type="time" name="gio_ra" id="gio_ra" value="{{ old('gio_ra', '17:00') }}"
-                               class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                               class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none [color-scheme:dark]">
                         @error('gio_ra')
                             <p class="mt-1 text-sm text-red-400">{{ $message }}</p>
                         @enderror
