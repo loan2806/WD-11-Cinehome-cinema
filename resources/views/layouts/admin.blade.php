@@ -299,6 +299,14 @@
                                     class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.nhanviens.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                     Danh sách nhân viên
                                 </a>
+                                <a href="{{ route('admin.cham-congs.index') }}"
+                                    class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.cham-congs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
+                                    Chấm công nhân viên
+                                </a>
+                                <a href="{{ route('admin.bang-luongs.index') }}"
+                                    class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.bang-luongs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
+                                    Thống kê lương
+                                </a>
                             @endcan
                             @can('phan_quyen_he_thong')
                                 <a href="{{ route('admin.phan-quyen.index') }}"

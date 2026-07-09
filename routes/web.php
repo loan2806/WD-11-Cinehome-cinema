@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\GheNgoiController;
 use App\Http\Controllers\Admin\HangGheController;
 use App\Http\Controllers\Admin\LoaiGheController;
 use App\Http\Controllers\Admin\NhanVienController;
+use App\Http\Controllers\Admin\ChamCongController;
+use App\Http\Controllers\Admin\BangLuongController;
 use App\Http\Controllers\Admin\NhatKyHoatDongHeThongController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PhanQuyenController;
@@ -306,6 +308,13 @@ Route::middleware(['auth'])
         Route::middleware(['permission:quan_ly_nhan_vien'])->group(function () {
             Route::resource('nhanviens', NhanVienController::class);
             Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
+            Route::resource('cham-congs', ChamCongController::class)->names('cham-congs');
+            
+            Route::get('bang-luongs/calculate', [BangLuongController::class, 'showCalculateForm'])->name('bang-luongs.calculate');
+            Route::post('bang-luongs', [BangLuongController::class, 'store'])->name('bang-luongs.store');
+            Route::get('bang-luongs', [BangLuongController::class, 'index'])->name('bang-luongs.index');
+            Route::patch('bang-luongs/{bangLuong}/toggle-payment', [BangLuongController::class, 'togglePaymentStatus'])->name('bang-luongs.toggle-payment');
+            Route::delete('bang-luongs/{bangLuong}', [BangLuongController::class, 'destroy'])->name('bang-luongs.destroy');
         });
 
         Route::middleware(['permission:thong_ke_doanh_thu'])->group(function () {
