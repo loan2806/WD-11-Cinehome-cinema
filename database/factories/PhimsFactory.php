@@ -33,7 +33,15 @@ class PhimsFactory extends Factory
             ]);
         }
 
-        $anh = collect(File::files(public_path('storage/movies')));
+        $moviePath = storage_path('movies');
+
+        $anhPath = storage_path('app/public/movies');
+
+        $anh = collect();
+
+        if (File::exists($anhPath)) {
+            $anh = collect(File::files($anhPath));
+        }
 
         $poster = $anh->isNotEmpty()
             ? $anh->random()->getFilename()

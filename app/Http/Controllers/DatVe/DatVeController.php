@@ -41,8 +41,16 @@ class DatVeController extends Controller
         if (request()->filled('ngay_chieu')) {
             try {
                 $selectedDate = Carbon::createFromFormat('Y-m-d', request('ngay_chieu'), 'Asia/Ho_Chi_Minh');
-            } catch (\Exception $exception) {
-                $selectedDate = $today;
+            } catch (\Exception $e) {
+
+                \Log::error('PAYOS ERROR', [
+                    'message' => $e->getMessage(),
+                    'line' => $e->getLine(),
+                    'file' => $e->getFile(),
+                ]);
+
+                return redirect()->back()
+                    ->with('error', 'Lỗi kết nối API VietQR: ' . $e->getMessage());
             }
         }
 
@@ -55,7 +63,13 @@ class DatVeController extends Controller
         }
 
         $weekdayShort = [
-            'Sun' => 'CN', 'Mon' => 'T2', 'Tue' => 'T3', 'Wed' => 'T4', 'Thu' => 'T5', 'Fri' => 'T6', 'Sat' => 'T7',
+            'Sun' => 'CN',
+            'Mon' => 'T2',
+            'Tue' => 'T3',
+            'Wed' => 'T4',
+            'Thu' => 'T5',
+            'Fri' => 'T6',
+            'Sat' => 'T7',
         ];
 
         $dateOptions = collect(range(0, 14))->map(function ($offset) use ($today, $selectedDate, $weekdayShort) {
@@ -121,8 +135,12 @@ class DatVeController extends Controller
 
         $duLieuChonGhe['vouchers'] = Auth::check()
             ? NguoiDungVoucher::with('voucher')->where('nguoi_dung_id', Auth::id())->where('da_su_dung', false)
-            ->where(function ($query) { $query->whereNull('ngay_het_han')->orWhere('ngay_het_han', '>=', now()); })
-            ->whereHas('voucher', function ($query) { $query->where('trang_thai', true)->whereDate('ngay_het_han', '>=', today()); })
+            ->where(function ($query) {
+                $query->whereNull('ngay_het_han')->orWhere('ngay_het_han', '>=', now());
+            })
+            ->whereHas('voucher', function ($query) {
+                $query->where('trang_thai', true)->whereDate('ngay_het_han', '>=', today());
+            })
             ->get() : collect();
 
         return view('user.dat_ve.chon_ghe', $duLieuChonGhe);
@@ -150,15 +168,17 @@ class DatVeController extends Controller
 
         $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
             $price = $suatChieu->gia_ve + ($seat->loaiGhe->phu_thu ?? 0);
-            if ($seat->loaiGhe?->la_couple) { 
-                $price = ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0); 
+            if ($seat->loaiGhe?->la_couple) {
+                $price = ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0);
             }
             return $price;
         });
 
         $foods = DoAn::active()->with([
             'category',
-            'variants' => function ($query) { $query->where('is_active', true)->orderBy('price'); },
+            'variants' => function ($query) {
+                $query->where('is_active', true)->orderBy('price');
+            },
             'comboItems.variant.doAn',
         ])->orderBy('sort_order')->orderBy('name')->get();
 
@@ -186,21 +206,35 @@ class DatVeController extends Controller
                         $available = $comboItems->map(fn($item) => $item['quantity'] > 0 ? intdiv($item['stock'], $item['quantity']) : 0)->min() ?? 0;
 
                         return [
-                            'id' => $food->id, 'name' => $food->name, 'description' => $food->description, 'image' => $food->image,
-                            'is_combo' => true, 'price' => $price, 'available' => $available, 'combo_items' => $comboItems,
+                            'id' => $food->id,
+                            'name' => $food->name,
+                            'description' => $food->description,
+                            'image' => $food->image,
+                            'is_combo' => true,
+                            'price' => $price,
+                            'available' => $available,
+                            'combo_items' => $comboItems,
                         ];
                     }
 
                     $variants = $food->variants->map(function ($variant) use ($food) {
                         return [
-                            'id' => $variant->id, 'food_id' => $variant->food_id, 'food_name' => $food->name,
-                            'value' => $variant->value, 'price' => (float) $variant->price, 'stock' => (int) $variant->stock_quantity,
+                            'id' => $variant->id,
+                            'food_id' => $variant->food_id,
+                            'food_name' => $food->name,
+                            'value' => $variant->value,
+                            'price' => (float) $variant->price,
+                            'stock' => (int) $variant->stock_quantity,
                         ];
                     });
 
                     return [
-                        'id' => $food->id, 'name' => $food->name, 'description' => $food->description, 'image' => $food->image,
-                        'is_combo' => false, 'variants' => $variants,
+                        'id' => $food->id,
+                        'name' => $food->name,
+                        'description' => $food->description,
+                        'image' => $food->image,
+                        'is_combo' => false,
+                        'variants' => $variants,
                     ];
                 })->values(),
             ];
@@ -231,7 +265,9 @@ class DatVeController extends Controller
         $seatTotal = $selectedSeats->count();
         $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
             $price = $suatChieu->gia_ve + ($seat->loaiGhe->phu_thu ?? 0);
-            if ($seat->loaiGhe?->la_couple) { $price = ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0); }
+            if ($seat->loaiGhe?->la_couple) {
+                $price = ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0);
+            }
             return $price;
         });
 
@@ -244,6 +280,11 @@ class DatVeController extends Controller
 
     public function xuLyThanhToan(Request $request, $movie)
     {
+
+        //  dd('Đã vào controller');
+        // dd($request->all());
+
+
         $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])->findOrFail($movie);
         $selectedSeats = collect(explode(',', $request->input('ghe')))->map(fn($s) => strtoupper(trim($s)))->filter()->unique()->values();
         $identifier = Auth::id() ?? session()->getId();
@@ -255,6 +296,8 @@ class DatVeController extends Controller
             }
         }
 
+        //  dd('Đã vào controller');
+
         $seatModels = GheNgoi::with('loaiGhe')->where('phong_chieu_id', $suatChieu->phong_chieu_id)->whereIn('ma_ghe', $selectedSeats)->get();
         $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
             return $seat->loaiGhe?->la_couple ? ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0) : $suatChieu->gia_ve + ($seat->loaiGhe->phu_thu ?? 0);
@@ -263,6 +306,8 @@ class DatVeController extends Controller
         $foodItems = collect(json_decode($request->input('food_cart', '[]'), true));
         $foodTotal = $foodItems->sum(fn($i) => ($i['price'] ?? 0) * ($i['qty'] ?? 0));
         $grandTotal = max(0, ($seatTotalPrice + $foodTotal) - 20000);
+
+        //  dd('Đã vào controller');
 
         $maVe = $this->taoMaVeLocal();
 
@@ -279,83 +324,123 @@ class DatVeController extends Controller
             'loai_ve' => 'truc_tuyen',
             'danh_sach_ghe' => $selectedSeats->toArray()
         ];
+        //  dd('Đã vào controller');
 
         Cache::put("pending_ve:{$maVe}", $duLieuTam, now()->addMinutes(15));
 
         $method = $request->input('payment_method');
-        
+
         // =======================================================
         // LUỒNG 1: THANH TOÁN QUA CỔNG VNPAY
         // =======================================================
         if ($method === 'online') {
             $vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
             $vnp_Returnurl = route('dat_ve.vnpay_callback');
-            
+
             $vnp_TmnCode = env('VNP_TMNCODE');
             $vnp_HashSecret = env('VNP_HASHSECRET');
 
             $inputData = [
-                "vnp_Version" => "2.1.0", "vnp_TmnCode" => $vnp_TmnCode, "vnp_Amount" => $grandTotal * 100,
-                "vnp_Command" => "pay", "vnp_CreateDate" => date('YmdHis'), "vnp_CurrCode" => "VND", 
-                "vnp_IpAddr" => $request->ip(), "vnp_Locale" => "vn", "vnp_OrderInfo" => "Thanh toan ve: " . $maVe, 
-                "vnp_OrderType" => "billpayment", "vnp_ReturnUrl" => $vnp_Returnurl, "vnp_TxnRef" => $maVe, 
+                "vnp_Version" => "2.1.0",
+                "vnp_TmnCode" => $vnp_TmnCode,
+                "vnp_Amount" => $grandTotal * 100,
+                "vnp_Command" => "pay",
+                "vnp_CreateDate" => date('YmdHis'),
+                "vnp_CurrCode" => "VND",
+                "vnp_IpAddr" => $request->ip(),
+                "vnp_Locale" => "vn",
+                "vnp_OrderInfo" => "Thanh toan ve: " . $maVe,
+                "vnp_OrderType" => "billpayment",
+                "vnp_ReturnUrl" => $vnp_Returnurl,
+                "vnp_TxnRef" => $maVe,
             ];
 
             ksort($inputData);
-            $query = ""; $i = 0; $hashdata = "";
+            $query = "";
+            $i = 0;
+            $hashdata = "";
             foreach ($inputData as $key => $value) {
-                if ($i == 1) { $hashdata .= '&' . urlencode($key) . "=" . urlencode($value); } 
-                else { $hashdata .= urlencode($key) . "=" . urlencode($value); $i = 1; }
+                if ($i == 1) {
+                    $hashdata .= '&' . urlencode($key) . "=" . urlencode($value);
+                } else {
+                    $hashdata .= urlencode($key) . "=" . urlencode($value);
+                    $i = 1;
+                }
                 $query .= urlencode($key) . "=" . urlencode($value) . '&';
             }
 
             $vnp_Url = $vnp_Url . "?" . $query;
-            if (isset($vnp_HashSecret)) { $vnp_Url .= 'vnp_SecureHash=' . hash_hmac('sha512', rtrim($hashdata, '&'), $vnp_HashSecret); }
+            if (isset($vnp_HashSecret)) {
+                $vnp_Url .= 'vnp_SecureHash=' . hash_hmac('sha512', rtrim($hashdata, '&'), $vnp_HashSecret);
+            }
             return redirect()->away($vnp_Url);
         }
+        //  dd('Đã vào controller');
+
 
         // =======================================================
         // LUỒNG 2: THANH TOÁN QUA CỔNG VIETQR (PAYOS)
         // =======================================================
         if ($method === 'vietqr') {
-            try {
+
+
+    try {
+
                 // Biến đổi chuỗi chữ mã vé thành số nguyên int duy nhất tương thích với PayOS
                 $orderCode = intval(filter_var(microtime(true) * 10000, FILTER_SANITIZE_NUMBER_INT)) % 9007199254740991;
-
+                // dd('2');
                 // Ánh xạ số orderCode của PayOS sang mã vé chuỗi để giải mã khi Callback phản hồi
                 Cache::put("payos_mapping:{$orderCode}", $maVe, now()->addMinutes(15));
-
+                // dd('3');
                 // Khởi tạo cổng kết nối cục bộ
                 $payOS = new PayOS(env('PAYOS_CLIENT_ID'), env('PAYOS_API_KEY'), env('PAYOS_CHECKSUM_KEY'));
-
+                // dd('4');
                 $paymentData = [
                     "orderCode" => $orderCode,
                     "amount" => (int) $grandTotal,
                     "description" => "Cinema " . $maVe,
-                    "returnUrl" => route('dat_ve.vnpay_callback'), // Sử dụng chung hàm callback điều hướng thông minh
-                    "cancelUrl" => route('home')
+                    "returnUrl" => env('PAYOS_RETURN_URL'),
+                    "cancelUrl" => env('PAYOS_CANCEL_URL')
                 ];
 
+
                 $response = $payOS->createPaymentLink($paymentData);
-                
+                // dd($response);
+
                 if (isset($response['checkoutUrl'])) {
                     return redirect()->away($response['checkoutUrl']);
                 }
-                
+
                 return redirect()->back()->with('error', 'Không thể khởi tạo đường dẫn kết nối VietQR.');
             } catch (\Exception $e) {
-                return redirect()->back()->with('error', 'Lỗi kết nối API VietQR: ' . $e->getMessage());
-            }
+    dd([
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+    ]);
+}
         }
 
+        //  dd('Đã vào controller');
+
+
         $ve = VeXemPhim::create([
-            'nguoi_dung_id' => $duLieuTam['nguoi_dung_id'], 'suat_chieu_id' => $duLieuTam['suat_chieu_id'], 'ma_ve' => $duLieuTam['ma_ve'],
-            'ten_phim' => $duLieuTam['ten_phim'], 'ten_rap' => $duLieuTam['ten_rap'], 'ten_phong' => $duLieuTam['ten_phong'],
-            'ma_ghe' => $duLieuTam['ma_ghe'], 'thoi_gian_chieu' => $duLieuTam['thoi_gian_chieu'], 'tong_tien' => $duLieuTam['tong_tien'],
-            'loai_ve' => $duLieuTam['loai_ve'], 'trang_thai' => 'da_thanh_toan',
+            'nguoi_dung_id' => $duLieuTam['nguoi_dung_id'],
+            'suat_chieu_id' => $duLieuTam['suat_chieu_id'],
+            'ma_ve' => $duLieuTam['ma_ve'],
+            'ten_phim' => $duLieuTam['ten_phim'],
+            'ten_rap' => $duLieuTam['ten_rap'],
+            'ten_phong' => $duLieuTam['ten_phong'],
+            'ma_ghe' => $duLieuTam['ma_ghe'],
+            'thoi_gian_chieu' => $duLieuTam['thoi_gian_chieu'],
+            'tong_tien' => $duLieuTam['tong_tien'],
+            'loai_ve' => $duLieuTam['loai_ve'],
+            'trang_thai' => 'da_thanh_toan',
         ]);
 
-        foreach ($selectedSeats as $seat) { Cache::forget("seat_lock:suat:{$suatChieu->id}:seat:{$seat}"); }
+        foreach ($selectedSeats as $seat) {
+            Cache::forget("seat_lock:suat:{$suatChieu->id}:seat:{$seat}");
+        }
         Cache::forget("pending_ve:{$maVe}");
         $this->congDiemThanhVienLocal($ve);
         return redirect()->route('dat_ve.thanh_toan_thanh_cong', $ve->id);
@@ -367,22 +452,35 @@ class DatVeController extends Controller
         if ($request->filled('orderCode') && $request->filled('status')) {
             $orderCode = $request->input('orderCode');
             $status = $request->input('status');
-            
+
             $maVe = Cache::get("payos_mapping:{$orderCode}");
-            if (!$maVe) { return redirect()->route('home')->with('error', 'Giao dịch VietQR hết hạn hoặc không tìm thấy.'); }
+            if (!$maVe) {
+                return redirect()->route('home')->with('error', 'Giao dịch VietQR hết hạn hoặc không tìm thấy.');
+            }
 
             $bookingData = Cache::get("pending_ve:{$maVe}");
-            if (!$bookingData) { return redirect()->route('home')->with('error', 'Phiên đặt vé đã kết thúc.'); }
+            if (!$bookingData) {
+                return redirect()->route('home')->with('error', 'Phiên đặt vé đã kết thúc.');
+            }
 
             if ($status === 'PAID') {
                 $ve = VeXemPhim::create([
-                    'nguoi_dung_id' => $bookingData['nguoi_dung_id'], 'suat_chieu_id' => $bookingData['suat_chieu_id'], 'ma_ve' => $bookingData['ma_ve'],
-                    'ten_phim' => $bookingData['ten_phim'], 'ten_rap' => $bookingData['ten_rap'], 'ten_phong' => $bookingData['ten_phong'],
-                    'ma_ghe' => $bookingData['ma_ghe'], 'thoi_gian_chieu' => $bookingData['thoi_gian_chieu'], 'tong_tien' => $bookingData['tong_tien'],
-                    'loai_ve' => $bookingData['loai_ve'], 'trang_thai' => 'da_thanh_toan',
+                    'nguoi_dung_id' => $bookingData['nguoi_dung_id'],
+                    'suat_chieu_id' => $bookingData['suat_chieu_id'],
+                    'ma_ve' => $bookingData['ma_ve'],
+                    'ten_phim' => $bookingData['ten_phim'],
+                    'ten_rap' => $bookingData['ten_rap'],
+                    'ten_phong' => $bookingData['ten_phong'],
+                    'ma_ghe' => $bookingData['ma_ghe'],
+                    'thoi_gian_chieu' => $bookingData['thoi_gian_chieu'],
+                    'tong_tien' => $bookingData['tong_tien'],
+                    'loai_ve' => $bookingData['loai_ve'],
+                    'trang_thai' => 'da_thanh_toan',
                 ]);
 
-                foreach ($bookingData['danh_sach_ghe'] as $seat) { Cache::forget("seat_lock:suat:{$bookingData['suat_chieu_id']}:seat:{$seat}"); }
+                foreach ($bookingData['danh_sach_ghe'] as $seat) {
+                    Cache::forget("seat_lock:suat:{$bookingData['suat_chieu_id']}:seat:{$seat}");
+                }
                 Cache::forget("pending_ve:{$maVe}");
                 Cache::forget("payos_mapping:{$orderCode}");
                 $this->congDiemThanhVienLocal($ve);
@@ -400,17 +498,28 @@ class DatVeController extends Controller
         $maVe = $vnp_TxnRef;
 
         $bookingData = Cache::get("pending_ve:{$maVe}");
-        if (!$bookingData) { return redirect()->route('home')->with('error', 'Phiên giao dịch đặt vé đã hết hạn.'); }
+        if (!$bookingData) {
+            return redirect()->route('home')->with('error', 'Phiên giao dịch đặt vé đã hết hạn.');
+        }
 
         if ($vnp_ResponseCode === '00') {
             $ve = VeXemPhim::create([
-                'nguoi_dung_id' => $bookingData['nguoi_dung_id'], 'suat_chieu_id' => $bookingData['suat_chieu_id'], 'ma_ve' => $bookingData['ma_ve'],
-                'ten_phim' => $bookingData['ten_phim'], 'ten_rap' => $bookingData['ten_rap'], 'ten_phong' => $bookingData['ten_phong'],
-                'ma_ghe' => $bookingData['ma_ghe'], 'thoi_gian_chieu' => $bookingData['thoi_gian_chieu'], 'tong_tien' => $bookingData['tong_tien'],
-                'loai_ve' => $bookingData['loai_ve'], 'trang_thai' => 'da_thanh_toan',
+                'nguoi_dung_id' => $bookingData['nguoi_dung_id'],
+                'suat_chieu_id' => $bookingData['suat_chieu_id'],
+                'ma_ve' => $bookingData['ma_ve'],
+                'ten_phim' => $bookingData['ten_phim'],
+                'ten_rap' => $bookingData['ten_rap'],
+                'ten_phong' => $bookingData['ten_phong'],
+                'ma_ghe' => $bookingData['ma_ghe'],
+                'thoi_gian_chieu' => $bookingData['thoi_gian_chieu'],
+                'tong_tien' => $bookingData['tong_tien'],
+                'loai_ve' => $bookingData['loai_ve'],
+                'trang_thai' => 'da_thanh_toan',
             ]);
 
-            foreach ($bookingData['danh_sach_ghe'] as $seat) { Cache::forget("seat_lock:suat:{$bookingData['suat_chieu_id']}:seat:{$seat}"); }
+            foreach ($bookingData['danh_sach_ghe'] as $seat) {
+                Cache::forget("seat_lock:suat:{$bookingData['suat_chieu_id']}:seat:{$seat}");
+            }
             Cache::forget("pending_ve:{$maVe}");
             $this->congDiemThanhVienLocal($ve);
             return redirect()->route('dat_ve.thanh_toan_thanh_cong', $ve->id);
@@ -423,16 +532,27 @@ class DatVeController extends Controller
     public function xacNhanVietQR($ma_ve)
     {
         $bookingData = Cache::get("pending_ve:{$ma_ve}");
-        if (!$bookingData) { return redirect()->route('home')->with('error', 'Phiên đặt vé đã hết hạn.'); }
+        if (!$bookingData) {
+            return redirect()->route('home')->with('error', 'Phiên đặt vé đã hết hạn.');
+        }
 
         $ve = VeXemPhim::create([
-            'nguoi_dung_id' => $bookingData['nguoi_dung_id'], 'suat_chieu_id' => $bookingData['suat_chieu_id'], 'ma_ve' => $bookingData['ma_ve'],
-            'ten_phim' => $bookingData['ten_phim'], 'ten_rap' => $bookingData['ten_rap'], 'ten_phong' => $bookingData['ten_phong'],
-            'ma_ghe' => $bookingData['ma_ghe'], 'thoi_gian_chieu' => $bookingData['thoi_gian_chieu'], 'tong_tien' => $bookingData['tong_tien'],
-            'loai_ve' => $bookingData['loai_ve'], 'trang_thai' => 'da_thanh_toan',
+            'nguoi_dung_id' => $bookingData['nguoi_dung_id'],
+            'suat_chieu_id' => $bookingData['suat_chieu_id'],
+            'ma_ve' => $bookingData['ma_ve'],
+            'ten_phim' => $bookingData['ten_phim'],
+            'ten_rap' => $bookingData['ten_rap'],
+            'ten_phong' => $bookingData['ten_phong'],
+            'ma_ghe' => $bookingData['ma_ghe'],
+            'thoi_gian_chieu' => $bookingData['thoi_gian_chieu'],
+            'tong_tien' => $bookingData['tong_tien'],
+            'loai_ve' => $bookingData['loai_ve'],
+            'trang_thai' => 'da_thanh_toan',
         ]);
 
-        foreach ($bookingData['danh_sach_ghe'] as $seat) { Cache::forget("seat_lock:suat:{$bookingData['suat_chieu_id']}:seat:{$seat}"); }
+        foreach ($bookingData['danh_sach_ghe'] as $seat) {
+            Cache::forget("seat_lock:suat:{$bookingData['suat_chieu_id']}:seat:{$seat}");
+        }
         Cache::forget("pending_ve:{$ma_ve}");
         $this->congDiemThanhVienLocal($ve);
         return redirect()->route('dat_ve.thanh_toan_thanh_cong', $ve->id);
@@ -490,7 +610,7 @@ class DatVeController extends Controller
                         </div>
                         <div style='text-align:right;'>
                             <span style='font-size:12px; color:#9ca3af; text-transform:uppercase; font-weight:700; letter-spacing: 0.5px;'>Tổng tiền</span>
-                            <div style='font-size:18px; font-weight:900; color:#facc15; margin-top:4px;'>".number_format($ve->tong_tien)."đ</div>
+                            <div style='font-size:18px; font-weight:900; color:#facc15; margin-top:4px;'>" . number_format($ve->tong_tien) . "đ</div>
                         </div>
                     </div>
 
@@ -512,11 +632,11 @@ class DatVeController extends Controller
                 </div>
 
                 <div style='padding:0 32px 32px 32px; display:flex; flex-direction:column; gap:14px;'>
-                    <a href='".route('user.ve_xem_phim.index')."' style='background:#facc15; color:#000; text-align:center; padding:15px; font-weight:900; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; transition:0.2s; box-shadow:0 4px 14px rgba(234,179,8,0.3); display:block;'>
+                    <a href='" . route('user.ve_xem_phim.index') . "' style='background:#facc15; color:#000; text-align:center; padding:15px; font-weight:900; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; transition:0.2s; box-shadow:0 4px 14px rgba(234,179,8,0.3); display:block;'>
                         🎫 Quản lý vé của tôi
                     </a>
                     
-                    <a href='".route('home')."' style='background:rgba(255,255,255,0.05); color:#9ca3af; text-align:center; padding:15px; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; border:1px solid rgba(255,255,255,0.08); transition:0.2s; display:block;'>
+                    <a href='" . route('home') . "' style='background:rgba(255,255,255,0.05); color:#9ca3af; text-align:center; padding:15px; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; border:1px solid rgba(255,255,255,0.08); transition:0.2s; display:block;'>
                         🏠 Quay lại Trang chủ
                     </a>
                 </div>
@@ -528,8 +648,9 @@ class DatVeController extends Controller
 
     private function taoMaVeLocal(): string
     {
-        do { $maVe = 'VE' . Carbon::now('Asia/Ho_Chi_Minh')->format('ymd') . Str::upper(Str::random(6)); } 
-        while (VeXemPhim::where('ma_ve', $maVe)->exists());
+        do {
+            $maVe = 'VE' . Carbon::now('Asia/Ho_Chi_Minh')->format('ymd') . Str::upper(Str::random(6));
+        } while (VeXemPhim::where('ma_ve', $maVe)->exists());
         return $maVe;
     }
 
@@ -538,11 +659,18 @@ class DatVeController extends Controller
         if (!$veXemPhim->nguoi_dung_id || $veXemPhim->trang_thai !== 'da_thanh_toan') return;
         $thanhVien = ThanhVien::firstOrCreate(['nguoi_dung_id' => $veXemPhim->nguoi_dung_id], [
             'ma_thanh_vien' => 'TV' . str_pad($veXemPhim->nguoi_dung_id, 6, '0', STR_PAD_LEFT),
-            'hang_thanh_vien' => 'member', 'diem_hien_tai' => 0, 'tong_diem_tich_luy' => 0, 'ngay_tham_gia' => now(),
+            'hang_thanh_vien' => 'member',
+            'diem_hien_tai' => 0,
+            'tong_diem_tich_luy' => 0,
+            'ngay_tham_gia' => now(),
             'ma_gioi_thieu' => '',
         ]);
         $diemCong = (int) floor((float) $veXemPhim->tong_tien / 10000);
-        if (method_exists($thanhVien, 'congDiem')) { $thanhVien->congDiem($diemCong, $veXemPhim, 'Tích lũy mua vé.'); } 
-        else { $thanhVien->increment('diem_hien_tai', $diemCong); $thanhVien->increment('tong_diem_tich_luy', $diemCong); }
+        if (method_exists($thanhVien, 'congDiem')) {
+            $thanhVien->congDiem($diemCong, $veXemPhim, 'Tích lũy mua vé.');
+        } else {
+            $thanhVien->increment('diem_hien_tai', $diemCong);
+            $thanhVien->increment('tong_diem_tich_luy', $diemCong);
+        }
     }
 }

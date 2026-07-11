@@ -185,23 +185,29 @@ Route::middleware(['auth'])
 | STAFF PANEL
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])
-    ->prefix('staff')
-    ->name('staff.')
-    ->group(function () {
+Route::middleware(['auth'])->prefix('staff')->name('staff.')->group(function () {
         Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
-
         Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
-            Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
-            Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
-        });
-
-        Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
-            Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
-            Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
-            Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
-            Route::post('/ban-ve/{suatChieu}', [BanVeController::class, 'store'])->name('ban-ve.store');
-        });
+                Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
+                Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
+            });
+        Route::middleware(['permission:ban_ve_tai_quay'])
+            ->group(function () {
+                // Trang chính bán vé - chọn suất chiếu
+                Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
+                // Lịch sử bán vé
+                Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
+                // Bước 1: Chọn suất chiếu -> chọn ghế
+                Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
+                // Bước 2: Chọn ghế -> chọn đồ ăn
+                Route::post('/ban-ve/{suatChieu}/food', [BanVeController::class, 'food'])->name('ban-ve.food');
+                // Bước 3: Hiển thị trang checkout
+                Route::get('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'showCheckout'])->name('ban-ve.checkout.show');
+                // Bước 4: Xử lý dữ liệu checkout
+                Route::post('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'checkout'])->name('ban-ve.checkout');
+                // Bước 5: Xác nhận bán vé và lưu DB
+                Route::post('/ban-ve/{suatChieu}/store', [BanVeController::class, 'store'])->name('ban-ve.store');
+            });
     });
 
 /*
@@ -489,6 +495,15 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('user.thanh-vien.index');
     Route::get('/user/thong-bao', [NotificationController::class, 'index'])->name('user.thong-bao.index');
+});
+
+
+Route::get('/test-php', function () {
+    return [
+        'php_version' => phpversion(),
+        'curl' => ini_get('curl.cainfo'),
+        'openssl' => ini_get('openssl.cafile'),
+    ];
 });
 
 require __DIR__ . '/auth.php';
