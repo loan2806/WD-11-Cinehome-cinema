@@ -3,408 +3,296 @@
 @section('title', $movie->ten_phim . ' - CineHome')
 
 @section('content')
+    @php
+        $posterUrl = asset('storage/movies/' . $movie->poster);
+        $genres = $movie->genres->pluck('ten_the_loai')->filter()->values();
+        $actors = collect(explode(',', (string) $movie->dien_vien))
+            ->map(fn($actor) => trim($actor))
+            ->filter()
+            ->values();
+        $nextShowtime = $showtimes->sortBy('thoi_gian_chieu')->first();
+        $showtimeGroups = $showtimes->groupBy(
+            fn($showtime) => \Carbon\Carbon::parse($showtime->thoi_gian_chieu)->format('Y-m-d'),
+        );
+        $releaseDate = $movie->ngay_khoi_chieu
+            ? \Carbon\Carbon::parse($movie->ngay_khoi_chieu)->format('d/m/Y')
+            : 'Đang cập nhật';
+        $canBook = in_array(
+            $status,
+            [\App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU, \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU],
+            true,
+        ) && $showtimes->isNotEmpty();
+        $statusInfo = match ($status) {
+            \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU => [
+                'label' => 'Đang chiếu',
+                'class' => 'is-live',
+                'icon' => 'fa-circle-play',
+            ],
+            \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU => [
+                'label' => 'Sắp chiếu',
+                'class' => 'is-soon',
+                'icon' => 'fa-calendar-check',
+            ],
+            \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT => [
+                'label' => 'Sắp ra mắt',
+                'class' => 'is-later',
+                'icon' => 'fa-star',
+            ],
+            default => [
+                'label' => 'Đã chiếu',
+                'class' => 'is-ended',
+                'icon' => 'fa-clock-rotate-left',
+            ],
+        };
+        $backUrl = url()->previous() !== url()->current() ? url()->previous() : route('user.phims.index');
+        $detailShots = collect([
+            ['image' => $posterUrl, 'label' => 'Poster chính'],
+            [
+                'image' => 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80',
+                'label' => 'Không gian rạp',
+            ],
+            [
+                'image' => 'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=900&q=80',
+                'label' => 'Trải nghiệm điện ảnh',
+            ],
+        ]);
+    @endphp
 
-    <section x-data="{ tab: 'description' }" class="relative min-h-screen bg-black text-white overflow-hidden">
+    <section class="movie-detail-page">
+        <section class="movie-detail-hero">
+            <div class="movie-detail-backdrop" style="background-image: url('{{ $posterUrl }}');"></div>
 
-        {{-- BACKDROP --}}
-        <div class="absolute inset-0">
+            <div class="container-fluid px-5 movie-detail-hero-inner">
+                <a href="{{ $backUrl }}" class="detail-back-link">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Quay lại
+                </a>
 
-            <img src="{{ $movie->poster }}" class="w-full h-full object-cover opacity-20 blur-md">
+                <div class="movie-detail-layout">
+                    <aside class="detail-poster-card reveal-on-scroll">
+                        <div class="detail-poster-frame">
+                            <img src="{{ $posterUrl }}" alt="{{ $movie->ten_phim }}">
+                            <span class="detail-age-badge">{{ $movie->gioi_han_tuoi }}</span>
+                        </div>
 
-            <div class="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black">
-            </div>
+                        <div class="detail-poster-actions">
+                            @if ($movie->trailer)
+                                <a href="{{ $movie->trailer }}" target="_blank" rel="noopener noreferrer"
+                                    class="detail-action-btn detail-action-btn--ghost">
+                                    <i class="fa-solid fa-play"></i>
+                                    Xem trailer
+                                </a>
+                            @endif
 
-        </div>
+                            @if ($canBook)
+                                <a href="{{ route('dat_ve.chon_ghe', $movie->slug) }}"
+                                    class="booking-link detail-action-btn detail-action-btn--primary">
+                                    <i class="fa-solid fa-ticket"></i>
+                                    Đặt vé ngay
+                                </a>
+                            @else
+                                <button type="button" class="detail-action-btn detail-action-btn--disabled" disabled>
+                                    <i class="fa-solid fa-ban"></i>
+                                    Chưa mở đặt vé
+                                </button>
+                            @endif
+                        </div>
+                    </aside>
 
-        <div class="relative max-w-7xl mx-auto px-6 lg:px-12 pt-32 pb-20">
+                    <div class="detail-hero-copy reveal-on-scroll">
+                        <span class="detail-status {{ $statusInfo['class'] }}">
+                            <i class="fa-solid {{ $statusInfo['icon'] }}"></i>
+                            {{ $statusInfo['label'] }}
+                        </span>
 
-            <div class="grid lg:grid-cols-12 gap-12">
+                        <h1>{{ $movie->ten_phim }}</h1>
 
-                {{-- LEFT --}}
-                <div class="lg:col-span-3">
+                        <p class="detail-hero-desc">
+                            {{ \Illuminate\Support\Str::limit($movie->mo_ta, 230) }}
+                        </p>
 
-                    <img src="{{ asset('storage/movies/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}"
-                        class="w-full aspect-[2/3.4] object-cover rounded-2xl shadow-2xl">
+                        <div class="detail-meta-grid">
+                            <span>
+                                <i class="fa-solid fa-clock"></i>
+                                {{ $movie->thoi_luong }} phút
+                            </span>
+                            <span>
+                                <i class="fa-solid fa-earth-asia"></i>
+                                {{ optional($movie->country)->ten_quoc_gia ?? 'Đang cập nhật' }}
+                            </span>
+                            <span>
+                                <i class="fa-solid fa-language"></i>
+                                {{ $movie->ngon_ngu }}
+                            </span>
+                            <span>
+                                <i class="fa-solid fa-tags"></i>
+                                {{ $genres->join(', ') ?: 'Điện ảnh' }}
+                            </span>
+                        </div>
 
-                    <div class="mt-5 space-y-3">
-
-                        @if ($movie->trailer)
-                            <a href="{{ $movie->trailer }}" target="_blank"
-                                class="w-full flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-500 px-5 py-3 rounded-xl font-bold transition">
-
-                                <i class="fa-solid fa-play"></i>
-
-                                Xem Trailer
-                            </a>
+                        @if ($nextShowtime)
+                            <div class="detail-next-showtime">
+                                <span>
+                                    <i class="fa-solid fa-calendar-day"></i>
+                                    Suất gần nhất
+                                </span>
+                                <strong>{{ \Carbon\Carbon::parse($nextShowtime->thoi_gian_chieu)->format('H:i d/m/Y') }}</strong>
+                                <small>
+                                    {{ $nextShowtime->rapChieuPhim?->ten_rap ?? 'CineHome' }}
+                                    · {{ $nextShowtime->phongChieu?->ten_phong ?? 'Phòng chiếu' }}
+                                </small>
+                            </div>
                         @endif
-                        @if ($status === \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU || $status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
-                            <a href="{{ route('dat_ve.chon_ghe', $movie->slug) }}"
-                                class="booking-link w-full flex items-center justify-center gap-2 bg-yellow-500 text-black px-5 py-3 rounded-xl font-bold hover:bg-yellow-400 transition">
-                                <i class="fa-solid fa-ticket"></i>
-                                Đặt vé
-                            </a>
-                        @else
-                            <button
-                                class="w-full flex items-center justify-center gap-2 bg-gray-600 text-white px-5 py-3 rounded-xl cursor-not-allowed"
-                                disabled>
-                                Không thể đặt vé
-                            </button>
-                        @endif
-
-                        @if ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
-                            <button
-                                class="w-full flex items-center justify-center gap-2 bg-blue-500 text-white px-5 py-3 rounded-xl cursor-not-allowed"
-                                disabled>
-                                Sắp chiếu
-                            </button>
-                        @elseif ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT)
-                            <button
-                                class="w-full flex items-center justify-center gap-2 bg-purple-500 text-white px-5 py-3 rounded-xl cursor-not-allowed"
-                                disabled>
-                                Sắp ra mắt
-                            </button>
-                        @endif
-
                     </div>
-
                 </div>
+            </div>
+        </section>
 
-                {{-- RIGHT --}}
-                <div class="lg:col-span-9">
-                    <div class="mb-6">
-                        <a href="{{ url()->previous() }}"
-                            class="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition">
-                            <i class="fa-solid fa-arrow-left"></i>
-                            Quay lại
-                        </a>
-                    </div>
-
-                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-3">
-
-                        {{ $movie->ten_phim }}
-
-                    </h1>
-
-
-
-                    {{-- RATING --}}
-                    {{-- <div class="bg-white/5 border border-white/10 rounded-xl p-4 mb-8">
-
-                        <div class="flex flex-col md:flex-row md:items-center gap-3">
-
-                            <div class="text-yellow-400 text-2xl tracking-wider">
-
-                                ★★★★★★★★☆
-
-                            </div>
-
-                            <div class="text-2xl font-bold text-yellow-400">
-
-                                8.5/10
-
-                            </div>
-
-                        </div>
-
-                    </div> --}}
-
-                    {{-- TAB MENU --}}
-                    <div class="flex gap-8 border-b border-white/10 mb-8 overflow-x-auto">
-
-                        <button @click="tab='description'"
-                            :class="tab == 'description' ?
-                                'border-yellow-400 text-yellow-400' :
-                                'border-transparent text-gray-400'"
-                            class="pb-4 border-b-2 font-bold whitespace-nowrap">
-
-                            MÔ TẢ
-
+        <main class="movie-detail-main">
+            <div class="container-fluid px-5">
+                <section class="detail-tabs-shell reveal-on-scroll" data-detail-tabs>
+                    <div class="detail-tabs">
+                        <button type="button" class="active" data-detail-tab="overview">
+                            <i class="fa-solid fa-film"></i>
+                            Tổng quan
                         </button>
-
-                        <button @click="tab='review'"
-                            :class="tab == 'review' ?
-                                'border-yellow-400 text-yellow-400' :
-                                'border-transparent text-gray-400'"
-                            class="pb-4 border-b-2 font-bold whitespace-nowrap">
-
-                            ĐÁNH GIÁ
-
+                        <button type="button" data-detail-tab="showtimes">
+                            <i class="fa-solid fa-calendar-days"></i>
+                            Lịch chiếu
                         </button>
-
-                        <button @click="tab='cast'"
-                            :class="tab == 'cast' ?
-                                'border-yellow-400 text-yellow-400' :
-                                'border-transparent text-gray-400'"
-                            class="pb-4 border-b-2 font-bold whitespace-nowrap">
-
-                            CAST & CREW
-
+                        <button type="button" data-detail-tab="cast">
+                            <i class="fa-solid fa-users"></i>
+                            Diễn viên
                         </button>
-
                     </div>
 
-                    {{-- DESCRIPTION --}}
-                    <div x-show="tab=='description'" x-transition>
+                    <div class="detail-tab-panel active" data-detail-panel="overview">
+                        <div class="detail-overview-grid">
+                            <div class="detail-story-card">
+                                <span class="detail-section-kicker">Nội dung phim</span>
+                                <h2>{{ $movie->ten_phim }}</h2>
+                                <p>{{ $movie->mo_ta }}</p>
 
-                        <div class="grid lg:grid-cols-3 gap-10">
-
-                            {{-- LEFT CONTENT --}}
-                            <div class="lg:col-span-2">
-
-                                <h3 class="text-sm uppercase tracking-widest text-yellow-400 mb-4">
-                                    Mô tả
-                                </h3>
-
-                                <p class="text-gray-300 leading-8 mb-8">
-                                    {{ $movie->mo_ta }}
-                                </p>
-                            </div>
-
-                            {{-- RIGHT INFO --}}
-                            <div>
-
-                                <div class="space-y-6">
-
+                                <div class="detail-fact-grid">
                                     <div>
-                                        <p class="text-gray-500 text-sm mb-1">
-                                            Director
-                                        </p>
-
-                                        <p class="font-semibold text-white">
-                                            {{ $movie->dao_dien }}
-                                        </p>
+                                        <small>Đạo diễn</small>
+                                        <strong>{{ $movie->dao_dien }}</strong>
                                     </div>
-
                                     <div>
-                                        <p class="text-gray-500 text-sm mb-1">
-                                            Stars
-                                        </p>
-
-                                        <p class="font-semibold text-white">
-                                            {{ $movie->dien_vien }}
-                                        </p>
+                                        <small>Khởi chiếu</small>
+                                        <strong>{{ $releaseDate }}</strong>
                                     </div>
-
                                     <div>
-                                        <p class="text-gray-500 text-sm mb-1">
-                                            Genre
-                                        </p>
-
-                                        <p class="font-semibold text-white">
-                                            {{ $movie->genres->pluck('ten_the_loai')->join(', ') }}
-                                        </p>
+                                        <small>Giới hạn tuổi</small>
+                                        <strong>{{ $movie->gioi_han_tuoi }}</strong>
                                     </div>
-
                                     <div>
-                                        <p class="text-gray-500 text-sm mb-1">
-                                            Country
-                                        </p>
-
-                                        <p class="font-semibold text-white">
-                                            {{ optional($movie->country)->ten_quoc_gia }}
-                                        </p>
+                                        <small>Giá vé từ</small>
+                                        <strong>
+                                            {{ $nextShowtime ? number_format((float) $nextShowtime->gia_ve, 0, ',', '.') . 'đ' : 'Đang cập nhật' }}
+                                        </strong>
                                     </div>
-
-                                    <div>
-                                        <p class="text-gray-500 text-sm mb-1">
-                                            Duration
-                                        </p>
-
-                                        <p class="font-semibold text-white">
-                                            {{ $movie->thoi_luong }} phút
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <p class="text-gray-500 text-sm mb-1">
-                                            Age Rating
-                                        </p>
-
-                                        <p class="font-semibold text-white">
-                                            {{ $movie->gioi_han_tuoi }}
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <p class="text-gray-500 text-sm mb-1">
-                                            Release Date
-                                        </p>
-
-                                        <p class="font-semibold text-white">
-                                            {{ \Carbon\Carbon::parse($movie->ngay_khoi_chieu)->format('d/m/Y') }}
-                                        </p>
-                                    </div>
-
                                 </div>
-
                             </div>
 
-                        </div>
-
-                    </div>
-
-                    {{-- REVIEW --}}
-                    <div x-show="tab=='review'" x-transition class="space-y-4">
-
-                        <div class="bg-white/5 border border-white/10 rounded-xl p-5">
-
-                            <div class="flex items-center justify-between mb-2">
-
-                                <h3 class="font-bold">
-                                    Nguyễn Văn A
-                                </h3>
-
-                                <span class="text-yellow-400">
-                                    ★★★★★
-                                </span>
-
-                            </div>
-
-                            <p class="text-gray-400">
-                                Phim rất hay, kỹ xảo đẹp và đáng xem.
-                            </p>
-
-                        </div>
-
-                        <div class="bg-white/5 border border-white/10 rounded-xl p-5">
-
-                            <div class="flex items-center justify-between mb-2">
-
-                                <h3 class="font-bold">
-                                    Trần Văn B
-                                </h3>
-
-                                <span class="text-yellow-400">
-                                    ★★★★☆
-                                </span>
-
-                            </div>
-
-                            <p class="text-gray-400">
-                                Nội dung cuốn hút, diễn xuất tốt.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-                    <div x-show="tab=='cast'" x-transition>
-
-                        {{-- DIRECTOR --}}
-                        <div class="mb-10">
-
-                            <h3 class="text-yellow-400 font-bold uppercase tracking-wider mb-6">
-                                Director
-                            </h3>
-
-                            <div class="flex items-center gap-4">
-
-                                <div
-                                    class="w-16 h-16 rounded-full bg-yellow-400 text-black flex items-center justify-center font-bold text-xl">
-
-                                    {{ strtoupper(substr($movie->dao_dien, 0, 1)) }}
-
-                                </div>
-
-                                <div>
-
-                                    <h4 class="text-xl font-semibold">
-                                        {{ $movie->dao_dien }}
-                                    </h4>
-
-                                    <p class="text-gray-500">
-                                        Director
-                                    </p>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-                        {{-- CAST --}}
-                        <div>
-
-                            <h3 class="text-yellow-400 font-bold uppercase tracking-wider mb-6">
-                                Cast
-                            </h3>
-
-                            <div class="grid md:grid-cols-2 gap-4">
-
-                                @foreach (explode(',', $movie->dien_vien) as $actor)
-                                    <div class="flex items-center gap-4 border-b border-white/10 pb-4">
-
-                                        <div
-                                            class="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center font-bold">
-
-                                            {{ strtoupper(substr(trim($actor), 0, 1)) }}
-                                        </div>
-
-                                        <div>
-
-                                            <h4 class="font-semibold">
-                                                {{ trim($actor) }}
-                                            </h4>
-
-                                            <p class="text-gray-500 text-sm">
-                                                Actor
-                                            </p>
-
-                                        </div>
-
-                                    </div>
+                            <div class="detail-gallery">
+                                @foreach ($detailShots as $shot)
+                                    <figure class="{{ $loop->first ? 'large' : '' }}">
+                                        <img src="{{ $shot['image'] }}" alt="{{ $shot['label'] }}">
+                                        <figcaption>{{ $shot['label'] }}</figcaption>
+                                    </figure>
                                 @endforeach
+                            </div>
+                        </div>
+                    </div>
 
+                    <div class="detail-tab-panel" data-detail-panel="showtimes">
+                        <div class="detail-panel-head">
+                            <span class="detail-section-kicker">Chọn suất chiếu</span>
+                            <h2>Lịch chiếu sắp tới</h2>
+                        </div>
+
+                        @forelse ($showtimeGroups as $date => $items)
+                            <section class="detail-showtime-day">
+                                <div class="detail-showtime-date">
+                                    <strong>{{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}</strong>
+                                    <span>{{ $items->count() }} suất chiếu</span>
+                                </div>
+
+                                <div class="detail-showtime-list">
+                                    @foreach ($items as $showtime)
+                                        <a href="{{ route('dat_ve.chon_ghe', $showtime->id) }}"
+                                            class="booking-link detail-showtime-card">
+                                            <strong>{{ \Carbon\Carbon::parse($showtime->thoi_gian_chieu)->format('H:i') }}</strong>
+                                            <span>{{ $showtime->rapChieuPhim?->ten_rap ?? 'CineHome' }}</span>
+                                            <small>
+                                                {{ $showtime->phongChieu?->ten_phong ?? 'Phòng chiếu' }}
+                                                · {{ number_format((float) $showtime->gia_ve, 0, ',', '.') }}đ
+                                            </small>
+                                            <i class="fa-solid fa-arrow-right"></i>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </section>
+                        @empty
+                            <div class="detail-empty-state">
+                                <i class="fa-regular fa-calendar"></i>
+                                <strong>Lịch chiếu đang được cập nhật</strong>
+                                <span>Quay lại sau để chọn suất chiếu phù hợp nhất.</span>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    <div class="detail-tab-panel" data-detail-panel="cast">
+                        <div class="detail-cast-layout">
+                            <div class="detail-director-card">
+                                <span class="detail-section-kicker">Đạo diễn</span>
+                                <div class="detail-person-avatar">
+                                    {{ mb_strtoupper(mb_substr($movie->dao_dien, 0, 1)) }}
+                                </div>
+                                <h2>{{ $movie->dao_dien }}</h2>
+                                <p>Người dẫn dắt phong cách hình ảnh và nhịp kể của bộ phim.</p>
                             </div>
 
+                            <div class="detail-cast-grid">
+                                @forelse ($actors as $actor)
+                                    <article class="detail-cast-card">
+                                        <span>{{ mb_strtoupper(mb_substr($actor, 0, 1)) }}</span>
+                                        <div>
+                                            <strong>{{ $actor }}</strong>
+                                            <small>Diễn viên</small>
+                                        </div>
+                                    </article>
+                                @empty
+                                    <div class="detail-empty-state">
+                                        <i class="fa-solid fa-user"></i>
+                                        <strong>Diễn viên đang cập nhật</strong>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                @if (isset($relatedMovies) && $relatedMovies->count())
+                    <section class="booking-section detail-related-section reveal-on-scroll">
+                        <div class="booking-section-head">
+                            <div>
+                                <p>Gợi ý tiếp theo</p>
+                                <h2>Phim liên quan</h2>
+                            </div>
+                            <a href="{{ route('user.phims.index') }}" class="detail-related-link">
+                                Xem tất cả
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </a>
                         </div>
 
-                    </div>
-
-                    {{-- MEDIA --}}
-                    <div x-show="tab=='media'" x-transition>
-
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-
-                            <img src="{{ $movie->poster }}" class="rounded-xl">
-
-                            <img src="{{ $movie->poster }}" class="rounded-xl">
-
-                            <img src="{{ $movie->poster }}" class="rounded-xl">
-
-                            <img src="{{ $movie->poster }}" class="rounded-xl">
-
-                        </div>
-
-                    </div>
-
-                </div>
-
+                        @include('partials.movie-section', [
+                            'movies' => $relatedMovies,
+                        ])
+                    </section>
+                @endif
             </div>
-
-        </div>
-
+        </main>
     </section>
-
-    {{-- PHIM LIÊN QUAN --}}
-    <section class="bg-black py-20 text-white">
-
-        <div class="max-w-7xl mx-auto px-6">
-
-            <h2 class="text-3xl font-bold mb-8">
-
-                Phim liên quan
-
-            </h2>
-
-            @if (isset($relatedMovies) && $relatedMovies->count())
-                @include('partials.movie-section', [
-                    'movies' => $relatedMovies,
-                ])
-            @endif
-
-        </div>
-
-    </section>
-
 @endsection

@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             LoaiGheSeeder::class,
             RapChieuPhimSeeder::class,
             PhongChieuSeeder::class,
+            CineHomeFeaturedMovieSeeder::class,
             SuatChieuSeeder::class,
             VeXemPhimSeeder::class,
             NhanVienSeeder::class,

@@ -3,130 +3,164 @@
 @section('title', 'Danh sách phim')
 
 @section('content')
+    @php
+        $statusLabels = [
+            \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU => 'Đang chiếu',
+            \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU => 'Sắp chiếu',
+            \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT => 'Sắp ra mắt',
+        ];
 
-    <section class="min-h-screen bg-[#0b0705] text-white pt-32 pb-10">
-        <div class="max-w-[1800px] mx-auto px-8">
+        $posterUrl = function ($movie) {
+            if (!empty($movie->poster) && file_exists(public_path('storage/movies/' . $movie->poster))) {
+                return asset('storage/movies/' . $movie->poster);
+            }
 
-            {{-- FILTER --}}
-            <form action="{{ route('user.phims.index') }}" method="GET"
-                class="bg-[#151515] border border-white/10 rounded-2xl p-5 mb-8 grid grid-cols-1 md:grid-cols-5 gap-4">
+            return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=700&auto=format&fit=crop';
+        };
+    @endphp
 
+    <div class="movie-list-page" lang="vi" spellcheck="false">
+        <section class="movie-list-hero">
+            <div>
+                <span class="movie-list-eyebrow">
+                    <i class="fa-solid fa-film"></i>
+                    CineHome Movies
+                </span>
+                <h1>Chọn phim bạn muốn xem tại CineHome.</h1>
+                <p>
+                    Lọc nhanh theo tên phim, thể loại, quốc gia và trạng thái chiếu. Giao diện được tối ưu để xem poster,
+                    so sánh phim và đặt vé nhanh hơn.
+                </p>
+            </div>
+
+            <div class="movie-list-summary">
+                <strong>{{ $movies->count() }}</strong>
+                <span>phim phù hợp</span>
+            </div>
+        </section>
+
+        <form action="{{ route('user.phims.index') }}" method="GET" class="movie-filter movie-filter-form">
+            <label>
+                <span>Tên phim</span>
                 <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}" placeholder="Tìm tên phim..."
-                    class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3">
+                    class="filter-input">
+            </label>
 
-                <select name="the_loai" class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3">
-                    <option value="">Thể loại</option>
+            <label>
+                <span>Thể loại</span>
+                <select name="the_loai" class="filter-input">
+                    <option value="">Tất cả thể loại</option>
                     @foreach ($genres as $genre)
-                        <option value="{{ $genre->ten_the_loai }}"
-                            {{ request('the_loai') == $genre->ten_the_loai ? 'selected' : '' }}>
+                        <option value="{{ $genre->ten_the_loai }}" {{ request('the_loai') == $genre->ten_the_loai ? 'selected' : '' }}>
                             {{ $genre->ten_the_loai }}
                         </option>
                     @endforeach
                 </select>
+            </label>
 
-                <select name="quoc_gia" class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3">
-                    <option value="">Quốc gia</option>
+            <label>
+                <span>Quốc gia</span>
+                <select name="quoc_gia" class="filter-input">
+                    <option value="">Tất cả quốc gia</option>
                     @foreach ($countries as $country)
-                        <option value="{{ $country->ten_quoc_gia }}"
-                            {{ request('quoc_gia') == $country->ten_quoc_gia ? 'selected' : '' }}>
+                        <option value="{{ $country->ten_quoc_gia }}" {{ request('quoc_gia') == $country->ten_quoc_gia ? 'selected' : '' }}>
                             {{ $country->ten_quoc_gia }}
                         </option>
                     @endforeach
                 </select>
+            </label>
 
-                <select name="status" class="bg-[#0b0705] border border-white/10 text-white rounded-xl px-4 py-3">
-                    <option value="">Trạng thái</option>
-                    <option value="dang_chieu" {{ request('status') == 'dang_chieu' ? 'selected' : '' }}>Đang chiếu</option>
-                    <option value="sap_chieu" {{ request('status') == 'sap_chieu' ? 'selected' : '' }}>Sắp chiếu</option>
-                    <option value="sap_ra_mat" {{ request('status') == 'sap_ra_mat' ? 'selected' : '' }}>Sắp ra mắt
-                    </option>
+            <label>
+                <span>Trạng thái</span>
+                <select name="status" class="filter-input">
+                    <option value="">Tất cả trạng thái</option>
+                    @foreach ($statusLabels as $statusValue => $statusLabel)
+                        <option value="{{ $statusValue }}" {{ request('status') == $statusValue ? 'selected' : '' }}>
+                            {{ $statusLabel }}
+                        </option>
+                    @endforeach
                 </select>
+            </label>
 
-                <div class="flex gap-3">
-                    <button class="flex-1 bg-[#f5a623] text-black font-bold rounded-xl">
-                        Tìm
-                    </button>
+            <div class="movie-filter-actions">
+                <button type="submit" class="btn-filter">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    Tìm
+                </button>
+                <a href="{{ route('user.phims.index') }}" class="btn-reset" aria-label="Xóa bộ lọc">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </a>
+            </div>
+        </form>
 
-                    <a href="{{ route('user.phims.index') }}"
-                        class="w-[52px] flex items-center justify-center bg-white/10 rounded-xl">
-                        ⟳
-                    </a>
-                </div>
+        @if ($movies->count() > 0)
+            <section class="movie-list-grid" aria-label="Danh sách phim">
+                @foreach ($movies as $movie)
+                    @php
+                        $now = now('Asia/Ho_Chi_Minh');
+                        $futureShowtime = $movie->showtimes
+                            ->filter(fn($showtime) => $showtime->thoi_gian_chieu && \Carbon\Carbon::parse($showtime->thoi_gian_chieu)->gte($now))
+                            ->sortBy('thoi_gian_chieu')
+                            ->first();
 
-            </form>
+                        $movieStatus = $futureShowtime?->trang_thai ?? \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT;
+                        $canBook = $futureShowtime && $futureShowtime->trang_thai === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU;
+                    @endphp
 
-            {{-- MOVIES --}}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-
-                @forelse ($movies as $movie)
-                    <div class="bg-[#151515] border border-white/10 rounded-2xl overflow-hidden">
-
-                        {{-- POSTER --}}
-                        <a href="{{ route('user.phims.show', $movie->slug) }}">
-                            <img src="{{ asset('storage/movies/' . $movie->poster) }}"
-                                class="w-full h-[250px] object-cover">
+                    <article class="movie-card movie-list-card">
+                        <a href="{{ route('user.movies.show', $movie->slug) }}" class="movie-poster" aria-label="Xem chi tiết {{ $movie->ten_phim }}">
+                            <img src="{{ $posterUrl($movie) }}" alt="{{ $movie->ten_phim }}">
+                            <span class="movie-status">{{ $statusLabels[$movieStatus] ?? 'Sắp chiếu' }}</span>
+                            @if (!empty($movie->gioi_han_tuoi))
+                                <span class="movie-age">{{ $movie->gioi_han_tuoi }}</span>
+                            @endif
                         </a>
 
-                        <div class="p-4">
+                        <div class="movie-body">
+                            <h2 class="movie-title">{{ $movie->ten_phim }}</h2>
 
-                            {{-- TITLE --}}
-                            <h2 class="font-bold text-lg mb-2">
-                                {{ $movie->ten_phim }}
-                            </h2>
-
-                            {{-- GENRE --}}
-                            <p class="text-sm text-gray-400">
-                                🎬 {{ $movie->genres->pluck('ten_the_loai')->join(', ') }}
-                            </p>
-
-                            {{-- COUNTRY --}}
-                            <p class="text-sm text-gray-400">
-                                🌍 {{ $movie->country->ten_quoc_gia }}
-                            </p>
-
-                            {{-- DURATION --}}
-                            <p class="text-sm text-gray-400">
-                                ⏱ {{ $movie->thoi_luong }} phút
-                            </p>
-
-                            @php
-                                $firstShowtime = $movie->showtimes->sortBy('thoi_gian_chieu')->first();
-
-                                $canBook = $firstShowtime
-                                    ? $firstShowtime->trang_thai === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU
-                                    : false;
-                            @endphp
-
-                            <div class="flex items-center gap-3 mt-4">
-
-                                @if ($canBook)
-                                    <a href="{{ route('dat_ve.chon_ghe', $movie->slug) }}"
-                                        class="booking-link flex-1 text-center bg-[#f5a623] font-bold py-3 rounded-xl shadow-lg hover:bg-[#ffca40] transition">
-                                        <i class="fa-solid fa-ticket mr-2"></i>
-                                        Đặt vé
-                                    </a>
-                                @endif
-
-                                <a href="{{ route('user.movies.show', $movie->slug) }}"
-                                    class="flex-1 text-center bg-[#1d1d1d] text-white font-bold py-3 rounded-xl border border-white/10 hover:bg-[#2b2b2b] transition">
-                                    Chi tiết
-                                </a>
-
+                            <div class="movie-info">
+                                <p>
+                                    <i class="fa-solid fa-clapperboard"></i>
+                                    {{ $movie->genres->pluck('ten_the_loai')->filter()->take(2)->join(', ') ?: 'Đang cập nhật' }}
+                                </p>
+                                <p>
+                                    <i class="fa-solid fa-globe"></i>
+                                    {{ $movie->country->ten_quoc_gia ?? 'Đang cập nhật' }}
+                                </p>
+                                <p>
+                                    <i class="fa-solid fa-clock"></i>
+                                    {{ $movie->thoi_luong ?? '--' }} phút
+                                </p>
                             </div>
 
+                            <div class="movie-actions">
+                                @if ($canBook)
+                                    <a href="{{ route('dat_ve.chon_ghe', $movie->slug) }}" class="btn-small-book booking-link">
+                                        <i class="fa-solid fa-ticket"></i>
+                                        Đặt vé
+                                    </a>
+                                @else
+                                    <span class="btn-small-book is-disabled">
+                                        <i class="fa-solid fa-calendar-days"></i>
+                                        Chờ lịch
+                                    </span>
+                                @endif
+
+                                <a href="{{ route('user.movies.show', $movie->slug) }}" class="btn-small-detail">
+                                    Chi tiết
+                                </a>
+                            </div>
                         </div>
-                    </div>
-
-                @empty
-
-                    <div class="col-span-full text-center text-gray-400 py-20">
-                        Không tìm thấy phim
-                    </div>
-                @endforelse
-
-            </div>
-
-        </div>
-    </section>
-
+                    </article>
+                @endforeach
+            </section>
+        @else
+            <section class="empty-movies">
+                <i class="fa-solid fa-film"></i>
+                <h2>Không tìm thấy phim</h2>
+                <p>Thử đổi từ khóa, thể loại hoặc trạng thái chiếu để xem thêm phim phù hợp.</p>
+            </section>
+        @endif
+    </div>
 @endsection

@@ -97,9 +97,9 @@ Route::get('/tin-tuc/{slug}', [\App\Http\Controllers\User\TinTucController::clas
 Route::get('/khuyen-mai', [\App\Http\Controllers\User\TinTucController::class, 'voucherIndex'])->name('user.khuyen-mai.index');
 
 Route::get('/cinemas', [RapChieuPhimController::class, 'index'])->name('user.cinemas.index');
-Route::get('/cinemas/{rapChieuPhim}', [RapChieuPhimController::class, 'show'])->name('user.cinemas.show');
 Route::get('/cinemas/map', BandoRapController::class)->name('user.cinemas.map');
 Route::get('/api/cinemas', BandoRapApiController::class)->name('api.cinemas.index');
+Route::get('/cinemas/{rapChieuPhim}', [RapChieuPhimController::class, 'show'])->name('user.cinemas.show');
 
 Route::get('/showtime', [UserSuatChieuController::class, 'index'])->name('user.showtimes.index');
 Route::get('/showtime/{suatChieu}', [UserSuatChieuController::class, 'show'])->name('user.showtimes.show');

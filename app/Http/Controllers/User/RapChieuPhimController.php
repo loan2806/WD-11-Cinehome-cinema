@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Phims;
+use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use Carbon\Carbon;
@@ -39,6 +40,17 @@ class RapChieuPhimController extends Controller
             ->distinct()
             ->count();
 
+        $roomQuery = PhongChieu::query()
+            ->where('rap_chieu_phim_id', $rapChieuPhim->id);
+
+        $roomCount = (clone $roomQuery)->count();
+        $activeRoomCount = (clone $roomQuery)->where('trang_thai', 'hoat_dong')->count();
+        $seatCount = (clone $roomQuery)->sum('suc_chua');
+        $rooms = (clone $roomQuery)
+            ->orderBy('ten_phong')
+            ->limit(6)
+            ->get();
+
         $hotMovies = Phims::with(['genres', 'country', 'showtimes'])
             ->visibleToUsers()
             ->orderByDesc('created_at')
@@ -49,6 +61,10 @@ class RapChieuPhimController extends Controller
             'rapChieuPhim',
             'showtimeCount',
             'movieCount',
+            'roomCount',
+            'activeRoomCount',
+            'seatCount',
+            'rooms',
             'hotMovies'
         ));
     }
