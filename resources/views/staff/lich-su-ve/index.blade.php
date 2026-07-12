@@ -1,4 +1,4 @@
-@extends('layouts.staff')
+@extends('layouts.admin')
 
 @section('title', 'Lịch sử vé')
 @section('page-title', 'Lịch sử vé')
@@ -503,4 +503,12 @@
         }
     }
 </style>
+
+@if(session('clear_food_cart'))
+<script>
+    localStorage.removeItem(
+        'staff_food_cart_{{ session("clear_food_cart") }}'
+    );
+</script>
+@endif
 @endsection
