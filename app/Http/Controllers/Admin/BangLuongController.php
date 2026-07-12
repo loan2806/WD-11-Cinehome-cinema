@@ -18,7 +18,10 @@ class BangLuongController extends Controller
             ->whereYear('ngay', $nam)
             ->get();
 
-        $tongNgayCong = $chamCongs->where('nghi_phep', false)->where('nghi_khong_phep', false)->count();
+        $tongNgayCong = $chamCongs->where('nghi_phep', false)
+                                   ->where('nghi_khong_phep', false)
+                                   ->whereNotNull('gio_ra')
+                                   ->count();
         $tongGioLam = $chamCongs->sum('so_gio_lam');
         $tongGioTangCa = $chamCongs->sum('so_gio_tang_ca');
         $soLanDiMuon = $chamCongs->where('di_muon', true)->count();
@@ -73,8 +76,20 @@ class BangLuongController extends Controller
     {
         $user = auth()->user();
         
+        $loaiLoc = $request->input('loai_loc', 'thang'); // thang, quy, nam
         $thang = $request->input('thang', date('m'));
+        $quy = $request->input('quy', ceil(date('m') / 3));
         $nam = $request->input('nam', date('Y'));
+
+        // Xác định mảng các tháng cần lấy
+        $months = [];
+        if ($loaiLoc == 'nam') {
+            $months = range(1, 12);
+        } elseif ($loaiLoc == 'quy') {
+            $months = [($quy - 1) * 3 + 1, ($quy - 1) * 3 + 2, ($quy - 1) * 3 + 3];
+        } else {
+            $months = [$thang];
+        }
 
         // Lấy danh sách nhân viên thuộc chi nhánh để làm bộ lọc
         $nvQuery = NguoiDung::where('vai_tro', 'nhan_vien');
@@ -83,7 +98,7 @@ class BangLuongController extends Controller
         }
         $nhanViens = $nvQuery->get();
 
-        // Lọc nhân viên cho danh sách
+        // Lọc nhân viên cho danh sách hiển thị
         $listQuery = clone $nvQuery;
         if ($request->filled('nhan_vien_id')) {
             $listQuery->where('id', $request->nhan_vien_id);
@@ -91,26 +106,73 @@ class BangLuongController extends Controller
 
         $employeesPaginator = $listQuery->paginate(10);
         
-        // Map data: lấy BangLuong đã chốt, nếu không có thì tạm tính
-        $bangLuongsData = $employeesPaginator->map(function ($emp) use ($thang, $nam) {
-            $bl = BangLuong::with('nguoiDung')->where('nguoi_dung_id', $emp->id)->where('thang', $thang)->where('nam', $nam)->first();
-            if ($bl) {
-                $bl->is_tam_tinh = false;
-                return $bl;
+        // Map data: Mỗi nhân viên sẽ chứa mảng chi tiết các tháng, và tổng hợp số liệu
+        $employeesPaginator->getCollection()->transform(function ($emp) use ($months, $nam) {
+            $monthlyData = collect();
+            $tongThucNhan = 0;
+            $tongNgayCong = 0;
+            $tongGioTangCa = 0;
+            $tongPhat = 0;
+            $soThangDaChot = 0;
+
+            foreach ($months as $m) {
+                // Thử lấy lương đã chốt
+                $bl = BangLuong::with('nguoiDung')->where('nguoi_dung_id', $emp->id)->where('thang', $m)->where('nam', $nam)->first();
+                if ($bl) {
+                    $bl->is_tam_tinh = false;
+                    $monthlyData->push($bl);
+                    
+                    $tongThucNhan += $bl->luong_thuc_nhan;
+                    $tongNgayCong += $bl->tong_ngay_cong;
+                    $tongGioTangCa += $bl->tong_gio_tang_ca;
+                    $tongPhat += $bl->phat;
+                    $soThangDaChot++;
+                } else {
+                    // Nếu chưa chốt, tính tạm tính
+                    $prov = $this->calculateProvisionalSalary($emp, $m, $nam);
+                    // Chỉ đưa vào danh sách nếu có đi làm hoặc có dữ liệu thực tế
+                    // Để tránh hiển thị quá nhiều tháng trống trong năm
+                    if ($prov->tong_ngay_cong > 0 || $prov->so_ngay_nghi_khong_phep > 0 || $prov->so_ngay_nghi_phep > 0) {
+                        $monthlyData->push($prov);
+                        
+                        $tongThucNhan += $prov->luong_thuc_nhan;
+                        $tongNgayCong += $prov->tong_ngay_cong;
+                        $tongGioTangCa += $prov->tong_gio_tang_ca;
+                        $tongPhat += $prov->phat;
+                    }
+                }
             }
-            return $this->calculateProvisionalSalary($emp, $thang, $nam);
+
+            $emp->monthly_data = $monthlyData;
+            $emp->summary = (object)[
+                'tong_thuc_nhan' => $tongThucNhan,
+                'tong_ngay_cong' => $tongNgayCong,
+                'tong_gio_tang_ca' => $tongGioTangCa,
+                'tong_phat' => $tongPhat,
+                'so_thang_da_chot' => $soThangDaChot,
+                'tong_thang' => $monthlyData->count()
+            ];
+
+            return $emp;
         });
 
-        // Tạo custom paginator để truyền ra view (chỉ fake dữ liệu items, giữ nguyên links)
-        $bangLuongs = new \Illuminate\Pagination\LengthAwarePaginator(
-            $bangLuongsData,
-            $employeesPaginator->total(),
-            $employeesPaginator->perPage(),
-            $employeesPaginator->currentPage(),
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'query' => $request->query()]
-        );
+        // Thống kê nhanh toàn cục cho khoảng thời gian đã chọn
+        $queryThongKe = BangLuong::whereIn('thang', $months)->where('nam', $nam);
+        if ($user->rap_chieu_phim_id !== null) {
+            $queryThongKe->whereHas('nguoiDung', function($q) use ($user) {
+                $q->where('rap_chieu_phim_id', $user->rap_chieu_phim_id);
+            });
+        }
+        $queryDaThanhToan = clone $queryThongKe;
 
-        return view('admin.bang-luongs.index', compact('bangLuongs', 'nhanViens', 'thang', 'nam'));
+        $thongKe = [
+            'tong_chi_tra' => $queryThongKe->sum('luong_thuc_nhan'),
+            'da_thanh_toan' => $queryDaThanhToan->where('trang_thai', 'da_thanh_toan')->sum('luong_thuc_nhan'),
+            // Số nhân viên được tính là số bản ghi chia cho số tháng
+            'so_nhan_vien_da_chot' => $queryThongKe->distinct('nguoi_dung_id')->count(),
+        ];
+
+        return view('admin.bang-luongs.index', compact('employeesPaginator', 'nhanViens', 'loaiLoc', 'thang', 'quy', 'nam', 'thongKe'));
     }
 
     public function showCalculateForm(Request $request)

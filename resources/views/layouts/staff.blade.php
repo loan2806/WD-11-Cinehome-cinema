@@ -52,6 +52,13 @@
                         Dashboard
                     </a>
 
+                    {{-- CHẤM CÔNG CỦA TÔI --}}
+                    <a href="{{ route('staff.cham-congs.index') }}"
+                        class="flex items-center gap-3 rounded-2xl px-4 py-3 font-bold transition {{ request()->routeIs('staff.cham-congs.*') ? 'bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white shadow-lg' : 'text-gray-300 hover:bg-white/10 no-underline' }}">
+                        <i class="fa-solid fa-fingerprint w-5"></i>
+                        Chấm công của tôi
+                    </a>
+
                     {{-- 1. KIỂM TRA QUYỀN: Soát vé QR --}}
                     @can('soat_ve_vao_cua')
                     <a href="{{ route('staff.soat-ve.index') }}"

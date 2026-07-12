@@ -188,6 +188,10 @@ Route::middleware(['auth'])
     ->group(function () {
         Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
 
+        Route::get('/cham-congs', [\App\Http\Controllers\Staff\ChamCongController::class, 'index'])->name('cham-congs.index');
+        Route::post('/cham-congs/check-in', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkIn'])->name('cham-congs.check-in');
+        Route::post('/cham-congs/check-out', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkOut'])->name('cham-congs.check-out');
+
         Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
             Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
             Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
