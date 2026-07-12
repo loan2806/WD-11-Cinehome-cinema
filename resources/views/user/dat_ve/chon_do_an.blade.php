@@ -173,8 +173,12 @@
                             <div class="booking-food-grid">
                                 @foreach ($foodCards as $item)
                                     @php
-                                        $imageUrl = !empty($item['image'])
-                                            ? asset('storage/' . $item['image'])
+                                        $imagePath = trim((string) ($item['image'] ?? ''));
+                                        if ($imagePath !== '' && ! str_starts_with($imagePath, 'foods/')) {
+                                            $imagePath = 'foods/' . $imagePath;
+                                        }
+                                        $imageUrl = $imagePath !== ''
+                                            ? asset('storage/' . $imagePath)
                                             : asset('assets/images/logo.png');
                                         $stock = (int) ($item['stock'] ?? 0);
                                         $isSoldOut = $stock <= 0;

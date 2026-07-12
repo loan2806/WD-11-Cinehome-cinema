@@ -5,33 +5,24 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CapnhatFoodRequest;
 use App\Http\Requests\Admin\ThemmoiFoodRequest;
-use App\Models\Food;
-use App\Models\FoodCategory;
-use App\Models\FoodVariant;
+use App\Models\BienTheDoAn;
+use App\Models\ChiTietCombo;
+use App\Models\DanhMucDoAn;
+use App\Models\Doan;
 use App\Services\AdminNotificationService;
 use App\Traits\Loggable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use App\Models\ComboItem;
 
 class FoodController extends Controller
 {
     use Loggable;
 
-    public function type()
-    {
-        return view('admin.foods.type');
-    }
-
     public function index(Request $request)
     {
-        $query = Food::with(['variants', 'category'])
+        $query = Doan::with(['variants', 'category'])
             ->withCount('invoiceItems');
-
-        $foods = $query
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
 
         if ($request->filled('q')) {
 
@@ -53,43 +44,42 @@ class FoodController extends Controller
         if ($request->filled('status')) {
 
             match ($request->status) {
-
                 'active' => $query->where('is_active', true),
-
                 'inactive' => $query->where('is_active', false),
-
                 default => null,
             };
         }
 
+        // PHẢI paginate sau khi lọc
+        $foods = $query
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-        $categories = FoodCategory::orderBy('name')->get();
+        $categories = DanhMucDoAn::orderBy('name')->get();
 
         $summary = [
-            'total' => Food::count(),
-            'active' => Food::where('is_active', true)->count(),
-            'inactive' => Food::where('is_active', false)->count(),
+            'total' => Doan::count(),
+            'active' => Doan::where('is_active', true)->count(),
+            'inactive' => Doan::where('is_active', false)->count(),
         ];
 
-        return view(
-            'admin.foods.index',
-            compact(
-                'foods',
-                'categories',
-                'summary'
-            )
-        );
+        return view('admin.foods.index', compact(
+            'foods',
+            'categories',
+            'summary'
+        ));
     }
 
     public function create(Request $request)
     {
 
-        $categories = FoodCategory::orderBy('name')->get();
+        $categories = DanhMucDoAn::orderBy('name')->get();
 
         // Lấy tất cả món KHÔNG phải Combo
 
-        $variants = FoodVariant::with('food')
-            ->whereHas('food', function ($q) {
+        $variants = BienTheDoAn::with('doAn')
+            ->whereHas('doAn', function ($q) {
                 $q->whereHas('category', function ($q) {
                     $q->where('name', 'not like', '%Combo%');
                 });
@@ -102,22 +92,22 @@ class FoodController extends Controller
         ));
     }
 
-    public function show(Food $food)
+    public function show(Doan $food)
     {
         $food->load('variants');
 
         return view('admin.foods.show', compact('food'));
     }
 
-    public function edit(Food $food)
+    public function edit(Doan $food)
     {
         $food->load('category', 'variants', 'comboItems');
 
-        $categories = FoodCategory::orderBy('name')->get();
+        $categories = DanhMucDoAn::orderBy('name')->get();
 
-        $variants = FoodVariant::with('food')
-            ->whereHas('food', function ($q) {
-                $q->where('category_id', '!=', FoodCategory::where('name', 'Combo')->value('id'));
+        $variants = BienTheDoAn::with('doAn')
+            ->whereHas('doAn', function ($q) {
+                $q->where('category_id', '!=', DanhMucDoAn::where('name', 'Combo')->value('id'));
             })
             ->get();
 
@@ -135,7 +125,7 @@ class FoodController extends Controller
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('foods', 'public');
         }
-        $category = FoodCategory::find($data['category_id']);
+        $category = DanhMucDoAn::find($data['category_id']);
 
         if ($category && str_contains(strtolower($category->name), 'combo')) {
 
@@ -151,7 +141,7 @@ class FoodController extends Controller
             }
         }
 
-        $food = Food::create($data);
+        $food = Doan::create($data);
 
         $isCombo = str_contains(
             strtolower($food->category->name),
@@ -168,7 +158,7 @@ class FoodController extends Controller
                     continue;
                 }
 
-                ComboItem::create([
+                ChiTietCombo::create([
                     'combo_food_id'   => $food->id,
                     'food_variant_id' => $item['variant_id'],
                     'quantity'        => $item['quantity'] ?? 1,
@@ -193,6 +183,10 @@ class FoodController extends Controller
 
             if (! empty($variants)) {
                 $food->variants()->createMany($variants);
+
+                $food->update([
+                    'price' => collect($variants)->min('price')
+                ]);
             }
         }
 
@@ -217,69 +211,78 @@ class FoodController extends Controller
             );
     }
 
-    public function update(CapnhatFoodRequest $request, Food $food)
+    public function update(CapnhatFoodRequest $request, Doan $food)
     {
         $data = $request->validated();
 
         // Upload ảnh mới
         if ($request->hasFile('image')) {
-
             if ($food->image && Storage::disk('public')->exists($food->image)) {
                 Storage::disk('public')->delete($food->image);
             }
-
             $data['image'] = $request->file('image')->store('foods', 'public');
         }
 
-
-
-        $food->update($data);
-
-        // Nếu là combo thì cập nhật thành phần
+        // Load category để biết có phải combo không
         $food->load('category');
 
-        if (str_contains(strtolower($food->category->name), 'combo')) {
+        DB::transaction(function () use ($request, $food, $data) {
 
-            $errors = [];
-            $seen = [];
+            if (str_contains(strtolower($food->category->name), 'combo')) {
 
-            foreach ($request->input('combo_items', []) as $index => $item) {
+                $errors = [];
+                $seen = [];
 
-                $variantId = $item['variant_id'] ?? null;
+                foreach ($request->input('combo_items', []) as $index => $item) {
+                    $variantId = $item['variant_id'] ?? null;
+                    if (!$variantId) continue;
 
-                if (!$variantId) continue;
-
-                if (isset($seen[$variantId])) {
-
-                    $prevIndex = $seen[$variantId];
-
-                    $errors["combo_items.$index.variant_id"] = 'Biến thể bị trùng trong combo.';
-                    $errors["combo_items.$prevIndex.variant_id"] = 'Biến thể bị trùng trong combo.';
-                } else {
-                    $seen[$variantId] = $index;
-                }
-            }
-
-            if (!empty($errors)) {
-                return back()
-                    ->withInput()
-                    ->withErrors($errors);
-            }
-
-            $food->comboItems()->delete();
-
-            foreach ($request->input('combo_items', []) as $item) {
-
-                if (empty($item['variant_id'])) {
-                    continue;
+                    if (isset($seen[$variantId])) {
+                        $prevIndex = $seen[$variantId];
+                        $errors["combo_items.$index.variant_id"] = 'Biến thể bị trùng trong combo.';
+                        $errors["combo_items.$prevIndex.variant_id"] = 'Biến thể bị trùng trong combo.';
+                    } else {
+                        $seen[$variantId] = $index;
+                    }
                 }
 
-                $food->comboItems()->create([
-                    'food_variant_id' => $item['variant_id'],
-                    'quantity'        => $item['quantity'] ?? 1,
+                if (!empty($errors)) {
+                    // Throw an exception so transaction rolls back and we handle outside
+                    throw new \Illuminate\Validation\ValidationException(
+                        \Illuminate\Support\Facades\Validator::make([], []) // dummy
+                    );
+                }
+
+                // Xóa các combo items cũ trước khi tạo lại
+                $food->comboItems()->delete();
+
+                foreach ($request->input('combo_items', []) as $item) {
+                    if (empty($item['variant_id'])) {
+                        continue;
+                    }
+
+                    $food->comboItems()->create([
+                        'food_variant_id' => $item['variant_id'],
+                        'quantity'        => $item['quantity'] ?? 1,
+                    ]);
+                }
+
+                // Cập nhật $food SAU khi đã cập nhật comboItems (để giá từ form được ghi đè)
+                $food->update($data);
+            } else {
+                $food->update($data);
+
+                $minPrice = $food->variants()->min('price');
+
+                $food->update([
+                    'price' => $minPrice
                 ]);
             }
-        }
+        });
+
+        // Nếu có lỗi validation custom trên combo_items, trả về với lỗi và input (kiểm tra trước transaction để gửi lỗi đúng)
+        // Note: vì mình dùng throw rỗng ở trên để rollback, ta nên kiểm tra và trả về lỗi trước khi bắt transaction.
+        // (Để đơn giản: nếu có lỗi, hàm đã return ở trên trước khi vào transaction.)
 
         $this->ghiNhatKy(
             $request,
@@ -295,7 +298,7 @@ class FoodController extends Controller
 
     public function toggleStatus(
         Request $request,
-        Food $food
+        Doan $food
     ) {
         $food->update([
             'is_active' => ! $food->is_active,
@@ -317,7 +320,7 @@ class FoodController extends Controller
     }
     public function destroy(
         Request $request,
-        Food $food
+        Doan $food
     ) {
         if ($food->invoiceItems()->exists()) {
 

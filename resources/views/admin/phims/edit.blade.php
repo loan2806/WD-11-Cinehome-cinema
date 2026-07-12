@@ -413,14 +413,18 @@
         }
 
         function getYoutubeId(url) {
-            const regExp =
-                /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
 
-            const match = url.match(regExp);
+            let match = url.match(
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^?&]+)/i
+            );
 
-            return (match && match[2].length === 11) ?
-                match[2] :
-                null;
+            if (!match) {
+                match = url.match(
+                    /youtube\.com\/shorts\/([^?&]+)/i
+                );
+            }
+
+            return match ? match[1] : null;
         }
 
         const trailerInput = document.getElementById('trailer');
@@ -456,7 +460,7 @@
                     error.classList.remove('hidden');
 
                 } else {
-                    
+
                     error.classList.add('hidden');
                 }
             }

@@ -101,10 +101,16 @@
                                 </div>
 
                                 @forelse($foodItems as $item)
+                                    @php
+                                        $foodImagePath = trim((string) ($item['image'] ?? ''));
+                                        if ($foodImagePath !== '' && ! str_starts_with($foodImagePath, 'foods/')) {
+                                            $foodImagePath = 'foods/' . $foodImagePath;
+                                        }
+                                    @endphp
                                     <div class="flex justify-between items-center mt-3">
                                         <div class="flex items-center gap-3">
-                                            @if (!empty($item['image']))
-                                                <img src="{{ asset('storage/foods/' . $item['image']) }}"
+                                            @if ($foodImagePath !== '')
+                                                <img src="{{ asset('storage/' . $foodImagePath) }}"
                                                     class="w-16 h-16 object-contain rounded">
                                             @endif
                                             <span>{{ $item['name'] }}</span>
@@ -169,7 +175,7 @@
 
                             <h2 class="text-xl font-black text-yellow-400 mb-4">Chọn phương thức thanh toán</h2>
 
-                            <form id="paymentForm" action="{{ url('/dat-ve/xu-ly-thanh-toan/' . $suatChieu->id) }}" method="POST">
+                            <form id="paymentForm" action="{{ route('dat_ve.xu_ly_thanh_toan', $suatChieu->id) }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="ghe" value="{{ request('ghe') }}">
                                 <input type="hidden" name="food_cart" value="{{ request('food_cart') }}">

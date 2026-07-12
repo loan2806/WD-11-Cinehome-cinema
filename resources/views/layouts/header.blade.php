@@ -37,6 +37,11 @@
                     class="{{ request()->routeIs('user.tin-tuc.*') ? 'active' : '' }}">
                     Tin tức
                 </a>
+
+                <a href="{{ route('user.voucher.index') }}"
+                    class="{{ request()->routeIs('user.voucher.*') || request()->routeIs('user.khuyen-mai.*') ? 'active' : '' }}">
+                    Khuyến mãi
+                </a>
             </nav>
 
             <div class="nav-action booking-actions">

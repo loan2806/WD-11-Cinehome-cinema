@@ -399,267 +399,49 @@
 
             if (url.includes('watch?v=')) {
                 id = url.split('watch?v=')[1].split('&')[0];
+
             } else if (url.includes('youtu.be/')) {
                 id = url.split('youtu.be/')[1].split('?')[0];
+
+            } else if (url.includes('/shorts/')) {
+                id = url.split('/shorts/')[1].split('?')[0];
             }
 
-            return id ? `https://www.youtube.com/embed/${id}` : null;
+            return id ?
+                `https://www.youtube.com/embed/${id}` :
+                null;
         }
 
-        trailerInput.addEventListener('change', function() {
+        trailerInput.addEventListener('input', async function() {
 
-            const embed = getYoutubeEmbed(this.value.trim());
+            const url = this.value.trim();
+            const embed = getYoutubeEmbed(url);
 
-            if (embed) {
+            if (!embed) {
+                trailerPreview.src = '';
+                trailerBox.classList.add('hidden');
+                return;
+            }
+
+            try {
+                const res = await fetch(
+                    `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
+                );
+
+                if (!res.ok) {
+                    trailerPreview.src = '';
+                    trailerBox.classList.add('hidden');
+                    return;
+                }
+
                 trailerPreview.src = embed;
                 trailerBox.classList.remove('hidden');
-            } else {
+
+            } catch (e) {
                 trailerPreview.src = '';
                 trailerBox.classList.add('hidden');
             }
-
         });
     </script>
 
 @endsection
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
