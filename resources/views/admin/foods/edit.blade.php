@@ -61,7 +61,7 @@
                         </div>
 
                         @if ($food->image)
-                            <img id="current-image" src="{{ asset('storage/foods/' . $food->image) }}"
+                            <img id="current-image" src="{{ asset('storage/' . (str_starts_with($food->image, 'foods/') ? $food->image : 'foods/' . $food->image)) }}"
                                 class="absolute inset-0 h-full w-full object-cover rounded-2xl">
                         @else
                             <div id="upload-placeholder"
@@ -160,7 +160,7 @@
                                     $food->comboItems
                                         ->map(function ($item) {
                                             return [
-                                                'food_variant_id' => $item->food_variant_id,
+                                                'variant_id' => $item->food_variant_id,
                                                 'quantity' => $item->quantity,
                                             ];
                                         })
@@ -168,51 +168,51 @@
                                 ),
                             )->map(function ($item) {
                                 return [
-                                    'food_variant_id' => $item['food_variant_id'] ?? null,
+                                    'variant_id' => $item['variant_id'] ?? ($item['food_variant_id'] ?? null),
                                     'quantity' => $item['quantity'] ?? 1,
                                 ];
                             });
                         @endphp
 
                         @forelse ($comboItems as $index => $item)
-                            <div class="grid grid-cols-12 gap-3 combo-row">
+                            <div class="combo-row">
 
-                                {{-- VARIANT --}}
-                                <div class="col-span-8">
-                                    <select name="combo_items[{{ $index }}][variant_id]"
-                                        class="admin-input
-                    @error("combo_items.$index.variant_id") border-red-500 ring-2 ring-red-500 @enderror">
-                                        @foreach ($variants as $variant)
-                                            <option value="{{ $variant->id }}"
-                                                {{ $variant->id == ($item['food_variant_id'] ?? null) ? 'selected' : '' }}>
-                                                {{ $variant->food->name }} ({{ $variant->value }})
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                <div class="grid grid-cols-12 gap-3 items-start">
 
-                                    @error("combo_items.$index.variant_id")
-                                        <small class="text-red-500 block mt-1">{{ $message }}</small>
-                                    @enderror
+                                    <div class="col-span-8">
+                                        <select name="combo_items[{{ $index }}][variant_id]"
+                                            class="admin-input @error("combo_items.$index.variant_id") border-red-500 ring-2 ring-red-500 @enderror">
+
+                                            <option value="">-- Chọn biến thể --</option>
+
+                                            @foreach ($variants as $variant)
+                                                <option value="{{ $variant->id }}"
+                                                    {{ old("combo_items.$index.variant_id", $item['variant_id']) == $variant->id ? 'selected' : '' }}>
+                                                    {{ $variant->doAn->name }} ({{ $variant->value }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <div class="col-span-3">
+                                        <input type="number" min="1"
+                                            name="combo_items[{{ $index }}][quantity]"
+                                            value="{{ $item['quantity'] }}" class="admin-input">
+                                    </div>
+
+                                    <div class="col-span-1 flex items-start">
+                                        <button type="button" class="remove-combo-row btn-admin-outline w-full remove-btn">
+                                            ✕
+                                        </button>
+                                    </div>
+
                                 </div>
 
-                                {{-- QUANTITY --}}
-                                <div class="col-span-3">
-                                    <input type="number" min="1" name="combo_items[{{ $index }}][quantity]"
-                                        value="{{ $item['quantity'] }}"
-                                        class="admin-input
-                    @error("combo_items.$index.quantity") border-red-500 ring-2 ring-red-500 @enderror">
-
-                                    @error("combo_items.$index.quantity")
-                                        <small class="text-red-500 block mt-1">{{ $message }}</small>
-                                    @enderror
-                                </div>
-
-                                {{-- REMOVE --}}
-                                <div class="col-span-1 flex items-end">
-                                    <button type="button" class="remove-combo-row btn-admin-outline w-full">
-                                        ✕
-                                    </button>
-                                </div>
+                                @error("combo_items.$index.variant_id")
+                                    <small class="text-red-500 mt-1 block">
+                                        {{ $message }}
+                                    </small>
+                                @enderror
 
                             </div>
                         @empty
@@ -234,14 +234,13 @@
                             <div class="col-span-8">
 
                                 <select name="combo_items[__index__][variant_id]" class="admin-input">
+                                    <option value="">-- Chọn biến thể --</option>
 
                                     @foreach ($variants as $variant)
                                         <option value="{{ $variant->id }}">
-                                            {{ $variant->food->name }}
-                                            ({{ $variant->value }})
+                                            {{ $variant->doAn->name }} ({{ $variant->value }})
                                         </option>
                                     @endforeach
-
                                 </select>
 
                             </div>
@@ -255,10 +254,8 @@
 
                             <div class="col-span-1 flex items-end">
 
-                                <button type="button" class="remove-combo-row btn-admin-outline w-full">
-
+                                <button type="button" class="remove-combo-row btn-admin-outline w-full remove-btn">
                                     ✕
-
                                 </button>
 
                             </div>
@@ -271,6 +268,20 @@
             @endif
 
             <input type="hidden" name="is_active" value="0">
+            @if (str_contains(strtolower(optional($food->category)->name), 'combo'))
+                <div class="mt-4">
+                    <label class="text-xs uppercase tracking-wider text-gray-400">
+                        Giá combo
+                    </label>
+
+                    <input type="number" name="price" min="0" value="{{ old('price', $food->price) }}"
+                        class="admin-input" placeholder="Nhập giá combo">
+
+                    @error('price')
+                        <small class="text-red-500">{{ $message }}</small>
+                    @enderror
+                </div>
+            @endif
             <label class="flex items-center gap-2 text-sm text-gray-300">
                 <input type="checkbox" name="is_active" value="1"
                     {{ old('is_active', $food->is_active) ? 'checked' : '' }}>
@@ -284,27 +295,43 @@
 @endsection
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
 
-    const addBtn = document.getElementById('add-combo-item');
-    if (!addBtn) return;
+        const addBtn = document.getElementById('add-combo-item');
+        if (!addBtn) return;
 
-    const list = document.getElementById('combo-item-list');
-    const template = document.getElementById('combo-item-template').innerHTML;
+        const list = document.getElementById('combo-item-list');
+        const template = document.getElementById('combo-item-template').innerHTML;
 
-    let index = Date.now();
+        let index = Date.now();
+        updateRemoveButtons();
 
-    addBtn.addEventListener('click', function () {
-        let html = template.replaceAll('__index__', index);
-        list.insertAdjacentHTML('beforeend', html);
-        index++;
+        addBtn.addEventListener('click', function() {
+            let html = template.replaceAll('__index__', index);
+            list.insertAdjacentHTML('beforeend', html);
+            index++;
+
+            updateRemoveButtons();
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-combo-row')) {
+                e.target.closest('.combo-row').remove();
+
+                updateRemoveButtons();
+            }
+        });
+
     });
 
-    document.addEventListener('click', function (e) {
-        if (e.target.classList.contains('remove-combo-row')) {
-            e.target.closest('.combo-row').remove();
+    function updateRemoveButtons() {
+        const rows = document.querySelectorAll('#combo-item-list .combo-row');
+        const buttons = document.querySelectorAll('#combo-item-list .remove-btn');
+
+        if (rows.length <= 2) {
+            buttons.forEach(btn => btn.classList.add('hidden'));
+        } else {
+            buttons.forEach(btn => btn.classList.remove('hidden'));
         }
-    });
-
-});
+    }
 </script>

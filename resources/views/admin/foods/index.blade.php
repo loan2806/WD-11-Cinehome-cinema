@@ -46,24 +46,50 @@
         <div class="space-y-4">
 
             {{-- FILTER --}}
-            <form method="GET" class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-4 grid gap-3 lg:grid-cols-4">
+            <form method="GET" action="{{ route('admin.foods.index') }}"
+                class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-4 grid gap-3 lg:grid-cols-4">
 
-                <input name="q" value="{{ request('q') }}" class="admin-input" placeholder="Tìm món...">
+                {{-- Tìm kiếm --}}
+                <input type="text" name="q" value="{{ request('q') }}" class="admin-input"
+                    placeholder="Tìm món hoặc SKU...">
 
-                <select name="category" class="admin-input">
+                {{-- Nhóm món --}}
+                <select name="category_id" class="admin-input">
                     <option value="">Nhóm món</option>
+
                     @foreach ($categories as $category)
-                        <option value="{{ $category }}">{{ $category }}</option>
+                        <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
                     @endforeach
                 </select>
 
+                {{-- Trạng thái --}}
                 <select name="status" class="admin-input">
                     <option value="">Trạng thái</option>
-                    <option value="active">Đang bán</option>
-                    <option value="inactive">Tạm ẩn</option>
+
+                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>
+                        Đang bán
+                    </option>
+
+                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>
+                        Tạm ẩn
+                    </option>
                 </select>
 
-                <button class="btn-admin">Lọc</button>
+                {{-- Nút --}}
+                <div class="flex gap-3">
+                    <button type="submit"
+                        class="flex-1 h-12 rounded-2xl bg-[#d99a32] font-bold text-white hover:bg-[#c98b25] transition">
+                        Lọc
+                    </button>
+
+                    <a href="{{ route('admin.foods.index') }}"
+                        class="flex-1 flex items-center justify-center h-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition">
+                        ⟳
+                    </a>
+                </div>
+
             </form>
 
             {{-- ITEMS --}}
@@ -75,7 +101,8 @@
                         {{-- IMAGE --}}
                         <div class="h-20 w-20 rounded-2xl overflow-hidden bg-white/5 flex items-center justify-center">
                             @if ($food->image)
-                                <img src="{{ asset('storage/foods/' . $food->image) }}" class="object-cover w-full h-full">
+                                <img src="{{ asset('storage/' . (str_starts_with($food->image, 'foods/') ? $food->image : 'foods/' . $food->image)) }}"
+                                    class="object-cover w-full h-full">
                             @else
                                 <i class="fa-solid fa-burger text-[#d99a32] text-xl"></i>
                             @endif
@@ -96,8 +123,8 @@
                                 </span>
 
                                 <span class="text-xs text-[#f4c56a]">
-    {{ optional($food->category)->name }}
-</span>
+                                    {{ optional($food->category)->name }}
+                                </span>
 
                             </div>
 
@@ -105,9 +132,21 @@
                                 {{ $food->name }}
                             </h3>
 
-                            <p class="text-sm text-gray-400 mt-1">
-                                Biến thể: <b class="text-white">{{ $food->variants->count() }}</b>
-                            </p>
+                            @if ($food->isCombo())
+                                <p class="text-sm text-gray-400 mt-1">
+                                    Thành phần:
+                                    <b class="text-white">
+                                        {{ $food->comboItems->count() }}
+                                    </b>
+                                </p>
+                            @else
+                                <p class="text-sm text-gray-400 mt-1">
+                                    Biến thể:
+                                    <b class="text-white">
+                                        {{ $food->variants->count() }}
+                                    </b>
+                                </p>
+                            @endif
                         </div>
 
                         {{-- ACTION --}}
