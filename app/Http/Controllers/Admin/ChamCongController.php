@@ -21,10 +21,12 @@ class ChamCongController extends Controller
                 $q->where('rap_chieu_phim_id', $user->rap_chieu_phim_id)
                   ->where('vai_tro', 'nhan_vien');
             });
+            $nhanViens = NguoiDung::where('rap_chieu_phim_id', $user->rap_chieu_phim_id)->where('vai_tro', 'nhan_vien')->get();
         } else {
             $query->whereHas('nguoiDung', function ($q) {
                 $q->where('vai_tro', 'nhan_vien');
             });
+            $nhanViens = NguoiDung::where('vai_tro', 'nhan_vien')->get();
         }
 
         // Tìm kiếm và lọc
@@ -34,24 +36,37 @@ class ChamCongController extends Controller
                   ->orWhere('email', 'like', '%' . $request->keyword . '%');
             });
         }
-
-        if ($request->filled('ngay')) {
-            $query->whereDate('ngay', $request->ngay);
+        
+        if ($request->filled('nhan_vien_id')) {
+            $query->where('nguoi_dung_id', $request->nhan_vien_id);
         }
 
-        if ($request->filled('thang')) {
-            $parts = explode('-', $request->thang);
-            if (count($parts) === 2) {
-                $query->whereYear('ngay', $parts[0])
-                      ->whereMonth('ngay', $parts[1]);
+        $loaiLoc = $request->input('loai_loc', 'ngay');
+
+        if ($loaiLoc === 'ngay') {
+            if ($request->filled('ngay')) {
+                $query->whereDate('ngay', $request->ngay);
             }
+        } elseif ($loaiLoc === 'thang') {
+            $thang = $request->input('thang', date('m'));
+            $nam = $request->input('nam', date('Y'));
+            $query->whereMonth('ngay', $thang)->whereYear('ngay', $nam);
+        } elseif ($loaiLoc === 'quy') {
+            $quy = $request->input('quy', ceil(date('m') / 3));
+            $nam = $request->input('nam', date('Y'));
+            $startMonth = ($quy - 1) * 3 + 1;
+            $endMonth = $startMonth + 2;
+            $query->whereYear('ngay', $nam)->whereMonth('ngay', '>=', $startMonth)->whereMonth('ngay', '<=', $endMonth);
+        } elseif ($loaiLoc === 'nam') {
+            $nam = $request->input('nam', date('Y'));
+            $query->whereYear('ngay', $nam);
         }
 
         $chamCongs = $query->orderBy('ngay', 'desc')
             ->orderBy('id', 'desc')
             ->paginate(10);
 
-        return view('admin.cham-congs.index', compact('chamCongs'));
+        return view('admin.cham-congs.index', compact('chamCongs', 'nhanViens', 'loaiLoc'));
     }
 
     public function create()

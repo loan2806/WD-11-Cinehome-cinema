@@ -19,27 +19,69 @@
 
     <!-- Bộ lọc -->
     <div class="rounded-2xl border border-white/10 bg-[#151515] p-5">
-        <form method="GET" action="{{ route('admin.cham-congs.index') }}" class="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <form method="GET" action="{{ route('admin.cham-congs.index') }}" class="grid grid-cols-1 gap-4 md:grid-cols-5">
             <div>
-                <label class="mb-2 block text-sm font-bold text-gray-300">Tìm kiếm</label>
-                <div class="relative">
-                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                    <input type="text" name="keyword" value="{{ request('keyword') }}"
-                           placeholder="VD: abc@cinehome.vn"
-                           class="w-full rounded-xl border border-white/10 bg-[#101010] py-3 pl-11 pr-4 text-white focus:border-[#d99a32] focus:outline-none">
-                </div>
+                <label class="mb-2 block text-sm font-bold text-gray-300">Nhân viên</label>
+                <select name="nhan_vien_id"
+                        class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                    <option value="">-- Tất cả nhân viên --</option>
+                    @foreach($nhanViens as $nv)
+                        <option value="{{ $nv->id }}" {{ request('nhan_vien_id') == $nv->id ? 'selected' : '' }}>
+                            {{ $nv->ho_ten }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
             <div>
+                <label class="mb-2 block text-sm font-bold text-gray-300">Lọc theo</label>
+                <select name="loai_loc" id="loai_loc" onchange="toggleFilterFields()"
+                        class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                    <option value="ngay" {{ (!isset($loaiLoc) || $loaiLoc == 'ngay') ? 'selected' : '' }}>Ngày</option>
+                    <option value="thang" {{ (isset($loaiLoc) && $loaiLoc == 'thang') ? 'selected' : '' }}>Tháng</option>
+                    <option value="quy" {{ (isset($loaiLoc) && $loaiLoc == 'quy') ? 'selected' : '' }}>Quý</option>
+                    <option value="nam" {{ (isset($loaiLoc) && $loaiLoc == 'nam') ? 'selected' : '' }}>Năm</option>
+                </select>
+            </div>
+            
+            <div id="filter_ngay_container" style="{{ (!isset($loaiLoc) || $loaiLoc == 'ngay') ? 'block' : 'none' }}">
                 <label class="mb-2 block text-sm font-bold text-gray-300">Theo ngày</label>
                 <input type="{{ request('ngay') ? 'date' : 'text' }}" name="ngay" value="{{ request('ngay') }}" placeholder="Chọn ngày..."
                        onfocus="(this.type='date'); this.showPicker()" onblur="if(!this.value) this.type='text'"
                        class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none cursor-pointer" style="color-scheme: dark;" onclick="if(this.type==='date') this.showPicker()">
             </div>
+            
+            <div id="filter_thang_container" style="display: {{ (isset($loaiLoc) && $loaiLoc == 'thang') ? 'block' : 'none' }};">
+                <label class="mb-2 block text-sm font-bold text-gray-300">Tháng</label>
+                <select name="thang" id="thang"
+                        class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                    @for($m = 1; $m <= 12; $m++)
+                        <option value="{{ $m }}" {{ request('thang', date('m')) == $m ? 'selected' : '' }}>
+                            Tháng {{ $m }}
+                        </option>
+                    @endfor
+                </select>
+            </div>
+            <div id="filter_quy_container" style="display: {{ (isset($loaiLoc) && $loaiLoc == 'quy') ? 'block' : 'none' }};">
+                <label class="mb-2 block text-sm font-bold text-gray-300">Quý</label>
+                <select name="quy" id="quy"
+                        class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                    @for($q = 1; $q <= 4; $q++)
+                        <option value="{{ $q }}" {{ request('quy', ceil(date('m')/3)) == $q ? 'selected' : '' }}>
+                            Quý {{ $q }}
+                        </option>
+                    @endfor
+                </select>
+            </div>
             <div>
-                <label class="mb-2 block text-sm font-bold text-gray-300">Theo tháng</label>
-                <input type="{{ request('thang') ? 'month' : 'text' }}" name="thang" value="{{ request('thang') }}" placeholder="Chọn tháng..."
-                       onfocus="(this.type='month'); this.showPicker()" onblur="if(!this.value) this.type='text'"
-                       class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none cursor-pointer" style="color-scheme: dark;" onclick="if(this.type==='month') this.showPicker()">
+                <label class="mb-2 block text-sm font-bold text-gray-300">Năm</label>
+                <select name="nam"
+                        class="w-full rounded-xl border border-white/10 bg-[#101010] px-4 py-3 text-white focus:border-[#d99a32] focus:outline-none">
+                    @for($y = date('Y'); $y >= 2024; $y--)
+                        <option value="{{ $y }}" {{ request('nam', date('Y')) == $y ? 'selected' : '' }}>
+                            Năm {{ $y }}
+                        </option>
+                    @endfor
+                </select>
             </div>
             <div class="flex items-end gap-2">
                 <button type="submit" class="w-full rounded-xl bg-[#d99a32] py-3 font-bold text-[#2b1208] transition hover:bg-[#d99a32]/85">
@@ -50,6 +92,19 @@
                 </a>
             </div>
         </form>
+
+        <script>
+            function toggleFilterFields() {
+                var loaiLoc = document.getElementById('loai_loc').value;
+                document.getElementById('filter_ngay_container').style.display = (loaiLoc === 'ngay') ? 'block' : 'none';
+                document.getElementById('filter_thang_container').style.display = (loaiLoc === 'thang') ? 'block' : 'none';
+                document.getElementById('filter_quy_container').style.display = (loaiLoc === 'quy') ? 'block' : 'none';
+            }
+            // Gọi 1 lần lúc load
+            document.addEventListener('DOMContentLoaded', function() {
+                toggleFilterFields();
+            });
+        </script>
     </div>
 
     <!-- Thông báo nếu có -->
