@@ -20,9 +20,10 @@ class NguoiDung extends Authenticatable
         'ngay_sinh',
         'mat_khau',
         'vai_tro',
+        'rap_chieu_phim_id',
+        'luong_co_ban',
         'trang_thai_hoat_dong',
         'so_dien_thoai',
-        
     ];
 
     protected $hidden = [
@@ -111,5 +112,20 @@ class NguoiDung extends Authenticatable
             NguoiDung::class,
             'nguoi_gioi_thieu_id'
         );
+    }
+
+    public function rapChieuPhim()
+    {
+        return $this->belongsTo(RapChieuPhim::class, 'rap_chieu_phim_id');
+    }
+
+    public function chamCongs()
+    {
+        return $this->hasMany(ChamCong::class, 'nguoi_dung_id');
+    }
+
+    public function bangLuongs()
+    {
+        return $this->hasMany(BangLuong::class, 'nguoi_dung_id');
     }
 }
