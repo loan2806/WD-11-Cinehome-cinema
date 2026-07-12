@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350" role="img" aria-labelledby="title desc">
+  <title id="title">Anh Sang Thanh Pho - CineHome poster</title>
+  <desc id="desc">A cinematic city poster for a featured CineHome movie.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="0.48" stop-color="#162746"/>
+      <stop offset="1" stop-color="#08090f"/>
+    </linearGradient>
+    <radialGradient id="redGlow" cx="48%" cy="36%" r="52%">
+      <stop offset="0" stop-color="#ff3b46" stop-opacity="0.72"/>
+      <stop offset="0.45" stop-color="#e50914" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#e50914" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="goldGlow" cx="52%" cy="18%" r="34%">
+      <stop offset="0" stop-color="#ffd37a" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#f7b84b" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="22" stdDeviation="24" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <rect width="900" height="1350" fill="url(#sky)"/>
+  <rect width="900" height="1350" fill="url(#redGlow)"/>
+  <rect width="900" height="1350" fill="url(#goldGlow)"/>
+
+  <g opacity="0.24">
+    <path d="M0 0H900V1350H0z" fill="#000"/>
+    <path d="M78 0v1350M172 0v1350M266 0v1350M360 0v1350M454 0v1350M548 0v1350M642 0v1350M736 0v1350M830 0v1350" stroke="#fff" stroke-width="1"/>
+    <path d="M0 120h900M0 246h900M0 372h900M0 498h900M0 624h900M0 750h900M0 876h900M0 1002h900M0 1128h900" stroke="#fff" stroke-width="1"/>
+  </g>
+
+  <circle cx="450" cy="290" r="134" fill="#f7b84b" opacity="0.92"/>
+  <circle cx="450" cy="290" r="94" fill="#fff2bd" opacity="0.5"/>
+  <path d="M155 485c88-96 174-143 258-142 120 2 201 99 333 76 33-6 61-18 84-32v245H155z" fill="#0b0d14" opacity="0.54"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M96 733h78v346H96zM205 650h96v429h-96zM335 704h86v375h-86zM466 594h116v485H466zM618 690h82v389h-82zM736 620h88v459h-88z" fill="#111827"/>
+    <path d="M118 775h18v28h-18zM118 835h18v28h-18zM118 895h18v28h-18zM229 694h18v28h-18zM260 694h18v28h-18zM229 760h18v28h-18zM260 760h18v28h-18zM360 748h18v28h-18zM360 812h18v28h-18zM492 648h20v30h-20zM536 648h20v30h-20zM492 718h20v30h-20zM536 718h20v30h-20zM642 734h18v28h-18zM642 800h18v28h-18zM762 668h18v28h-18zM794 668h18v28h-18zM762 736h18v28h-18zM794 736h18v28h-18z" fill="#f7b84b" opacity="0.78"/>
+  </g>
+
+  <path d="M0 902c116-58 226-82 330-72 118 11 211 62 332 48 91-10 171-46 238-93v565H0z" fill="#06070b" opacity="0.86"/>
+  <path d="M0 1042c139-76 273-93 402-51 126 41 258 37 498-58v417H0z" fill="#050508"/>
+
+  <g transform="translate(90 92)">
+    <text x="0" y="0" fill="#ff3b46" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="900" letter-spacing="3">CINEHOME ORIGINAL</text>
+  </g>
+
+  <g transform="translate(90 1050)">
+    <text x="0" y="0" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="900">ANH SANG</text>
+    <text x="0" y="86" fill="#ffffff" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="900">THANH PHO</text>
+    <rect x="0" y="118" width="310" height="8" rx="4" fill="#ff3b46"/>
+    <text x="0" y="178" fill="#cbd5e1" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="700">HANH DONG • PHIEU LUU • T13</text>
+    <text x="0" y="226" fill="#f7b84b" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="900">DAT VE NGAY TAI CINEHOME</text>
+  </g>
+</svg>

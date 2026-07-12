@@ -30,9 +30,25 @@ class VoucherController extends Controller
 
         $thanhVien = Auth::user()->thanhVien;
 
+        $availablePoints = (int) ($thanhVien?->diem_hien_tai ?? 0);
+        $affordableCount = $vouchers
+            ->filter(fn ($voucher) => $availablePoints >= $voucher->diem_can_doi)
+            ->count();
+        $nextVoucher = $vouchers
+            ->filter(fn ($voucher) => $availablePoints < $voucher->diem_can_doi)
+            ->sortBy('diem_can_doi')
+            ->first();
+        $pointsNeededForNext = $nextVoucher
+            ? max(0, $nextVoucher->diem_can_doi - $availablePoints)
+            : 0;
+
         return view('user.voucher.index', compact(
             'vouchers',
-            'thanhVien'
+            'thanhVien',
+            'availablePoints',
+            'affordableCount',
+            'nextVoucher',
+            'pointsNeededForNext'
         ));
     }
 
@@ -95,17 +111,62 @@ class VoucherController extends Controller
     /**
      * Hiển thị danh sách voucher cá nhân của khách hàng.
      */
-    public function myVoucher()
+    public function myVoucher(Request $request)
     {
-        $vouchers = Auth::user()
+        $allowedStatuses = ['kha_dung', 'da_su_dung', 'het_han'];
+        $activeStatus = in_array($request->query('trang_thai'), $allowedStatuses, true)
+            ? $request->query('trang_thai')
+            : null;
+
+        $baseQuery = Auth::user()
             ->vouchersCaNhan()
-            ->with('voucher')
+            ->with('voucher');
+
+        $voucherStats = [
+            'total' => (clone $baseQuery)->count(),
+            'available' => (clone $baseQuery)
+                ->where('da_su_dung', false)
+                ->where(function ($query) {
+                    $query->whereNull('ngay_het_han')
+                        ->orWhere('ngay_het_han', '>=', now());
+                })
+                ->count(),
+            'used' => (clone $baseQuery)->where('da_su_dung', true)->count(),
+            'expired' => (clone $baseQuery)
+                ->where('da_su_dung', false)
+                ->whereNotNull('ngay_het_han')
+                ->where('ngay_het_han', '<', now())
+                ->count(),
+        ];
+
+        $expiringVoucher = (clone $baseQuery)
+            ->where('da_su_dung', false)
+            ->whereNotNull('ngay_het_han')
+            ->where('ngay_het_han', '>=', now())
+            ->orderBy('ngay_het_han')
+            ->first();
+
+        $vouchers = (clone $baseQuery)
+            ->when($activeStatus === 'kha_dung', function ($query) {
+                $query->where('da_su_dung', false)
+                    ->where(function ($innerQuery) {
+                        $innerQuery->whereNull('ngay_het_han')
+                            ->orWhere('ngay_het_han', '>=', now());
+                    });
+            })
+            ->when($activeStatus === 'da_su_dung', fn ($query) => $query->where('da_su_dung', true))
+            ->when($activeStatus === 'het_han', function ($query) {
+                $query->where('da_su_dung', false)
+                    ->whereNotNull('ngay_het_han')
+                    ->where('ngay_het_han', '<', now());
+            })
             ->latest()
-            ->paginate(10);
+            ->paginate(9)
+            ->withQueryString();
 
         return view(
             'user.voucher.my-voucher',
-            compact('vouchers')
+            compact('vouchers', 'voucherStats', 'activeStatus', 'expiringVoucher')
         );
     }
 

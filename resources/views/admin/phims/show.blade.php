@@ -103,13 +103,36 @@
                         <span class="text-white">{{ $phim->thoi_luong }} phút</span>
                     </div>
 
-                    <div class="flex justify-between pt-1">
-                        <span class="text-gray-400">Trailer</span>
-                        <a href="{{ $phim->trailer }}" target="_blank" rel="noopener noreferrer"
-                            class="inline-flex items-center gap-2 text-red-400 hover:text-red-300">
-                            <i class="fa-brands fa-youtube"></i>
-                            Xem trailer
-                        </a>
+                    @php
+                        $videoId = null;
+
+                        if ($phim->trailer) {
+                            if (str_contains($phim->trailer, 'watch?v=')) {
+                                $videoId = explode('&', explode('watch?v=', $phim->trailer)[1])[0];
+                            } elseif (str_contains($phim->trailer, 'youtu.be/')) {
+                                $videoId = explode('?', explode('youtu.be/', $phim->trailer)[1])[0];
+                            } elseif (str_contains($phim->trailer, '/shorts/')) {
+                                $videoId = explode('?', explode('/shorts/', $phim->trailer)[1])[0];
+                            }
+                        }
+                    @endphp
+
+                    <div class="border-b border-white/5 pb-3">
+                        <div class="mb-3 text-gray-400">
+                            Trailer
+                        </div>
+
+                        @if ($videoId)
+                            <div class="overflow-hidden rounded-xl aspect-video">
+                                <iframe class="w-full h-full" src="https://www.youtube.com/embed/{{ $videoId }}"
+                                    allowfullscreen>
+                                </iframe>
+                            </div>
+                        @else
+                            <span class="text-gray-500">
+                                Chưa có trailer
+                            </span>
+                        @endif
                     </div>
 
                 </div>

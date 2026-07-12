@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Food;
+use App\Models\Doan;
+use App\Models\BienTheDoAn;
 use App\Models\FoodInvoice;
-use App\Models\FoodVariant;
 use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -56,7 +56,7 @@ class FoodInvoiceController extends Controller
 
         $invoices = $query->paginate(10)->withQueryString();
 
-        $foodsForSale = Food::active()
+        $foodsForSale = Doan::active()
             ->with([
                 'category',
                 'variants' => fn ($variantQuery) => $variantQuery
@@ -70,11 +70,11 @@ class FoodInvoiceController extends Controller
             ->get();
 
         $quickFoods = $foodsForSale
-            ->filter(fn (Food $food) => $food->stock_quantity > 0)
+            ->filter(fn (Doan $food) => $food->stock_quantity > 0)
             ->values();
 
         $lowStockFoods = $foodsForSale
-            ->filter(fn (Food $food) => $food->stock_quantity > 0 && $food->stock_quantity <= $food->min_stock_quantity)
+            ->filter(fn (Doan $food) => $food->stock_quantity > 0 && $food->stock_quantity <= $food->min_stock_quantity)
             ->sortBy('stock_quantity')
             ->take(5)
             ->values();
@@ -227,7 +227,7 @@ class FoodInvoiceController extends Controller
             ->unique()
             ->values();
 
-        $foods = Food::with([
+        $foods = Doan::with([
             'category',
             'variants' => fn ($variantQuery) => $variantQuery
                 ->where('is_active', true)
@@ -268,7 +268,7 @@ class FoodInvoiceController extends Controller
             ->map(fn ($group) => $group->sum(fn ($item) => (int) data_get($item, 'quantity')));
 
         foreach ($quantities as $foodId => $quantity) {
-            $food = Food::with(['category', 'comboItems.variant'])->lockForUpdate()->find($foodId);
+            $food = Doan::with(['category', 'comboItems.variant'])->lockForUpdate()->find($foodId);
 
             if (! $food) {
                 continue;
@@ -301,7 +301,7 @@ class FoodInvoiceController extends Controller
             ->map(fn ($group) => $group->sum(fn ($item) => (int) data_get($item, 'quantity')));
 
         foreach ($quantities as $foodId => $quantity) {
-            $food = Food::with(['category', 'comboItems.variant'])->find($foodId);
+            $food = Doan::with(['category', 'comboItems.variant'])->find($foodId);
 
             if (! $food) {
                 continue;
@@ -320,7 +320,7 @@ class FoodInvoiceController extends Controller
         }
     }
 
-    private function saleVariantForUpdate(Food $food): ?FoodVariant
+    private function saleVariantForUpdate(Doan $food): ?BienTheDoAn
     {
         return $food->variants()
             ->where('is_active', true)
@@ -330,7 +330,7 @@ class FoodInvoiceController extends Controller
             ->first();
     }
 
-    private function deductComboInventory(Food $food, int $quantity): void
+    private function deductComboInventory(Doan $food, int $quantity): void
     {
         if ($food->comboItems->isEmpty()) {
             throw ValidationException::withMessages([
@@ -340,7 +340,7 @@ class FoodInvoiceController extends Controller
 
         foreach ($food->comboItems as $comboItem) {
             $needed = (int) $comboItem->quantity * $quantity;
-            $variant = FoodVariant::lockForUpdate()->find($comboItem->food_variant_id);
+            $variant = BienTheDoAn::lockForUpdate()->find($comboItem->food_variant_id);
 
             if (! $variant || $variant->stock_quantity < $needed) {
                 $available = (int) ($variant?->stock_quantity ?? 0);
@@ -354,10 +354,10 @@ class FoodInvoiceController extends Controller
         }
     }
 
-    private function restoreComboInventory(Food $food, int $quantity): void
+    private function restoreComboInventory(Doan $food, int $quantity): void
     {
         foreach ($food->comboItems as $comboItem) {
-            FoodVariant::whereKey($comboItem->food_variant_id)
+            BienTheDoAn::whereKey($comboItem->food_variant_id)
                 ->increment('stock_quantity', (int) $comboItem->quantity * $quantity);
         }
     }

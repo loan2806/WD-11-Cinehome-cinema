@@ -1,489 +1,316 @@
 @extends('layouts.user')
 
-@section('title', 'Gioi thieu rap - CineHome')
+@section('title', 'Rạp chiếu - CineHome')
 
 @section('content')
-@php
-    $rap = $rapChieuPhim ?? ($cinema ?? null);
+    @php
+        use Illuminate\Support\Str;
 
-    if (! $rap && isset($rapChieuPhims) && $rapChieuPhims->count() > 0) {
-        $rap = $rapChieuPhims->first();
-    }
+        $rap = $rapChieuPhim ?? null;
+        $cinemaName = $rap->ten_rap ?? 'CineHome Cinema';
+        $cinemaAddress = $rap->dia_chi ?? '123 Đường Nguyễn Văn Linh, Quận 7';
+        $cinemaCity = $rap->thanh_pho ?? 'TP.HCM';
+        $cinemaPhone = $rap->so_dien_thoai ?? '1900 1234';
+        $mapLat = $rap->vi_do ?? '10.7290257';
+        $mapLng = $rap->kinh_do ?? '106.6968571';
+        $mapDirectionUrl = "https://www.google.com/maps/dir/?api=1&destination={$mapLat},{$mapLng}";
+        $mapEmbedUrl = "https://www.google.com/maps?q={$mapLat},{$mapLng}&z=15&output=embed";
+        $showtimeUrl = route('user.showtimes.index', $rap ? ['rap_chieu_phim_id' => $rap->id] : []);
 
-    if (! $rap && isset($cinemas) && $cinemas->count() > 0) {
-        $rap = $cinemas->first();
-    }
+        $fallbackExterior = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1600&auto=format&fit=crop';
+        $fallbackLobby = 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=1300&auto=format&fit=crop';
+        $fallbackSeats = 'https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?q=80&w=1300&auto=format&fit=crop';
+        $fallbackFood = 'https://images.unsplash.com/photo-1585647347483-22b66260dfff?q=80&w=1300&auto=format&fit=crop';
+        $fallbackWaiting = 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?q=80&w=1300&auto=format&fit=crop';
 
-    $cinemaName = $rap->ten_rap ?? 'CineHome Cinema';
-    $cinemaAddress = $rap->dia_chi ?? '123 Duong ABC, Phuong XYZ, Thanh pho Hung Yen';
-    $cinemaCity = $rap->thanh_pho ?? 'Hung Yen';
-    $cinemaPhone = $rap->so_dien_thoai ?? '1900 1234';
-    $cinemaImage = $rap->hinh_anh ?? 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=1600';
-    $mapLat = $rap->vi_do ?? '20.852571';
-    $mapLng = $rap->kinh_do ?? '106.016998';
-    $mapDirectionUrl = "https://www.google.com/maps/dir/?api=1&destination={$mapLat},{$mapLng}";
-    $mapEmbedUrl = "https://www.google.com/maps?q={$mapLat},{$mapLng}&z=15&output=embed";
-    $showtimeUrl = route('user.showtimes.index', $rap ? ['rap_chieu_phim_id' => $rap->id] : []);
+        $resolveImage = function ($path, $fallback) {
+            if (empty($path)) {
+                return $fallback;
+            }
 
-    $stats = [
-        ['icon' => 'fa-solid fa-door-open', 'value' => '5', 'label' => 'Phòng chiếu'],
-        ['icon' => 'fa-solid fa-couch', 'value' => '300+', 'label' => 'Ghế ngồi'],
-        ['icon' => 'fa-solid fa-ticket', 'value' => ($showtimeCount ?? 0) > 0 ? $showtimeCount . '+' : '20+', 'label' => 'Suất chiếu/ngày'],
-        ['icon' => 'fa-solid fa-award', 'value' => '2018', 'label' => 'Năm hoạt động'],
-    ];
+            if (Str::startsWith($path, ['http://', 'https://'])) {
+                return $path;
+            }
 
-    $reasons = [
-        ['icon' => 'fa-solid fa-display', 'title' => 'Màn hình 4K'],
-        ['icon' => 'fa-solid fa-volume-high', 'title' => 'Âm thanh Dolby Atmos'],
-        ['icon' => 'fa-solid fa-crown', 'title' => 'Ghế VIP cao cấp'],
-        ['icon' => 'fa-solid fa-mobile-screen-button', 'title' => 'Đặt vé online nhanh chóng'],
-        ['icon' => 'fa-solid fa-square-parking', 'title' => 'Bãi đỗ xe rộng rãi'],
-        ['icon' => 'fa-solid fa-burger', 'title' => 'Khu vực ăn uống'],
-    ];
+            if (file_exists(public_path('storage/' . $path))) {
+                return asset('storage/' . $path);
+            }
 
-    $gallery = [
-        ['image' => $cinemaImage, 'title' => 'Sảnh đón khách sang trọng'],
-        ['image' => 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?q=80&w=1200', 'title' => 'Phòng chiếu hiện đại'],
-        ['image' => 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?q=80&w=1200', 'title' => 'Không gian chờ tiện nghi'],
-        ['image' => 'https://images.unsplash.com/photo-1513106580091-1d82408b8cd6?q=80&w=1200', 'title' => 'Khu vực bắp nước'],
-    ];
+            if (file_exists(public_path($path))) {
+                return asset($path);
+            }
 
-    $faqs = [
-        ['question' => 'CineHome có hỗ trợ đặt vé online không?', 'answer' => 'Có, bạn có thể chọn phim, suất chiếu và ghế ngồi trực tiếp trên website.'],
-        ['question' => 'Rạp có bãi gửi xe không?', 'answer' => 'Có, CineHome có khu vực gửi xe rộng rãi cho khách hàng.'],
-        ['question' => 'Có bán bắp nước và đồ ăn nhẹ không?', 'answer' => 'Có, quầy dịch vụ luôn có nhiều combo tiện lợi cho bạn lựa chọn.'],
-        ['question' => 'Rạp mở cửa vào khung giờ nào?', 'answer' => 'Rạp hoạt động mỗi ngày từ 08:00 đến 23:30.'],
-    ];
-@endphp
+            return asset('storage/' . $path);
+        };
 
-<style>
-    .cinema-page {
-        background: #0b0705;
-        color: #fff;
-    }
+        $cinemaImage = $resolveImage($rap->hinh_anh ?? null, $fallbackExterior);
+        $seatCountDisplay = ($seatCount ?? 0) > 0 ? number_format($seatCount) : '300+';
+        $roomCountDisplay = ($roomCount ?? 0) > 0 ? number_format($roomCount) : '5';
+        $activeRoomDisplay = ($activeRoomCount ?? 0) > 0 ? number_format($activeRoomCount) : $roomCountDisplay;
+        $showtimeDisplay = ($showtimeCount ?? 0) > 0 ? number_format($showtimeCount) : '20+';
+        $movieDisplay = ($movieCount ?? 0) > 0 ? number_format($movieCount) : (($hotMovies ?? collect())->count() ?: '4+');
 
-    .cinema-section {
-        padding: 70px 0;
-    }
+        $stats = [
+            ['icon' => 'fa-solid fa-door-open', 'value' => $roomCountDisplay, 'label' => 'Phòng chiếu'],
+            ['icon' => 'fa-solid fa-couch', 'value' => $seatCountDisplay, 'label' => 'Ghế ngồi'],
+            ['icon' => 'fa-solid fa-ticket', 'value' => $showtimeDisplay, 'label' => 'Suất hôm nay'],
+            ['icon' => 'fa-solid fa-film', 'value' => $movieDisplay, 'label' => 'Phim đang có'],
+        ];
 
-    .cinema-card {
-        height: 100%;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 28px;
-        background: #151515;
-        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
-    }
+        $features = [
+            ['icon' => 'fa-solid fa-display', 'title' => 'Màn hình sắc nét', 'desc' => 'Không gian chiếu được tối ưu ánh sáng, tầm nhìn và độ tương phản.'],
+            ['icon' => 'fa-solid fa-volume-high', 'title' => 'Âm thanh sống động', 'desc' => 'Hệ thống âm thanh vòm cho cảm giác nhập vai trong từng cảnh phim.'],
+            ['icon' => 'fa-solid fa-crown', 'title' => 'Ghế ngồi êm ái', 'desc' => 'Khoảng cách ghế thoải mái, phù hợp cả các suất chiếu dài.'],
+            ['icon' => 'fa-solid fa-mobile-screen-button', 'title' => 'Đặt vé nhanh', 'desc' => 'Chọn phim, chọn ghế, thêm combo và thanh toán trong một luồng mượt.'],
+            ['icon' => 'fa-solid fa-square-parking', 'title' => 'Di chuyển thuận tiện', 'desc' => 'Vị trí dễ tìm, có hướng dẫn bản đồ và thông tin liên hệ rõ ràng.'],
+            ['icon' => 'fa-solid fa-burger', 'title' => 'Combo bắp nước', 'desc' => 'Nhiều lựa chọn đồ ăn nhẹ để buổi xem phim trọn vẹn hơn.'],
+        ];
 
-    .cinema-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 18px;
-        border-radius: 999px;
-        background: rgba(245, 166, 35, 0.14);
-        color: #ffd27a;
-        font-size: 14px;
-        font-weight: 700;
-    }
+        $gallery = [
+            ['image' => $cinemaImage, 'title' => 'Sảnh đón khách CineHome', 'wide' => true],
+            ['image' => $fallbackLobby, 'title' => 'Phòng chiếu hiện đại', 'wide' => false],
+            ['image' => $fallbackSeats, 'title' => 'Ghế ngồi thoải mái', 'wide' => false],
+            ['image' => $fallbackFood, 'title' => 'Quầy combo bắp nước', 'wide' => false],
+            ['image' => $fallbackWaiting, 'title' => 'Không gian chờ thư giãn', 'wide' => true],
+        ];
 
-    .cinema-title {
-        margin-top: 18px;
-        color: #fff;
-        font-size: 2.3rem;
-        font-weight: 900;
-        line-height: 1.25;
-    }
+        $moviePoster = function ($movie) {
+            if (!empty($movie->poster) && file_exists(public_path('storage/movies/' . $movie->poster))) {
+                return asset('storage/movies/' . $movie->poster);
+            }
 
-    .cinema-text {
-        color: #d1d5db;
-        font-size: 1rem;
-        line-height: 1.9;
-    }
+            return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop';
+        };
+    @endphp
 
-    .cinema-hero {
-        position: relative;
-        display: flex;
-        min-height: 88vh;
-        align-items: end;
-        background-image: linear-gradient(to bottom, rgba(0,0,0,.35), rgba(0,0,0,.78)), url('{{ $cinemaImage }}');
-        background-position: center;
-        background-size: cover;
-    }
-
-    .cinema-hero-content {
-        padding: 140px 0 90px;
-    }
-
-    .cinema-hero h1 {
-        margin: 22px 0;
-        font-size: 4rem;
-        font-weight: 900;
-        line-height: 1.1;
-    }
-
-    .cinema-hero p {
-        max-width: 760px;
-        color: #e5e7eb;
-        font-size: 1.05rem;
-        line-height: 1.9;
-    }
-
-    .cinema-btn-primary,
-    .cinema-btn-secondary {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        border-radius: 16px;
-        padding: 14px 26px;
-        font-weight: 800;
-        text-decoration: none;
-        transition: all .25s ease;
-    }
-
-    .cinema-btn-primary {
-        background: #f5a623;
-        color: #000;
-        box-shadow: 0 14px 30px rgba(245, 166, 35, 0.24);
-    }
-
-    .cinema-btn-primary:hover {
-        background: #ffc04d;
-        color: #000;
-        transform: translateY(-2px);
-    }
-
-    .cinema-btn-secondary {
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(255, 255, 255, 0.08);
-        color: #fff;
-    }
-
-    .cinema-btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.14);
-        color: #fff;
-    }
-
-    .cinema-stat-icon,
-    .cinema-feature-icon {
-        display: flex;
-        width: 56px;
-        height: 56px;
-        align-items: center;
-        justify-content: center;
-        border-radius: 18px;
-        background: rgba(245, 166, 35, 0.14);
-        color: #f5a623;
-        font-size: 22px;
-    }
-
-    .cinema-stat-value {
-        margin-top: 12px;
-        color: #f5a623;
-        font-size: 1.8rem;
-        font-weight: 900;
-    }
-
-    .cinema-gallery-item {
-        position: relative;
-        min-height: 250px;
-        overflow: hidden;
-        border-radius: 28px;
-    }
-
-    .cinema-gallery-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .cinema-gallery-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(to top, rgba(0,0,0,.8), rgba(0,0,0,.2));
-    }
-
-    .cinema-gallery-caption {
-        position: absolute;
-        right: 24px;
-        bottom: 20px;
-        left: 24px;
-        font-size: 1.1rem;
-        font-weight: 800;
-    }
-
-    .cinema-map-frame {
-        width: 100%;
-        min-height: 420px;
-        border: 0;
-        border-radius: 24px;
-    }
-
-    .cinema-cta {
-        border: 1px solid rgba(245, 166, 35, 0.18);
-        border-radius: 32px;
-        background: linear-gradient(135deg, #1a1208, #16110c, #1b1208);
-        padding: 50px 24px;
-        text-align: center;
-    }
-
-    @media (max-width: 991.98px) {
-        .cinema-section {
-            padding: 56px 0;
-        }
-
-        .cinema-hero {
-            min-height: auto;
-        }
-
-        .cinema-hero-content {
-            padding: 120px 0 70px;
-        }
-
-        .cinema-hero h1 {
-            font-size: 2.7rem;
-        }
-    }
-</style>
-
-<div class="cinema-page">
-    <section class="cinema-hero">
-        <div class="container cinema-hero-content">
-            <div class="row">
-                <div class="col-12 col-xl-9">
-                    <span class="cinema-badge">
-                        <i class="fa-solid fa-star"></i>
-                        Trải nghiệm điện ảnh cao cấp tại {{ $cinemaCity }}
-                    </span>
-
-                    <h1>{{ $cinemaName }}</h1>
-
-                    <p>
-                        Điểm hẹn giải trí hiện đại với không gian sang trọng, công nghệ trình chiếu tiên tiến,
-                        dịch vụ chuyên nghiệp và trải nghiệm đặt vé mượt mà dành cho mọi tín đồ điện ảnh.
-                    </p>
-
-                    <div class="d-flex flex-wrap gap-3 mt-4">
-                        <a href="{{ $showtimeUrl }}" class="cinema-btn-primary">
-                            <i class="fa-solid fa-ticket"></i>
-                            Đặt vé ngay hôm nay
-                        </a>
-                        <a href="#gioi-thieu-rap" class="cinema-btn-secondary">
-                            <i class="fa-solid fa-circle-info"></i>
-                            Khám phá CineHome
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="gioi-thieu-rap" class="cinema-section">
-        <div class="container">
-            <div class="row g-4 align-items-stretch">
-                <div class="col-12 col-lg-7">
-                    <div class="cinema-card p-4 p-lg-5">
-                    <span class="cinema-badge">
-                        <i class="fa-solid fa-film"></i>
-                        Giới thiệu CineHome
-                    </span>
-
-                    <h2 class="cinema-title">Nơi cảm xúc điện ảnh thăng hoa trong từng khung hình</h2>
-
-                    <p class="cinema-text mt-4">
-                        CineHome được xây dựng với mong muốn mang đến một điểm đến điện ảnh chuyên nghiệp,
-                        hiện đại và gần gũi. Từ sảnh chờ sang trọng, phòng chiếu chuẩn quốc tế đến dịch vụ
-                        chăm sóc khách hàng tận tâm, mọi chi tiết đều được tối ưu để tạo nên một hành trình xem phim trọn vẹn.
-                    </p>
-
-                        <div class="row g-3 mt-2">
-                            <div class="col-12 col-md-6">
-                                <div class="p-4 rounded-4" style="background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);">
-                                    <div class="text-secondary small">Dia chi</div>
-                                    <div class="text-white fw-bold mt-2 lh-lg">
-                                        <i class="fa-solid fa-location-dot me-2" style="color:#f5a623;"></i>
-                                        {{ $cinemaAddress }}, {{ $cinemaCity }}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-12 col-md-6">
-                                <div class="p-4 rounded-4" style="background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);">
-                                    <div class="text-secondary small">Liên hệ</div>
-                                    <div class="text-white fw-bold mt-2 lh-lg">
-                                        <i class="fa-solid fa-phone-volume me-2" style="color:#f5a623;"></i>
-                                        {{ $cinemaPhone }}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-12">
-                                <div class="p-4 rounded-4" style="background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.06);">
-                                    <div class="text-secondary small">Giờ hoạt động</div>
-                                    <div class="text-white fw-bold mt-2 lh-lg">
-                                        <i class="fa-solid fa-clock me-2" style="color:#f5a623;"></i>
-                                        08:00 - 23:30 mỗi ngày
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 col-lg-5">
-                    <div class="cinema-card overflow-hidden">
-                        <img src="{{ $cinemaImage }}" alt="{{ $cinemaName }}" style="width:100%; height:100%; min-height:420px; object-fit:cover;">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="cinema-section pt-0">
-        <div class="container">
-            <div class="text-center mb-4">
-                <span class="cinema-badge"><i class="fa-solid fa-chart-column"></i> Thống kê nổi bật</span>
-                <h2 class="cinema-title">CineHome bằng con số</h2>
-            </div>
-
-            <div class="row g-3">
-                @foreach ($stats as $stat)
-                    <div class="col-6 col-lg-3">
-                        <div class="cinema-card p-3 p-lg-4 text-center">
-                            <div class="cinema-stat-icon mx-auto"><i class="{{ $stat['icon'] }}"></i></div>
-                            <div class="cinema-stat-value">{{ $stat['value'] }}</div>
-                            <div class="text-white fw-bold">{{ $stat['label'] }}</div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <section class="cinema-section pt-0">
-        <div class="container">
-            <div class="text-center mb-4">
-                <span class="cinema-badge"><i class="fa-solid fa-gem"></i> Tại sao chọn CineHome</span>
-                <h2 class="cinema-title">Trải nghiệm cao cấp tại CineHome</h2>
-            </div>
-
-            <div class="row g-3">
-                @foreach ($reasons as $reason)
-                    <div class="col-6 col-lg-4">
-                        <div class="cinema-card p-3 text-center">
-                            <div class="cinema-feature-icon mx-auto mb-2"><i class="{{ $reason['icon'] }}"></i></div>
-                            <h3 class="h6 fw-bold text-white">{{ $reason['title'] }}</h3>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <section class="cinema-section pt-0">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="cinema-badge"><i class="fa-solid fa-images"></i> Hình ảnh rạp</span>
-                <h2 class="cinema-title">Khám phá không gian hiện đại tại CineHome</h2>
-            </div>
-
-            <div class="row g-4">
-                @foreach ($gallery as $item)
-                    <div class="col-12 col-md-6">
-                        <div class="cinema-gallery-item cinema-card">
-                            <img src="{{ $item['image'] }}" alt="{{ $item['title'] }}">
-                            <div class="cinema-gallery-overlay"></div>
-                            <div class="cinema-gallery-caption">{{ $item['title'] }}</div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <section class="cinema-section pt-0">
-        <div class="container">
-            <div class="row g-4 align-items-stretch">
-                <div class="col-12 col-xl-7">
-                    <div class="cinema-card p-3 p-md-4">
-                        <iframe
-                            src="{{ $mapEmbedUrl }}"
-                            class="cinema-map-frame"
-                            loading="lazy"
-                            referrerpolicy="no-referrer-when-downgrade"
-                            title="Ban do vi tri {{ $cinemaName }}">
-                        </iframe>
-                    </div>
-                </div>
-
-                <div class="col-12 col-xl-5">
-                    <div class="cinema-card p-4 p-lg-5">
-                    <span class="cinema-badge">
-                        <i class="fa-solid fa-location-crosshairs"></i>
-                        Bản đồ và liên hệ
-                    </span>
-
-                    <h2 class="cinema-title">Dễ dàng tìm đến CineHome</h2>
-                    <p class="cinema-text mt-4">
-                        CineHome nằm tại vị trí thuận tiện, dễ di chuyển và phù hợp cho khách đi cùng gia đình,
-                        bạn bè hay đồng nghiệp.
-                    </p>
-
-                    <div class="d-flex flex-wrap gap-3 mt-4">
-                        <a href="{{ $mapDirectionUrl }}" target="_blank" rel="noopener noreferrer" class="cinema-btn-primary">
-                            <i class="fa-solid fa-diamond-turn-right"></i>
-                            Mở Google Maps
-                        </a>
-                        <a href="{{ $showtimeUrl }}" class="cinema-btn-secondary">
-                            <i class="fa-solid fa-calendar-days"></i>
-                            Xem lịch chiếu
-                        </a>
-                    </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="cinema-section pt-0">
-        <div class="container">
-            <div class="text-center mb-5">
-                <span class="cinema-badge"><i class="fa-solid fa-circle-question"></i> FAQ</span>
-                <h2 class="cinema-title">Câu hỏi thường gặp</h2>
-            </div>
-
-            <div class="row g-4">
-                @foreach ($faqs as $faq)
-                    <div class="col-12 col-lg-6">
-                        <div class="cinema-card p-4">
-                            <h3 class="h5 fw-bold text-white">{{ $faq['question'] }}</h3>
-                            <p class="cinema-text mt-3 mb-0">{{ $faq['answer'] }}</p>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <section class="cinema-section pt-0 pb-5">
-        <div class="container">
-            <div class="cinema-cta">
-                <span class="cinema-badge">
-                    <i class="fa-solid fa-bolt"></i>
-                    Sẵn sàng cho suất chiếu tiếp theo?
+    <div class="cinema-landing" lang="vi" spellcheck="false">
+        <section class="cinema-hero-new" style="--cinema-hero-image: url('{{ $cinemaImage }}')">
+            <div class="cinema-hero-copy">
+                <span class="cinema-eyebrow">
+                    <i class="fa-solid fa-location-dot"></i>
+                    Rạp chiếu CineHome tại {{ $cinemaCity }}
                 </span>
-                <h2 class="cinema-title mb-0">Đặt vé ngay hôm nay</h2>
-                <p class="cinema-text mx-auto mt-4" style="max-width: 760px;">
-                    Khám phá những bộ phim hấp dẫn nhất tại CineHome, chọn chỗ ngồi yêu thích và tận hưởng một đêm điện ảnh trọn vẹn.
+                <h1>{{ $cinemaName }}</h1>
+                <p>
+                    Không gian xem phim hiện đại, dịch vụ gọn gàng và luồng đặt vé online được tối ưu để bạn đến rạp
+                    nhanh hơn, xem phim thoải mái hơn.
                 </p>
-                <div class="mt-4">
-                    <a href="{{ $showtimeUrl }}" class="cinema-btn-primary">
+
+                <div class="cinema-hero-actions">
+                    <a href="{{ $showtimeUrl }}" class="cinema-primary-action">
                         <i class="fa-solid fa-ticket"></i>
-                        Đặt vé ngay hôm nay
+                        Xem lịch chiếu
+                    </a>
+                    <a href="{{ $mapDirectionUrl }}" target="_blank" rel="noopener noreferrer" class="cinema-secondary-action">
+                        <i class="fa-solid fa-diamond-turn-right"></i>
+                        Chỉ đường
                     </a>
                 </div>
             </div>
-        </div>
-    </section>
-</div>
+
+            <aside class="cinema-hero-panel">
+                <div>
+                    <span>Địa chỉ</span>
+                    <strong>{{ $cinemaAddress }}</strong>
+                    <small>{{ $cinemaCity }}</small>
+                </div>
+                <div>
+                    <span>Liên hệ</span>
+                    <strong>{{ $cinemaPhone }}</strong>
+                    <small>08:00 - 23:30 mỗi ngày</small>
+                </div>
+                <div>
+                    <span>Phòng hoạt động</span>
+                    <strong>{{ $activeRoomDisplay }}/{{ $roomCountDisplay }}</strong>
+                    <small>Sẵn sàng phục vụ suất chiếu hôm nay</small>
+                </div>
+            </aside>
+        </section>
+
+        <section class="cinema-stat-strip" aria-label="Thống kê rạp">
+            @foreach ($stats as $stat)
+                <div class="cinema-stat-card">
+                    <span><i class="{{ $stat['icon'] }}"></i></span>
+                    <strong>{{ $stat['value'] }}</strong>
+                    <small>{{ $stat['label'] }}</small>
+                </div>
+            @endforeach
+        </section>
+
+        <section class="cinema-about-grid">
+            <div class="cinema-about-copy">
+                <span class="cinema-eyebrow">
+                    <i class="fa-solid fa-film"></i>
+                    Trải nghiệm tại rạp
+                </span>
+                <h2>Được thiết kế cho những buổi xem phim thật đã.</h2>
+                <p>
+                    CineHome kết hợp phòng chiếu tiện nghi, âm thanh sống động, dịch vụ đồ ăn nhanh và hệ thống đặt vé
+                    rõ ràng. Từ lúc chọn suất đến khi nhận vé, mọi thao tác đều được giữ gọn và dễ hiểu.
+                </p>
+                <div class="cinema-info-list">
+                    <div>
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <span>{{ $cinemaAddress }}, {{ $cinemaCity }}</span>
+                    </div>
+                    <div>
+                        <i class="fa-solid fa-phone-volume"></i>
+                        <span>{{ $cinemaPhone }}</span>
+                    </div>
+                    <div>
+                        <i class="fa-solid fa-clock"></i>
+                        <span>08:00 - 23:30 mỗi ngày</span>
+                    </div>
+                </div>
+            </div>
+
+            <figure class="cinema-about-image">
+                <img src="{{ $cinemaImage }}" alt="{{ $cinemaName }}">
+            </figure>
+        </section>
+
+        <section class="cinema-feature-section">
+            <div class="cinema-section-head">
+                <div>
+                    <span>Tiện ích nổi bật</span>
+                    <h2>Lý do nên chọn CineHome</h2>
+                </div>
+                <a href="{{ route('dat_ve.chon_phim') }}">
+                    Đặt vé nhanh
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="cinema-feature-grid">
+                @foreach ($features as $feature)
+                    <article class="cinema-feature-card">
+                        <span><i class="{{ $feature['icon'] }}"></i></span>
+                        <h3>{{ $feature['title'] }}</h3>
+                        <p>{{ $feature['desc'] }}</p>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+
+        @if (($rooms ?? collect())->count() > 0)
+            <section class="cinema-room-section">
+                <div class="cinema-section-head">
+                    <div>
+                        <span>Phòng chiếu</span>
+                        <h2>Không gian đang vận hành</h2>
+                    </div>
+                </div>
+
+                <div class="cinema-room-grid">
+                    @foreach ($rooms as $room)
+                        <article class="cinema-room-card">
+                            <div>
+                                <span>{{ strtoupper($room->loai_phong ?? '2D') }}</span>
+                                <h3>{{ $room->ten_phong }}</h3>
+                            </div>
+                            <div class="cinema-room-meta">
+                                <span><i class="fa-solid fa-couch"></i>{{ number_format($room->suc_chua ?? 0) }} ghế</span>
+                                <span><i class="fa-solid fa-circle"></i>{{ \App\Models\PhongChieu::TRANG_THAI[$room->trang_thai] ?? $room->trang_thai }}</span>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        @if (($hotMovies ?? collect())->count() > 0)
+            <section class="cinema-movie-section">
+                <div class="cinema-section-head">
+                    <div>
+                        <span>Phim tại rạp</span>
+                        <h2>Đang được quan tâm</h2>
+                    </div>
+                    <a href="{{ route('user.phims.index') }}">
+                        Xem tất cả phim
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <div class="cinema-movie-rail">
+                    @foreach ($hotMovies as $movie)
+                        <a href="{{ route('user.movies.show', $movie->slug) }}" class="cinema-movie-card">
+                            <img src="{{ $moviePoster($movie) }}" alt="{{ $movie->ten_phim }}">
+                            <div>
+                                <h3>{{ $movie->ten_phim }}</h3>
+                                <p>
+                                    {{ $movie->genres?->pluck('ten_the_loai')->take(2)->join(' • ') ?: 'Đang cập nhật' }}
+                                </p>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
+        <section class="cinema-gallery-section">
+            <div class="cinema-section-head">
+                <div>
+                    <span>Hình ảnh rạp</span>
+                    <h2>Không gian CineHome</h2>
+                </div>
+            </div>
+
+            <div class="cinema-gallery-grid">
+                @foreach ($gallery as $item)
+                    <figure class="cinema-gallery-card {{ $item['wide'] ? 'wide' : '' }}">
+                        <img src="{{ $item['image'] }}" alt="{{ $item['title'] }}">
+                        <figcaption>{{ $item['title'] }}</figcaption>
+                    </figure>
+                @endforeach
+            </div>
+        </section>
+
+        <section class="cinema-map-section">
+            <div class="cinema-map-card">
+                <iframe
+                    src="{{ $mapEmbedUrl }}"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    title="Bản đồ vị trí {{ $cinemaName }}">
+                </iframe>
+            </div>
+
+            <div class="cinema-map-copy">
+                <span class="cinema-eyebrow">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                    Bản đồ và liên hệ
+                </span>
+                <h2>Dễ dàng tìm đến CineHome.</h2>
+                <p>
+                    Rạp nằm tại vị trí thuận tiện, phù hợp cho các buổi xem phim cùng gia đình, bạn bè hoặc đồng nghiệp.
+                    Bạn có thể mở bản đồ để được chỉ đường trực tiếp.
+                </p>
+                <div class="cinema-hero-actions">
+                    <a href="{{ $mapDirectionUrl }}" target="_blank" rel="noopener noreferrer" class="cinema-primary-action">
+                        <i class="fa-solid fa-diamond-turn-right"></i>
+                        Mở Google Maps
+                    </a>
+                    <a href="{{ $showtimeUrl }}" class="cinema-secondary-action">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        Xem lịch chiếu
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="cinema-cta-new">
+            <span class="cinema-eyebrow">
+                <i class="fa-solid fa-bolt"></i>
+                Sẵn sàng cho suất chiếu tiếp theo?
+            </span>
+            <h2>Chọn phim, chọn ghế và đến rạp thật gọn.</h2>
+            <p>
+                Khám phá những bộ phim hấp dẫn nhất tại CineHome và đặt vé online trước khi đến rạp.
+            </p>
+            <a href="{{ $showtimeUrl }}" class="cinema-primary-action">
+                <i class="fa-solid fa-ticket"></i>
+                Đặt vé ngay
+            </a>
+        </section>
+    </div>
 @endsection

@@ -229,7 +229,7 @@
                                     @foreach ($variants as $variant)
                                         <option value="{{ $variant->id }}"
                                             {{ old("combo_items.$index.variant_id") == $variant->id ? 'selected' : '' }}>
-                                            {{ $variant->food->name }} ({{ $variant->value }})
+                                            {{ $variant->doAn->name }} ({{ $variant->value }})
                                         </option>
                                     @endforeach
 
@@ -296,7 +296,7 @@
 
                                 @foreach ($variants as $variant)
                                     <option value="{{ $variant->id }}">
-                                        {{ $variant->food->name }} ({{ $variant->value }})
+                                        {{ $variant->doAn->name }} ({{ $variant->value }})
                                     </option>
                                 @endforeach
 

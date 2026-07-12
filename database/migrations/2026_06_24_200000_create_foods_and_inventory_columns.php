@@ -13,11 +13,15 @@ return new class extends Migration
                 $table->id();
                 $table->string('sku', 50)->nullable()->unique();
                 $table->string('name');
-                $table->string('image');
+                $table->string('image')->nullable();
                 $table->string('category', 100)->nullable()->index();
                 $table->text('description')->nullable();
                 $table->boolean('is_active')->default(true);
                 $table->unsignedInteger('sort_order')->default(0);
+
+                // thêm cột price (KHÔNG dùng ->after() ở đây)
+                $table->decimal('price', 12, 2)->nullable();
+
                 $table->timestamps();
 
                 $table->index(['is_active']);
@@ -36,15 +40,17 @@ return new class extends Migration
                     $table->text('description')->nullable()->after('category');
                 }
 
-
-
-
                 if (! Schema::hasColumn('foods', 'is_active')) {
                     $table->boolean('is_active')->default(true)->after('description');
                 }
 
                 if (! Schema::hasColumn('foods', 'sort_order')) {
                     $table->unsignedInteger('sort_order')->default(0)->after('is_active');
+                }
+
+                // phần alter: dùng ->after() ở đây là hợp lệ
+                if (! Schema::hasColumn('foods', 'price')) {
+                    $table->decimal('price', 12, 2)->nullable()->after('sort_order');
                 }
             });
         }

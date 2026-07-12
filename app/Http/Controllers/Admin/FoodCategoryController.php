@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreFoodCategoryRequest;
 use App\Http\Requests\Admin\UpdateFoodCategoryRequest;
-use App\Models\FoodCategory;
+use App\Models\DanhMucDoAn;
 use App\Services\AdminNotificationService;
 use App\Traits\Loggable;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ class FoodCategoryController extends Controller
 
     public function index(Request $request)
     {
-        $query = FoodCategory::query();
+        $query = DanhMucDoAn::query();
 
         if ($request->filled('search')) {
             $keyword = trim($request->search);
@@ -43,7 +43,7 @@ class FoodCategoryController extends Controller
 
         $data['slug'] = Str::slug($data['name']);
 
-        $category = FoodCategory::create($data);
+        $category = DanhMucDoAn::create($data);
 
         AdminNotificationService::push(
             '🍿 Thêm danh mục',
@@ -56,12 +56,12 @@ class FoodCategoryController extends Controller
             ->with('success', 'Danh mục đã được tạo.');
     }
 
-    public function edit(FoodCategory $category)
+    public function edit(DanhMucDoAn $category)
     {
         return view('admin.foods.categories.edit', compact('category'));
     }
 
-    public function update(UpdateFoodCategoryRequest $request, FoodCategory $category)
+    public function update(UpdateFoodCategoryRequest $request, DanhMucDoAn $category)
     {
         $data = $request->validated();
 
@@ -77,7 +77,7 @@ class FoodCategoryController extends Controller
             ->with('success', 'Danh mục đã được cập nhật.');
     }
 
-    public function destroy(FoodCategory $category)
+    public function destroy(DanhMucDoAn $category)
     {
         // 🔥 chặn xoá nếu đang có food
         if ($category->foods()->exists()) {

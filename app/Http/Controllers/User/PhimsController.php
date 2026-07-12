@@ -41,9 +41,15 @@ class PhimsController extends Controller
         }
 
         // 🟡 Nếu chưa có suất nào đang chạy → check gần nhất
-        $nextShowtime = $showtimes->first();
+        $nextShowtime = $showtimes->first(
+            fn($showtime) => \Carbon\Carbon::parse($showtime->thoi_gian_chieu)->gt($now)
+        );
 
-        if ($nextShowtime && \Carbon\Carbon::parse($nextShowtime->thoi_gian_chieu)->gt($now)) {
+        if ($nextShowtime) {
+            if ($nextShowtime->trang_thai === \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT) {
+                return \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT;
+            }
+
             return \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU;
         }
 

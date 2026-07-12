@@ -27,7 +27,7 @@
         <div class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6 grid gap-6 lg:grid-cols-[260px_1fr]">
             <div class="rounded-3xl overflow-hidden bg-white/5">
                 @if ($food->image)
-                    <img src="{{ asset('storage/foods/' . $food->image) }}" class="h-full w-full object-cover">
+                    <img src="{{ asset('storage/' . (str_starts_with($food->image, 'foods/') ? $food->image : 'foods/' . $food->image)) }}" class="h-full w-full object-cover">
                 @else
                     <div class="flex h-full min-h-[260px] items-center justify-center text-gray-400">
                         Chưa có ảnh
@@ -148,12 +148,12 @@
 
                             <div>
                                 <div class="font-semibold">
-                                    {{ $item->variant->food->name }}
+                                    {{ $item->variant->doAn->name }}
                                     ({{ $item->variant->value }})
                                 </div>
 
                                 <div class="text-gray-400 text-sm">
-                                    {{ optional($item->variant->food->category)->name }}
+                                    {{ optional($item->variant->doAn->category)->name }}
                                 </div>
                             </div>
 

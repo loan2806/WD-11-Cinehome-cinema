@@ -69,6 +69,7 @@ class VaiTroAndQuyenSeeder extends Seeder
         $managerRole = Role::create(['name' => 'Quản lý', 'guard_name' => 'web']);
         $staffRole = Role::create(['name' => 'Nhân viên', 'guard_name' => 'web']);
         $customerRole = Role::create(['name' => 'Khách hàng', 'guard_name' => 'web']);
+        $cinemaManagerRole = Role::create(['name' => 'Quản lý phòng chiếu', 'guard_name' => 'web']);
 
         // 1. Quản trị viên: Nhận toàn quyền tối cao hệ thống (Sở hữu tất cả các quyền)
         $adminRole->syncPermissions(array_values($createdPermissions));
@@ -118,6 +119,18 @@ class VaiTroAndQuyenSeeder extends Seeder
             $createdPermissions['khach_hang_dat_ve'],
             $createdPermissions['khach_hang_xem_lich_su'],
             $createdPermissions['khach_hang_huy_ve'],
+        ]);
+
+        // 6. Quản lý phòng chiếu: Quản lý phòng chiếu, suất chiếu, vé và doanh thu
+        $cinemaManagerRole->syncPermissions([
+            $createdPermissions['quan_ly_phim_suat_chieu'],
+            $createdPermissions['quan_ly_phong_ghe'],
+            $createdPermissions['ban_ve_tai_quay'],
+            $createdPermissions['quan_ly_do_an_combo'],
+            $createdPermissions['soat_ve_vao_cua'],
+            $createdPermissions['quan_ly_nhan_vien'],
+            $createdPermissions['quan_ly_khach_hang'],
+            $createdPermissions['thong_ke_doanh_thu'],
         ]);
     }
 }

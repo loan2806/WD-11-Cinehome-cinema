@@ -4,9 +4,9 @@
 
 @section('content')
 
-    <div class="min-h-screen bg-[#080808] pt-24 pb-12 text-white" lang="vi" spellcheck="false">
+    <div class="booking-checkout-page min-h-screen bg-[#080808] pt-24 pb-12 text-white" lang="vi" spellcheck="false">
 
-        <div class="mx-auto max-w-7xl px-4 lg:px-6">
+        <div class="booking-checkout-container mx-auto max-w-7xl px-4 lg:px-6">
 
             {{-- HEADER --}}
             <div class="mb-8">
@@ -16,7 +16,7 @@
             </div>
 
             {{-- BOX --}}
-            <div class="overflow-hidden rounded-3xl border border-white/10 bg-[#141414] shadow-2xl">
+            <div class="booking-checkout-shell overflow-hidden rounded-3xl border border-white/10 bg-[#141414] shadow-2xl">
                 {{-- COUNTDOWN --}}
                 <div class="mb-8 flex items-center justify-between rounded-2xl border border-white/10 bg-zinc-900 p-4">
 
@@ -40,10 +40,10 @@
 
                 </div>
 
-                <div class="grid lg:grid-cols-[380px_1fr]">
+                <div class="booking-checkout-layout grid lg:grid-cols-[380px_1fr]">
 
                     {{-- ================= LEFT: THÔNG TIN KHÁCH HÀNG & PHIM ================= --}}
-                    <div class="border-r border-white/10 p-8">
+                    <div class="booking-checkout-info border-r border-white/10 p-8">
 
                         {{-- USER --}}
                         <div class="pb-6">
@@ -84,7 +84,7 @@
                     </div>
 
                     {{-- ================= RIGHT: CHI TIẾT ĐƠN HÀNG & PHƯƠNG THỨC THANH TOÁN ================= --}}
-                    <div class="p-8">
+                    <div class="booking-checkout-order p-8">
 
                         {{-- ITEMS --}}
                         <div class="border-b border-white/10 pb-6">
@@ -101,10 +101,16 @@
                                 </div>
 
                                 @forelse($foodItems as $item)
+                                    @php
+                                        $foodImagePath = trim((string) ($item['image'] ?? ''));
+                                        if ($foodImagePath !== '' && ! str_starts_with($foodImagePath, 'foods/')) {
+                                            $foodImagePath = 'foods/' . $foodImagePath;
+                                        }
+                                    @endphp
                                     <div class="flex justify-between items-center mt-3">
                                         <div class="flex items-center gap-3">
-                                            @if (!empty($item['image']))
-                                                <img src="{{ asset('storage/foods/' . $item['image']) }}"
+                                            @if ($foodImagePath !== '')
+                                                <img src="{{ asset('storage/' . $foodImagePath) }}"
                                                     class="w-16 h-16 object-contain rounded">
                                             @endif
                                             <span>{{ $item['name'] }}</span>
@@ -169,7 +175,7 @@
 
                             <h2 class="text-xl font-black text-yellow-400 mb-4">Chọn phương thức thanh toán</h2>
 
-                            <form id="paymentForm" action="{{ url('/dat-ve/xu-ly-thanh-toan/' . $suatChieu->id) }}" method="POST">
+                            <form id="paymentForm" action="{{ route('dat_ve.xu_ly_thanh_toan', $suatChieu->id) }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="ghe" value="{{ request('ghe') }}">
                                 <input type="hidden" name="food_cart" value="{{ request('food_cart') }}">

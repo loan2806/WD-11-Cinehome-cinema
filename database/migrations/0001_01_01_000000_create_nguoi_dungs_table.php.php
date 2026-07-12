@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('mat_khau'); 
             
             // ĐÃ BỔ SUNG: Cột vai trò kiểu ENUM cấu hình chuẩn khớp 100% với TaiKhoanSeeder
-            $table->enum('vai_tro', ['admin', 'nhan_vien', 'khach_hang'])->default('khach_hang');
+            $table->enum('vai_tro', ['admin', 'quan_ly', 'quan_ly_he_thong', 'nhan_vien', 'khach_hang'])->default('khach_hang');
             
             // ĐÃ BỔ SUNG: Cột trạng thái hoạt động tài khoản (mặc định là true - đang hoạt động)
             $table->boolean('trang_thai_hoat_dong')->default(true);
