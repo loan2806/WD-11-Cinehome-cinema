@@ -79,7 +79,7 @@
 
                                             <div
                                                 class="bg-black rounded-xl h-28 flex items-center justify-center p-2 mb-2 overflow-hidden">
-                                                <img src="{{ asset('storage/' . $food['image']) }}"
+                                                <img src="{{ asset('storage/' . (str_starts_with($food['image'], 'foods/') ? $food['image'] : 'foods/' . $food['image'])) }}"
                                                     class="h-full object-contain">
                                             </div>
 
@@ -132,8 +132,7 @@
                                                     data-item-name="{{ $food['name'] }}"
                                                     data-item-price="{{ $food['price'] ?? 0 }}"
                                                     data-item-image="{{ $food['image'] }}" data-item-type="combo"
-                                                    data-item-stock="{{ $food['available'] ?? 999 }}"
-                                                    type="button">
+                                                    data-item-stock="{{ $food['available'] ?? 999 }}" type="button">
                                                     Thêm
                                                 </button>
                                             </div>
@@ -163,8 +162,8 @@
 
                                                 <div
                                                     class="bg-black rounded-xl h-28 flex items-center justify-center p-2 mb-2 overflow-hidden">
-                                                    <img src="{{ asset('storage/' . $food['image']) }}"
-                                                        class="h-full object-contain">
+                                                    <img src="{{ asset('storage/' . (str_starts_with($food['image'], 'foods/') ? $food['image'] : 'foods/' . $food['image'])) }}"
+                                                    class="h-full object-contain">
                                                 </div>
 
                                                 <div class="text-center mt-2">
@@ -220,7 +219,7 @@
                                                     <button
                                                         class="btn-add-to-cart w-full rounded-xl bg-yellow-400 px-3 py-2 text-xs font-black uppercase tracking-[0.2em] text-black transition hover:bg-yellow-300"
                                                         data-item-key="variant-{{ $variant['id'] }}"
-                                                        data-item-name="{{ $food['name'] }}@if(!empty($variant['value'])) - {{ $variant['value'] }}@endif"
+                                                        data-item-name="{{ $food['name'] }}@if (!empty($variant['value'])) - {{ $variant['value'] }} @endif"
                                                         data-item-price="{{ $variant['price'] }}"
                                                         data-item-image="{{ $food['image'] }}"
                                                         data-item-stock="{{ $variant['stock'] }}" data-item-type="variant"
@@ -350,7 +349,7 @@
         });
 
         cartItems.innerHTML = html || '<p class="text-gray-500">Chưa có món nào</p>';
-        
+
         let grandTotal = baseSeatPrice + foodTotal;
         subtotalPrice.innerText = formatCurrency(grandTotal);
 
@@ -594,7 +593,7 @@
         renderCart();
         startCountdown();
     });
-    
+
     document.addEventListener('DOMContentLoaded', function() {
 
         const sidebar = document.getElementById('bookingSidebar');
