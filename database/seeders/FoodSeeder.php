@@ -51,7 +51,13 @@ class FoodSeeder extends Seeder
             ],
         ];
 
-        $images = collect(File::files(public_path('storage/foods')));
+        $imagePath = storage_path('app/public/foods');
+
+        $images = collect();
+
+        if (File::exists($imagePath)) {
+            $images = collect(File::files($imagePath));
+        }
 
         foreach ($foods as $food) {
             $category = DanhMucDoAn::firstOrCreate(
