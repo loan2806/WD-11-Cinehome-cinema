@@ -1,40 +1,93 @@
 @extends('layouts.user')
 
-@section('title', 'Chi tiet lich chieu - CineHome')
+@section('title', 'Chi tiết lịch chiếu - CineHome')
 
 @section('content')
-<section class="min-h-screen bg-[#0b0705] px-6 pt-32 pb-12 text-white">
-    <div class="mx-auto max-w-5xl rounded-3xl border border-white/10 bg-[#151515] p-6">
-        <div class="grid gap-8 md:grid-cols-[320px_1fr]">
-            <img
-                src="{{ $suatChieu->phim->poster ?? 'https://via.placeholder.com/300x450?text=Poster' }}"
-                alt="{{ $suatChieu->phim->ten_phim }}"
-                class="w-full rounded-2xl object-cover"
-            >
+    @php
+        $posterUrl = asset('storage/movies/' . $suatChieu->phim->poster);
+        $genres = $suatChieu->phim->genres->pluck('ten_the_loai')->filter()->take(3)->join(', ');
+        $startsAt = \Carbon\Carbon::parse($suatChieu->thoi_gian_chieu);
+        $endsAt = $suatChieu->thoi_gian_ket_thuc
+            ? \Carbon\Carbon::parse($suatChieu->thoi_gian_ket_thuc)
+            : $startsAt->copy()->addMinutes($suatChieu->phim->thoi_luong);
+    @endphp
 
-            <div>
-                <h1 class="text-4xl font-black text-[#f5a623]">{{ $suatChieu->phim->ten_phim }}</h1>
-                <p class="mt-4 text-gray-300">{{ $suatChieu->phim->mo_ta }}</p>
+    <section class="schedule-detail-page">
+        <div class="schedule-detail-backdrop" style="background-image: url('{{ $posterUrl }}');"></div>
 
-                <div class="mt-6 space-y-3 text-gray-300">
-                    <p><i class="fa-solid fa-building text-[#f5a623]"></i> {{ $suatChieu->rapChieuPhim->ten_rap }}</p>
-                    <p><i class="fa-solid fa-location-dot text-[#f5a623]"></i> {{ $suatChieu->rapChieuPhim->dia_chi }}</p>
-                    <p><i class="fa-solid fa-calendar text-[#f5a623]"></i> {{ $suatChieu->thoi_gian_chieu->format('d/m/Y') }}</p>
-                    <p><i class="fa-solid fa-clock text-[#f5a623]"></i> {{ $suatChieu->thoi_gian_chieu->format('H:i') }}</p>
-                    <p><i class="fa-solid fa-ticket text-[#f5a623]"></i> {{ number_format($suatChieu->gia_ve, 0, ',', '.') }} VND</p>
+        <main class="container-fluid px-5 schedule-detail-main">
+            <a href="{{ route('user.showtimes.index', ['rap_chieu_phim_id' => $suatChieu->rap_chieu_phim_id]) }}"
+                class="schedule-detail-back">
+                <i class="fa-solid fa-arrow-left"></i>
+                Quay lại lịch chiếu
+            </a>
+
+            <section class="schedule-detail-shell reveal-on-scroll">
+                <div class="schedule-detail-poster">
+                    <img src="{{ $posterUrl }}" alt="{{ $suatChieu->phim->ten_phim }}">
+                    <span>{{ $suatChieu->phim->gioi_han_tuoi }}</span>
                 </div>
 
-                <div class="mt-8 flex flex-wrap gap-4">
-                    <a href="{{ route('dat_ve.chon_ghe', ['suat_chieu_id' => $suatChieu->id]) }}" class="rounded-xl bg-[#f5a623] px-8 py-3 font-black text-black">
-                        Dat ve
-                    </a>
+                <div class="schedule-detail-content">
+                    <span class="schedule-kicker">
+                        <i class="fa-solid fa-ticket"></i>
+                        Suất chiếu đã chọn
+                    </span>
+                    <h1>{{ $suatChieu->phim->ten_phim }}</h1>
+                    <p>{{ \Illuminate\Support\Str::limit($suatChieu->phim->mo_ta, 220) }}</p>
 
-                    <a href="{{ route('user.showtimes.index', ['rap_chieu_phim_id' => $suatChieu->rap_chieu_phim_id]) }}" class="rounded-xl bg-white/10 px-8 py-3 font-bold text-white">
-                        Quay lai
-                    </a>
+                    <div class="schedule-detail-info-grid">
+                        <div>
+                            <i class="fa-solid fa-calendar-day"></i>
+                            <small>Ngày chiếu</small>
+                            <strong>{{ $startsAt->format('d/m/Y') }}</strong>
+                        </div>
+                        <div>
+                            <i class="fa-solid fa-clock"></i>
+                            <small>Thời gian</small>
+                            <strong>{{ $startsAt->format('H:i') }} - {{ $endsAt->format('H:i') }}</strong>
+                        </div>
+                        <div>
+                            <i class="fa-solid fa-building"></i>
+                            <small>Rạp</small>
+                            <strong>{{ $suatChieu->rapChieuPhim?->ten_rap ?? 'CineHome' }}</strong>
+                        </div>
+                        <div>
+                            <i class="fa-solid fa-couch"></i>
+                            <small>Phòng</small>
+                            <strong>{{ $suatChieu->phongChieu?->ten_phong ?? 'Phòng chiếu' }}</strong>
+                        </div>
+                        <div>
+                            <i class="fa-solid fa-ticket"></i>
+                            <small>Giá vé</small>
+                            <strong>{{ number_format((float) $suatChieu->gia_ve, 0, ',', '.') }}đ</strong>
+                        </div>
+                        <div>
+                            <i class="fa-solid fa-tags"></i>
+                            <small>Thể loại</small>
+                            <strong>{{ $genres ?: 'Điện ảnh' }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="schedule-detail-location">
+                        <i class="fa-solid fa-location-dot"></i>
+                        <span>{{ $suatChieu->rapChieuPhim?->dia_chi ?? 'Địa chỉ rạp đang cập nhật' }}</span>
+                    </div>
+
+                    <div class="schedule-detail-actions">
+                        <a href="{{ route('dat_ve.chon_ghe', $suatChieu->id) }}"
+                            class="booking-link schedule-detail-primary">
+                            <i class="fa-solid fa-ticket"></i>
+                            Đặt vé ngay
+                        </a>
+                        <a href="{{ route('user.movies.show', $suatChieu->phim->slug) }}"
+                            class="schedule-detail-secondary">
+                            <i class="fa-solid fa-circle-info"></i>
+                            Xem phim
+                        </a>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</section>
+            </section>
+        </main>
+    </section>
 @endsection

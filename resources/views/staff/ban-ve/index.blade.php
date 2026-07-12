@@ -97,7 +97,7 @@
 
             @php
                 $movie = $movieShowtimes->first()->phim;
-                
+
                 $showtimesByDate = $movieShowtimes
                     ->filter(function($item) use ($selectedDate){
                         return $item->thoi_gian_chieu->format('Y-m-d') == $selectedDate;

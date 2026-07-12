@@ -3,178 +3,503 @@
 @section('title', 'CineHome - Đặt vé xem phim')
 
 @section('content')
+    @php
+        $heroMovies = $bannerMovies
+            ->merge($comingSoonMovies)
+            ->merge($nowShowingMovies)
+            ->merge($comingLaterMovies)
+            ->unique('id')
+            ->take(5);
 
-    {{-- HERO SLIDER --}}
-    <section class="hero-slider">
+        $nowShowingRail = $nowShowingMovies->isNotEmpty()
+            ? $nowShowingMovies->take(12)
+            : $heroMovies->merge($comingSoonMovies)->unique('id')->take(12);
+        $comingSoonRail = $comingSoonMovies->merge($comingLaterMovies)->unique('id')->take(12);
+        $visualMovies = $heroMovies
+            ->merge($nowShowingRail)
+            ->merge($comingSoonRail)
+            ->unique('id')
+            ->take(10);
+        $fallbackVisualMovies = collect([
+            [
+                'title' => 'Bom tấn hành động',
+                'image' => 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=700&q=80',
+            ],
+            [
+                'title' => 'Đêm phim cảm xúc',
+                'image' => 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=700&q=80',
+            ],
+            [
+                'title' => 'Suất chiếu đặc biệt',
+                'image' => 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=700&q=80',
+            ],
+            [
+                'title' => 'Rạp phim cuối tuần',
+                'image' => 'https://images.unsplash.com/photo-1535016120720-40c646be5580?auto=format&fit=crop&w=700&q=80',
+            ],
+            [
+                'title' => 'Màn ảnh lớn',
+                'image' => 'https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=700&q=80',
+            ],
+            [
+                'title' => 'Không khí điện ảnh',
+                'image' => 'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=700&q=80',
+            ],
+            [
+                'title' => 'Ghế ngồi êm ái',
+                'image' => 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=700&q=80',
+            ],
+            [
+                'title' => 'Trước giờ chiếu',
+                'image' => 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=700&q=80',
+            ],
+        ]);
+        $cinemaShots = collect([
+            [
+                'title' => 'Phòng chiếu cao cấp',
+                'image' => 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80',
+            ],
+            [
+                'title' => 'Khoảnh khắc trước giờ chiếu',
+                'image' => 'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=900&q=80',
+            ],
+            [
+                'title' => 'Màn ảnh lớn',
+                'image' => 'https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=900&q=80',
+            ],
+            [
+                'title' => 'Đồ ăn rạp phim',
+                'image' => 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=900&q=80',
+            ],
+        ]);
+    @endphp
 
-        @forelse ($bannerMovies as $index => $movie)
-            @php
-                // LẤY TRẠNG THÁI TỪ SUẤT CHIẾU
-                $status = optional($movie->showtimes->sortBy('thoi_gian_chieu')->first())?->trang_thai;
-            @endphp
+    <section class="cinema-home">
+        <section class="booking-hero hero-slider" data-home-slider>
+            @forelse ($heroMovies as $movie)
+                @php
+                    $nextShowtime = $movie->showtimes
+                        ->filter(
+                            fn($showtime) => $showtime->thoi_gian_chieu &&
+                                \Carbon\Carbon::parse($showtime->thoi_gian_chieu)->gte(now()),
+                        )
+                        ->sortBy('thoi_gian_chieu')
+                        ->first();
 
-            <div class="hero-slide {{ $index === 0 ? 'active' : '' }}"
-                style="background-image: url('{{ asset('storage/movies/' . $movie->poster) }}');">
-                
-                <div
-                class="container-fluid px-5 hero-content">
-                <div class="hero-info">
+                    $bookingUrl = $nextShowtime
+                        ? route('dat_ve.chon_ghe', $movie)
+                        : route('user.movies.show', $movie->slug);
+                @endphp
 
-                    <div class="hero-badge">
-                        <i class="fa-solid fa-fire"></i>
-                        Phim hot trong tháng
+                <article class="hero-slide booking-hero-slide {{ $loop->first ? 'active' : '' }}"
+                    data-slide-index="{{ $loop->index }}"
+                    style="background-image: url('{{ asset('storage/movies/' . $movie->poster) }}');">
+                    <div class="container-fluid px-5 booking-hero-content hero-content">
+                        <div class="booking-hero-copy hero-info">
+                            <div class="booking-eyebrow">
+                                <i class="fa-solid fa-bolt"></i>
+                                Đặt vé nhanh tại CineHome
+                            </div>
+
+                            <h1 class="booking-hero-title hero-title">
+                                {{ $movie->ten_phim }}
+                            </h1>
+
+                            <p class="booking-hero-desc hero-desc">
+                                {{ \Illuminate\Support\Str::limit($movie->mo_ta, 190) }}
+                            </p>
+
+                            <div class="booking-hero-meta hero-meta">
+                                <span>
+                                    <i class="fa-solid fa-film"></i>
+                                    {{ $movie->genres->pluck('ten_the_loai')->take(2)->join(', ') ?: 'Điện ảnh' }}
+                                </span>
+
+                                <span>
+                                    <i class="fa-solid fa-clock"></i>
+                                    {{ $movie->thoi_luong }} phút
+                                </span>
+
+                                <span>
+                                    <i class="fa-solid fa-user-shield"></i>
+                                    {{ $movie->gioi_han_tuoi }}
+                                </span>
+                            </div>
+
+                            <div class="booking-showtime-chip">
+                                <i class="fa-solid fa-calendar-check"></i>
+                                @if ($nextShowtime)
+                                    Suất gần nhất: {{ \Carbon\Carbon::parse($nextShowtime->thoi_gian_chieu)->format('H:i d/m') }}
+                                @else
+                                    Lịch chiếu đang cập nhật
+                                @endif
+                            </div>
+
+                            <div class="booking-hero-actions hero-buttons">
+                                <a href="{{ $bookingUrl }}" class="btn-book booking-primary-btn">
+                                    <i class="fa-solid fa-ticket"></i>
+                                    Đặt vé ngay
+                                </a>
+
+                                <a href="{{ route('user.movies.show', $movie->slug) }}" class="btn-trailer booking-ghost-btn">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    Chi tiết phim
+                                </a>
+                            </div>
+
+                            <div class="booking-hero-stats">
+                                <div>
+                                    <strong>{{ $nowShowingMovies->count() }}</strong>
+                                    <span>Phim đang chiếu</span>
+                                </div>
+                                <div>
+                                    <strong>{{ $comingSoonMovies->count() + $comingLaterMovies->count() }}</strong>
+                                    <span>Phim sắp chiếu</span>
+                                </div>
+                                <div>
+                                    <strong>3</strong>
+                                    <span>Bước nhận vé</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="booking-hero-poster reveal-on-scroll">
+                            <img src="{{ asset('storage/movies/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}">
+                            <div class="poster-ticket">
+                                <i class="fa-solid fa-ticket"></i>
+                                Vé điện tử
+                            </div>
+                        </div>
                     </div>
+                </article>
+            @empty
+                <article class="hero-slide booking-hero-slide active empty-hero"
+                    style="background-image: url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=80');">
+                    <div class="container-fluid px-5 booking-hero-content hero-content">
+                        <div class="booking-hero-copy hero-info">
+                            <div class="booking-eyebrow">
+                                <i class="fa-solid fa-bolt"></i>
+                                CineHome Cinema
+                            </div>
+                            <h1 class="booking-hero-title hero-title">Đặt vé xem phim dễ dàng</h1>
+                            <p class="booking-hero-desc hero-desc">
+                                Khám phá lịch chiếu mới nhất, chọn ghế yêu thích và nhận vé điện tử chỉ trong vài bước.
+                            </p>
+                            <div class="booking-hero-actions hero-buttons">
+                                <a href="{{ route('dat_ve.chon_phim') }}" class="btn-book booking-primary-btn">
+                                    <i class="fa-solid fa-ticket"></i>
+                                    Đặt vé ngay
+                                </a>
+                            </div>
 
-                    <h1 class="hero-title">
-                        {{ $movie->ten_phim }}
-                    </h1>
-
-                    <p class="hero-desc">
-                        {{ $movie->mo_ta }}
-                    </p>
-
-                    <div class="hero-meta">
-                        <span>
-                            <i class="fa-solid fa-film"></i>
-                            {{ $movie->genres->pluck('ten_the_loai')->join(', ') }}
-                        </span>
-
-                        <span>
-                            <i class="fa-solid fa-clock"></i>
-                            {{ $movie->thoi_luong }} phút
-                        </span>
-
-                        <span>
-                            <i class="fa-solid fa-user-shield"></i>
-                            {{ $movie->gioi_han_tuoi }}
-                        </span>
+                            <div class="booking-hero-stats">
+                                <div>
+                                    <strong>3</strong>
+                                    <span>Bước đặt vé</span>
+                                </div>
+                                <div>
+                                    <strong>QR</strong>
+                                    <span>Vé điện tử</span>
+                                </div>
+                                <div>
+                                    <strong>24/7</strong>
+                                    <span>Tự chọn ghế</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </article>
+            @endforelse
 
-                    <div class="hero-buttons">
+            @if ($heroMovies->count() > 1)
+                <div class="booking-hero-controls">
+                    <button type="button" class="hero-control" data-slide-prev aria-label="Phim trước">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button type="button" class="hero-control" data-slide-next aria-label="Phim tiếp theo">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
 
-                        @if ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)
-                            <a href="{{ route('dat_ve.chon_ghe', ['movie' => $movie->slug]) }}" class="btn-book">
-                                <i class="fa-solid fa-ticket"></i> Đặt vé ngay
-                            </a>
-                        @else
-                            <a href="{{ route('user.movies.show', $movie->slug) }}" class="btn-book">
-                                <i class="fa-solid fa-film"></i> Xem thêm
-                            </a>
-                        @endif
+                <div class="booking-hero-dots">
+                    @foreach ($heroMovies as $movie)
+                        <button type="button" class="{{ $loop->first ? 'active' : '' }}"
+                            data-slide-target="{{ $loop->index }}" aria-label="Chọn {{ $movie->ten_phim }}">
+                            <span></span>
+                        </button>
+                    @endforeach
+                </div>
+            @endif
+        </section>
 
-                        <a href="{{ $movie->trailer_url }}" target="_blank" class="btn-trailer">
-                            <i class="fa-solid fa-play"></i> Xem trailer
+        <main class="main-section booking-main">
+            <div class="container-fluid px-5">
+                <section class="quick-booking-panel reveal-on-scroll">
+                    <a href="{{ route('dat_ve.chon_phim') }}" class="quick-booking-step">
+                        <span>01</span>
+                        <strong>Chọn phim</strong>
+                        <small>Phim hot và suất chiếu mới nhất</small>
+                        <i class="fa-solid fa-film"></i>
+                    </a>
+
+                    <a href="{{ route('user.showtimes.index') }}" class="quick-booking-step">
+                        <span>02</span>
+                        <strong>Chọn suất chiếu</strong>
+                        <small>Lọc theo ngày, giờ và rạp gần bạn</small>
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </a>
+
+                    <a href="{{ route('user.cinemas.index') }}" class="quick-booking-step">
+                        <span>03</span>
+                        <strong>Nhận vé điện tử</strong>
+                        <small>Thanh toán nhanh, vào rạp tiện lợi</small>
+                        <i class="fa-solid fa-qrcode"></i>
+                    </a>
+                </section>
+
+                <section class="booking-poster-wall reveal-on-scroll">
+                    <div class="poster-wall-copy">
+                        <span>
+                            <i class="fa-solid fa-images"></i>
+                            Bộ sưu tập nổi bật
+                        </span>
+                        <h2>Chọn phim bằng cảm xúc từ những khung hình đầu tiên</h2>
+                        <p>
+                            Trang chủ được phủ nhiều poster phim hơn để người dùng lướt nhanh, nhìn thấy phim nổi bật
+                            và đi thẳng đến chi tiết hoặc đặt vé.
+                        </p>
+                        <a href="{{ route('user.phims.index') }}">
+                            Khám phá phim
+                            <i class="fa-solid fa-arrow-right"></i>
                         </a>
-
                     </div>
 
-                </div>
-            </div>
+                    <div class="poster-wall-grid" aria-label="Poster phim nổi bật">
+                        @foreach ($visualMovies as $movie)
+                            <a href="{{ route('user.movies.show', $movie->slug) }}"
+                                class="poster-wall-card {{ $loop->first ? 'large' : '' }}">
+                                <img src="{{ asset('storage/movies/' . $movie->poster) }}"
+                                    alt="{{ $movie->ten_phim }}">
+                                <span>{{ $movie->ten_phim }}</span>
+                            </a>
+                        @endforeach
 
-            </div>
-
-        @empty
-
-            <div class="hero-slide active">
-                <div class="container-fluid px-5 hero-content">
-                    <div class="hero-info">
-                        <h1 class="hero-title">Chưa có phim</h1>
-                        <p class="hero-desc">Hãy seed dữ liệu phim vào database.</p>
+                        @foreach ($fallbackVisualMovies->take(max(0, 9 - $visualMovies->count())) as $poster)
+                            <a href="{{ route('user.phims.index') }}"
+                                class="poster-wall-card {{ $visualMovies->isEmpty() && $loop->first ? 'large' : '' }}">
+                                <img src="{{ $poster['image'] }}" alt="{{ $poster['title'] }}">
+                                <span>{{ $poster['title'] }}</span>
+                            </a>
+                        @endforeach
                     </div>
-                </div>
-            </div>
-        @endforelse
+                </section>
 
-        {{-- TOP 5 HOT --}}
-        <div class="hot-movies">
-
-            <div class="section-label">
-                <i class="fa-solid fa-ranking-star"></i>
-                Top 5 phim
-            </div>
-
-            <div class="hot-list">
-
-                @foreach ($bannerMovies as $index => $movie)
-                    <div class="hot-item {{ $index === 0 ? 'active' : '' }}" data-slide="{{ $index }}">
-
-                        <div class="hot-rank">{{ $index + 1 }}</div>
-
-
-                        <img src="{{ asset('storage/movies/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}">
-                        
-                        <p>{{ $movie->ten_phim }}</p>
-
+                <section class="cinema-experience-board reveal-on-scroll">
+                    <div class="experience-board-head">
+                        <span>
+                            <i class="fa-solid fa-clapperboard"></i>
+                            Không gian CineHome
+                        </span>
+                        <h2>Trải nghiệm rạp phim được đưa lên ngay trang chủ</h2>
                     </div>
-                @endforeach
 
+                    <div class="experience-shot-grid">
+                        @foreach ($cinemaShots as $shot)
+                            <figure class="experience-shot {{ $loop->first ? 'wide' : '' }}">
+                                <img src="{{ $shot['image'] }}" alt="{{ $shot['title'] }}">
+                                <figcaption>{{ $shot['title'] }}</figcaption>
+                            </figure>
+                        @endforeach
+                    </div>
+                </section>
+
+                <section class="booking-benefits reveal-on-scroll">
+                    <div class="booking-benefit-card">
+                        <span>
+                            <i class="fa-solid fa-couch"></i>
+                        </span>
+                        <div>
+                            <h3>Chọn ghế trực quan</h3>
+                            <p>Xem sơ đồ ghế rõ ràng, chọn đúng vị trí yêu thích trước khi thanh toán.</p>
+                        </div>
+                    </div>
+
+                    <div class="booking-benefit-card">
+                        <span>
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </span>
+                        <div>
+                            <h3>Giữ ghế tạm thời</h3>
+                            <p>Ghế được khóa trong quá trình đặt vé để bạn thao tác yên tâm hơn.</p>
+                        </div>
+                    </div>
+
+                    <div class="booking-benefit-card">
+                        <span>
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                        </span>
+                        <div>
+                            <h3>Vé điện tử tiện lợi</h3>
+                            <p>Nhận mã vé sau thanh toán và xuất trình nhanh khi đến rạp.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="booking-section reveal-on-scroll" data-rail-section>
+                    <div class="booking-section-head">
+                        <div>
+                            <p>Đang chiếu</p>
+                            <h2>Phim đang chiếu</h2>
+                        </div>
+                        <div class="booking-section-actions">
+                            <a href="{{ route('dat_ve.chon_phim') }}">
+                                Đặt vé ngay
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+                            <div class="rail-controls">
+                                <button type="button" data-rail-prev aria-label="Cuộn phim trước">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <button type="button" data-rail-next aria-label="Cuộn phim tiếp theo">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="booking-movie-rail">
+                        @forelse ($nowShowingRail as $movie)
+                            @php
+                                $nextShowtime = $movie->showtimes
+                                    ->filter(
+                                        fn($showtime) => $showtime->thoi_gian_chieu &&
+                                            \Carbon\Carbon::parse($showtime->thoi_gian_chieu)->gte(now()),
+                                    )
+                                    ->sortBy('thoi_gian_chieu')
+                                    ->first();
+
+                                $bookingUrl = $nextShowtime
+                                    ? route('dat_ve.chon_ghe', $movie)
+                                    : route('user.movies.show', $movie->slug);
+                            @endphp
+
+                            <article class="booking-movie-card">
+                                <a href="{{ route('user.movies.show', $movie->slug) }}" class="booking-movie-poster">
+                                    <img src="{{ asset('storage/movies/' . $movie->poster) }}"
+                                        alt="{{ $movie->ten_phim }}">
+                                    <span class="movie-age-badge">{{ $movie->gioi_han_tuoi }}</span>
+                                    <span class="movie-play-overlay">
+                                        <i class="fa-solid fa-play"></i>
+                                    </span>
+                                </a>
+
+                                <div class="booking-movie-body">
+                                    <h3>{{ $movie->ten_phim }}</h3>
+                                    <p>
+                                        <i class="fa-solid fa-clock"></i>
+                                        {{ $movie->thoi_luong }} phút
+                                    </p>
+                                    <p>
+                                        <i class="fa-solid fa-tags"></i>
+                                        {{ $movie->genres->pluck('ten_the_loai')->take(2)->join(', ') ?: 'Điện ảnh' }}
+                                    </p>
+
+                                    <div class="booking-card-actions">
+                                        <a href="{{ $bookingUrl }}" class="card-book-btn">
+                                            <i class="fa-solid fa-ticket"></i>
+                                            Đặt vé
+                                        </a>
+                                        <a href="{{ route('user.movies.show', $movie->slug) }}" class="card-detail-btn">
+                                            Chi tiết
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        @empty
+                            <div class="booking-empty-state">
+                                <i class="fa-solid fa-film"></i>
+                                Chưa có phim đang chiếu.
+                            </div>
+                        @endforelse
+                    </div>
+                </section>
+
+                <section class="booking-section reveal-on-scroll" data-rail-section>
+                    <div class="booking-section-head">
+                        <div>
+                            <p>Sắp chiếu</p>
+                            <h2>Sắp chiếu tại CineHome</h2>
+                        </div>
+                        <div class="booking-section-actions">
+                            <a href="{{ route('user.phims.index') }}">
+                                Xem tất cả
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </a>
+                            <div class="rail-controls">
+                                <button type="button" data-rail-prev aria-label="Cuộn phim trước">
+                                    <i class="fa-solid fa-chevron-left"></i>
+                                </button>
+                                <button type="button" data-rail-next aria-label="Cuộn phim tiếp theo">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="booking-movie-rail compact">
+                        @forelse ($comingSoonRail as $movie)
+                            <article class="booking-movie-card compact">
+                                <a href="{{ route('user.movies.show', $movie->slug) }}" class="booking-movie-poster">
+                                    <img src="{{ asset('storage/movies/' . $movie->poster) }}"
+                                        alt="{{ $movie->ten_phim }}">
+                                    <span class="movie-age-badge">{{ $movie->gioi_han_tuoi }}</span>
+                                    <span class="movie-play-overlay">
+                                        <i class="fa-solid fa-play"></i>
+                                    </span>
+                                </a>
+
+                                <div class="booking-movie-body">
+                                    <h3>{{ $movie->ten_phim }}</h3>
+                                    <p>
+                                        <i class="fa-solid fa-earth-asia"></i>
+                                        {{ $movie->country?->ten_quoc_gia ?? 'Đang cập nhật' }}
+                                    </p>
+                                    <div class="booking-card-actions">
+                                        <a href="{{ route('user.movies.show', $movie->slug) }}" class="card-book-btn">
+                                            Quan tâm
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        @empty
+                            <div class="booking-empty-state">
+                                <i class="fa-regular fa-calendar"></i>
+                                Chưa có phim sắp chiếu.
+                            </div>
+                        @endforelse
+                    </div>
+                </section>
+
+                <section class="booking-promo-strip reveal-on-scroll">
+                    <div class="promo-copy">
+                        <span>
+                            <i class="fa-solid fa-crown"></i>
+                            Thành viên CineHome
+                        </span>
+                        <h2>Đặt vé hôm nay, tích điểm cho lần xem tiếp theo</h2>
+                        <p>Nhận ưu đãi voucher, quản lý vé điện tử và theo dõi lịch sử đặt vé trong tài khoản của bạn.</p>
+                    </div>
+
+                    <div class="promo-actions">
+                        <a href="{{ route('user.thanh-vien.index') }}" class="promo-primary">
+                            Xem quyền lợi
+                        </a>
+                        <a href="{{ route('user.voucher.index') }}" class="promo-secondary">
+                            Đổi voucher
+                        </a>
+                    </div>
+                </section>
             </div>
-
-        </div>
-
+        </main>
     </section>
-
-    {{-- DANH SÁCH PHIM --}}
-    <main class="main-section">
-
-        <div class="container-fluid px-5">
-
-            {{-- PHIM ĐANG CHIẾU --}}
-            <div class="section-title-wrap">
-                <h2 class="section-title">
-                    Phim <span>đang chiếu</span>
-                </h2>
-            </div>
-
-            @include('partials.movie-section', ['movies' => $nowShowingMovies])
-
-            {{-- PHIM SẮP CHIẾU --}}
-            <div class="section-title-wrap mt-5">
-                <h2 class="section-title">
-                    Phim <span>sắp chiếu</span>
-                </h2>
-            </div>
-
-            @include('partials.movie-section', ['movies' => $comingSoonMovies])
-
-            {{-- PHIM SẮP RA MẮT --}}
-            <div class="section-title-wrap mt-5">
-                <h2 class="section-title">
-                    Phim <span>sắp ra mắt</span>
-                </h2>
-            </div>
-
-            @include('partials.movie-section', ['movies' => $comingLaterMovies])
-
-        </div>
-
-    </main>
-
-@endsection
-
-@section('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-
-            const slides = document.querySelectorAll('.hero-slide');
-            const hotItems = document.querySelectorAll('.hot-item');
-
-            hotItems.forEach(function(item) {
-                item.addEventListener('click', function() {
-
-                    const index = Number(this.dataset.slide);
-
-                    slides.forEach(slide => slide.classList.remove('active'));
-                    hotItems.forEach(hot => hot.classList.remove('active'));
-
-                    if (slides[index]) {
-                        slides[index].classList.add('active');
-                    }
-
-                    this.classList.add('active');
-                });
-            });
-
-        });
-    </script>
 @endsection

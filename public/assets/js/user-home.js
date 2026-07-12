@@ -1,38 +1,207 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const slides = document.querySelectorAll(".hero-slide");
-    let currentSlide = 0;
-
-    function showSlide(index) {
-        slides.forEach(function (slide) {
-            slide.classList.remove("active");
-        });
-
-        slides[index].classList.add("active");
-    }
-
-    if (slides.length > 0) {
-        showSlide(currentSlide);
-
-        setInterval(function () {
-            currentSlide++;
-
-            if (currentSlide >= slides.length) {
-                currentSlide = 0;
-            }
-
-            showSlide(currentSlide);
-        }, 5000);
-    }
-
     const navbar = document.querySelector(".cine-navbar");
 
-    window.addEventListener("scroll", function () {
-        if (window.scrollY > 80) {
-            navbar.classList.add("scrolled");
-        } else {
-            navbar.classList.remove("scrolled");
+    if (navbar) {
+        window.addEventListener("scroll", function () {
+            navbar.classList.toggle("scrolled", window.scrollY > 80);
+        });
+    }
+
+    const slider = document.querySelector("[data-home-slider]");
+
+    if (slider) {
+        const slides = slider.querySelectorAll(".hero-slide");
+        const dots = slider.querySelectorAll("[data-slide-target]");
+        const prevButton = slider.querySelector("[data-slide-prev]");
+        const nextButton = slider.querySelector("[data-slide-next]");
+        let currentSlide = 0;
+        let autoplayTimer = null;
+
+        function showSlide(index) {
+            if (!slides.length) return;
+
+            currentSlide = (index + slides.length) % slides.length;
+
+            slides.forEach(function (slide, slideIndex) {
+                slide.classList.toggle("active", slideIndex === currentSlide);
+            });
+
+            dots.forEach(function (dot, dotIndex) {
+                dot.classList.toggle("active", dotIndex === currentSlide);
+
+                const progress = dot.querySelector("span");
+
+                if (progress) {
+                    progress.style.transition = "none";
+                    progress.style.width = "0";
+
+                    if (dotIndex === currentSlide) {
+                        requestAnimationFrame(function () {
+                            progress.style.transition = "";
+                            progress.style.width = "100%";
+                        });
+                    }
+                }
+            });
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function startAutoplay() {
+            stopAutoplay();
+            autoplayTimer = setInterval(nextSlide, 5200);
+        }
+
+        function stopAutoplay() {
+            if (autoplayTimer) {
+                clearInterval(autoplayTimer);
+                autoplayTimer = null;
+            }
+        }
+
+        dots.forEach(function (dot) {
+            dot.addEventListener("click", function () {
+                const index = Number(dot.getAttribute("data-slide-target"));
+                showSlide(index);
+                startAutoplay();
+            });
+        });
+
+        if (prevButton) {
+            prevButton.addEventListener("click", function () {
+                showSlide(currentSlide - 1);
+                startAutoplay();
+            });
+        }
+
+        if (nextButton) {
+            nextButton.addEventListener("click", function () {
+                showSlide(currentSlide + 1);
+                startAutoplay();
+            });
+        }
+
+        slider.addEventListener("mouseenter", stopAutoplay);
+        slider.addEventListener("mouseleave", startAutoplay);
+
+        showSlide(0);
+
+        if (slides.length > 1) {
+            startAutoplay();
+        }
+    } else {
+        const slides = document.querySelectorAll(".hero-slide");
+        let currentSlide = 0;
+
+        function showSlide(index) {
+            slides.forEach(function (slide) {
+                slide.classList.remove("active");
+            });
+
+            if (slides[index]) {
+                slides[index].classList.add("active");
+            }
+        }
+
+        if (slides.length > 0) {
+            showSlide(currentSlide);
+
+            setInterval(function () {
+                currentSlide = (currentSlide + 1) % slides.length;
+                showSlide(currentSlide);
+            }, 5000);
+        }
+    }
+
+    const revealItems = document.querySelectorAll(".reveal-on-scroll");
+    const railSections = document.querySelectorAll("[data-rail-section]");
+
+    railSections.forEach(function (section) {
+        const rail = section.querySelector(".booking-movie-rail");
+        const prevButton = section.querySelector("[data-rail-prev]");
+        const nextButton = section.querySelector("[data-rail-next]");
+
+        if (!rail) return;
+
+        function scrollRail(direction) {
+            const firstCard = rail.querySelector(".booking-movie-card");
+            const cardWidth = firstCard ? firstCard.getBoundingClientRect().width : 220;
+            const gap = 18;
+            const scrollAmount = Math.max(cardWidth + gap, rail.clientWidth * 0.72);
+
+            rail.scrollBy({
+                left: direction * scrollAmount,
+                behavior: "smooth",
+            });
+        }
+
+        if (prevButton) {
+            prevButton.addEventListener("click", function () {
+                scrollRail(-1);
+            });
+        }
+
+        if (nextButton) {
+            nextButton.addEventListener("click", function () {
+                scrollRail(1);
+            });
         }
     });
+
+    const detailTabShells = document.querySelectorAll("[data-detail-tabs]");
+
+    detailTabShells.forEach(function (shell) {
+        const buttons = shell.querySelectorAll("[data-detail-tab]");
+        const panels = shell.querySelectorAll("[data-detail-panel]");
+
+        function activateTab(tabName) {
+            buttons.forEach(function (button) {
+                const isActive = button.getAttribute("data-detail-tab") === tabName;
+                button.classList.toggle("active", isActive);
+                button.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+
+            panels.forEach(function (panel) {
+                const isActive = panel.getAttribute("data-detail-panel") === tabName;
+                panel.classList.toggle("active", isActive);
+            });
+        }
+
+        buttons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                activateTab(button.getAttribute("data-detail-tab") || "overview");
+            });
+        });
+
+        activateTab("overview");
+    });
+
+    if ("IntersectionObserver" in window && revealItems.length) {
+        const revealObserver = new IntersectionObserver(
+            function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add("is-visible");
+                        revealObserver.unobserve(entry.target);
+                    }
+                });
+            },
+            {
+                threshold: 0.16,
+                rootMargin: "0px 0px -40px 0px",
+            }
+        );
+
+        revealItems.forEach(function (item) {
+            revealObserver.observe(item);
+        });
+    } else {
+        revealItems.forEach(function (item) {
+            item.classList.add("is-visible");
+        });
+    }
 });
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -41,14 +210,46 @@ document.addEventListener("DOMContentLoaded", function () {
     const dropdownBox = document.getElementById("userDropdownBox");
 
     if (dropdownBtn && dropdownMenu && dropdownBox) {
+        function openUserDropdown() {
+            dropdownMenu.hidden = false;
+            dropdownMenu.classList.remove("hidden");
+            dropdownBox.classList.add("is-open");
+            dropdownBtn.setAttribute("aria-expanded", "true");
+        }
+
+        function closeUserDropdown() {
+            dropdownMenu.hidden = true;
+            dropdownMenu.classList.add("hidden");
+            dropdownBox.classList.remove("is-open");
+            dropdownBtn.setAttribute("aria-expanded", "false");
+        }
+
+        closeUserDropdown();
+
         dropdownBtn.addEventListener("click", function (event) {
+            event.preventDefault();
             event.stopPropagation();
-            dropdownMenu.classList.toggle("hidden");
+
+            if (dropdownMenu.hidden || dropdownMenu.classList.contains("hidden")) {
+                openUserDropdown();
+            } else {
+                closeUserDropdown();
+            }
+        });
+
+        dropdownMenu.addEventListener("click", function (event) {
+            event.stopPropagation();
         });
 
         document.addEventListener("click", function (event) {
             if (!dropdownBox.contains(event.target)) {
-                dropdownMenu.classList.add("hidden");
+                closeUserDropdown();
+            }
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                closeUserDropdown();
             }
         });
     }
@@ -63,6 +264,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const tabButtons = document.querySelectorAll("[data-auth-tab]");
     const loginForm = document.getElementById("loginForm");
     const registerForm = document.getElementById("registerForm");
+    const authModalSubtitle = document.getElementById("authModalSubtitle");
 
     function openModal(tab = "login") {
     if (!authModal) return;
@@ -114,15 +316,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
         tabButtons.forEach(function (button) {
             const buttonTab = button.getAttribute("data-auth-tab");
+            const isActive = buttonTab === tab;
 
-            if (buttonTab === tab) {
-                button.classList.add("bg-[#d99a32]", "text-[#2b1208]");
-                button.classList.remove("text-gray-300");
-            } else {
-                button.classList.remove("bg-[#d99a32]", "text-[#2b1208]");
-                button.classList.add("text-gray-300");
-            }
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-selected", isActive ? "true" : "false");
         });
+
+        if (authModalSubtitle) {
+            authModalSubtitle.textContent = tab === "register"
+                ? "Tạo tài khoản để nhận ưu đãi thành viên"
+                : "Đăng nhập để đặt vé và quản lý vé của bạn";
+        }
     }
 
     openButtons.forEach(function (button) {

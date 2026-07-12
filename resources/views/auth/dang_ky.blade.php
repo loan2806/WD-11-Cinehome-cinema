@@ -1,56 +1,130 @@
 <x-guest-layout>
     @php
         $heThongSettings = \App\Models\CaiDatHeThong::first();
-        $urlAnhNen = ($heThongSettings && $heThongSettings->anh_nen_login) ? asset('storage/' . $heThongSettings->anh_nen_login) : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1920';
+        $urlAnhNen = ($heThongSettings && $heThongSettings->anh_nen_login)
+            ? asset('storage/' . $heThongSettings->anh_nen_login)
+            : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1920&auto=format&fit=crop';
     @endphp
 
-    <div class="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-cover bg-center bg-no-repeat" style="background-image: url('{{ $urlAnhNen }}');">
-        <div class="absolute inset-0 bg-black/75 backdrop-blur-[3px]"></div>
-    </div>
+    <main class="auth-page" style="--auth-bg: url('{{ $urlAnhNen }}')" lang="vi" spellcheck="false">
+        <section class="auth-page-shell">
+            <aside class="auth-page-visual">
+                <a href="{{ route('home') }}" class="auth-page-brand">
+                    <span><i class="fa-solid fa-ticket"></i></span>
+                    Cine<span>Home</span>
+                </a>
 
-    <div class="fixed inset-0 z-10 flex h-screen w-screen overflow-hidden items-center justify-center px-4">
-        <div class="w-full max-w-[500px] rounded-2xl border border-white/10 bg-[#151515]/95 p-10 shadow-2xl backdrop-blur-md">
-            <div class="text-center mb-6">
-                <h2 class="text-3xl font-black text-white m-0">Cine<span class="text-[#d99a32]">Home</span></h2>
-                <p class="mt-1.5 text-sm text-gray-400 uppercase tracking-widest font-semibold">Tạo tài khoản thành viên</p>
-            </div>
-
-            <div class="flex rounded-xl bg-[#2a2a2a]/60 p-1.5 mb-6 border border-white/5">
-                <a href="{{ route('login') }}" class="w-1/2 text-center py-2.5 text-sm font-bold text-gray-400 hover:text-white transition-colors text-decoration-none flex items-center justify-center">Đăng nhập</a>
-                <a href="{{ route('register') }}" class="w-1/2 text-center py-2.5 text-sm font-black rounded-lg bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white text-decoration-none shadow-md">Đăng ký</a>
-            </div>
-
-            <form method="POST" action="{{ route('register') }}" class="space-y-4 m-0">
-                @csrf
-                <div class="space-y-1.5">
-                    <label for="ho_ten" class="block text-sm font-bold uppercase tracking-wide text-[#e8d2bb]">Họ và tên</label>
-                    <input id="ho_ten" type="text" name="ho_ten" value="{{ old('ho_ten') }}" required autofocus class="block h-11 w-full rounded-xl border border-[#8a4a21] bg-[#2a2a2a]/60 px-4 text-base text-white outline-none focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]" />
-                    @if($errors->has('ho_ten')) <div class="text-sm text-red-400 font-medium mt-1">{{ $errors->first('ho_ten') }}</div> @endif
+                <div>
+                    <span class="auth-side-kicker">Gia nhập CineHome</span>
+                    <h1>Tạo tài khoản để xem phim tiện hơn.</h1>
+                    <p>Nhận điểm chào mừng, lưu ưu đãi và đặt vé nhanh trong các lần xem phim tiếp theo.</p>
                 </div>
 
-                <div class="space-y-1.5">
-                    <label for="email" class="block text-sm font-bold uppercase tracking-wide text-[#e8d2bb]">Địa chỉ Email</label>
-                    <input id="email" type="email" name="email" value="{{ old('email') }}" required class="block h-11 w-full rounded-xl border border-[#8a4a21] bg-[#2a2a2a]/60 px-4 text-base text-white outline-none focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]" />
-                    @if($errors->has('email')) <div class="text-sm text-red-400 font-medium mt-1">{{ $errors->first('email') }}</div> @endif
+                <div class="auth-page-benefits">
+                    <span><i class="fa-solid fa-star"></i> Tặng điểm thành viên mới</span>
+                    <span><i class="fa-solid fa-ticket"></i> Đặt vé chỉ trong vài bước</span>
+                    <span><i class="fa-solid fa-bell"></i> Cập nhật ưu đãi mới</span>
+                </div>
+            </aside>
+
+            <section class="auth-page-card">
+                <div class="auth-brand-block">
+                    <div class="auth-logo-mark">
+                        <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome">
+                    </div>
+                    <div>
+                        <h2>Cine<span>Home</span></h2>
+                        <p>Tạo tài khoản thành viên CineHome</p>
+                    </div>
                 </div>
 
-                <div class="space-y-1.5">
-                    <label for="mat_khau" class="block text-sm font-bold uppercase tracking-wide text-[#e8d2bb]">Mật khẩu bảo mật</label>
-                    <input id="mat_khau" type="password" name="mat_khau" required class="block h-11 w-full rounded-xl border border-[#8a4a21] bg-[#2a2a2a]/60 px-4 text-base text-white outline-none focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]" />
-                    @if($errors->has('mat_khau')) <div class="text-sm text-red-400 font-medium mt-1">{{ $errors->first('mat_khau') }}</div> @endif
+                <div class="auth-tab-switch">
+                    <a href="{{ route('login') }}" class="auth-tab-btn">Đăng nhập</a>
+                    <a href="{{ route('register') }}" class="auth-tab-btn is-active">Đăng ký</a>
                 </div>
 
-                <div class="space-y-1.5">
-                    <label for="mat_khau_confirmation" class="block text-sm font-bold uppercase tracking-wide text-[#e8d2bb]">Xác nhận mật khẩu</label>
-                    <input id="mat_khau_confirmation" type="password" name="mat_khau_confirmation" required class="block h-11 w-full rounded-xl border border-[#8a4a21] bg-[#2a2a2a]/60 px-4 text-base text-white outline-none focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]" />
-                </div>
+                @if ($errors->any())
+                    <div class="auth-alert">
+                        @foreach ($errors->all() as $error)
+                            <div>{{ $error }}</div>
+                        @endforeach
+                    </div>
+                @endif
 
-                <div class="pt-3">
-                    <button type="submit" class="w-full h-12 rounded-xl font-bold transition-all bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white border-0 cursor-pointer hover:from-[#d99a32] hover:to-[#8a4a21] flex items-center justify-center gap-2 text-sm">
-                        Xác nhận Đăng ký thành viên <i class="fa-solid fa-user-plus text-xs"></i>
+                <form method="POST" action="{{ route('register') }}" class="auth-form auth-form-animate">
+                    @csrf
+
+                    <label class="auth-field">
+                        <span>Họ và tên</span>
+                        <div class="auth-input-wrap">
+                            <i class="fa-solid fa-user"></i>
+                            <input
+                                id="ho_ten"
+                                type="text"
+                                name="ho_ten"
+                                value="{{ old('ho_ten') }}"
+                                required
+                                autofocus
+                                placeholder="Nhập họ tên"
+                            >
+                        </div>
+                    </label>
+
+                    <label class="auth-field">
+                        <span>Email</span>
+                        <div class="auth-input-wrap">
+                            <i class="fa-solid fa-envelope"></i>
+                            <input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                required
+                                placeholder="Nhập email"
+                            >
+                        </div>
+                    </label>
+
+                    <label class="auth-field">
+                        <span>Mật khẩu</span>
+                        <div class="auth-input-wrap">
+                            <i class="fa-solid fa-lock"></i>
+                            <input
+                                id="registerPagePassword"
+                                type="password"
+                                name="mat_khau"
+                                required
+                                placeholder="Tạo mật khẩu"
+                            >
+                            <button type="button" data-toggle-password="registerPagePassword" class="auth-password-toggle" aria-label="Hiện mật khẩu">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </label>
+
+                    <label class="auth-field">
+                        <span>Xác nhận mật khẩu</span>
+                        <div class="auth-input-wrap">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <input
+                                id="registerPagePasswordConfirm"
+                                type="password"
+                                name="mat_khau_confirmation"
+                                required
+                                placeholder="Nhập lại mật khẩu"
+                            >
+                            <button type="button" data-toggle-password="registerPagePasswordConfirm" class="auth-password-toggle" aria-label="Hiện mật khẩu">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                    </label>
+
+                    <button type="submit" class="auth-submit-btn">
+                        Tạo tài khoản
+                        <i class="fa-solid fa-user-plus"></i>
                     </button>
-                </div>
-            </form>
-        </div>
-    </div>
+                </form>
+            </section>
+        </section>
+    </main>
 </x-guest-layout>

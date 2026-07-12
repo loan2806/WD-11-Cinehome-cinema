@@ -3,294 +3,230 @@
 @section('title', 'Chọn phim và suất chiếu')
 
 @section('content')
-    <div class="min-h-screen bg-[#080808] pt-28 pb-12 text-white">
-
-        <div class="mx-auto max-w-7xl px-6">
-
-            {{-- Header --}}
-            <div
-                class="mb-6 overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
-                <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                        <div
-                            class="inline-flex items-center gap-2 rounded-full border border-yellow-400/20 bg-yellow-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.35em] text-yellow-300">
-                            <span class="h-2 w-2 rounded-full bg-yellow-400"></span>
-                            Chọn lịch chiếu
-                        </div>
-                        <h1 class="mt-4 text-3xl font-black tracking-[0.08em] text-white sm:text-4xl">
-                            Lịch chiếu phim {{ $rap->ten_rap }}
-                        </h1>
-                        <p class="mt-3 max-w-2xl text-sm text-gray-400 sm:text-base">
-                            {{ $rap->dia_chi }}
-                        </p>
-                    </div>
-
-                    <div class="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-gray-300">
-                        <div class="font-semibold text-white">🎬 Chọn ngày xem</div>
-                        <div class="mt-1 text-xs text-gray-400">Nhấn vào ngày để đổi suất chiếu nhanh chóng</div>
-                    </div>
-                </div>
-
-                <form id="dateForm" action="{{ request()->url() }}" method="GET"
-                    class="sticky top-28 z-[9999] mt-6 rounded-[24px] border border-white/10 bg-[#0f0f0f]/95 p-3 backdrop-blur">
-
-                    <input type="hidden" name="ngay_chieu" id="selectedDateInput"
-                        value="{{ $selectedDate->toDateString() }}">
-
-                    <div
-                        class="flex items-center gap-2 overflow-hidden rounded-[20px] border border-white/10 bg-[#151515] p-2">
-                        <button type="button" id="prevDate"
-                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10">
-                            <i class="fa-solid fa-chevron-left"></i>
-                        </button>
-
-                        <div id="dateList" class="flex flex-1 flex-nowrap gap-2 overflow-x-auto px-1 py-1 scrollbar-hide">
-                            @foreach ($dateOptions as $dateOption)
-                                @php
-                                    $dateCarbon = \Carbon\Carbon::parse($dateOption['date']);
-                                @endphp
-                                <button type="button" data-date="{{ $dateOption['date'] }}"
-                                    class="date-chip min-w-[76px] shrink-0 rounded-2xl border px-2 py-3 text-center transition duration-200 {{ $dateOption['active'] ? 'date-chip-active border-yellow-400 bg-yellow-500/90 text-white shadow-lg shadow-yellow-500/20' : 'border-white/10 bg-white/5 text-gray-200 hover:border-yellow-400/40 hover:bg-white/10' }}">
-                                    <div
-                                        class="text-[11px] uppercase tracking-[0.25em] text-gray-400 {{ $dateOption['active'] ? 'text-white/80' : '' }}">
-                                        {{ $dateOption['label'] }}
-                                    </div>
-                                    <div class="mt-1 text-xl font-black leading-none">
-                                        {{ $dateCarbon->format('d') }}
-                                    </div>
-                                    <div
-                                        class="mt-1 text-[10px] uppercase tracking-[0.2em] {{ $dateOption['active'] ? 'text-white/80' : 'text-gray-500' }}">
-                                        {{ $dateCarbon->translatedFormat('D') }}
-                                    </div>
-                                </button>
-                            @endforeach
-                        </div>
-
-                        <button type="button" id="nextDate"
-                            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10">
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </form>
+    <div class="booking-flow-page booking-movie-select-page" lang="vi" spellcheck="false">
+        <section class="booking-flow-hero">
+            <div class="booking-flow-hero-copy">
+                <span class="booking-eyebrow">
+                    <i class="fa-solid fa-ticket"></i>
+                    Đặt vé CineHome
+                </span>
+                <h1>Chọn phim, chọn suất, giữ ghế thật nhanh.</h1>
+                <p>
+                    Lịch chiếu tại <strong>{{ $rap->ten_rap }}</strong>. Chọn ngày bên dưới để xem các suất đang mở bán
+                    và tiếp tục đặt vé đúng giờ bạn muốn.
+                </p>
             </div>
 
+            <div class="booking-stepper" aria-label="Tiến trình đặt vé">
+                <div class="booking-step is-active">
+                    <span>1</span>
+                    <strong>Chọn phim</strong>
+                </div>
+                <div class="booking-step">
+                    <span>2</span>
+                    <strong>Chọn ghế</strong>
+                </div>
+                <div class="booking-step">
+                    <span>3</span>
+                    <strong>Đồ ăn</strong>
+                </div>
+                <div class="booking-step">
+                    <span>4</span>
+                    <strong>Thanh toán</strong>
+                </div>
+            </div>
+        </section>
 
-            {{-- Danh sách phim --}}
+        @php
+            $activeDateOption = collect($dateOptions)->firstWhere('active');
+            $activeDateLabel = $activeDateOption['label'] ?? $selectedDate->format('d/m/Y');
+            $weekdayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+        @endphp
 
-            <div class="space-y-5">
+        <section class="booking-date-panel" aria-label="Chọn ngày chiếu">
+            <div class="booking-date-heading">
+                <div>
+                    <span>Lịch chiếu</span>
+                    <h2>{{ $activeDateLabel }} • {{ $selectedDate->format('d/m/Y') }}</h2>
+                </div>
+                <p>{{ $rap->dia_chi }}</p>
+            </div>
 
+            <form id="dateForm" action="{{ request()->url() }}" method="GET" class="booking-date-form">
+                <input type="hidden" name="ngay_chieu" id="selectedDateInput" value="{{ $selectedDate->toDateString() }}">
+
+                <button type="button" id="prevDate" class="booking-date-nav" aria-label="Ngày trước">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+
+                <div id="dateList" class="booking-date-track">
+                    @foreach ($dateOptions as $dateOption)
+                        @php
+                            $dateCarbon = \Carbon\Carbon::parse($dateOption['date']);
+                        @endphp
+                        <button type="button" data-date="{{ $dateOption['date'] }}"
+                            class="booking-date-chip {{ $dateOption['active'] ? 'is-active' : '' }}"
+                            aria-pressed="{{ $dateOption['active'] ? 'true' : 'false' }}">
+                            <span>{{ $dateOption['label'] }}</span>
+                            <strong>{{ $dateCarbon->format('d') }}</strong>
+                            <small>{{ $weekdayLabels[$dateCarbon->dayOfWeek] ?? $dateCarbon->format('D') }}</small>
+                        </button>
+                    @endforeach
+                </div>
+
+                <button type="button" id="nextDate" class="booking-date-nav" aria-label="Ngày sau">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </form>
+        </section>
+
+        <section class="booking-showtime-section">
+            <div class="booking-section-head">
+                <div>
+                    <span>Suất chiếu còn vé</span>
+                    <h2>Chọn giờ bắt đầu</h2>
+                </div>
+                <a href="{{ route('user.showtimes.index', ['ngay_chieu' => $selectedDate->toDateString()]) }}">
+                    Xem lịch chiếu đầy đủ
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="booking-showtime-list">
                 @forelse($suatChieuTheoPhim as $suatChieus)
-
                     @php
                         $phim = $suatChieus->first()->phim;
                         $showtimes = $suatChieus;
+                        $posterUrl = $phim->poster
+                            ? asset('storage/movies/' . $phim->poster)
+                            : 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800&auto=format&fit=crop';
                     @endphp
 
-                    <div
-                        class="rounded-[24px] border border-white/10 bg-[#141414]/90 p-5 shadow-[0_10px_40px_rgba(0,0,0,0.25)]">
-                        <div class="flex flex-col gap-5 md:flex-row">
-                            <div class="w-full shrink-0 md:w-[140px]">
-                                <img src="{{ $phim->poster ? asset('storage/movies/' . $phim->poster) : 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600' }}"
-                                    class="h-48 w-full rounded-[18px] object-cover shadow-lg shadow-black/30">
+                    <article class="booking-showtime-card">
+                        <a href="{{ route('user.movies.show', $phim->slug) }}" class="booking-showtime-poster"
+                            aria-label="Xem chi tiết {{ $phim->ten_phim }}">
+                            <img src="{{ $posterUrl }}" alt="{{ $phim->ten_phim }}">
+                        </a>
+
+                        <div class="booking-showtime-body">
+                            <div class="booking-showtime-top">
+                                <div>
+                                    <div class="booking-movie-tags">
+                                        @if (!empty($phim->gioi_han_tuoi))
+                                            <span class="age">{{ $phim->gioi_han_tuoi }}</span>
+                                        @endif
+                                        <span>2D</span>
+                                        @if (!empty($phim->thoi_luong))
+                                            <span>{{ $phim->thoi_luong }} phút</span>
+                                        @endif
+                                    </div>
+                                    <h3>{{ $phim->ten_phim }}</h3>
+                                </div>
+                                <a href="{{ route('user.movies.show', $phim->slug) }}" class="booking-detail-link">
+                                    Chi tiết
+                                </a>
                             </div>
 
-                            <div class="flex-1">
-                                <div class="flex flex-wrap items-start justify-between gap-3">
-                                    <div>
-                                        <h2 class="text-2xl font-black text-white">
-                                            {{ $phim->ten_phim }}
-                                        </h2>
-                                        <div class="mt-3 flex flex-wrap gap-2">
-                                            @if ($phim->do_tuoi)
-                                                <span
-                                                    class="rounded-full bg-red-500/90 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-white">
-                                                    {{ $phim->do_tuoi }}
-                                                </span>
-                                            @endif
-                                            <span
-                                                class="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.25em] text-yellow-300">
-                                                2D
-                                            </span>
-                                        </div>
-                                    </div>
+                            @if ($phim->genres->isNotEmpty())
+                                <p class="booking-movie-genres">
+                                    {{ $phim->genres->pluck('ten_the_loai')->join(' • ') }}
+                                </p>
+                            @endif
 
-                                </div>
+                            @if (!empty($phim->mo_ta))
+                                <p class="booking-movie-desc">
+                                    {{ \Illuminate\Support\Str::limit(strip_tags($phim->mo_ta), 150) }}
+                                </p>
+                            @endif
 
-                                <div class="mt-4 text-sm text-gray-400">
-                                    @if ($phim->genres->isNotEmpty())
-                                        {{ $phim->genres->pluck('ten_the_loai')->join(', ') }}
+                            <div class="booking-time-grid" aria-label="Danh sách suất chiếu của {{ $phim->ten_phim }}">
+                                @foreach ($showtimes as $suat)
+                                    @if ($suat->ghe_trong > 0)
+                                        <a href="{{ route('dat_ve.chon_ghe', ['movie' => $suat->id]) }}"
+                                            class="booking-time-chip">
+                                            <strong>{{ $suat->thoi_gian_chieu->format('H:i') }}</strong>
+                                            <span>{{ $suat->ghe_trong }}/{{ $suat->tong_ghe }} ghế</span>
+                                        </a>
+                                    @else
+                                        <span class="booking-time-chip is-disabled">
+                                            <strong>{{ $suat->thoi_gian_chieu->format('H:i') }}</strong>
+                                            <span>Hết vé</span>
+                                        </span>
                                     @endif
-                                </div>
-
-                                <div class="mt-6">
-                                    <div class="mb-3 text-[11px] font-black uppercase tracking-[0.35em] text-gray-500">
-                                        Suất chiếu
-                                    </div>
-
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach ($showtimes as $suat)
-                                            @if ($suat->ghe_trong > 0)
-                                                <a href="{{ route('dat_ve.chon_ghe', ['movie' => $suat->phim->slug]) }}"
-                                                    class="rounded-2xl border border-yellow-400/30 bg-gradient-to-r from-yellow-500/90 to-amber-500/90 px-4 py-3 text-center text-sm font-black text-black transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-yellow-500/20">
-                                                    <div class="text-lg leading-none">
-                                                        {{ $suat->thoi_gian_chieu->format('H:i') }}</div>
-                                                    <div class="mt-1 text-[10px] font-semibold text-black/70">
-                                                        {{ $suat->ghe_trong }}/{{ $suat->tong_ghe }} ghế
-                                                    </div>
-                                                </a>
-                                            @else
-                                                <div
-                                                    class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-gray-500 opacity-60">
-                                                    <div class="text-lg leading-none">
-                                                        {{ $suat->thoi_gian_chieu->format('H:i') }}</div>
-                                                    <div class="mt-1 text-[11px] uppercase tracking-[0.2em]">Hết vé</div>
-                                                </div>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                </div>
+                                @endforeach
                             </div>
                         </div>
-                    </div>
-
+                    </article>
                 @empty
-
-                    <div
-                        class="rounded-[24px] border border-dashed border-white/10 bg-[#141414]/80 py-16 text-center shadow-[0_10px_40px_rgba(0,0,0,0.2)]">
-                        <div class="mb-4 text-5xl">🎬</div>
-                        <h2 class="text-2xl font-black text-white">Chưa có suất chiếu</h2>
-                        <p class="mt-3 text-gray-400">
-                            Hiện chưa có suất chiếu nào cho ngày này. Hãy chọn một ngày khác.
-                        </p>
+                    <div class="booking-flow-empty">
+                        <i class="fa-solid fa-film"></i>
+                        <h2>Chưa có suất chiếu</h2>
+                        <p>Hiện chưa có suất chiếu nào cho ngày này. Hãy chọn một ngày khác để tiếp tục đặt vé.</p>
                     </div>
-
                 @endforelse
-
             </div>
-
-        </div>
-
+        </section>
     </div>
 @endsection
-
-@push('styles')
-    <style>
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .date-chip-active {
-            background: linear-gradient(135deg, #facc15, #d97706);
-            border-color: #facc15;
-            color: #fff;
-            transform: translateY(-1px);
-        }
-
-        .date-chip {
-            scroll-snap-align: center;
-        }
-
-        .date-chip:hover {
-            transform: translateY(-1px);
-        }
-    </style>
-@endpush
 
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            var dateForm = document.getElementById('dateForm');
-            var dateInput = document.getElementById('selectedDateInput');
-            var dateButtons = Array.from(document.querySelectorAll('[data-date]'));
-            var prevDate = document.getElementById('prevDate');
-            var nextDate = document.getElementById('nextDate');
-            var isSubmitting = false;
+            const dateForm = document.getElementById('dateForm');
+            const dateInput = document.getElementById('selectedDateInput');
+            const dateButtons = Array.from(document.querySelectorAll('[data-date]'));
+            const prevDate = document.getElementById('prevDate');
+            const nextDate = document.getElementById('nextDate');
+            let isSubmitting = false;
 
-            if (!dateForm || !dateInput) {
-                console.warn('Date form or input missing');
-                return;
-            }
+            if (!dateForm || !dateInput || dateButtons.length === 0) return;
 
-            if (!dateButtons.length) {
-                console.warn('No date buttons found');
-            }
-
-            var activeIndex = dateButtons.findIndex(function(button) {
-                return button.dataset.date === dateInput.value;
-            });
-            if (activeIndex === -1) {
-                activeIndex = 0;
-            }
+            let activeIndex = dateButtons.findIndex((button) => button.dataset.date === dateInput.value);
+            if (activeIndex < 0) activeIndex = 0;
 
             function submitOnce() {
                 if (isSubmitting) return;
                 isSubmitting = true;
-                // small timeout to allow UI update before navigation
-                setTimeout(function() {
-                    dateForm.submit();
-                }, 50);
+                window.setTimeout(() => dateForm.submit(), 70);
             }
 
-            // index: number, doSubmit: boolean
-            function setActiveIndex(index, doSubmit) {
-                if (!dateButtons.length) return;
-                if (index < 0 || index >= dateButtons.length) {
-                    return;
-                }
+            function setActiveIndex(index, shouldSubmit) {
+                if (index < 0 || index >= dateButtons.length) return;
 
                 activeIndex = index;
                 dateInput.value = dateButtons[activeIndex].dataset.date;
-                dateButtons.forEach(function(button, idx) {
-                    button.classList.toggle('date-chip-active', idx === activeIndex);
-                    button.setAttribute('aria-pressed', idx === activeIndex ? 'true' : 'false');
+
+                dateButtons.forEach((button, currentIndex) => {
+                    const active = currentIndex === activeIndex;
+                    button.classList.toggle('is-active', active);
+                    button.setAttribute('aria-pressed', active ? 'true' : 'false');
                 });
 
-                // If caller wants to submit (click on a date), submit.
-                if (doSubmit) {
-                    submitOnce();
-                } else {
-                    // Otherwise just scroll the list to show the active date
-                    try {
-                        dateButtons[activeIndex].scrollIntoView({
-                            inline: 'center',
-                            behavior: 'smooth',
-                            block: 'nearest'
-                        });
-                    } catch (e) {
-                        // ignore
-                    }
-                }
+                dateButtons[activeIndex].scrollIntoView({
+                    inline: 'center',
+                    behavior: 'smooth',
+                    block: 'nearest'
+                });
+
+                if (shouldSubmit) submitOnce();
             }
 
-            dateButtons.forEach(function(button, index) {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
+            dateButtons.forEach((button, index) => {
+                button.addEventListener('click', function(event) {
+                    event.preventDefault();
                     setActiveIndex(index, true);
                 });
             });
 
-            if (prevDate) {
-                prevDate.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    setActiveIndex(Math.max(0, activeIndex - 1), false);
-                });
-            } else {
-                console.warn('prevDate button not found');
-            }
+            prevDate?.addEventListener('click', function(event) {
+                event.preventDefault();
+                setActiveIndex(Math.max(0, activeIndex - 1), false);
+            });
 
-            if (nextDate) {
-                nextDate.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    setActiveIndex(Math.min(dateButtons.length - 1, activeIndex + 1), false);
-                });
-            } else {
-                console.warn('nextDate button not found');
-            }
+            nextDate?.addEventListener('click', function(event) {
+                event.preventDefault();
+                setActiveIndex(Math.min(dateButtons.length - 1, activeIndex + 1), false);
+            });
         });
     </script>
 @endsection

@@ -18,6 +18,28 @@ class SuatChieuController extends Controller
         $limitDay = $today->copy()->addDays(10);
 
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
+        $weekdayShort = [
+            'Sun' => 'CN',
+            'Mon' => 'T2',
+            'Tue' => 'T3',
+            'Wed' => 'T4',
+            'Thu' => 'T5',
+            'Fri' => 'T6',
+            'Sat' => 'T7',
+        ];
+
+        $dateOptions = collect(range(0, 10))->map(function ($offset) use ($today, $weekdayShort) {
+            $date = $today->copy()->addDays($offset);
+
+            return [
+                'value' => $date->toDateString(),
+                'label' => $offset === 0
+                    ? 'Hôm nay'
+                    : ($weekdayShort[$date->format('D')] ?? $date->format('D')),
+                'day' => $date->format('d/m'),
+                'active' => request('ngay_chieu') === $date->toDateString(),
+            ];
+        });
 
         // Danh sách phim có suất chiếu trong 10 ngày tới
         $movies = Phims::whereHas('showtimes', function ($q) use ($today, $limitDay) {
@@ -27,7 +49,7 @@ class SuatChieuController extends Controller
             ->orderBy('ten_phim')
             ->get();
 
-        $suatChieusQuery = SuatChieu::with(['phim', 'rapChieuPhim'])
+        $suatChieusQuery = SuatChieu::with(['phim.genres', 'rapChieuPhim', 'phongChieu'])
             ->whereHas('phim', function ($movieQuery) use ($today, $limitDay) {
                 $movieQuery->whereHas('showtimes', function ($q) use ($today, $limitDay) {
                     $q->whereDate('thoi_gian_chieu', '>=', $today)
@@ -68,13 +90,14 @@ class SuatChieuController extends Controller
             'suatChieus',
             'rapChieuPhims',
             'movies',
-            'now'
+            'now',
+            'dateOptions'
         ));
     }
 
     public function show(SuatChieu $suatChieu)
     {
-        $suatChieu->load(['phim', 'rapChieuPhim']);
+        $suatChieu->load(['phim.genres', 'rapChieuPhim', 'phongChieu']);
 
         return view('user.showtimes.show', compact('suatChieu'));
     }

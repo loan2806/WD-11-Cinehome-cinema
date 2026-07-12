@@ -5,24 +5,58 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Models\VeXemPhim;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class VeXemPhimController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $veXemPhims = VeXemPhim::where('nguoi_dung_id', Auth::id())
-            ->latest()
-            ->paginate(10);
+        $allowedStatuses = ['da_thanh_toan', 'da_su_dung', 'da_huy'];
+        $activeStatus = in_array($request->query('trang_thai'), $allowedStatuses, true)
+            ? $request->query('trang_thai')
+            : null;
 
-        return view('user.ve_xem_phim.index', compact('veXemPhims'));
+        $baseQuery = VeXemPhim::where('nguoi_dung_id', Auth::id());
+
+        $ticketStats = [
+            'total' => (clone $baseQuery)->count(),
+            'paid' => (clone $baseQuery)->where('trang_thai', 'da_thanh_toan')->count(),
+            'used' => (clone $baseQuery)->where('trang_thai', 'da_su_dung')->count(),
+            'cancelled' => (clone $baseQuery)->where('trang_thai', 'da_huy')->count(),
+        ];
+
+        $nextTicket = (clone $baseQuery)
+            ->where('trang_thai', 'da_thanh_toan')
+            ->whereNotNull('thoi_gian_chieu')
+            ->where('thoi_gian_chieu', '>=', now())
+            ->orderBy('thoi_gian_chieu')
+            ->first();
+
+        $cancelMinutes = (int) SystemSetting::getValue('ticket_cancel_minutes', 5);
+
+        $veXemPhims = (clone $baseQuery)
+            ->when($activeStatus, fn ($query) => $query->where('trang_thai', $activeStatus))
+            ->latest()
+            ->paginate(8)
+            ->withQueryString();
+
+        return view('user.ve_xem_phim.index', compact(
+            'veXemPhims',
+            'ticketStats',
+            'nextTicket',
+            'activeStatus',
+            'cancelMinutes'
+        ));
     }
 
     public function show(VeXemPhim $veXemPhim)
     {
         abort_if($veXemPhim->nguoi_dung_id !== Auth::id(), 403);
 
-        return view('user.ve_xem_phim.show', compact('veXemPhim'));
+        $cancelMinutes = (int) SystemSetting::getValue('ticket_cancel_minutes', 5);
+
+        return view('user.ve_xem_phim.show', compact('veXemPhim', 'cancelMinutes'));
     }
 
     public function cancel(VeXemPhim $veXemPhim)
