@@ -18,7 +18,6 @@
                 <h5 class="text-white fw-bold">Menu</h5>
                 <p>Phim</p>
                 <p>Rạp</p>
-                <p>Lịch chiếu</p>
             </div>
 
             <div class="col-md-3">

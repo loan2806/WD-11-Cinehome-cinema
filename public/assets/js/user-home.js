@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", function () {
         function scrollRail(direction) {
             const firstCard = rail.querySelector(".booking-movie-card");
             const cardWidth = firstCard ? firstCard.getBoundingClientRect().width : 220;
-            const gap = 18;
+            const gap = 26;
             const scrollAmount = Math.max(cardWidth + gap, rail.clientWidth * 0.72);
 
             rail.scrollBy({

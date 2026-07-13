@@ -19,11 +19,6 @@
                     Phim
                 </a>
 
-                <a href="{{ route('user.showtimes.index') }}"
-                    class="{{ request()->routeIs('user.showtimes.*') ? 'active' : '' }}">
-                    Lịch chiếu
-                </a>
-
                 <a href="{{ route('user.cinemas.index') }}"
                     class="{{ request()->routeIs('user.cinemas.*') ? 'active' : '' }}">
                     Rạp chiếu
