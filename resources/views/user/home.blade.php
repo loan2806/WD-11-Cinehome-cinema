@@ -131,7 +131,7 @@
                                 @if ($nextShowtime)
                                     Suất gần nhất: {{ \Carbon\Carbon::parse($nextShowtime->thoi_gian_chieu)->format('H:i d/m') }}
                                 @else
-                                    Lịch chiếu đang cập nhật
+                                    Suất chiếu đang cập nhật
                                 @endif
                             </div>
 
@@ -242,7 +242,7 @@
                         <i class="fa-solid fa-film"></i>
                     </a>
 
-                    <a href="{{ route('user.showtimes.index') }}" class="quick-booking-step">
+                    <a href="{{ route('dat_ve.chon_phim') }}" class="quick-booking-step">
                         <span>02</span>
                         <strong>Chọn suất chiếu</strong>
                         <small>Lọc theo ngày, giờ và rạp gần bạn</small>

@@ -54,6 +54,8 @@ button,
 .poster-wall-copy a,
 .experience-shot,
 .experience-shot img,
+.promo-primary,
+.promo-secondary,
 .detail-back-link,
 .detail-action-btn,
 .detail-tabs button,
@@ -1468,17 +1470,51 @@ body.overflow-hidden {
         transparent;
 }
 
+.booking-main > .container-fluid {
+    display: flex;
+    flex-direction: column;
+}
+
+.quick-booking-panel {
+    order: 1;
+}
+
+.booking-main .booking-section {
+    order: 2;
+}
+
+.booking-promo-strip {
+    order: 3;
+}
+
+.booking-poster-wall {
+    order: 4;
+}
+
+.cinema-experience-board {
+    order: 5;
+}
+
+.booking-benefits {
+    order: 6;
+}
+
 .quick-booking-panel {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1px;
-    margin-bottom: 42px;
+    gap: 14px;
+    margin-bottom: 50px;
+    padding: 12px;
     overflow: hidden;
     border: 1px solid var(--cinema-line);
     border-radius: var(--cinema-radius);
-    background: var(--cinema-line);
-    box-shadow: var(--cinema-shadow);
-    backdrop-filter: blur(18px);
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.025)),
+        rgba(11, 14, 21, 0.78);
+    box-shadow:
+        var(--cinema-shadow),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(22px);
 }
 
 .quick-booking-step {
@@ -1486,9 +1522,12 @@ body.overflow-hidden {
     min-height: 126px;
     padding: 22px 24px;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: var(--cinema-radius);
     background:
         radial-gradient(circle at 88% 18%, rgba(247, 184, 75, 0.16), transparent 25%),
-        rgba(19, 23, 32, 0.92);
+        linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.028)),
+        rgba(19, 23, 32, 0.74);
     color: var(--cinema-text);
     text-decoration: none;
 }
@@ -1503,8 +1542,10 @@ body.overflow-hidden {
 }
 
 .quick-booking-step:hover {
+    border-color: rgba(247, 184, 75, 0.28);
     color: #ffffff;
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 42px rgba(0, 0, 0, 0.26);
 }
 
 .quick-booking-step:hover::before {
@@ -1861,7 +1902,7 @@ body.overflow-hidden {
 }
 
 .booking-section {
-    margin-bottom: 54px;
+    margin-bottom: 62px;
 }
 
 .booking-section-head {
@@ -1916,10 +1957,10 @@ body.overflow-hidden {
 
 .booking-movie-rail {
     display: flex;
-    gap: 18px;
+    gap: 26px;
     overflow-x: auto;
     overflow-y: visible;
-    padding: 4px 2px 22px;
+    padding: 10px 4px 34px;
     scroll-behavior: smooth;
     scroll-snap-type: x proximity;
     scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
@@ -1940,14 +1981,19 @@ body.overflow-hidden {
 }
 
 .booking-movie-card {
-    flex: 0 0 clamp(184px, 16vw, 244px);
-    min-width: 184px;
+    flex: 0 0 clamp(220px, 20vw, 292px);
+    min-width: 220px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--cinema-radius);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.058), rgba(255, 255, 255, 0.026));
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.028)),
+        rgba(14, 18, 27, 0.78);
+    box-shadow:
+        0 18px 42px rgba(0, 0, 0, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.055);
     scroll-snap-align: start;
+    backdrop-filter: blur(18px);
 }
 
 .booking-movie-card:hover {
@@ -2018,16 +2064,16 @@ body.overflow-hidden {
 }
 
 .booking-movie-body {
-    padding: 14px;
+    padding: 20px;
 }
 
 .booking-movie-body h3 {
     display: -webkit-box;
-    min-height: 43px;
-    margin: 0 0 9px;
+    min-height: 52px;
+    margin: 0 0 12px;
     overflow: hidden;
     color: #ffffff;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 950;
     line-height: 1.35;
     -webkit-box-orient: vertical;
@@ -2052,7 +2098,7 @@ body.overflow-hidden {
 .booking-card-actions {
     display: flex;
     gap: 8px;
-    margin-top: 13px;
+    margin-top: 18px;
 }
 
 .booking-card-actions a {
@@ -2092,8 +2138,8 @@ body.overflow-hidden {
 }
 
 .booking-movie-card.compact {
-    flex-basis: clamp(168px, 14.2vw, 216px);
-    min-width: 168px;
+    flex-basis: clamp(204px, 16vw, 248px);
+    min-width: 204px;
 }
 
 .booking-empty-state {
@@ -2111,11 +2157,14 @@ body.overflow-hidden {
 }
 
 .booking-promo-strip {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 24px;
-    margin-top: 8px;
+    min-height: 170px;
+    margin-top: 4px;
+    margin-bottom: 54px;
     padding: clamp(22px, 4vw, 34px);
     border: 1px solid rgba(255, 255, 255, 0.11);
     border-radius: var(--cinema-radius);
@@ -2125,6 +2174,22 @@ body.overflow-hidden {
         linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.028));
     box-shadow: var(--cinema-shadow);
     overflow: hidden;
+    backdrop-filter: blur(18px);
+}
+
+.booking-promo-strip::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.promo-copy,
+.promo-actions {
+    position: relative;
+    z-index: 1;
 }
 
 .promo-copy span {
@@ -13498,8 +13563,8 @@ body.profile-body {
     }
 
     .booking-movie-card {
-        flex-basis: 168px;
-        min-width: 168px;
+        flex-basis: 206px;
+        min-width: 206px;
     }
 
     .movie-detail-hero {
@@ -13738,8 +13803,8 @@ body.profile-body {
 
     .booking-movie-card,
     .booking-movie-card.compact {
-        flex-basis: 150px;
-        min-width: 150px;
+        flex-basis: 174px;
+        min-width: 174px;
     }
 
     .booking-movie-body,
