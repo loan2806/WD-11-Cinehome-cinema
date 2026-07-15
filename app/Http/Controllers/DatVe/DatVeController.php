@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use PayOS\PayOS; // Khai báo thư viện PayOS chính thức
+use PayOS\PayOS; 
 
 class DatVeController extends Controller
 {
@@ -42,15 +42,14 @@ class DatVeController extends Controller
             try {
                 $selectedDate = Carbon::createFromFormat('Y-m-d', request('ngay_chieu'), 'Asia/Ho_Chi_Minh');
             } catch (\Exception $e) {
-
-                \Log::error('PAYOS ERROR', [
+                \Log::error('DATE PARSING ERROR', [
                     'message' => $e->getMessage(),
                     'line' => $e->getLine(),
                     'file' => $e->getFile(),
                 ]);
 
                 return redirect()->back()
-                    ->with('error', 'Lỗi kết nối API VietQR: ' . $e->getMessage());
+                    ->with('error', 'Lỗi định dạng ngày chiếu: ' . $e->getMessage());
             }
         }
 
@@ -280,11 +279,6 @@ class DatVeController extends Controller
 
     public function xuLyThanhToan(Request $request, $movie)
     {
-
-        //  dd('Đã vào controller');
-        // dd($request->all());
-
-
         $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])->findOrFail($movie);
         $selectedSeats = collect(explode(',', $request->input('ghe')))->map(fn($s) => strtoupper(trim($s)))->filter()->unique()->values();
         $identifier = Auth::id() ?? session()->getId();
@@ -296,8 +290,6 @@ class DatVeController extends Controller
             }
         }
 
-        //  dd('Đã vào controller');
-
         $seatModels = GheNgoi::with('loaiGhe')->where('phong_chieu_id', $suatChieu->phong_chieu_id)->whereIn('ma_ghe', $selectedSeats)->get();
         $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
             return $seat->loaiGhe?->la_couple ? ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0) : $suatChieu->gia_ve + ($seat->loaiGhe->phu_thu ?? 0);
@@ -305,9 +297,12 @@ class DatVeController extends Controller
 
         $foodItems = collect(json_decode($request->input('food_cart', '[]'), true));
         $foodTotal = $foodItems->sum(fn($i) => ($i['price'] ?? 0) * ($i['qty'] ?? 0));
-        $grandTotal = max(0, ($seatTotalPrice + $foodTotal) - 20000);
-
-        //  dd('Đã vào controller');
+        
+        // 🌟 FIX LỖI TỰ ĐỘNG TRỪ 20K TẠI ĐÂY: Mặc định bằng tiền gốc, chỉ trừ nếu có truyền voucher_code lên
+        $grandTotal = $seatTotalPrice + $foodTotal;
+        if ($request->filled('voucher_code')) {
+            $grandTotal = max(0, $grandTotal - 20000); 
+        }
 
         $maVe = $this->taoMaVeLocal();
 
@@ -324,7 +319,6 @@ class DatVeController extends Controller
             'loai_ve' => 'truc_tuyen',
             'danh_sach_ghe' => $selectedSeats->toArray()
         ];
-        //  dd('Đã vào controller');
 
         Cache::put("pending_ve:{$maVe}", $duLieuTam, now()->addMinutes(15));
 
@@ -375,37 +369,26 @@ class DatVeController extends Controller
             }
             return redirect()->away($vnp_Url);
         }
-        //  dd('Đã vào controller');
-
 
         // =======================================================
         // LUỒNG 2: THANH TOÁN QUA CỔNG VIETQR (PAYOS)
         // =======================================================
         if ($method === 'vietqr') {
-
-
-    try {
-
-                // Biến đổi chuỗi chữ mã vé thành số nguyên int duy nhất tương thích với PayOS
+            try {
                 $orderCode = intval(filter_var(microtime(true) * 10000, FILTER_SANITIZE_NUMBER_INT)) % 9007199254740991;
-                // dd('2');
-                // Ánh xạ số orderCode của PayOS sang mã vé chuỗi để giải mã khi Callback phản hồi
                 Cache::put("payos_mapping:{$orderCode}", $maVe, now()->addMinutes(15));
-                // dd('3');
-                // Khởi tạo cổng kết nối cục bộ
+                
                 $payOS = new PayOS(env('PAYOS_CLIENT_ID'), env('PAYOS_API_KEY'), env('PAYOS_CHECKSUM_KEY'));
-                // dd('4');
+                
                 $paymentData = [
                     "orderCode" => $orderCode,
                     "amount" => (int) $grandTotal,
                     "description" => "Cinema " . $maVe,
-                    "returnUrl" => env('PAYOS_RETURN_URL'),
-                    "cancelUrl" => env('PAYOS_CANCEL_URL')
+                    "returnUrl" => url('/dat-ve/vnpay-callback'), 
+                    "cancelUrl" => url('/')                       
                 ];
 
-
                 $response = $payOS->createPaymentLink($paymentData);
-                // dd($response);
 
                 if (isset($response['checkoutUrl'])) {
                     return redirect()->away($response['checkoutUrl']);
@@ -413,16 +396,14 @@ class DatVeController extends Controller
 
                 return redirect()->back()->with('error', 'Không thể khởi tạo đường dẫn kết nối VietQR.');
             } catch (\Exception $e) {
-    dd([
-        'message' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine(),
-    ]);
-}
+                \Log::error('PAYOS CREATE LINK ERROR', [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+                return redirect()->back()->with('error', 'Lỗi kết nối API VietQR: ' . $e->getMessage());
+            }
         }
-
-        //  dd('Đã vào controller');
-
 
         $ve = VeXemPhim::create([
             'nguoi_dung_id' => $duLieuTam['nguoi_dung_id'],
@@ -448,7 +429,6 @@ class DatVeController extends Controller
 
     public function vnpayCallback(Request $request)
     {
-        // 🌟 KIỂM TRA ĐIỀU HƯỚNG THÔNG MINH: Nếu có tham số của PayOS truyền về
         if ($request->filled('orderCode') && $request->filled('status')) {
             $orderCode = $request->input('orderCode');
             $status = $request->input('status');
@@ -492,7 +472,6 @@ class DatVeController extends Controller
             return redirect()->route('home')->with('error', 'Hủy bỏ thanh toán qua cổng VietQR.');
         }
 
-        // 🌟 NẾU KHÔNG THÌ CHẠY TIẾP TỤC LUỒNG CALLBACK CŨ CỦA VNPAY
         $vnp_TxnRef = $request->input('vnp_TxnRef');
         $vnp_ResponseCode = $request->input('vnp_ResponseCode');
         $maVe = $vnp_TxnRef;
@@ -610,7 +589,7 @@ class DatVeController extends Controller
                         </div>
                         <div style='text-align:right;'>
                             <span style='font-size:12px; color:#9ca3af; text-transform:uppercase; font-weight:700; letter-spacing: 0.5px;'>Tổng tiền</span>
-                            <div style='font-size:18px; font-weight:900; color:#facc15; margin-top:4px;'>" . number_format($ve->tong_tien) . "đ</div>
+                            <div style='font-size:18px; font-weight:900; color:#facc15; margin-top:4px;'>".number_format($ve->tong_tien)."đ</div>
                         </div>
                     </div>
 
@@ -632,11 +611,11 @@ class DatVeController extends Controller
                 </div>
 
                 <div style='padding:0 32px 32px 32px; display:flex; flex-direction:column; gap:14px;'>
-                    <a href='" . route('user.ve_xem_phim.index') . "' style='background:#facc15; color:#000; text-align:center; padding:15px; font-weight:900; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; transition:0.2s; box-shadow:0 4px 14px rgba(234,179,8,0.3); display:block;'>
+                    <a href='".route('user.ve_xem_phim.index')."' style='background:#facc15; color:#000; text-align:center; padding:15px; font-weight:900; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; transition:0.2s; box-shadow:0 4px 14px rgba(234,179,8,0.3); display:block;'>
                         🎫 Quản lý vé của tôi
                     </a>
                     
-                    <a href='" . route('home') . "' style='background:rgba(255,255,255,0.05); color:#9ca3af; text-align:center; padding:15px; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; border:1px solid rgba(255,255,255,0.08); transition:0.2s; display:block;'>
+                    <a href='".route('home')."' style='background:rgba(255,255,255,0.05); color:#9ca3af; text-align:center; padding:15px; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; border:1px solid rgba(255,255,255,0.08); transition:0.2s; display:block;'>
                         🏠 Quay lại Trang chủ
                     </a>
                 </div>
@@ -657,14 +636,20 @@ class DatVeController extends Controller
     private function congDiemThanhVienLocal(VeXemPhim $veXemPhim): void
     {
         if (!$veXemPhim->nguoi_dung_id || $veXemPhim->trang_thai !== 'da_thanh_toan') return;
-        $thanhVien = ThanhVien::firstOrCreate(['nguoi_dung_id' => $veXemPhim->nguoi_dung_id], [
-            'ma_thanh_vien' => 'TV' . str_pad($veXemPhim->nguoi_dung_id, 6, '0', STR_PAD_LEFT),
-            'hang_thanh_vien' => 'member',
-            'diem_hien_tai' => 0,
-            'tong_diem_tich_luy' => 0,
-            'ngay_tham_gia' => now(),
-            'ma_gioi_thieu' => '',
-        ]);
+        
+        $thanhVien = ThanhVien::where('nguoi_dung_id', $veXemPhim->nguoi_dung_id)->first();
+        if (!$thanhVien) {
+            $thanhVien = new ThanhVien();
+            $thanhVien->nguoi_dung_id = $veXemPhim->nguoi_dung_id;
+            $thanhVien->ma_thanh_vien = 'TV' . str_pad($veXemPhim->nguoi_dung_id, 6, '0', STR_PAD_LEFT);
+            $thanhVien->hang_thanh_vien = 'member';
+            $thanhVien->diem_hien_tai = 0;
+            $thanhVien->tong_diem_tich_luy = 0;
+            $thanhVien->ngay_tham_gia = now();
+            $thanhVien->ma_gioi_thieu = ''; 
+            $thanhVien->save();
+        }
+
         $diemCong = (int) floor((float) $veXemPhim->tong_tien / 10000);
         if (method_exists($thanhVien, 'congDiem')) {
             $thanhVien->congDiem($diemCong, $veXemPhim, 'Tích lũy mua vé.');
