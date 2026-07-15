@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     {{-- CSS riêng Admin --}}
-    <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
+    <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}?v={{ filemtime(public_path('assets/css/admin.css')) }}">
 
     @stack('styles')
 
@@ -74,6 +74,63 @@
                 }
             });
         }
+    });
+
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const adminLayout = document.getElementById('adminLayout');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const bellBtn = document.getElementById('bellBtn');
+        const notifyBox = document.getElementById('notifyBox');
+        const adminMenu = document.getElementById('adminDropdownMenu');
+        let sidebarTimer = null;
+
+        if (sidebarToggle && adminLayout) {
+            sidebarToggle.setAttribute('aria-expanded', adminLayout.dataset.sidebar !== 'closed' ? 'true' : 'false');
+
+            sidebarToggle.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const nextState = adminLayout.dataset.sidebar === 'open' ? 'closed' : 'open';
+                adminLayout.classList.add('is-sidebar-animating');
+                adminLayout.dataset.sidebar = nextState;
+                sidebarToggle.setAttribute('aria-expanded', nextState === 'open' ? 'true' : 'false');
+
+                window.clearTimeout(sidebarTimer);
+                sidebarTimer = window.setTimeout(function() {
+                    adminLayout.classList.remove('is-sidebar-animating');
+                }, 210);
+            });
+        }
+
+        if (bellBtn && notifyBox) {
+            bellBtn.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                adminMenu?.classList.add('hidden');
+                notifyBox.classList.toggle('hidden');
+            });
+
+            notifyBox.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+        }
+
+        document.addEventListener('click', function(event) {
+            if (notifyBox && bellBtn && !notifyBox.contains(event.target) && !bellBtn.contains(event.target)) {
+                notifyBox.classList.add('hidden');
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                notifyBox?.classList.add('hidden');
+            }
+        });
     });
 
 </script>
@@ -150,9 +207,10 @@
                             đặt cổng thanh toán</a>
 
                     </div>
-                    @endif
+                </div>
+                @endif
 
-                    {{-- NHÓM DROPDOWN 1: QUẢN LÝ NỘI DUNG --}}
+                {{-- NHÓM DROPDOWN 1: QUẢN LÝ NỘI DUNG --}}
                     @if (auth()->user()->can('quan_ly_phim_suat_chieu'))
                     @php
                     $isNoidungActive =
@@ -417,26 +475,40 @@
                             </button>
 
                             {{-- NOTIFICATION DROPDOWN --}}
-                            <div id="notifyBox" class="hidden absolute right-0 mt-2 w-96 bg-[#151515] border border-white/10 rounded-xl shadow-xl z-50">
-                                <div class="p-3 border-b border-white/10">
-                                    <h3 class="text-white font-bold">Thông báo hệ thống</h3>
+                            <div id="notifyBox" class="admin-notify-dropdown hidden">
+                                <div class="admin-notify-head">
+                                    <span><i class="fa-solid fa-bell"></i></span>
+                                    <div>
+                                        <h3>Thông báo hệ thống</h3>
+                                        <small>{{ $notificationCount }} thông báo chưa đọc</small>
+                                    </div>
                                 </div>
 
-                                <div class="max-h-96 overflow-y-auto scrollbar scrollbar-w-2 scrollbar-track-zinc-950 scrollbar-thumb-zinc-800 hover:scrollbar-thumb-zinc-700">
+                                <div class="admin-notify-list">
                                     @forelse($adminNotifications as $item)
-                                    <div class="p-3 border-b border-white/5 hover:bg-white/5">
-                                        <div class="text-[#d99a32] font-semibold">{{ $item->tieu_de }}</div>
-                                        <div class="text-sm text-gray-300 mt-1">{{ $item->noi_dung }}</div>
-                                        <div class="text-xs text-gray-500 mt-2">
-                                            {{ $item->created_at->diffForHumans() }}</div>
-                                    </div>
+                                    <article class="admin-notify-item {{ $item->da_doc ? '' : 'is-unread' }}">
+                                        <span class="admin-notify-icon">
+                                            <i class="fa-solid fa-bell"></i>
+                                        </span>
+                                        <div class="admin-notify-content">
+                                            <strong>{{ $item->tieu_de }}</strong>
+                                            <p>{{ \Illuminate\Support\Str::limit($item->noi_dung, 86) }}</p>
+                                            <time>{{ $item->created_at->diffForHumans() }}</time>
+                                        </div>
+                                    </article>
                                     @empty
-                                    <div class="p-4 text-center text-gray-500">Không có thông báo</div>
+                                    <div class="admin-notify-empty">
+                                        <i class="fa-regular fa-bell"></i>
+                                        <strong>Không có thông báo</strong>
+                                        <span>Hệ thống đang yên ổn.</span>
+                                    </div>
                                     @endforelse
                                 </div>
 
-                                <div class="p-2 border-t border-white/10 text-center">
-                                    <a href="{{ route('admin.notifications.index') }}" class="text-[#d99a32] text-sm font-semibold no-underline">Xem tất cả</a>
+                                <div class="admin-notify-footer">
+                                    <a href="{{ route('admin.notifications.index') }}">
+                                        Xem tất cả <i class="fa-solid fa-arrow-right"></i>
+                                    </a>
                                 </div>
                             </div>
                         </div>

@@ -15,9 +15,12 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $latestMovies = Phims::latest()->take(5)->get();
+        $latestMovies = Phims::with(['country', 'genres', 'showtimes'])
+            ->latest()
+            ->take(5)
+            ->get();
 
-        $todaySchedules = SuatChieu::with(['phim'])
+        $todaySchedules = SuatChieu::with(['phim', 'phongChieu', 'rapChieuPhim'])
             ->whereDate('thoi_gian_chieu', now()->toDateString())
             ->orderBy('thoi_gian_chieu', 'asc')
             ->take(10)
