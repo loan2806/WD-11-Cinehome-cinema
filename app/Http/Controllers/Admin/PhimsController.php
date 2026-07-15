@@ -135,7 +135,7 @@ class PhimsController extends Controller
     */
     public function show(Phims $phim)
     {
-        $phim->load(['country', 'genres', 'showtimes']);
+        $phim->load(['country', 'genres', 'showtimes.rapChieuPhim', 'showtimes.phongChieu']);
 
         return view('admin.phims.show', compact('phim'));
     }

@@ -1,202 +1,249 @@
 @extends('layouts.admin')
 
-@section('page-title', 'Quản lý Thể Loại Phim')
+@section('page-title', 'Danh sách thể loại phim')
 
 @section('content')
+    @php
+        $summary = $summary ?? [
+            'total' => 0,
+            'active' => 0,
+            'inactive' => 0,
+            'with_movies' => 0,
+        ];
+    @endphp
 
-    <div class="admin-panel">
+    <div class="genre-admin-page">
+        @include('admin.partials.flash')
 
-        <div class="panel-header flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-
-            <div>
-
-                <h5 class="text-2xl font-black text-white">
-                    Danh sách thể loại phim
-                </h5>
-
-                <small class="text-gray-400">
-                    Quản lý toàn bộ thể loại phim trong hệ thống
-                </small>
-
+        <section class="genre-hero-panel">
+            <div class="genre-hero-content">
+                <span class="genre-kicker">
+                    <i class="fa-solid fa-layer-group"></i>
+                    Kho thể loại CineHome
+                </span>
+                <h1>Danh sách thể loại phim</h1>
+                <p>
+                    Quản lý nhóm nội dung, trạng thái hiển thị và số lượng phim đang gắn với từng thể loại.
+                    Giao diện được tối ưu để lọc nhanh, kiểm tra nhanh và thao tác an toàn.
+                </p>
             </div>
 
-            <a href="{{ route('admin.the-loais.create') }}"
-                class="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.02]">
-
-                <i class="fa-solid fa-plus"></i>
-
-                Thêm thể loại
-
-            </a>
-
-        </div>
-
-        {{-- SEARCH & FILTER --}}
-        <form action="{{ route('admin.the-loais.index') }}" method="GET"
-            class="mt-6 flex flex-col gap-3 lg:flex-row lg:items-end">
-
-            <div class="flex-1">
-                <label class="block text-xs font-semibold uppercase text-gray-400 mb-2">Tìm kiếm tên thể loại</label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="VD: Hành động, Kinh dị..."
-                    class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+            <div class="genre-hero-actions">
+                <a href="{{ route('admin.phims.index') }}" class="movie-action-btn is-ghost">
+                    <i class="fa-solid fa-film"></i>
+                    Danh sách phim
+                </a>
+                <a href="{{ route('admin.the-loais.create') }}" class="movie-action-btn is-primary">
+                    <i class="fa-solid fa-plus"></i>
+                    Thêm thể loại
+                </a>
             </div>
+        </section>
 
-            <div class="w-full lg:w-48">
-                <label class="block text-xs font-semibold uppercase text-gray-400 mb-2">Trạng thái</label>
-                <select name="status"
-                    class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
-                    <option value="">-- Tất cả --</option>
-                    <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Kích hoạt</option>
-                    <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Vô hiệu hóa</option>
-                </select>
+        <section class="genre-stat-grid" aria-label="Thống kê thể loại">
+            <article class="genre-stat-card">
+                <span class="genre-stat-icon is-total"><i class="fa-solid fa-clapperboard"></i></span>
+                <div>
+                    <span>Tổng thể loại</span>
+                    <strong>{{ number_format($summary['total'] ?? 0) }}</strong>
+                </div>
+            </article>
+
+            <article class="genre-stat-card">
+                <span class="genre-stat-icon is-active"><i class="fa-solid fa-circle-check"></i></span>
+                <div>
+                    <span>Đang kích hoạt</span>
+                    <strong>{{ number_format($summary['active'] ?? 0) }}</strong>
+                </div>
+            </article>
+
+            <article class="genre-stat-card">
+                <span class="genre-stat-icon is-muted"><i class="fa-solid fa-circle-pause"></i></span>
+                <div>
+                    <span>Tạm ẩn</span>
+                    <strong>{{ number_format($summary['inactive'] ?? 0) }}</strong>
+                </div>
+            </article>
+
+            <article class="genre-stat-card">
+                <span class="genre-stat-icon is-linked"><i class="fa-solid fa-link"></i></span>
+                <div>
+                    <span>Có phim liên kết</span>
+                    <strong>{{ number_format($summary['with_movies'] ?? 0) }}</strong>
+                </div>
+            </article>
+        </section>
+
+        <form action="{{ route('admin.the-loais.index') }}" method="GET" class="genre-filter-panel">
+            <label class="genre-filter-field">
+                <span>Tìm kiếm</span>
+                <div class="genre-filter-control">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input
+                        type="text"
+                        name="search"
+                        value="{{ request('search') }}"
+                        placeholder="Nhập tên thể loại, ví dụ: Hành động..."
+                    >
+                </div>
+            </label>
+
+            <label class="genre-filter-field is-status">
+                <span>Trạng thái</span>
+                <div class="genre-filter-control">
+                    <i class="fa-solid fa-sliders"></i>
+                    <select name="status">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="1" @selected(request('status') === '1')>Đang kích hoạt</option>
+                        <option value="0" @selected(request('status') === '0')>Tạm ẩn</option>
+                    </select>
+                </div>
+            </label>
+
+            <div class="genre-filter-actions">
+                <button type="submit" class="movie-action-btn is-primary">
+                    <i class="fa-solid fa-filter"></i>
+                    Lọc dữ liệu
+                </button>
+                <a href="{{ route('admin.the-loais.index') }}" class="movie-action-btn is-soft">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Đặt lại
+                </a>
             </div>
-
-            <button type="submit"
-                class="rounded-xl bg-[#d99a32] px-6 py-3 font-semibold text-black transition hover:bg-[#e6a940]">
-                <i class="fa-solid fa-search mr-2"></i>Tìm kiếm
-            </button>
-
-            <a href="{{ route('admin.the-loais.index') }}"
-                class="rounded-xl border border-white/10 bg-white/5 px-6 py-3 font-semibold text-white transition hover:bg-white/10">
-                <i class="fa-solid fa-redo mr-2"></i>Đặt lại
-            </a>
-
         </form>
 
-
-        {{-- TABLE --}}
-        <div class="mt-6 overflow-hidden rounded-3xl border border-white/10">
-
-            <div class="overflow-x-auto">
-
-                <table class="w-full min-w-[800px] text-left">
-
-                    <thead class="bg-white/5 text-xs uppercase tracking-wider text-gray-400">
-
-                        <tr>
-
-                            <th class="px-5 py-4">STT</th>
-
-                            <th class="px-5 py-4">Tên Thể Loại</th>
-
-                            <th class="px-5 py-4">Mô Tả</th>
-
-                            <th class="px-5 py-4">Số Phim</th>
-
-                            <th class="px-5 py-4">Trạng Thái</th>
-
-                            <th class="px-5 py-4 text-right">Hành Động</th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody class="divide-y divide-white/5">
-
-                        @forelse ($theLoais as $key => $theLoai)
-                            <tr class="bg-[#0f0f0f] transition hover:bg-white/5">
-
-                                <td class="px-5 py-5 text-gray-400">
-
-                                    #{{ ($theLoais->currentPage() - 1) * $theLoais->perPage() + $key + 1 }}
-
-                                </td>
-
-                                <td class="px-5 py-5 text-white font-bold">
-
-                                    {{ $theLoai->ten_the_loai }}
-
-                                </td>
-
-                                <td class="px-5 py-5 text-gray-300">
-
-                                    {{ Str::limit($theLoai->mo_ta ?? '-', 50) }}
-
-                                </td>
-
-                                <td class="px-5 py-5">
-
-                                    <span
-                                        class="rounded-full {{ $theLoai->phims_count > 0 ? 'bg-blue-500/15 text-blue-300' : 'bg-gray-500/15 text-gray-300' }} px-3 py-1 text-xs font-medium">
-                                        {{ $theLoai->phims_count }}
-                                    </span>
-
-                                </td>
-
-                                <td class="px-5 py-5">
-
-                                    @if ($theLoai->trang_thai)
-                                        <span
-                                            class="rounded-full bg-green-500/15 px-3 py-1 text-xs font-medium text-green-300">
-                                            <i class="fa-solid fa-check-circle mr-1"></i>Kích hoạt
-                                        </span>
-                                    @else
-                                        <span
-                                            class="rounded-full bg-gray-500/15 px-3 py-1 text-xs font-medium text-gray-300">
-                                            <i class="fa-solid fa-ban mr-1"></i>Vô hiệu
-                                        </span>
-                                    @endif
-
-                                </td>
-
-                                <td class="px-5 py-5 align-middle">
-
-                                    <div class="flex items-center justify-end gap-3 whitespace-nowrap">
-
-                                        <a href="{{ route('admin.the-loais.edit', $theLoai) }}"
-                                            class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300 transition hover:bg-yellow-500/25"
-                                            title="Chỉnh sửa">
-
-                                            <i class="fa-solid fa-pen text-base leading-none"></i>
-
-                                        </a>
-
-                                        <form action="{{ route('admin.the-loais.destroy', $theLoai) }}" method="POST"
-                                            class="inline">
-
-                                            @csrf
-                                            @method('DELETE')
-
-                                            <button type="submit"
-                                                onclick="return confirm('Bạn có chắc muốn xóa thể loại này?')"
-                                                class="flex aspect-square h-10 w-10 items-center justify-center rounded-xl bg-red-500/15 text-red-300 transition hover:bg-red-500/25"
-                                                title="Xóa">
-
-                                                <i class="fa-solid fa-trash text-base"></i>
-
-                                            </button>
-
-                                        </form>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-
-                        @empty
-
-                            <tr>
-
-                                <td colspan="6" class="px-5 py-16 text-center text-gray-500">
-
-                                    <i class="fa-solid fa-inbox mr-2"></i>Không tìm thấy thể loại phim nào
-
-                                </td>
-
-                            </tr>
-                        @endforelse
-
-                    </tbody>
-
-                </table>
-
+        <section class="genre-table-panel">
+            <div class="genre-table-head">
+                <div>
+                    <span class="genre-kicker">
+                        <i class="fa-solid fa-list-check"></i>
+                        Bảng quản lý
+                    </span>
+                    <h2>Thể loại phim</h2>
+                </div>
+                <div class="genre-result-count">
+                    {{ number_format($theLoais->total()) }} kết quả
+                </div>
             </div>
 
-        </div>
+            <div class="genre-table-wrap">
+                <table class="genre-admin-table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Thể loại</th>
+                            <th>Mô tả</th>
+                            <th>Slug</th>
+                            <th>Số phim</th>
+                            <th>Trạng thái</th>
+                            <th class="is-right">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($theLoais as $key => $theLoai)
+                            <tr>
+                                <td class="genre-index-cell">
+                                    #{{ ($theLoais->currentPage() - 1) * $theLoais->perPage() + $key + 1 }}
+                                </td>
+                                <td>
+                                    <div class="genre-title-cell">
+                                        <span class="genre-icon">
+                                            <i class="fa-solid fa-ticket"></i>
+                                        </span>
+                                        <div class="genre-title-copy">
+                                            <strong>{{ $theLoai->ten_the_loai }}</strong>
+                                            <small>ID {{ $theLoai->id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <p class="genre-desc">
+                                        {{ \Illuminate\Support\Str::limit($theLoai->mo_ta ?: 'Chưa có mô tả cho thể loại này.', 86) }}
+                                    </p>
+                                </td>
+                                <td>
+                                    <code class="genre-slug">{{ $theLoai->slug ?: 'chua-co-slug' }}</code>
+                                </td>
+                                <td>
+                                    <span class="genre-movie-count {{ $theLoai->phims_count > 0 ? 'has-movies' : '' }}">
+                                        <i class="fa-solid fa-film"></i>
+                                        {{ number_format($theLoai->phims_count) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    @if ($theLoai->trang_thai)
+                                        <span class="genre-status is-active">
+                                            <i class="fa-solid fa-circle-check"></i>
+                                            Đang bật
+                                        </span>
+                                    @else
+                                        <span class="genre-status is-inactive">
+                                            <i class="fa-solid fa-circle-pause"></i>
+                                            Tạm ẩn
+                                        </span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div class="genre-row-actions">
+                                        <a
+                                            href="{{ route('admin.the-loais.edit', $theLoai) }}"
+                                            class="movie-icon-btn is-edit"
+                                            title="Chỉnh sửa thể loại"
+                                            aria-label="Chỉnh sửa {{ $theLoai->ten_the_loai }}"
+                                        >
+                                            <i class="fa-solid fa-pen"></i>
+                                        </a>
 
-       @include('components.admin-pagination', ['paginator' => $theLoais])
+                                        @if ($theLoai->phims_count > 0)
+                                            <button
+                                                type="button"
+                                                class="movie-icon-btn is-delete genre-delete-disabled"
+                                                title="Không thể xóa vì đang có phim liên kết"
+                                                aria-label="Không thể xóa {{ $theLoai->ten_the_loai }}"
+                                                disabled
+                                            >
+                                                <i class="fa-solid fa-lock"></i>
+                                            </button>
+                                        @else
+                                            <form action="{{ route('admin.the-loais.destroy', $theLoai) }}" method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button
+                                                    type="submit"
+                                                    onclick="return confirm('Bạn có chắc muốn xóa thể loại này?')"
+                                                    class="movie-icon-btn is-delete"
+                                                    title="Xóa thể loại"
+                                                    aria-label="Xóa {{ $theLoai->ten_the_loai }}"
+                                                >
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7">
+                                    <div class="genre-empty-state">
+                                        <span><i class="fa-solid fa-folder-open"></i></span>
+                                        <h3>Chưa tìm thấy thể loại phù hợp</h3>
+                                        <p>Thử đổi từ khóa, bỏ bộ lọc trạng thái hoặc tạo thể loại mới cho kho phim.</p>
+                                        <a href="{{ route('admin.the-loais.create') }}" class="movie-action-btn is-primary">
+                                            <i class="fa-solid fa-plus"></i>
+                                            Thêm thể loại
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
+            <div class="genre-pagination">
+                @include('components.admin-pagination', ['paginator' => $theLoais])
+            </div>
+        </section>
     </div>
-
 @endsection

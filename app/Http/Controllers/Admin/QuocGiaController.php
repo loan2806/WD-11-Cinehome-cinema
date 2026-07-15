@@ -19,18 +19,29 @@ class QuocGiaController extends Controller
      */
     public function index(Request $request)
     {
-        $query = QuocGia::query();
+        $query = QuocGia::withCount('phims');
 
-        if ($request->search) {
+        if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('ten_quoc_gia', 'like', '%' . $request->search . '%')
                     ->orWhere('ma_quoc_gia', 'like', '%' . $request->search . '%');
             });
         }
 
-        $countries = $query->latest()->paginate(10);
+        if ($request->filled('status')) {
+            $query->where('trang_thai', $request->status);
+        }
 
-        return view('admin.quoc-gias.index', compact('countries'));
+        $countries = $query->latest()->paginate(20)->withQueryString();
+
+        $summary = [
+            'total' => QuocGia::count(),
+            'active' => QuocGia::where('trang_thai', 1)->count(),
+            'inactive' => QuocGia::where('trang_thai', 0)->count(),
+            'with_movies' => QuocGia::has('phims')->count(),
+        ];
+
+        return view('admin.quoc-gias.index', compact('countries', 'summary'));
     }
 
     /**
@@ -73,6 +84,8 @@ class QuocGiaController extends Controller
      */
     public function edit(QuocGia $quocGia)
     {
+        $quocGia->loadCount('phims');
+
         return view('admin.quoc-gias.edit', compact('quocGia'));
     }
 

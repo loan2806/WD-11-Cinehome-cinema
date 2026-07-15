@@ -30,9 +30,16 @@ class TheloaisController extends Controller
             $query->where('trang_thai', $request->status);
         }
 
-        $theLoais = $query->latest()->paginate(20);
+        $theLoais = $query->latest()->paginate(20)->withQueryString();
 
-        return view('admin.the-loais.index', compact('theLoais'));
+        $summary = [
+            'total' => TheLoai::count(),
+            'active' => TheLoai::where('trang_thai', 1)->count(),
+            'inactive' => TheLoai::where('trang_thai', 0)->count(),
+            'with_movies' => TheLoai::has('phims')->count(),
+        ];
+
+        return view('admin.the-loais.index', compact('theLoais', 'summary'));
     }
 
     /*
@@ -81,6 +88,8 @@ class TheloaisController extends Controller
     */
     public function edit(TheLoai $theLoai)
     {
+        $theLoai->loadCount('phims');
+
         return view('admin.the-loais.edit', compact('theLoai'));
     }
 

@@ -1,213 +1,390 @@
 @extends('layouts.admin')
 
-@section('page-title', 'Thêm Suất Chiếu')
+@section('page-title', 'Thêm suất chiếu')
+@section('page-subtitle', 'Lên lịch chiếu đơn lẻ hoặc tạo chuỗi suất chiếu hàng loạt')
+
+@php
+    $selectedLoaiTao = old('loai_tao', 'don_le');
+    $selectedPhimId = old('phim_id', request('phim_id'));
+    $selectedRapId = old('rap_chieu_phim_id', request('rap_chieu_phim_id'));
+    $selectedPhongId = old('phong_chieu_id', $phongChieuId ?? request('phong_chieu_id'));
+    $selectedKhungGio = old('khung_gio', []);
+    $selectedKhungGio = is_array($selectedKhungGio) ? $selectedKhungGio : [];
+    $khungGioMacDinh = ['08:30', '11:00', '13:30', '16:00', '18:30', '21:00', '23:30'];
+@endphp
 
 @section('content')
+<div class="showtime-create-page">
+    @include('admin.partials.flash')
 
-    <div class="admin-panel space-y-6">
-
-        {{-- HEADER CONTROL --}}
-        <div class="panel-header flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-[#110c06]/30 p-5 rounded-2xl border border-[#d99a32]/10 backdrop-blur-md">
-            <div>
-                <h5 class="text-2xl font-black text-white m-0 flex items-center gap-2">
-                    <i class="fa-solid fa-calendar-plus text-[#d99a32]"></i> Thêm suất chiếu mới
-                </h5>
-                <small class="text-gray-400 block mt-1">Cấu hình lên lịch chiếu đơn lẻ hoặc rải chuỗi suất chiếu hàng loạt tự động hóa hệ thống.</small>
-            </div>
-            <a href="{{ route('admin.suat-chieus.index') }}" class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/10 no-underline cursor-pointer">
-                <i class="fa-solid fa-arrow-left"></i> Quay lại
-            </a>
+    <section class="showtime-hero-panel">
+        <div>
+            <span class="showtime-kicker">
+                <i class="fa-solid fa-calendar-plus"></i>
+                Trung tâm lên lịch
+            </span>
+            <h2>Thêm suất chiếu mới</h2>
+            <p>
+                Cấu hình lịch chiếu đơn lẻ hoặc rải chuỗi suất chiếu hàng loạt. Giao diện được gom theo từng bước
+                để giảm nhầm phòng, nhầm giờ và dễ kiểm tra trước khi lưu.
+            </p>
         </div>
 
-        {{-- 🛑 NÂNG CẤP CAO CẤP: BẢNG MONITOR BÁO SUẤT CHIẾU BỊ TRÙNG LỊCH CHI TIẾT --}}
-        @if (session('suat_chieu_trung_danh_sach'))
-            <div class="rounded-2xl border border-red-500/40 bg-red-500/10 p-5 space-y-3">
-                <h4 class="text-base font-black text-red-400 uppercase tracking-wider m-0 flex items-center gap-2">
-                    <i class="fa-solid fa-triangle-exclamation"></i> Phát hiện trùng lịch phòng chiếu dữ dội!
-                </h4>
-                <p class="text-sm text-gray-300 m-0">Hệ thống đã chặn lệnh ghi vì phát hiện các khung giờ bạn chọn đè lên lịch của các suất chiếu sau:</p>
-                
-                <div class="overflow-x-auto rounded-xl border border-red-500/20 bg-black/40">
-                    <table class="w-full text-left border-collapse text-sm text-gray-300">
-                        <thead>
-                            <tr class="bg-red-950/40 border-b border-red-500/20 text-red-400 font-bold">
-                                <th class="p-3">ID Suất</th>
-                                <th class="p-3">Tên Phim Đang Chiếm Chỗ</th>
-                                <th class="p-3">Phòng Máy</th>
-                                <th class="p-3">Thời Gian Chiếu Thực Tế</th>
-                                <th class="p-3 text-center">Hành Động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (session('suat_chieu_trung_danh_sach') as $scTrung)
-                                <tr class="border-b border-white/5 hover:bg-white/5">
-                                    <td class="p-3 font-mono text-gray-400">#{{ $scTrung->id }}</td>
-                                    <td class="p-3 font-bold text-white">{{ $scTrung->phim->ten_phim ?? 'Không rõ' }}</td>
-                                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-white/10 text-xs font-bold text-gray-300">{{ $scTrung->phongChieu->ten_phong ?? 'Không rõ' }}</span></td>
-                                    <td class="p-3 text-amber-400 font-semibold">{{ \Carbon\Carbon::parse($scTrung->thoi_gian_chieu)->format('H:i d/m/Y') }} → {{ \Carbon\Carbon::parse($scTrung->thoi_gian_ket_thuc)->format('H:i d/m/Y') }}</td>
-                                    <td class="p-3 text-center">
-                                        <a href="{{ route('admin.suat-chieus.edit', $scTrung->id) }}" target="_blank" class="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white no-underline transition shadow">
-                                            <i class="fa-solid fa-screwdriver-wrench"></i> Sửa suất này
-                                        </a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        @endif
+        <div class="showtime-hero-actions">
+            <a href="{{ route('admin.suat-chieus.index') }}" class="movie-action-btn is-ghost">
+                <i class="fa-solid fa-arrow-left"></i>
+                Danh sách suất chiếu
+            </a>
+            <button type="submit" form="showtimeCreateForm" class="movie-action-btn is-primary">
+                <i class="fa-solid fa-floppy-disk"></i>
+                Xác nhận lên lịch
+            </button>
+        </div>
+    </section>
 
-        @if ($errors->any())
-            <div class="rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
-                <ul class="list-inside list-disc text-red-400 m-0 p-0 text-sm font-semibold space-y-1">
-                    @foreach ($errors->all() as $error) <li>{{ $error }}</li> @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <form action="{{ route('admin.suat-chieus.store') }}" method="POST" class="space-y-6 m-0">
-            @csrf
-
-            {{-- PHÂN KHU 1: THÔNG TIN GỐC CỐ ĐỊNH (PHIM - RẠP - PHÒNG) --}}
-            <div class="grid grid-cols-1 gap-5 md:grid-cols-3">
-                <div class="space-y-2">
-                    <label class="text-sm text-gray-400 font-bold block">Phim Trình Chiếu <span class="text-red-400">*</span></label>
-                    <select name="phim_id" id="phim_id" required class="w-full h-11 rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                        <option value="">-- Chọn Phim --</option>
-                        @foreach ($phims as $phim)
-                            <option value="{{ $phim->id }}" data-thoi-luong="{{ $phim->thoi_luong }}" {{ old('phim_id') == $phim->id ? 'selected' : '' }}>
-                                {{ $phim->ten_phim }} ({{ $phim->thoi_luong ?? 90 }} phút)
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-sm text-gray-400 font-bold block">Cơ Sở Rạp Phim <span class="text-red-400">*</span></label>
-                    <select name="rap_chieu_phim_id" id="rap_chieu_phim_id" required class="w-full h-11 rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                        <option value="">-- Chọn Rạp --</option>
-                        @foreach ($rapChieuPhims as $rap)
-                            <option value="{{ $rap->id }}" {{ old('rap_chieu_phim_id') == $rap->id ? 'selected' : '' }}>{{ $rap->ten_rap }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="space-y-2">
-                    <label class="text-sm text-gray-400 font-bold block">Phòng Chiếu Mục Tiêu <span class="text-red-400">*</span></label>
-                    <select name="phong_chieu_id" id="phong_chieu_id" required class="w-full h-11 rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition">
-                        <option value="">-- Chọn Phòng --</option>
-                        @foreach ($phongChieus ?? [] as $phong)
-                            <option value="{{ $phong->id }}" {{ old('phong_chieu_id') == $phong->id ? 'selected' : '' }}>{{ $phong->ten_phong }} ({{ strtoupper($phong->loai_phong) }})</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            {{-- PHÂN KHU CENTRAL: CHỌN PHƯƠNG THỨC LÊN LỊCH CHIẾU --}}
-            <div class="p-5 rounded-2xl border border-[#d99a32]/20 bg-[#110b06]/40 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                <div class="space-y-1">
-                    <label class="text-base text-[#f4c56a] font-black uppercase tracking-wider block m-0">Phương thức cấu hình lịch</label>
-                    <p class="text-xs text-gray-400 m-0">Chọn hình thức lên lịch đơn lẻ hoặc rải chuỗi tự động hàng loạt theo ngày.</p>
-                </div>
+    @if (session('suat_chieu_trung_danh_sach'))
+        <section class="showtime-alert is-danger">
+            <div class="showtime-alert-head">
+                <span><i class="fa-solid fa-triangle-exclamation"></i></span>
                 <div>
-                    <select name="loai_tao" id="loai_tao" required class="w-full rounded-xl border-2 border-[#d99a32]/30 bg-[#1c120a] px-4 h-12 text-white font-bold outline-none focus:border-[#d99a32] transition cursor-pointer">
-                        <option value="don_le" {{ old('loai_tao', 'don_le') === 'don_le' ? 'selected' : '' }}>Cấu hình 1 suất chiếu đơn lẻ</option>
-                        <option value="hang_loat" {{ old('loai_tao') === 'hang_loat' ? 'selected' : '' }}>Rải chuỗi suất chiếu hàng loạt tự động</option>
-                    </select>
+                    <strong>Phát hiện trùng lịch phòng chiếu</strong>
+                    <p>Hệ thống đã chặn thao tác vì khung giờ bạn chọn đè lên các suất chiếu bên dưới.</p>
                 </div>
             </div>
 
-            {{-- PHÂN KHU NHÁNH ĐƠN LẺ --}}
-            <div id="khu_don_le" class="grid grid-cols-1 gap-5 md:grid-cols-2 transition-all duration-300">
-                <div class="space-y-2">
-                    <label class="text-sm text-gray-400 font-bold block">Chọn Ngày Chiếu <span class="text-red-400">*</span></label>
-                    <input type="date" name="ngay_chieu_don_le" id="ngay_chieu_don_le" min="{{ date('Y-m-d') }}" value="{{ old('ngay_chieu_don_le') }}" class="w-full h-11 rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition cursor-pointer [&::-webkit-calendar-picker-indicator]:invert">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-sm text-gray-400 font-bold block">Chọn Giờ Khởi Chiếu <span class="text-red-400">*</span></label>
-                    <input type="time" name="gio_chieu_don_le" id="gio_chieu_don_le" value="{{ old('gio_chieu_don_le') }}" class="w-full h-11 rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition cursor-pointer [&::-webkit-calendar-picker-indicator]:invert">
-                </div>
-            </div>
-
-            {{-- PHÂN KHU NHÁNH HÀNG LOẠT --}}
-            <div id="khu_hang_loat" class="hidden space-y-5 transition-all duration-300">
-                <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-                    <div class="space-y-2">
-                        <label class="text-sm text-gray-400 font-bold block">Từ ngày <span class="text-red-400">*</span></label>
-                        <input type="date" name="ngay_bat_dau" id="ngay_bat_dau" min="{{ date('Y-m-d') }}" value="{{ old('ngay_bat_dau') }}" class="w-full h-11 rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition cursor-pointer [&::-webkit-calendar-picker-indicator]:invert">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-sm text-gray-400 font-bold block">Đến hết ngày <span class="text-red-400">*</span></label>
-                        <input type="date" name="ngay_ket_thuc" id="ngay_ket_thuc" min="{{ date('Y-m-d') }}" value="{{ old('ngay_ket_thuc') }}" class="w-full h-11 rounded-xl border border-white/10 bg-[#151515] px-3 text-sm text-white outline-none focus:border-[#d99a32] transition cursor-pointer [&::-webkit-calendar-picker-indicator]:invert">
-                    </div>
-                </div>
-
-                <div class="p-5 rounded-2xl border border-white/5 bg-white/5 space-y-4">
-                    <label class="text-sm text-[#f4c56a] font-black uppercase tracking-wider block">Chọn các khung giờ chiếu trong ngày <span class="text-red-400">*</span></label>
-                    <div class="flex flex-wrap gap-3" id="khung_gio_checkboxes">
-                        @php $khungGioMacDinh = ['08:30', '11:00', '13:30', '16:00', '18:30', '21:00', '23:30']; @endphp
-                        @foreach($khungGioMacDinh as $gio)
-                            <label class="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-[#1a1a1a] cursor-pointer select-none transition hover:border-[#d99a32]">
-                                <input type="checkbox" name="khung_gio[]" value="{{ $gio }}" class="accent-[#d99a32]">
-                                <span class="text-sm font-bold text-gray-200">{{ $gio }}</span>
-                            </label>
+            <div class="showtime-conflict-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID suất</th>
+                            <th>Phim đang chiếm chỗ</th>
+                            <th>Phòng</th>
+                            <th>Thời gian chiếu</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (session('suat_chieu_trung_danh_sach') as $scTrung)
+                            <tr>
+                                <td>#{{ $scTrung->id }}</td>
+                                <td>{{ $scTrung->phim->ten_phim ?? 'Không rõ' }}</td>
+                                <td>{{ $scTrung->phongChieu->ten_phong ?? 'Không rõ' }}</td>
+                                <td>
+                                    {{ \Carbon\Carbon::parse($scTrung->thoi_gian_chieu)->format('H:i d/m/Y') }}
+                                    -
+                                    {{ \Carbon\Carbon::parse($scTrung->thoi_gian_ket_thuc)->format('H:i d/m/Y') }}
+                                </td>
+                                <td>
+                                    <a href="{{ route('admin.suat-chieus.edit', $scTrung->id) }}" target="_blank">
+                                        Sửa suất này <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                    </a>
+                                </td>
+                            </tr>
                         @endforeach
-                    </div>
-                    <div class="pt-4 border-t border-white/5 flex items-center gap-3 max-w-sm">
-                        <input type="time" id="custom_time_input" class="h-10 rounded-xl border border-white/10 bg-[#151515] px-3 text-white outline-none text-sm cursor-pointer [&::-webkit-calendar-picker-indicator]:invert">
-                        <button type="button" id="btn_add_custom_time" class="h-10 px-4 text-xs font-bold rounded-xl bg-gradient-to-r from-gray-800 to-gray-700 text-gray-300 hover:from-[#d99a32] hover:to-[#8a4a21] hover:text-white transition border-0 cursor-pointer">+ Chèn khung giờ khác</button>
-                    </div>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    @endif
+
+    @if ($errors->any())
+        <section class="showtime-alert is-danger">
+            <div class="showtime-alert-head">
+                <span><i class="fa-solid fa-circle-exclamation"></i></span>
+                <div>
+                    <strong>Vui lòng kiểm tra lại thông tin</strong>
+                    <p>Có {{ $errors->count() }} lỗi cần xử lý trước khi tạo suất chiếu.</p>
                 </div>
             </div>
+            <ul class="showtime-error-list">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
 
-            {{-- 💡 NÂNG CẤP CAO CẤP: KHU VỰC ĐIỀN BIỂU GIÁ NGÀY LỄ (TỰ ĐỘNG TRIGGER KHI PHÁT HIỆN NGÀY LỄ) --}}
-            <div id="khu_vuc_gia_ngay_le" class="p-5 rounded-2xl border-2 border-amber-500/40 bg-amber-500/5 space-y-3 hidden transition-all duration-300">
-                <div class="flex items-center gap-2 text-amber-400">
-                    <i class="fa-solid fa-gifts text-lg"></i>
-                    <label class="text-sm font-black uppercase tracking-wider block m-0">
-                        Cấu hình giá vé ngày lễ: <span id="ten_ngay_le_label" class="text-white font-black underline"></span>
-                    </label>
-                </div>
-                <div class="max-w-md space-y-2">
-                    <div class="relative flex items-center">
-                        <input type="number" name="gia_ve_ngay_le" id="gia_ve_ngay_le" placeholder="Nhập giá vé áp dụng riêng cho ngày lễ này..." class="h-11 w-full rounded-xl border border-amber-500/30 bg-[#151515] pl-4 pr-12 text-sm text-amber-400 font-black outline-none focus:border-amber-500 transition">
-                        <span class="absolute right-4 text-xs text-amber-500/60 font-bold select-none">VND</span>
+    <form id="showtimeCreateForm" action="{{ route('admin.suat-chieus.store') }}" method="POST" class="showtime-form">
+        @csrf
+
+        <div class="showtime-form-layout">
+            <main class="showtime-main">
+                <section class="showtime-panel">
+                    <div class="showtime-panel-head">
+                        <span><i class="fa-solid fa-clapperboard"></i></span>
+                        <div>
+                            <h3>1. Chọn phim và phòng chiếu</h3>
+                            <p>Xác định phim, rạp và phòng trước khi chọn khung giờ.</p>
+                        </div>
                     </div>
-                    <p class="text-xs text-amber-400/80 m-0">💡 Hệ thống phát hiện lịch chiếu của bạn dính vào ngày lễ lớn tại Việt Nam. Vui lòng đặt giá riêng.</p>
-                </div>
-            </div>
 
-            {{-- CẤU HÌNH BIỂU GIÁ THỦ CÔNG --}}
-            <div class="p-5 rounded-2xl border border-white/5 bg-white/5 space-y-3">
-                <label class="text-sm text-[#f4c56a] font-black uppercase tracking-wider block m-0">Ghi Đè Biểu Giá Suất Chiếu Tùy Chỉnh (Ngày Thường / Cuối Tuần)</label>
-                <div class="max-w-md space-y-2">
-                    <div class="relative flex items-center">
-                        <input type="number" name="gia_ve_tuy_chinh" placeholder="Bỏ trống để dùng ma trận giá tự động..." value="{{ old('gia_ve_tuy_chinh') }}" class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] pl-4 pr-12 text-sm text-[#f4c56a] font-black outline-none focus:border-[#d99a32] transition">
-                        <span class="absolute right-4 text-xs text-gray-500 font-bold select-none">VND</span>
+                    <div class="showtime-grid">
+                        <label class="showtime-field">
+                            <span>Phim trình chiếu <b>*</b></span>
+                            <select name="phim_id" id="phim_id" required>
+                                <option value="">Chọn phim</option>
+                                @foreach ($phims as $phim)
+                                    <option
+                                        value="{{ $phim->id }}"
+                                        data-thoi-luong="{{ $phim->thoi_luong }}"
+                                        @selected((string) $selectedPhimId === (string) $phim->id)
+                                    >
+                                        {{ $phim->ten_phim }} ({{ $phim->thoi_luong ?? 90 }} phút)
+                                    </option>
+                                @endforeach
+                            </select>
+                        </label>
+
+                        <label class="showtime-field">
+                            <span>Rạp chiếu <b>*</b></span>
+                            <select name="rap_chieu_phim_id" id="rap_chieu_phim_id" required>
+                                <option value="">Chọn rạp</option>
+                                @foreach ($rapChieuPhims as $rap)
+                                    <option value="{{ $rap->id }}" @selected((string) $selectedRapId === (string) $rap->id)>
+                                        {{ $rap->ten_rap }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </label>
+
+                        <label class="showtime-field">
+                            <span>Phòng chiếu <b>*</b></span>
+                            <select name="phong_chieu_id" id="phong_chieu_id" required>
+                                <option value="">Chọn phòng</option>
+                                @foreach ($phongChieus ?? [] as $phong)
+                                    <option
+                                        value="{{ $phong->id }}"
+                                        data-rap-id="{{ $phong->rap_chieu_phim_id }}"
+                                        data-room-type="{{ strtoupper($phong->loai_phong) }}"
+                                        @selected((string) $selectedPhongId === (string) $phong->id)
+                                    >
+                                        {{ $phong->ten_phong }} ({{ strtoupper($phong->loai_phong) }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </label>
                     </div>
-                    <p class="text-xs text-gray-500 m-0 leading-relaxed">💡 Hãy điền số tiền vào đây nếu muốn gán giá cố định thủ công.</p>
-                </div>
-            </div>
+                </section>
 
-            {{-- MONITOR GIÁM SÁT --}}
-            <div class="p-5 rounded-2xl border border-white/5 bg-white/5 space-y-3">
-                <label class="text-xs text-gray-400 font-black uppercase tracking-widest block m-0"><i class="fa-solid fa-desktop text-[#d99a32] mr-1"></i> Hệ Thống Monitor Suất Chiếu Tự Động Real-time</label>
-                <div class="space-y-2">
-                    <input type="text" id="thoi_luong_preview" class="w-full rounded-xl border border-0 bg-white/5 px-4 py-2.5 text-[#f4c56a] font-black outline-none text-sm shadow-inner" value="" readonly placeholder="Chọn thông số lịch để hiển thị bảng phân tích dòng thời gian...">
-                </div>
-            </div>
+                <section class="showtime-panel">
+                    <div class="showtime-panel-head">
+                        <span><i class="fa-solid fa-sliders"></i></span>
+                        <div>
+                            <h3>2. Phương thức lên lịch</h3>
+                            <p>Tạo một suất cụ thể hoặc rải nhiều suất theo khoảng ngày.</p>
+                        </div>
+                    </div>
 
-            {{-- FOOTER ĐIỀU HƯỚNG --}}
-            <div class="flex items-center justify-end gap-3 border-t border-white/10 pt-5">
-                <a href="{{ route('admin.suat-chieus.index') }}" class="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-gray-300 transition hover:bg-white/10 hover:text-white no-underline">Hủy bỏ</a>
-                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-6 py-2.5 text-sm font-black text-white shadow-lg border-0 cursor-pointer transition hover:opacity-95 duration-200">
-                    <i class="fa-solid fa-save"></i> Xác nhận lên lịch chiếu
+                    <div class="showtime-mode-row">
+                        <label class="showtime-field">
+                            <span>Chế độ tạo lịch <b>*</b></span>
+                            <select name="loai_tao" id="loai_tao" required>
+                                <option value="don_le" @selected($selectedLoaiTao === 'don_le')>Tạo 1 suất chiếu đơn lẻ</option>
+                                <option value="hang_loat" @selected($selectedLoaiTao === 'hang_loat')>Tạo chuỗi suất chiếu hàng loạt</option>
+                            </select>
+                        </label>
+
+                        <div class="showtime-mode-note">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Hệ thống sẽ kiểm tra trùng lịch theo thời lượng phim và thời gian dọn phòng.</span>
+                        </div>
+                    </div>
+
+                    <div id="khu_don_le" class="showtime-mode-block">
+                        <div class="showtime-grid two-cols">
+                            <label class="showtime-field">
+                                <span>Ngày chiếu <b>*</b></span>
+                                <input
+                                    type="date"
+                                    name="ngay_chieu_don_le"
+                                    id="ngay_chieu_don_le"
+                                    min="{{ date('Y-m-d') }}"
+                                    value="{{ old('ngay_chieu_don_le') }}"
+                                >
+                            </label>
+
+                            <label class="showtime-field">
+                                <span>Giờ khởi chiếu <b>*</b></span>
+                                <input
+                                    type="time"
+                                    name="gio_chieu_don_le"
+                                    id="gio_chieu_don_le"
+                                    value="{{ old('gio_chieu_don_le') }}"
+                                >
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="khu_hang_loat" class="showtime-mode-block">
+                        <div class="showtime-grid two-cols">
+                            <label class="showtime-field">
+                                <span>Từ ngày <b>*</b></span>
+                                <input
+                                    type="date"
+                                    name="ngay_bat_dau"
+                                    id="ngay_bat_dau"
+                                    min="{{ date('Y-m-d') }}"
+                                    value="{{ old('ngay_bat_dau') }}"
+                                >
+                            </label>
+
+                            <label class="showtime-field">
+                                <span>Đến hết ngày <b>*</b></span>
+                                <input
+                                    type="date"
+                                    name="ngay_ket_thuc"
+                                    id="ngay_ket_thuc"
+                                    min="{{ date('Y-m-d') }}"
+                                    value="{{ old('ngay_ket_thuc') }}"
+                                >
+                            </label>
+                        </div>
+
+                        <div class="showtime-time-picker">
+                            <div>
+                                <strong>Khung giờ trong ngày <b>*</b></strong>
+                                <span>Chọn một hoặc nhiều mốc giờ để tạo lịch hàng loạt.</span>
+                            </div>
+
+                            <div class="showtime-time-list" id="khung_gio_checkboxes">
+                                @foreach ($khungGioMacDinh as $gio)
+                                    <label class="showtime-time-chip">
+                                        <input
+                                            type="checkbox"
+                                            name="khung_gio[]"
+                                            value="{{ $gio }}"
+                                            @checked(in_array($gio, $selectedKhungGio))
+                                        >
+                                        <span>{{ $gio }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+
+                            <div class="showtime-custom-time">
+                                <input type="time" id="custom_time_input">
+                                <button type="button" id="btn_add_custom_time">
+                                    <i class="fa-solid fa-plus"></i>
+                                    Chèn giờ khác
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="showtime-panel">
+                    <div class="showtime-panel-head">
+                        <span><i class="fa-solid fa-money-bill-wave"></i></span>
+                        <div>
+                            <h3>3. Biểu giá</h3>
+                            <p>Để trống giá tùy chỉnh nếu muốn dùng ma trận giá tự động của hệ thống.</p>
+                        </div>
+                    </div>
+
+                    <div id="khu_vuc_gia_ngay_le" class="showtime-holiday-price">
+                        <div class="showtime-holiday-head">
+                            <i class="fa-solid fa-gift"></i>
+                            <div>
+                                <strong>Phát hiện ngày lễ: <span id="ten_ngay_le_label"></span></strong>
+                                <small>Nhập giá riêng nếu muốn áp dụng biểu giá ngày lễ.</small>
+                            </div>
+                        </div>
+                        <label class="showtime-field">
+                            <span>Giá vé ngày lễ</span>
+                            <div class="showtime-money-input">
+                                <input
+                                    type="number"
+                                    name="gia_ve_ngay_le"
+                                    id="gia_ve_ngay_le"
+                                    value="{{ old('gia_ve_ngay_le') }}"
+                                    placeholder="Ví dụ: 120000"
+                                >
+                                <em>VND</em>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="showtime-grid two-cols">
+                        <label class="showtime-field">
+                            <span>Giá vé tùy chỉnh</span>
+                            <div class="showtime-money-input">
+                                <input
+                                    type="number"
+                                    name="gia_ve_tuy_chinh"
+                                    value="{{ old('gia_ve_tuy_chinh') }}"
+                                    placeholder="Bỏ trống để dùng giá tự động"
+                                >
+                                <em>VND</em>
+                            </div>
+                        </label>
+
+                        <div class="showtime-price-note">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>Giá tùy chỉnh sẽ ghi đè giá thường/cuối tuần. Giá ngày lễ chỉ áp dụng khi lịch rơi vào ngày lễ.</span>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <aside class="showtime-side">
+                <section class="showtime-panel showtime-monitor">
+                    <div class="showtime-panel-head">
+                        <span><i class="fa-solid fa-desktop"></i></span>
+                        <div>
+                            <h3>Monitor lịch</h3>
+                            <p>Xem nhanh thời lượng chiếm phòng trước khi tạo.</p>
+                        </div>
+                    </div>
+
+                    <textarea id="thoi_luong_preview" readonly placeholder="Chọn phim và thời gian để xem phân tích lịch..."></textarea>
+
+                    <div class="showtime-monitor-metrics">
+                        <div>
+                            <small>Dọn phòng</small>
+                            <strong>{{ $thoiGianDonPhong }} phút</strong>
+                        </div>
+                        <div>
+                            <small>Chế độ</small>
+                            <strong id="modePreview">Đơn lẻ</strong>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="showtime-panel showtime-guide">
+                    <div class="showtime-panel-head">
+                        <span><i class="fa-solid fa-lightbulb"></i></span>
+                        <div>
+                            <h3>Gợi ý vận hành</h3>
+                            <p>Các điểm nên kiểm tra trước khi lưu lịch.</p>
+                        </div>
+                    </div>
+
+                    <ul>
+                        <li><i class="fa-solid fa-check"></i> Chọn đúng rạp và phòng trước khi chọn giờ.</li>
+                        <li><i class="fa-solid fa-check"></i> Với lịch hàng loạt, tránh chọn quá nhiều khung giờ sát nhau.</li>
+                        <li><i class="fa-solid fa-check"></i> Dùng giá tùy chỉnh khi có chương trình đặc biệt.</li>
+                    </ul>
+                </section>
+            </aside>
+        </div>
+
+        <div class="showtime-savebar">
+            <div>
+                <strong>Sẵn sàng tạo suất chiếu?</strong>
+                <span>Hệ thống sẽ kiểm tra trùng lịch trước khi lưu.</span>
+            </div>
+            <div class="showtime-save-actions">
+                <a href="{{ route('admin.suat-chieus.index') }}" class="movie-action-btn is-ghost">
+                    <i class="fa-solid fa-xmark"></i>
+                    Hủy
+                </a>
+                <button type="submit" class="movie-action-btn is-primary">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    Xác nhận lên lịch
                 </button>
             </div>
-        </form>
-    </div>
-
+        </div>
+    </form>
+</div>
 @endsection
 
 @push('scripts')
@@ -217,127 +394,189 @@ document.addEventListener('DOMContentLoaded', function() {
     const khuDonLe = document.getElementById('khu_don_le');
     const khuHangLoat = document.getElementById('khu_hang_loat');
     const phimSelect = document.getElementById('phim_id');
+    const rapSelect = document.getElementById('rap_chieu_phim_id');
+    const phongSelect = document.getElementById('phong_chieu_id');
     const thoiLuongPreview = document.getElementById('thoi_luong_preview');
+    const modePreview = document.getElementById('modePreview');
     const ngayChieuDonLe = document.getElementById('ngay_chieu_don_le');
     const gioChieuDonLe = document.getElementById('gio_chieu_don_le');
-    
-    // Khối ngày lễ UI
     const khuVucGiaNgayLe = document.getElementById('khu_vuc_gia_ngay_le');
     const tenNgayLeLabel = document.getElementById('ten_ngay_le_label');
     const ngayBatDauInput = document.getElementById('ngay_bat_dau');
     const ngayKetThucInput = document.getElementById('ngay_ket_thuc');
+    const btnAddCustomTime = document.getElementById('btn_add_custom_time');
+    const customTimeInput = document.getElementById('custom_time_input');
+    const checkboxesContainer = document.getElementById('khung_gio_checkboxes');
+    const thoiGianDonPhong = {{ (int) $thoiGianDonPhong }};
 
-    const thoiGianDonPhong = {{ $thoiGianDonPhong }};
-
-    // Khai báo mảng ngày lễ cấu hình đồng bộ sang JS
     const cacNgayLeVN = {
         '01-01': 'Tết Dương Lịch',
         '04-30': 'Ngày Giải Phóng Miền Nam',
         '05-01': 'Ngày Quốc Tế Lao Động',
         '09-02': 'Ngày Quốc Khánh',
-        '09-03': 'Ngày Quốc Khánh (Ngày gối đầu)'
+        '09-03': 'Ngày Quốc Khánh dự phòng'
     };
 
-    function checkNgayLeRealtime() {
-        if (loaiParam.value === 'don_le') {
-            if (ngayChieuDonLe.value) {
-                const dateParts = ngayChieuDonLe.value.split('-'); // YYYY-MM-DD
-                const key = dateParts[1] + '-' + dateParts[2]; // MM-DD
-                if (cacNgayLeVN[key]) {
-                    tenNgayLeLabel.innerText = cacNgayLeVN[key];
-                    khuVucGiaNgayLe.style.display = 'block';
-                    return;
-                }
+    function formatTime(date) {
+        return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function filterRoomsByCinema() {
+        if (!rapSelect || !phongSelect) {
+            return;
+        }
+
+        const rapId = rapSelect.value;
+        let firstVisibleValue = '';
+        let currentStillVisible = false;
+
+        Array.from(phongSelect.options).forEach(function(option) {
+            if (!option.value) {
+                option.hidden = false;
+                return;
             }
-        } else {
-            if (ngayBatDauInput.value && ngayKetThucInput.value) {
-                let start = new Date(ngayBatDauInput.value);
-                let end = new Date(ngayKetThucInput.value);
-                let holidayFound = [];
-                
-                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                    let mm = String(d.getMonth() + 1).padStart(2, '0');
-                    let dd = String(d.getDate()).padStart(2, '0');
-                    let key = mm + '-' + dd;
-                    if (cacNgayLeVN[key] && !holidayFound.includes(cacNgayLeVN[key])) {
-                        holidayFound.push(cacNgayLeVN[key]);
-                    }
-                }
-                if (holidayFound.length > 0) {
-                    tenNgayLeLabel.innerText = holidayFound.join(', ');
-                    khuVucGiaNgayLe.style.display = 'block';
-                    return;
+
+            const isVisible = !rapId || option.dataset.rapId === rapId;
+            option.hidden = !isVisible;
+
+            if (isVisible && !firstVisibleValue) {
+                firstVisibleValue = option.value;
+            }
+
+            if (isVisible && option.selected) {
+                currentStillVisible = true;
+            }
+        });
+
+        if (rapId && !currentStillVisible) {
+            phongSelect.value = firstVisibleValue;
+        }
+    }
+
+    function checkNgayLeRealtime() {
+        const holidayFound = [];
+
+        if (loaiParam.value === 'don_le' && ngayChieuDonLe.value) {
+            const dateParts = ngayChieuDonLe.value.split('-');
+            const key = dateParts[1] + '-' + dateParts[2];
+
+            if (cacNgayLeVN[key]) {
+                holidayFound.push(cacNgayLeVN[key]);
+            }
+        }
+
+        if (loaiParam.value === 'hang_loat' && ngayBatDauInput.value && ngayKetThucInput.value) {
+            const start = new Date(ngayBatDauInput.value);
+            const end = new Date(ngayKetThucInput.value);
+
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const key = mm + '-' + dd;
+
+                if (cacNgayLeVN[key] && !holidayFound.includes(cacNgayLeVN[key])) {
+                    holidayFound.push(cacNgayLeVN[key]);
                 }
             }
         }
+
+        if (holidayFound.length > 0) {
+            tenNgayLeLabel.textContent = holidayFound.join(', ');
+            khuVucGiaNgayLe.classList.add('is-visible');
+            khuVucGiaNgayLe.style.display = 'block';
+            return;
+        }
+
+        tenNgayLeLabel.textContent = '';
+        khuVucGiaNgayLe.classList.remove('is-visible');
         khuVucGiaNgayLe.style.display = 'none';
     }
 
     function switchFormMode() {
-        if (loaiParam.value === 'don_le') {
-            khuDonLe.style.display = 'grid';
-            khuHangLoat.style.display = 'none';
-        } else {
-            khuDonLe.style.display = 'none';
-            khuHangLoat.style.display = 'block';
-        }
+        const isSingle = loaiParam.value === 'don_le';
+        khuDonLe.style.display = isSingle ? 'block' : 'none';
+        khuHangLoat.style.display = isSingle ? 'none' : 'block';
+        modePreview.textContent = isSingle ? 'Đơn lẻ' : 'Hàng loạt';
         checkNgayLeRealtime();
         updateTimePreview();
     }
-    
-    loaiParam.addEventListener('change', switchFormMode);
-    ngayChieuDonLe.addEventListener('change', checkNgayLeRealtime);
-    ngayBatDauInput.addEventListener('change', checkNgayLeRealtime);
-    ngayKetThucInput.addEventListener('change', checkNgayLeRealtime);
-    
-    switchFormMode();
 
     function updateTimePreview() {
         const selectedOption = phimSelect.options[phimSelect.selectedIndex];
+
         if (!selectedOption || !selectedOption.value) {
-            thoiLuongPreview.value = "Chưa có phim nào được chọn để phân tích.";
+            thoiLuongPreview.value = 'Chọn phim để hệ thống phân tích thời lượng chiếm phòng.';
             return;
         }
-        const thoiLuong = parseInt(selectedOption.dataset.thoiLuong) || 90;
-        
+
+        const thoiLuong = parseInt(selectedOption.dataset.thoiLuong, 10) || 90;
+        const tongChiếmPhong = thoiLuong + thoiGianDonPhong;
+
         if (loaiParam.value === 'don_le') {
             if (ngayChieuDonLe.value && gioChieuDonLe.value) {
                 const start = new Date(`${ngayChieuDonLe.value}T${gioChieuDonLe.value}`);
-                const end = new Date(start.getTime() + (thoiLuong + thoiGianDonPhong) * 60000);
-                const formatTime = (d) => d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                thoiLuongPreview.value = `Suất chiếu đơn lẻ dự kiến: ${formatTime(start)} - ${formatTime(end)} (Phòng chiếm dụng ${thoiLuong + thoiGianDonPhong} phút bao gồm dọn phòng).`;
-            } else {
-                thoiLuongPreview.value = `Phim đã chọn: Thời lượng gốc ${thoiLuong} phút (+ ${thoiGianDonPhong} phút dọn phòng vệ sinh rạp).`;
+                const end = new Date(start.getTime() + tongChiếmPhong * 60000);
+                thoiLuongPreview.value = `Suất đơn lẻ: ${formatTime(start)} - ${formatTime(end)}. Phòng bị chiếm ${tongChiếmPhong} phút, gồm ${thoiLuong} phút phim và ${thoiGianDonPhong} phút dọn phòng.`;
+                return;
             }
-        } else {
-            thoiLuongPreview.value = `Chế độ hàng loạt: Tự động rải chuỗi lịch thời lượng gốc ${thoiLuong} phút (+ ${thoiGianDonPhong} phút dọn phòng).`;
+
+            thoiLuongPreview.value = `Phim đã chọn có thời lượng ${thoiLuong} phút. Sau khi chọn ngày giờ, hệ thống sẽ tính thời gian kết thúc dự kiến.`;
+            return;
         }
+
+        const checkedTimes = checkboxesContainer.querySelectorAll('input[type="checkbox"]:checked').length;
+        thoiLuongPreview.value = `Chế độ hàng loạt: mỗi suất chiếm ${tongChiếmPhong} phút. Hiện đang chọn ${checkedTimes} khung giờ trong ngày.`;
     }
-
-    phimSelect.addEventListener('change', updateTimePreview);
-    ngayChieuDonLe.addEventListener('change', updateTimePreview);
-    gioChieuDonLe.addEventListener('change', updateTimePreview);
-
-    // Xử lý thêm khung giờ thủ công tự chế
-    const btnAddCustomTime = document.getElementById('btn_add_custom_time');
-    const customTimeInput = document.getElementById('custom_time_input');
-    const checkboxesContainer = document.getElementById('khung_gio_checkboxes');
 
     btnAddCustomTime.addEventListener('click', function() {
         const customTime = customTimeInput.value;
-        if (!customTime) { alert('Vui lòng chọn mốc giờ hợp lệ!'); return; }
-        const existingCheckboxes = checkboxesContainer.querySelectorAll('input[type="checkbox"]');
-        let isExist = false;
-        existingCheckboxes.forEach(input => { if (input.value === customTime) isExist = true; });
 
-        if (isExist) { alert('Khung giờ này đã có trong danh sách!'); return; }
+        if (!customTime) {
+            alert('Vui lòng chọn mốc giờ hợp lệ.');
+            return;
+        }
+
+        const existing = Array.from(checkboxesContainer.querySelectorAll('input[type="checkbox"]'))
+            .some(function(input) {
+                return input.value === customTime;
+            });
+
+        if (existing) {
+            alert('Khung giờ này đã có trong danh sách.');
+            return;
+        }
 
         const newLabel = document.createElement('label');
-        newLabel.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#d99a32] bg-[#1a1a1a] cursor-pointer select-none transition";
-        newLabel.innerHTML = `<input type="checkbox" name="khung_gio[]" value="${customTime}" checked class="accent-[#d99a32]"><span class="text-sm font-bold text-[#f4c56a]">${customTime}</span>`;
+        newLabel.className = 'showtime-time-chip is-custom';
+        newLabel.innerHTML = `<input type="checkbox" name="khung_gio[]" value="${customTime}" checked><span>${customTime}</span>`;
         checkboxesContainer.appendChild(newLabel);
         customTimeInput.value = '';
+        updateTimePreview();
     });
+
+    loaiParam.addEventListener('change', switchFormMode);
+    phimSelect.addEventListener('change', updateTimePreview);
+    rapSelect.addEventListener('change', function() {
+        filterRoomsByCinema();
+        updateTimePreview();
+    });
+    ngayChieuDonLe.addEventListener('change', function() {
+        checkNgayLeRealtime();
+        updateTimePreview();
+    });
+    gioChieuDonLe.addEventListener('change', updateTimePreview);
+    ngayBatDauInput.addEventListener('change', function() {
+        checkNgayLeRealtime();
+        updateTimePreview();
+    });
+    ngayKetThucInput.addEventListener('change', function() {
+        checkNgayLeRealtime();
+        updateTimePreview();
+    });
+    checkboxesContainer.addEventListener('change', updateTimePreview);
+
+    filterRoomsByCinema();
+    switchFormMode();
 });
 </script>
 @endpush
