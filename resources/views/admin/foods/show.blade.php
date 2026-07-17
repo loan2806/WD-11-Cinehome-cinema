@@ -1,180 +1,215 @@
 @extends('layouts.admin')
 
+@section('title', 'Chi tiết món')
 @section('page-title', 'Chi tiết món')
-@section('page-subtitle', 'Xem thông tin món, danh mục và biến thể')
+@section('page-subtitle', 'Xem thông tin món, danh mục, giá bán, tồn kho và cấu hình combo')
 
 @section('content')
+@php
+    $isCombo = $food->isCombo();
+    $stock = $food->stock_quantity;
+    $isLowStock = $stock <= $food->min_stock_quantity;
+    $imagePath = $food->image
+        ? asset('storage/' . (str_starts_with($food->image, 'foods/') ? $food->image : 'foods/' . $food->image))
+        : null;
+@endphp
 
+<div class="food-show-page">
     @include('admin.partials.flash')
 
-    <div class="max-w-4xl mx-auto space-y-6">
-        <div
-            class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-                <h3 class="text-lg font-black text-white">{{ $food->name }}</h3>
-                <p class="text-xs text-gray-400">
-                    SKU: {{ $food->sku ?? 'Không có' }}
-                    · Danh mục:
-                    {{ optional($food->category)->name }}
-                </p>
-            </div>
-            <div class="flex flex-wrap gap-3">
-                <a href="{{ route('admin.foods.index') }}" class="btn-admin-outline">Quay lại</a>
-                <a href="{{ route('admin.foods.edit', $food) }}" class="btn-admin">Sửa món</a>
-            </div>
+    <section class="food-show-hero">
+        <div class="food-show-media">
+            @if ($imagePath)
+                <img src="{{ $imagePath }}" alt="{{ $food->name }}">
+            @else
+                <i class="fa-solid fa-burger"></i>
+                <span>Chưa có ảnh</span>
+            @endif
         </div>
 
-        <div class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6 grid gap-6 lg:grid-cols-[260px_1fr]">
-            <div class="rounded-3xl overflow-hidden bg-white/5">
-                @if ($food->image)
-                    <img src="{{ asset('storage/foods/' . $food->image) }}" class="h-full w-full object-cover">
-                @else
-                    <div class="flex h-full min-h-[260px] items-center justify-center text-gray-400">
-                        Chưa có ảnh
-                    </div>
-                @endif
+        <div class="food-show-main">
+            <div class="food-show-tags">
+                <span class="food-show-status {{ $food->is_active ? 'is-active' : 'is-hidden' }}">
+                    {{ $food->is_active ? 'Đang bán' : 'Tạm ẩn' }}
+                </span>
+                <span>{{ $isCombo ? 'Combo' : 'Món lẻ' }}</span>
+                <span>{{ optional($food->category)->name ?? 'Chưa phân loại' }}</span>
             </div>
 
-            <div class="space-y-4">
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <div class="rounded-2xl border border-white/10 bg-[#101010] p-4">
-                        <p class="text-xs text-gray-400">Trạng thái</p>
-                        <p class="text-lg font-black text-white">{{ $food->is_active ? 'Đang bán' : 'Tạm ẩn' }}</p>
-                    </div>
-                    <div class="rounded-2xl border border-white/10 bg-[#101010] p-4">
-                        @php
-                            $isCombo = str_contains(strtolower(optional($food->category)->name), 'combo');
-                        @endphp
+            <h2>{{ $food->name }}</h2>
+            <p>{{ $food->description ?: 'Món này chưa có mô tả chi tiết.' }}</p>
 
-                        <div class="space-y-4">
-                                {{-- Thành phần / Biến thể --}}
-                                    <p class="text-xs text-gray-400">
-                                        {{ $isCombo ? 'Tổng thành phần' : 'Tổng biến thể' }}
-                                    </p>
+            <div class="food-show-code">
+                <span>SKU</span>
+                <strong>{{ $food->sku ?: 'Chưa có' }}</strong>
+            </div>
 
-                                    <p class="text-lg font-black text-white">
-                                        {{ $isCombo ? $food->comboItems->count() : $food->variants->count() }}
-                                    </p>
-
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl border border-white/10 bg-[#101010] p-4">
-                    <p class="text-xs text-gray-400">Mô tả</p>
-                    <p class="mt-2 text-sm text-gray-200">{{ $food->description ?? 'Không có mô tả' }}</p>
-                </div>
-
-                <div class="rounded-2xl border border-white/10 bg-[#101010] p-4">
-                    <p class="text-xs text-gray-400">Thông tin bổ sung</p>
-                    <ul class="mt-3 space-y-2 text-sm text-gray-200">
-                        <li>
-                            Danh mục:
-                            {{ optional($food->category)->name }}
-                        </li>
-
-                        <li>
-                            Loại:
-                            {{ str_contains(strtolower(optional($food->category)->name), 'combo') ? 'Combo' : 'Sản phẩm thường' }}
-                        </li>
-                        <li>Thêm vào: {{ $food->created_at->format('d/m/Y H:i') }}</li>
-                    </ul>
-                </div>
+            <div class="food-show-actions">
+                <a href="{{ route('admin.foods.index') }}" class="food-show-action is-soft">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Quay lại
+                </a>
+                <a href="{{ route('admin.foods.edit', $food) }}" class="food-show-action">
+                    <i class="fa-solid fa-pen"></i>
+                    Sửa món
+                </a>
+                <form method="POST" action="{{ route('admin.foods.toggle-status', $food) }}">
+                    @csrf
+                    @method('PATCH')
+                    <button type="submit" class="food-show-action is-soft">
+                        <i class="fa-solid {{ $food->is_active ? 'fa-eye-slash' : 'fa-eye' }}"></i>
+                        {{ $food->is_active ? 'Ẩn món' : 'Hiện món' }}
+                    </button>
+                </form>
             </div>
         </div>
-        @if (!str_contains(strtolower(optional($food->category)->name), 'combo'))
-            <div class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6">
-                <div class="flex items-center justify-between mb-4">
+    </section>
+
+    <section class="food-show-stats">
+        <div class="food-show-stat">
+            <span>Giá bán</span>
+            <strong>{{ number_format((float) $food->price, 0, ',', '.') }}đ</strong>
+        </div>
+        <div class="food-show-stat {{ $isLowStock ? 'is-warn' : 'is-good' }}">
+            <span>Tồn kho khả dụng</span>
+            <strong>{{ $stock }}</strong>
+        </div>
+        <div class="food-show-stat">
+            <span>{{ $isCombo ? 'Thành phần' : 'Biến thể' }}</span>
+            <strong>{{ $isCombo ? $food->comboItems->count() : $food->variants->count() }}</strong>
+        </div>
+        <div class="food-show-stat">
+            <span>Đã bán</span>
+            <strong>{{ $food->invoice_items_count }}</strong>
+        </div>
+    </section>
+
+    <div class="food-show-grid">
+        <section class="food-show-panel">
+            <div class="food-show-panel-head">
+                <div>
+                    <span class="food-show-eyebrow">Thông tin</span>
+                    <h3>Thông tin món</h3>
+                </div>
+            </div>
+
+            <div class="food-show-info-list">
+                <div>
+                    <span>Danh mục</span>
+                    <strong>{{ optional($food->category)->name ?? 'Chưa phân loại' }}</strong>
+                </div>
+                <div>
+                    <span>Loại món</span>
+                    <strong>{{ $isCombo ? 'Combo' : 'Sản phẩm thường' }}</strong>
+                </div>
+                <div>
+                    <span>Trạng thái</span>
+                    <strong>{{ $food->is_active ? 'Đang bán' : 'Tạm ẩn' }}</strong>
+                </div>
+                <div>
+                    <span>Thứ tự sắp xếp</span>
+                    <strong>{{ $food->sort_order ?? 0 }}</strong>
+                </div>
+                <div>
+                    <span>Ngày tạo</span>
+                    <strong>{{ $food->created_at?->format('d/m/Y H:i') }}</strong>
+                </div>
+                <div>
+                    <span>Cập nhật gần nhất</span>
+                    <strong>{{ $food->updated_at?->format('d/m/Y H:i') }}</strong>
+                </div>
+            </div>
+        </section>
+
+        @if (! $isCombo)
+            <section class="food-show-panel">
+                <div class="food-show-panel-head">
                     <div>
-                        <h4 class="text-lg font-black text-white">Biến thể</h4>
-                        <p class="text-xs text-gray-400">Danh sách giá và tồn kho.</p>
+                        <span class="food-show-eyebrow">Kho & giá</span>
+                        <h3>Biến thể món</h3>
                     </div>
-
-                    <a href="{{ route('admin.foods.variants.index', $food) }}" class="btn-admin-outline text-xs px-3 py-2">
-                        Quản lý biến thể
+                    <a href="{{ route('admin.foods.variants.index', $food) }}" class="food-show-small-btn">
+                        <i class="fa-solid fa-sliders"></i>
+                        Quản lý
                     </a>
                 </div>
 
-                @if ($food->variants->isEmpty())
-
-                    <div class="text-center text-gray-400 py-8">
-                        Chưa có biến thể.
-                    </div>
-                @else
-                    <div class="space-y-3">
-
-                        @foreach ($food->variants as $variant)
-                            <div class="rounded-2xl border border-white/10 bg-[#101010] p-4 flex justify-between">
-
-                                <div>
-                                    <div class="font-semibold">
-                                        {{ $variant->value }}
-                                    </div>
-
-                                    <div class="text-gray-400 text-sm">
-                                        Giá: {{ number_format($variant->price) }}đ
-                                    </div>
-
-                                    <div class="text-gray-400 text-sm">
-                                        Tồn kho: {{ $variant->stock_quantity }}
-                                    </div>
-                                </div>
-
-                                <div class="text-sm">
-                                    {{ $variant->is_active ? 'Đang bán' : 'Tạm ẩn' }}
-                                </div>
-
-                            </div>
-                        @endforeach
-
-                    </div>
-
-                @endif
-            </div>
-        @endif
-
-        @if (str_contains(strtolower(optional($food->category)->name), 'combo'))
-
-            <div class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6">
-
-                <h4 class="text-lg font-black text-white mb-4">
-                    Thành phần combo
-                </h4>
-
-                @forelse($food->comboItems as $item)
-                    <div class="rounded-2xl border border-white/10 bg-[#101010] p-4 mb-3 flex justify-between">
-
-                        <div>
-
+                <div class="food-show-variant-list">
+                    @forelse ($food->variants as $variant)
+                        <article class="food-show-variant-card {{ ! $variant->is_active ? 'is-inactive' : '' }}">
                             <div>
-                                <div class="font-semibold">
-                                    {{ $item->variant->food->name }}
-                                    ({{ $item->variant->value }})
-                                </div>
-
-                                <div class="text-gray-400 text-sm">
-                                    {{ optional($item->variant->food->category)->name }}
-                                </div>
+                                <span>Biến thể</span>
+                                <strong>{{ $variant->value ?: 'Mặc định' }}</strong>
                             </div>
-
+                            <div>
+                                <span>Giá</span>
+                                <strong>{{ number_format((float) $variant->price, 0, ',', '.') }}đ</strong>
+                            </div>
+                            <div class="{{ $variant->stock_quantity <= $food->min_stock_quantity ? 'is-low' : '' }}">
+                                <span>Tồn kho</span>
+                                <strong>{{ $variant->stock_quantity }}</strong>
+                            </div>
+                            <div>
+                                <span>Trạng thái</span>
+                                <strong>{{ $variant->is_active ? 'Đang bán' : 'Tạm ẩn' }}</strong>
+                            </div>
+                            <a href="{{ route('admin.foods.variants.edit', [$food, $variant]) }}" class="food-show-mini-action">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                        </article>
+                    @empty
+                        <div class="food-show-empty">
+                            <i class="fa-solid fa-box-open"></i>
+                            <h3>Chưa có biến thể</h3>
+                            <p>Thêm biến thể để quản lý giá bán và tồn kho cho món này.</p>
                         </div>
+                    @endforelse
+                </div>
+            </section>
+        @else
+            <section class="food-show-panel">
+                <div class="food-show-panel-head">
+                    <div>
+                        <span class="food-show-eyebrow">Combo</span>
+                        <h3>Thành phần combo</h3>
+                    </div>
+                    <a href="{{ route('admin.foods.edit', $food) }}" class="food-show-small-btn">
+                        <i class="fa-solid fa-pen"></i>
+                        Chỉnh sửa
+                    </a>
+                </div>
 
-                        <div class="font-bold">
-                            x{{ $item->quantity }}
+                <div class="food-show-combo-list">
+                    @forelse ($food->comboItems as $item)
+                        @php
+                            $variant = $item->variant;
+                            $baseFood = $variant?->doAn;
+                        @endphp
+                        <article class="food-show-combo-card">
+                            <div>
+                                <span>Món thành phần</span>
+                                <strong>{{ $baseFood?->name ?? 'Không rõ món' }}</strong>
+                                <small>{{ $variant?->value ?: 'Mặc định' }} · {{ optional($baseFood?->category)->name ?? 'Chưa phân loại' }}</small>
+                            </div>
+                            <div>
+                                <span>Số lượng trong combo</span>
+                                <strong>x{{ $item->quantity }}</strong>
+                            </div>
+                            <div class="{{ (int) ($variant?->stock_quantity ?? 0) <= $food->min_stock_quantity ? 'is-low' : '' }}">
+                                <span>Tồn kho biến thể</span>
+                                <strong>{{ (int) ($variant?->stock_quantity ?? 0) }}</strong>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="food-show-empty">
+                            <i class="fa-solid fa-box-open"></i>
+                            <h3>Combo chưa có thành phần</h3>
+                            <p>Thêm thành phần để combo có thể bán và tính tồn kho chính xác.</p>
                         </div>
-
-                    </div>
-
-                @empty
-
-                    <div class="text-center text-gray-400">
-                        Combo chưa có thành phần.
-                    </div>
-                @endforelse
-
-            </div>
-
+                    @endforelse
+                </div>
+            </section>
         @endif
     </div>
-
+</div>
 @endsection

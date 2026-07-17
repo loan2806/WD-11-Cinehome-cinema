@@ -3,97 +3,246 @@
 @section('title', 'Thông báo của tôi')
 
 @section('content')
-<div class="min-h-screen bg-[#080808] px-6 pt-28 pb-16 text-white">
-    <div class="mx-auto max-w-5xl">
+@php
+    $typeMeta = [
+        'he_thong' => [
+            'label' => 'Hệ thống',
+            'icon' => 'fa-solid fa-circle-info',
+            'class' => 'is-system',
+        ],
+        've' => [
+            'label' => 'Vé xem phim',
+            'icon' => 'fa-solid fa-ticket',
+            'class' => 'is-ticket',
+        ],
+        'diem' => [
+            'label' => 'Điểm thưởng',
+            'icon' => 'fa-solid fa-star',
+            'class' => 'is-point',
+        ],
+        'voucher' => [
+            'label' => 'Voucher',
+            'icon' => 'fa-solid fa-gift',
+            'class' => 'is-voucher',
+        ],
+        'hang_thanh_vien' => [
+            'label' => 'Hạng thành viên',
+            'icon' => 'fa-solid fa-crown',
+            'class' => 'is-rank',
+        ],
+    ];
 
-        <div class="mb-8">
-            <p class="mb-2 text-sm font-bold uppercase tracking-[0.25em] text-[#d99a32]">
-                CineHome Notifications
-            </p>
+    $filterItems = [
+        ['type' => null, 'label' => 'Tất cả', 'count' => $notificationStats['total'] ?? $thongBaos->total()],
+        ['type' => 've', 'label' => 'Vé', 'count' => $notificationStats['ve'] ?? 0],
+        ['type' => 'diem', 'label' => 'Điểm', 'count' => $notificationStats['diem'] ?? 0],
+        ['type' => 'voucher', 'label' => 'Voucher', 'count' => $notificationStats['voucher'] ?? 0],
+        ['type' => 'hang_thanh_vien', 'label' => 'Hạng', 'count' => $notificationStats['hang_thanh_vien'] ?? 0],
+        ['type' => 'he_thong', 'label' => 'Hệ thống', 'count' => $notificationStats['he_thong'] ?? 0],
+    ];
 
-            <h1 class="text-4xl font-black">
-                Thông báo <span class="text-[#d99a32]">của tôi</span>
-            </h1>
+    $currentFilter = collect($filterItems)->firstWhere('type', $activeType);
+    $latestMeta = $latestUnread
+        ? ($typeMeta[$latestUnread->loai_thong_bao] ?? $typeMeta['he_thong'])
+        : $typeMeta['he_thong'];
+@endphp
 
-            <p class="mt-3 max-w-2xl text-gray-400">
-                Theo dõi các thông báo liên quan đến vé, điểm thưởng, voucher và hạng thành viên của bạn.
-            </p>
+<section class="notification-page">
+    <div class="notification-shell">
+        <div class="notification-hero">
+            <div class="notification-hero-copy">
+                <span class="notification-eyebrow">
+                    <i class="fa-solid fa-bell"></i>
+                    Trung tâm thông báo
+                </span>
+
+                <h1>Thông báo của tôi</h1>
+                <p>Theo dõi vé đã đặt, điểm thưởng, voucher và các cập nhật quan trọng từ CineHome trong một giao diện gọn, dễ quét và thao tác nhanh.</p>
+
+                <div class="notification-hero-actions">
+                    <a href="{{ route('user.ve_xem_phim.index') }}" class="notification-primary-link">
+                        <i class="fa-solid fa-ticket"></i>
+                        Xem vé của tôi
+                    </a>
+                    <a href="{{ route('user.voucher.my') }}" class="notification-secondary-link">
+                        <i class="fa-solid fa-gift"></i>
+                        Kho voucher
+                    </a>
+                </div>
+            </div>
+
+            <aside class="notification-highlight-card {{ $latestMeta['class'] }}">
+                <span>
+                    <i class="{{ $latestMeta['icon'] }}"></i>
+                    {{ ($notificationStats['unread'] ?? 0) > 0 ? 'Thông báo mới' : 'Hộp thư đã gọn' }}
+                </span>
+
+                @if($latestUnread)
+                    <strong>{{ $latestUnread->tieu_de }}</strong>
+                    <p>{{ $latestUnread->noi_dung }}</p>
+                    <small>
+                        <i class="fa-solid fa-clock"></i>
+                        {{ $latestUnread->created_at?->diffForHumans() }}
+                    </small>
+                @else
+                    <strong>Không có thông báo chưa đọc</strong>
+                    <p>Khi có thay đổi về vé, điểm hoặc voucher, CineHome sẽ đưa thông tin nổi bật lên đây.</p>
+                    <small>
+                        <i class="fa-solid fa-circle-check"></i>
+                        Tất cả đã được cập nhật
+                    </small>
+                @endif
+            </aside>
         </div>
 
-        <div class="space-y-4">
-            @forelse($thongBaos as $thongBao)
-                <div class="group rounded-[26px] border border-white/10 bg-gradient-to-br from-[#171717] via-[#111111] to-[#070707] p-5 shadow-xl shadow-black/30 transition duration-300 hover:-translate-y-1 hover:border-[#d99a32]/50 hover:shadow-[#d99a32]/20">
+        <div class="notification-stats">
+            <article>
+                <span>Tất cả</span>
+                <strong>{{ number_format($notificationStats['total'] ?? $thongBaos->total()) }}</strong>
+                <small>Tổng thông báo</small>
+            </article>
+            <article>
+                <span>Chưa đọc</span>
+                <strong>{{ number_format($notificationStats['unread'] ?? 0) }}</strong>
+                <small>Tự đánh dấu sau khi mở trang</small>
+            </article>
+            <article>
+                <span>Vé & voucher</span>
+                <strong>{{ number_format(($notificationStats['ve'] ?? 0) + ($notificationStats['voucher'] ?? 0)) }}</strong>
+                <small>Ưu tiên kiểm tra trước</small>
+            </article>
+            <article>
+                <span>Điểm & hạng</span>
+                <strong>{{ number_format(($notificationStats['diem'] ?? 0) + ($notificationStats['hang_thanh_vien'] ?? 0)) }}</strong>
+                <small>Lịch sử thành viên</small>
+            </article>
+        </div>
 
-                    <div class="flex gap-4">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl
-                            @class([
-                                'bg-blue-500/15 text-blue-400' => $thongBao->loai_thong_bao === 'he_thong',
-                                'bg-green-500/15 text-green-400' => $thongBao->loai_thong_bao === 'diem',
-                                'bg-yellow-500/15 text-yellow-400' => $thongBao->loai_thong_bao === 'voucher',
-                                'bg-purple-500/15 text-purple-400' => $thongBao->loai_thong_bao === 'hang_thanh_vien',
-                                'bg-red-500/15 text-red-400' => $thongBao->loai_thong_bao === 've',
-                            ])">
+        <section class="notification-board">
+            <div class="notification-board-head">
+                <div>
+                    <span>Danh sách thông báo</span>
+                    <h2>{{ $currentFilter['label'] ?? 'Tất cả thông báo' }}</h2>
+                </div>
 
-                            @if($thongBao->loai_thong_bao === 'diem')
-                                <i class="fa-solid fa-star"></i>
-                            @elseif($thongBao->loai_thong_bao === 'voucher')
-                                <i class="fa-solid fa-gift"></i>
-                            @elseif($thongBao->loai_thong_bao === 'hang_thanh_vien')
-                                <i class="fa-solid fa-crown"></i>
-                            @elseif($thongBao->loai_thong_bao === 've')
-                                <i class="fa-solid fa-ticket"></i>
-                            @else
-                                <i class="fa-solid fa-bell"></i>
-                            @endif
+                <nav class="notification-filter" aria-label="Lọc thông báo theo loại">
+                    @foreach($filterItems as $item)
+                        <a
+                            href="{{ $item['type'] ? route('user.notifications.index', ['loai' => $item['type']]) : route('user.notifications.index') }}"
+                            class="{{ $activeType === $item['type'] ? 'is-active' : '' }}"
+                        >
+                            {{ $item['label'] }}
+                            <b>{{ number_format($item['count']) }}</b>
+                        </a>
+                    @endforeach
+                </nav>
+            </div>
+
+            <div class="notification-list">
+                @forelse($thongBaos as $thongBao)
+                    @php
+                        $meta = $typeMeta[$thongBao->loai_thong_bao] ?? $typeMeta['he_thong'];
+                        $isUnread = ! $thongBao->da_doc;
+                    @endphp
+
+                    <article class="notification-card {{ $meta['class'] }} {{ $isUnread ? 'is-unread' : 'is-read' }}">
+                        <div class="notification-card-icon">
+                            <i class="{{ $meta['icon'] }}"></i>
                         </div>
 
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                                <h2 class="text-lg font-black text-white">
-                                    {{ $thongBao->tieu_de }}
-                                </h2>
+                        <div class="notification-card-body">
+                            <div class="notification-card-top">
+                                <div>
+                                    <span>{{ $meta['label'] }}</span>
+                                    <h3>{{ $thongBao->tieu_de }}</h3>
+                                </div>
 
-                                <span class="text-xs font-semibold text-gray-500">
-                                    {{ $thongBao->created_at?->format('d/m/Y H:i') }}
-                                </span>
+                                <div class="notification-time">
+                                    <strong>{{ $isUnread ? 'Mới' : 'Đã đọc' }}</strong>
+                                    <small>{{ $thongBao->created_at?->format('d/m/Y H:i') }}</small>
+                                </div>
                             </div>
 
-                            <p class="mt-2 leading-relaxed text-gray-400">
-                                {{ $thongBao->noi_dung }}
-                            </p>
+                            <p>{{ $thongBao->noi_dung }}</p>
 
-                            @if($thongBao->duong_dan)
-                                <a href="{{ $thongBao->duong_dan }}"
-                                   class="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#d99a32] px-4 py-2 text-sm font-black text-black no-underline transition hover:bg-[#f4c56a]">
-                                    Xem chi tiết
-                                    <i class="fa-solid fa-arrow-right text-xs"></i>
-                                </a>
-                            @endif
+                            <div class="notification-card-actions">
+                                @if($thongBao->duong_dan)
+                                    <a href="{{ $thongBao->duong_dan }}" class="notification-detail-link">
+                                        Xem chi tiết
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                    </a>
+                                @else
+                                    <span>
+                                        <i class="fa-solid fa-check"></i>
+                                        Đã lưu trong tài khoản
+                                    </span>
+                                @endif
+                            </div>
                         </div>
+                    </article>
+                @empty
+                    <div class="notification-empty">
+                        <span>
+                            <i class="fa-solid fa-bell-slash"></i>
+                        </span>
+                        <h3>{{ $activeType ? 'Chưa có thông báo phù hợp' : 'Bạn chưa có thông báo nào' }}</h3>
+                        <p>{{ $activeType ? 'Thử chọn bộ lọc khác hoặc quay lại tất cả thông báo để xem đầy đủ lịch sử.' : 'Khi có cập nhật về vé, điểm thưởng, voucher hoặc hạng thành viên, hệ thống sẽ hiển thị tại đây.' }}</p>
+                        <a href="{{ route('user.notifications.index') }}" class="notification-secondary-link">
+                            <i class="fa-solid fa-layer-group"></i>
+                            Xem tất cả
+                        </a>
                     </div>
-                </div>
-            @empty
-                <div class="rounded-[28px] border border-white/10 bg-[#121212] px-6 py-16 text-center">
-                    <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-white/5 text-gray-500">
-                        <i class="fa-solid fa-bell text-3xl"></i>
+                @endforelse
+            </div>
+
+            @if($thongBaos->hasPages())
+                <div class="notification-pagination">
+                    <div class="notification-page-summary">
+                        Hiển thị
+                        <strong>{{ $thongBaos->firstItem() }}</strong>
+                        -
+                        <strong>{{ $thongBaos->lastItem() }}</strong>
+                        trong
+                        <strong>{{ $thongBaos->total() }}</strong>
+                        thông báo
                     </div>
 
-                    <h3 class="text-xl font-black text-white">
-                        Chưa có thông báo nào
-                    </h3>
+                    <nav class="notification-page-controls" aria-label="Phân trang thông báo">
+                        @if($thongBaos->onFirstPage())
+                            <span class="notification-page-link is-disabled">
+                                <i class="fa-solid fa-chevron-left"></i>
+                                Trước
+                            </span>
+                        @else
+                            <a href="{{ $thongBaos->previousPageUrl() }}" class="notification-page-link">
+                                <i class="fa-solid fa-chevron-left"></i>
+                                Trước
+                            </a>
+                        @endif
 
-                    <p class="mt-2 text-gray-400">
-                        Khi có thông báo mới về vé, điểm hoặc voucher, hệ thống sẽ hiển thị tại đây.
-                    </p>
+                        @foreach($thongBaos->getUrlRange(max(1, $thongBaos->currentPage() - 2), min($thongBaos->lastPage(), $thongBaos->currentPage() + 2)) as $page => $url)
+                            @if($page === $thongBaos->currentPage())
+                                <span class="notification-page-link is-current">{{ $page }}</span>
+                            @else
+                                <a href="{{ $url }}" class="notification-page-link">{{ $page }}</a>
+                            @endif
+                        @endforeach
+
+                        @if($thongBaos->hasMorePages())
+                            <a href="{{ $thongBaos->nextPageUrl() }}" class="notification-page-link">
+                                Sau
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </a>
+                        @else
+                            <span class="notification-page-link is-disabled">
+                                Sau
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </span>
+                        @endif
+                    </nav>
                 </div>
-            @endforelse
-        </div>
-
-        @if($thongBaos->hasPages())
-            <div class="mt-8 rounded-2xl border border-white/10 bg-[#121212] px-6 py-4">
-                {{ $thongBaos->links() }}
-            </div>                                                                                                                                                                                          
-        @endif
+            @endif
+        </section>
     </div>
-</div>
+</section>
 @endsection

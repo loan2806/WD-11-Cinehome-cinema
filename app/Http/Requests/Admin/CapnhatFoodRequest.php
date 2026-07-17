@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Models\Food;
-use App\Models\FoodCategory;
+use App\Models\Doan;
+use App\Models\DanhMucDoAn;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,13 +32,17 @@ class CapnhatFoodRequest extends FormRequest
 
             'sort_order' => (int) ($this->sort_order ?? 0),
 
+            'price' => filled($this->price)
+                ? (float) $this->price
+                : null,
+
             'is_active' => $this->boolean('is_active'),
         ]);
     }
 
     public function rules(): array
     {
-        /** @var Food $food */
+        /** @var Doan $food */
         $food = $this->route('food');
 
         return [
@@ -84,21 +88,22 @@ class CapnhatFoodRequest extends FormRequest
             'is_active' => [
                 'boolean',
             ],
-            'combo_items' => [
+            'price' => [
                 'nullable',
-                'array',
+                'numeric',
+                'min:0',
             ],
+            'combo_items' => $this->isComboCategory()
+                ? ['required', 'array', 'min:2']
+                : ['nullable', 'array'],
 
-            'combo_items.*.variant_id' => [
-                'required_if:type,combo',
-                'exists:food_variants,id',
-            ],
+            'combo_items.*.variant_id' => $this->isComboCategory()
+                ? ['required', 'exists:food_variants,id']
+                : ['nullable'],
 
-            'combo_items.*.quantity' => [
-                'required_if:type,combo',
-                'integer',
-                'min:1',
-            ],
+            'combo_items.*.quantity' => $this->isComboCategory()
+                ? ['required', 'integer', 'min:1']
+                : ['nullable'],
         ];
     }
 
@@ -123,12 +128,14 @@ class CapnhatFoodRequest extends FormRequest
             'description.string' => 'Mô tả không hợp lệ.',
             'description.max' => 'Mô tả không được vượt quá 1000 ký tự.',
 
-            'combo_items.*.variant_id.required_if' => 'Vui lòng chọn biến thể.',
+            'combo_items.*.variant_id.required' => 'Vui lòng chọn biến thể.',
             'combo_items.*.variant_id.exists' => 'Biến thể không tồn tại.',
 
-            'combo_items.*.quantity.required_if' => 'Vui lòng nhập số lượng.',
+            'combo_items.*.quantity.required' => 'Vui lòng nhập số lượng.',
             'combo_items.*.quantity.integer' => 'Số lượng phải là số.',
             'combo_items.*.quantity.min' => 'Số lượng phải lớn hơn 0.',
+
+
 
             'sort_order.integer' => 'Thứ tự phải là số.',
             'sort_order.min' => 'Thứ tự phải lớn hơn hoặc bằng 0.',
@@ -138,7 +145,7 @@ class CapnhatFoodRequest extends FormRequest
     }
     protected function isComboCategory(): bool
     {
-        $category = FoodCategory::find($this->input('category_id'));
+        $category = DanhMucDoAn::find($this->input('category_id'));
 
         return $category &&
             str_contains(strtolower($category->name), 'combo');

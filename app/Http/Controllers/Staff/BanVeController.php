@@ -3,21 +3,28 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
+use App\Models\DoAn;
 use App\Models\GheNgoi;
 use App\Models\SuatChieu;
 use App\Models\VeXemPhim;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class BanVeController extends Controller
 {
-    /**
-     * Trang đầu tiên của bán vé tại quầy.
-     * Nhân viên sẽ chọn một suất chiếu trước.
-     */
     public function index()
     {
-        $showtimes = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])
+        $showtimes = SuatChieu::with([
+            'phim',
+            'rapChieuPhim',
+            'phongChieu'
+        ])
+            ->withCount([
+                'veXemPhims as sold_tickets_count' => function ($query) {
+                    $query->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung']);
+                }
+            ])
             ->where('thoi_gian_chieu', '>=', now())
             ->orderBy('thoi_gian_chieu')
             ->get();
@@ -25,129 +32,392 @@ class BanVeController extends Controller
         return view('staff.ban-ve.index', compact('showtimes'));
     }
 
-    /**
-     * Sau khi chọn suất chiếu, hệ thống hiển thị sơ đồ ghế.
-     * Ghế đã bán sẽ bị khóa, ghế bảo trì cũng không chọn được.
-     */
     public function show(SuatChieu $suatChieu)
     {
-        $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu']);
+        $suatChieu->load([
+            'phim',
+            'rapChieuPhim',
+            'phongChieu'
+        ]);
 
-        $soldSeatCodes = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
-            ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung'])
+        $blockedSeatCodes = VeXemPhim::where(
+            'suat_chieu_id',
+            $suatChieu->id
+        )
+            ->whereIn('trang_thai', [
+                'dang_giu',
+                'da_thanh_toan',
+                'da_su_dung'
+            ])
             ->pluck('ma_ghe')
-            ->flatMap(function ($seatCodes) {
-                return collect(explode(',', $seatCodes))
-                    ->map(fn($seatCode) => strtoupper(trim($seatCode)))
+            ->flatMap(function ($codes) {
+                return collect(explode(',', $codes))
+                    ->map(fn($code) => strtoupper(trim($code)))
                     ->filter();
             })
             ->values();
 
-        $maintenanceSeatCodes = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
+        $maintenanceSeatCodes = GheNgoi::where(
+            'phong_chieu_id',
+            $suatChieu->phong_chieu_id
+        )
             ->get(['ma_ghe', 'trang_thai'])
-            ->filter(fn ($seat) => $seat->isEffectivelyUnderMaintenance())
+            ->filter(fn($seat) => $seat->isEffectivelyUnderMaintenance())
             ->pluck('ma_ghe')
-            ->map(fn ($code) => strtoupper(trim($code)))
+            ->map(fn($code) => strtoupper(trim($code)))
             ->values()
             ->all();
 
-        $seatsByRow = collect();
+        $seatsByRow = GheNgoi::with([
+            'hangGhe',
+            'loaiGhe'
+        ])
+            ->where(
+                'phong_chieu_id',
+                $suatChieu->phong_chieu_id
+            )
+            ->orderBy('hang_ghe_id')
+            ->orderBy('cot')
+            ->get()
+            ->groupBy(
+                fn($seat) => $seat->hangGhe->ten_hang ?? 'Khác'
+            );
 
-        if ($suatChieu->phong_chieu_id) {
-            $seatsByRow = GheNgoi::with(['hangGhe', 'loaiGhe'])
-                ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
-                ->orderBy('hang_ghe_id')
-                ->orderBy('cot')
-                ->get()
-                ->groupBy(fn($seat) => $seat->hangGhe->ten_hang ?? 'Khác');
-        }
-
-        return view('staff.ban-ve.show', compact(
-            'suatChieu',
-            'soldSeatCodes',
-            'maintenanceSeatCodes',
-            'seatsByRow'
-        ));
+        return view('staff.ban-ve.show', [
+            'suatChieu' => $suatChieu,
+            'soldSeatCodes' => $blockedSeatCodes,
+            'maintenanceSeatCodes' => $maintenanceSeatCodes,
+            'seatsByRow' => $seatsByRow
+        ]);
     }
 
-    /**
-     * Tạo vé tại quầy sau khi nhân viên chọn ghế.
-     * Bản này hỗ trợ chọn nhiều ghế trong cùng một lần bán.
-     */
-    public function store(Request $request, SuatChieu $suatChieu)
+    public function food(Request $request, SuatChieu $suatChieu)
     {
-        $request->validate([
-            'seats' => 'required|array|min:1',
-            'seats.*' => 'required|string|max:20',
-        ], [
-            'seats.required' => 'Vui lòng chọn ít nhất một ghế.',
-            'seats.min' => 'Vui lòng chọn ít nhất một ghế.',
-        ]);
+        if (!$request->filled('seats')) {
+            return redirect()
+                ->route('staff.ban-ve.show', $suatChieu->id)
+                ->with('error', 'Vui lòng chọn ghế trước khi chọn đồ ăn.');
+        }
 
-        $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu']);
-
-        $selectedSeats = collect($request->seats)
+        $selectedSeats = collect(explode(',', $request->seats))
             ->map(fn($seat) => strtoupper(trim($seat)))
+            ->filter()
             ->unique()
             ->values();
 
-        $soldSeats = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
-            ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung'])
-            ->pluck('ma_ghe')
-            ->flatMap(function ($seatCodes) {
-                return collect(explode(',', $seatCodes))
-                    ->map(fn($seatCode) => strtoupper(trim($seatCode)))
-                    ->filter();
+        $menu = DoAn::with([
+            'variants',
+            'category'
+        ])
+            ->where('is_active', true)
+            ->get()
+            ->groupBy(
+                fn($food) => $food->category->name ?? 'Khác'
+            )
+            ->map(function ($foods, $category) {
+
+                return [
+                    'category' => $category,
+                    'foods' => $foods->map(function ($food) {
+
+                        return [
+                            'id' => $food->id,
+                            'name' => $food->name,
+                            'image' => $food->image,
+                            'price' => (int)$food->price,
+                            'available' => (int)$food->stock_quantity
+                        ];
+                    })
+                        ->values()
+                        ->toArray()
+                ];
             })
-            ->intersect($selectedSeats)
+            ->values()
+            ->toArray();
+
+        return view('staff.ban-ve.chon-do-an', [
+            'suatChieu' => $suatChieu,
+            'selectedSeats' => $selectedSeats,
+            'menu' => $menu
+        ]);
+    }
+    public function checkout(Request $request, SuatChieu $suatChieu)
+    {
+        if (!$request->filled('seats')) {
+            return redirect()
+                ->route('staff.ban-ve.show', $suatChieu->id)
+                ->with('error', 'Chưa chọn ghế.');
+        }
+
+        $seats = collect(explode(',', $request->seats))
+            ->map(fn($seat) => strtoupper(trim($seat)))
+            ->filter()
+            ->unique()
             ->values();
 
-        if ($soldSeats->isNotEmpty()) {
-            return back()
-                ->withInput()
-                ->with('error', 'Ghế ' . $soldSeats->implode(', ') . ' đã được bán. Vui lòng chọn ghế khác.');
+        $foodCart = [];
+
+        if ($request->filled('food_cart')) {
+            $foodCart = json_decode(
+                $request->food_cart,
+                true
+            ) ?? [];
         }
 
-        $maintenanceSeats = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
-            ->get(['ma_ghe', 'trang_thai'])
-            ->filter(fn ($seat) => $seat->isEffectivelyUnderMaintenance())
-            ->pluck('ma_ghe')
-            ->map(fn ($code) => strtoupper(trim($code)))
-            ->intersect($selectedSeats)
-            ->values()
-            ->all();
+        $foodItems = collect($foodCart)
+            ->filter(fn($item) => is_array($item));
 
-        if (!empty($maintenanceSeats)) {
-            return back()
-                ->withInput()
-                ->with('error', 'Ghế ' . implode(', ', $maintenanceSeats) . ' đang bảo trì. Vui lòng chọn ghế khác.');
+
+        $gheList = GheNgoi::where(
+            'phong_chieu_id',
+            $suatChieu->phong_chieu_id
+        )
+            ->whereIn('ma_ghe', $seats)
+            ->get();
+
+
+        $seatTotal = 0;
+
+        foreach ($gheList as $ghe) {
+            $seatTotal += $ghe->gia ?? $suatChieu->gia_ve;
         }
 
-        $tongTien = $selectedSeats->count() * (float) $suatChieu->gia_ve;
 
-        $ve = VeXemPhim::create([
-            'nguoi_dung_id' => null,
-            'nhan_vien_id' => auth()->id(),
-            'suat_chieu_id' => $suatChieu->id,
+        $foodTotal = $foodItems->sum(function ($item) {
+            return ($item['price'] ?? 0)
+                * ($item['qty'] ?? 0);
+        });
 
-            'ma_ve' => 'OFF-' . now()->format('YmdHis') . '-' . strtoupper(Str::random(5)),
 
-            'ten_phim' => $suatChieu->phim->ten_phim ?? 'Không rõ phim',
-            'ten_rap' => $suatChieu->rapChieuPhim->ten_rap ?? 'Không rõ rạp',
-            'ten_phong' => $suatChieu->phongChieu->ten_phong ?? 'Phòng chiếu',
+        $total = $seatTotal + $foodTotal;
 
-            // Lưu nhiều ghế dạng A1,A2,A3 để phù hợp bảng hiện tại
-            'ma_ghe' => $selectedSeats->implode(','),
 
-            'thoi_gian_chieu' => $suatChieu->thoi_gian_chieu,
-            'tong_tien' => $tongTien,
-            'tien_hoan' => 0,
-            'loai_ve' => 'tai_quay',
-            'trang_thai' => 'da_thanh_toan',
+        $suatChieu->load([
+            'phim',
+            'rapChieuPhim',
+            'phongChieu'
         ]);
 
+
+        return view('staff.ban-ve.checkout', [
+            'suatChieu' => $suatChieu,
+            'seats' => $seats,
+            'foodItems' => $foodItems,
+            'foodCart' => $foodItems,
+            'seatTotal' => $seatTotal,
+            'foodTotal' => $foodTotal,
+            'total' => $total
+        ]);
+    }
+
+
+    public function store(Request $request, SuatChieu $suatChieu)
+    {
+        $request->validate([
+            'seats' => 'required|string'
+        ]);
+
+
+        DB::beginTransaction();
+
+
+        try {
+
+
+            $selectedSeats = collect(explode(',', $request->seats))
+                ->map(fn($seat) => strtoupper(trim($seat)))
+                ->filter()
+                ->unique()
+                ->values();
+
+
+
+            $blockedSeats = VeXemPhim::where(
+                'suat_chieu_id',
+                $suatChieu->id
+            )
+                ->whereIn('trang_thai', [
+                    'dang_giu',
+                    'da_thanh_toan',
+                    'da_su_dung'
+                ])
+                ->pluck('ma_ghe')
+                ->flatMap(function ($codes) {
+
+                    return collect(explode(',', $codes))
+                        ->map(fn($code) => strtoupper(trim($code)));
+                })
+                ->intersect($selectedSeats);
+
+
+
+            if ($blockedSeats->isNotEmpty()) {
+
+                throw new \Exception(
+                    'Ghế ' . $blockedSeats->implode(', ') . ' đã được bán.'
+                );
+            }
+
+
+
+            $gheList = GheNgoi::where(
+                'phong_chieu_id',
+                $suatChieu->phong_chieu_id
+            )
+                ->whereIn('ma_ghe', $selectedSeats)
+                ->get();
+
+
+
+            $seatTotal = 0;
+
+
+            foreach ($gheList as $ghe) {
+
+                $seatTotal += $ghe->gia ?? $suatChieu->gia_ve;
+            }
+
+
+
+            $foodCart = [];
+
+
+            if ($request->filled('food_cart')) {
+
+                $foodCart = json_decode(
+                    $request->food_cart,
+                    true
+                ) ?? [];
+            }
+
+
+
+            $foodItems = collect($foodCart)
+                ->filter(fn($item) => is_array($item));
+
+
+            $foodTotal = 0;
+
+
+            foreach ($foodItems as $food) {
+
+
+                $item = DoAn::lockForUpdate()
+                    ->find($food['id']);
+
+
+                if (!$item) {
+                    continue;
+                }
+
+
+                $qty = (int)($food['qty'] ?? 0);
+
+
+
+                /*
+     |--------------------------------------------------------------------------
+     | Nếu bảng đồ ăn có quản lý tồn kho
+     |--------------------------------------------------------------------------
+     */
+
+
+                if (isset($item->so_luong)) {
+
+
+                    if ($item->so_luong < $qty) {
+
+                        throw new \Exception(
+                            'Đồ ăn ' . $item->ten_do_an . ' không đủ số lượng.'
+                        );
+                    }
+
+
+                    $item->decrement(
+                        'so_luong',
+                        $qty
+                    );
+                }
+
+
+
+                $foodTotal +=
+                    ($food['price'] ?? $item->gia)
+                    * $qty;
+            }
+
+
+
+            $tongTien = $seatTotal + $foodTotal;
+
+
+
+            $ve = VeXemPhim::create([
+
+                'nguoi_dung_id' => null,
+
+                'nhan_vien_id' => auth()->id(),
+
+                'suat_chieu_id' => $suatChieu->id,
+
+                'ma_ve' =>
+                'OFF-'
+                    . now()->format('YmdHis')
+                    . '-'
+                    . strtoupper(Str::random(5)),
+
+
+                'ten_phim' => $suatChieu->phim->ten_phim,
+
+                'ten_rap' => $suatChieu->rapChieuPhim->ten_rap,
+
+                'ten_phong' => $suatChieu->phongChieu->ten_phong,
+
+                'ma_ghe' => $selectedSeats->implode(','),
+
+                'thoi_gian_chieu' => $suatChieu->thoi_gian_chieu,
+
+                'tong_tien' => $tongTien,
+
+                'tien_hoan' => 0,
+
+                'loai_ve' => 'tai_quay',
+
+                'trang_thai' => 'da_thanh_toan'
+
+            ]);
+
+
+
+            DB::commit();
+
+            session()->flash(
+                'clear_food_cart_key',
+                'staff_food_cart_' . auth()->id() . '_' . $suatChieu->id
+            );
+
+
+            return redirect()
+                ->route('staff.ban-ve.index')
+                ->with([
+                    'success' => 'Bán vé thành công. Mã vé: ' . $ve->ma_ve
+                ]);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            dd($e->getMessage(), $e->getLine());
+        }
+    }
+
+
+
+    public function showCheckout(SuatChieu $suatChieu)
+    {
         return redirect()
-            ->route('staff.lich-su-ve.index')
-            ->with('success', 'Bán vé thành công. Mã vé: ' . $ve->ma_ve);
+            ->route(
+                'staff.ban-ve.show',
+                $suatChieu->id
+            );
     }
 }

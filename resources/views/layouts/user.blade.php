@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     {{-- CSS riêng --}}
-    <link rel="stylesheet" href="{{ asset('assets/css/user-home.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/user-home.css') }}?v={{ filemtime(public_path('assets/css/user-home.css')) }}">
 
     @stack('styles')
 
@@ -37,7 +37,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     {{-- JS riêng --}}
-    <script src="{{ asset('assets/js/user-home.js') }}"></script>
+    <script src="{{ asset('assets/js/user-home.js') }}?v={{ filemtime(public_path('assets/js/user-home.js')) }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 

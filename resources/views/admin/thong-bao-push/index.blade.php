@@ -3,448 +3,217 @@
 @section('page-title', 'Quản lý Thông báo đẩy')
 
 @section('content')
+@php
+    $typeMeta = [
+        'info' => ['label' => 'Thông tin', 'icon' => 'fa-circle-info', 'class' => 'is-info'],
+        'success' => ['label' => 'Thành công', 'icon' => 'fa-circle-check', 'class' => 'is-success'],
+        'warning' => ['label' => 'Cảnh báo', 'icon' => 'fa-triangle-exclamation', 'class' => 'is-warning'],
+        'promo' => ['label' => 'Khuyến mãi', 'icon' => 'fa-gift', 'class' => 'is-promo'],
+        'system' => ['label' => 'Hệ thống', 'icon' => 'fa-gear', 'class' => 'is-system'],
+    ];
 
-<div class="admin-panel">
+    $audienceMeta = [
+        'all' => ['label' => 'Tất cả', 'icon' => 'fa-globe', 'class' => 'is-all'],
+        'user' => ['label' => 'Khách hàng', 'icon' => 'fa-user', 'class' => 'is-user'],
+        'vip' => ['label' => 'VIP', 'icon' => 'fa-crown', 'class' => 'is-vip'],
+        'staff' => ['label' => 'Nhân viên', 'icon' => 'fa-user-tie', 'class' => 'is-staff'],
+        'admin' => ['label' => 'Quản trị', 'icon' => 'fa-user-shield', 'class' => 'is-admin'],
+        'nguoi_dung_cu_the' => ['label' => 'Cụ thể', 'icon' => 'fa-user-pen', 'class' => 'is-specific'],
+    ];
 
-    {{-- HEADER --}}
-    <div class="panel-header flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#8a4a21] to-[#d99a32] shadow-lg shadow-[#d99a32]/20">
-                <i class="fa-solid fa-bell text-2xl text-white"></i>
-            </div>
-            <div>
-                <h5 class="text-xl font-bold text-white">
-                    Danh sách thông báo đẩy
-                </h5>
-                <p class="text-sm text-gray-500">
-                    Quản lý và theo dõi các thông báo đẩy trong hệ thống
-                </p>
+    $statusMeta = [
+        'da_gui' => ['label' => 'Đã gửi', 'icon' => 'fa-paper-plane', 'class' => 'is-sent'],
+        'chua_gui' => ['label' => 'Chưa gửi', 'icon' => 'fa-clock', 'class' => 'is-pending'],
+    ];
+
+    $activeFilterCount = collect([
+        request('search'),
+        request('loai'),
+        request('doi_tuong_nhan'),
+        request('trang_thai'),
+    ])->filter(fn ($value) => filled($value))->count();
+@endphp
+
+<div class="push-admin-page">
+    <section class="push-hero push-hero--list">
+        <div class="push-hero-content">
+            <span class="push-kicker">
+                <i class="fa-solid fa-satellite-dish"></i>
+                Trung tâm tương tác
+            </span>
+            <h2>Quản lý thông báo đẩy</h2>
+            <p>Theo dõi, lọc và gửi thông báo đến đúng nhóm người dùng CineHome trong một màn hình gọn gàng.</p>
+            <div class="push-hero-meta">
+                <span><i class="fa-solid fa-layer-group"></i>{{ number_format($summary['total'] ?? 0) }} thông báo</span>
+                <span><i class="fa-solid fa-paper-plane"></i>{{ number_format($summary['sent'] ?? 0) }} đã gửi</span>
+                <span><i class="fa-solid fa-calendar-day"></i>{{ number_format($summary['today'] ?? 0) }} hôm nay</span>
             </div>
         </div>
-        <a href="{{ route('admin.thong-bao-push.create') }}"
-            class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:scale-[1.02] hover:shadow-[#d99a32]/30">
+
+        <a href="{{ route('admin.thong-bao-push.create') }}" class="push-primary-btn">
             <i class="fa-solid fa-plus"></i>
             Tạo thông báo mới
         </a>
+    </section>
+
+    <div class="push-stat-grid">
+        <article class="push-stat-card">
+            <span class="is-total"><i class="fa-solid fa-bell"></i></span>
+            <small>Tổng thông báo</small>
+            <strong>{{ number_format($summary['total'] ?? 0) }}</strong>
+        </article>
+        <article class="push-stat-card">
+            <span class="is-sent"><i class="fa-solid fa-paper-plane"></i></span>
+            <small>Đã gửi</small>
+            <strong>{{ number_format($summary['sent'] ?? 0) }}</strong>
+        </article>
+        <article class="push-stat-card">
+            <span class="is-promo"><i class="fa-solid fa-gift"></i></span>
+            <small>Khuyến mãi</small>
+            <strong>{{ number_format($summary['promo'] ?? 0) }}</strong>
+        </article>
+        <article class="push-stat-card">
+            <span class="is-today"><i class="fa-solid fa-calendar-check"></i></span>
+            <small>Tạo hôm nay</small>
+            <strong>{{ number_format($summary['today'] ?? 0) }}</strong>
+        </article>
     </div>
 
-    {{-- FILTER --}}
-    <form method="GET" action="{{ route('admin.thong-bao-push.index') }}" class="mt-5 flex flex-wrap items-end gap-3">
-        <div class="min-w-[200px] flex-1">
-            <label class="mb-1.5 block text-xs font-semibold text-gray-400">Tìm kiếm</label>
-            <input type="text" name="search" value="{{ request('search') }}"
-                placeholder="Tìm kiếm theo tiêu đề..."
-                class="h-10 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-white outline-none focus:border-[#d99a32] transition-colors">
-        </div>
-
-        {{-- Custom Dropdown Loại thông báo --}}
-        <div class="relative min-w-[160px]" id="filterLoaiDropdownWrapper">
-            <input type="hidden" name="loai" id="filterLoai" value="{{ request('loai', '') }}">
-            <label class="mb-1.5 block text-xs font-semibold text-gray-400">Loại thông báo</label>
-            <button type="button" id="filterLoaiDropdownBtn"
-                class="dropdown-trigger flex h-10 w-full items-center justify-between rounded-xl border border-white/10 bg-[#151515] px-3 text-left text-sm transition-all focus:border-[#d99a32] cursor-pointer">
-                <div class="flex items-center gap-2">
-                    <span id="filterLoaiIcon" class="flex h-6 w-6 items-center justify-center rounded-md">
-                        @php $filterLoaiValue = request('loai', ''); @endphp
-                        @switch($filterLoaiValue)
-                            @case('info')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/20 text-blue-400">
-                                    <i class="fa-solid fa-circle-info text-xs"></i>
-                                </span>
-                                @break
-                            @case('success')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-green-500/20 text-green-400">
-                                    <i class="fa-solid fa-check-circle text-xs"></i>
-                                </span>
-                                @break
-                            @case('warning')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-yellow-500/20 text-yellow-400">
-                                    <i class="fa-solid fa-triangle-exclamation text-xs"></i>
-                                </span>
-                                @break
-                            @case('promo')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/20 text-purple-400">
-                                    <i class="fa-solid fa-gift text-xs"></i>
-                                </span>
-                                @break
-                            @case('system')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-gray-500/20 text-gray-400">
-                                    <i class="fa-solid fa-gear text-xs"></i>
-                                </span>
-                                @break
-                            @default
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#d99a32]/20 text-[#d99a32]">
-                                    <i class="fa-solid fa-filter text-xs"></i>
-                                </span>
-                        @endswitch
-                    </span>
-                    <span id="filterLoaiLabel" class="text-white">
-                        @switch($filterLoaiValue)
-                            @case('info') Thông tin @break
-                            @case('success') Thành công @break
-                            @case('warning') Cảnh báo @break
-                            @case('promo') Khuyến mãi @break
-                            @case('system') Hệ thống @break
-                            @default Tất cả
-                        @endswitch
-                    </span>
-                </div>
-                <i class="fa-solid fa-chevron-down text-gray-500 text-xs transition-transform duration-300 dropdown-arrow"></i>
-            </button>
-            <div id="filterLoaiDropdownMenu"
-                class="dropdown-menu absolute left-0 right-0 top-[calc(100%+8px)] z-50 hidden max-h-52 overflow-y-auto rounded-xl border border-white/10 bg-[#1a1a1a] p-1.5 shadow-2xl shadow-black/50 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterLoaiValue === '' ? 'selected' : '' }}"
-                    data-value="" data-label="Tất cả">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#d99a32]/20 text-[#d99a32]">
-                        <i class="fa-solid fa-layer-group text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Tất cả</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterLoaiValue === 'info' ? 'selected' : '' }}"
-                    data-value="info" data-label="Thông tin">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/20 text-blue-400">
-                        <i class="fa-solid fa-circle-info text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Thông tin</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterLoaiValue === 'success' ? 'selected' : '' }}"
-                    data-value="success" data-label="Thành công">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-green-500/20 text-green-400">
-                        <i class="fa-solid fa-check-circle text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Thành công</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterLoaiValue === 'warning' ? 'selected' : '' }}"
-                    data-value="warning" data-label="Cảnh báo">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-yellow-500/20 text-yellow-400">
-                        <i class="fa-solid fa-triangle-exclamation text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Cảnh báo</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterLoaiValue === 'promo' ? 'selected' : '' }}"
-                    data-value="promo" data-label="Khuyến mãi">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/20 text-purple-400">
-                        <i class="fa-solid fa-gift text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Khuyến mãi</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterLoaiValue === 'system' ? 'selected' : '' }}"
-                    data-value="system" data-label="Hệ thống">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-gray-500/20 text-gray-400">
-                        <i class="fa-solid fa-gear text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Hệ thống</span>
-                </button>
+    <section class="push-panel">
+        <div class="push-panel-head">
+            <div>
+                <span>Danh sách</span>
+                <h3>Thông báo đang quản lý</h3>
+                <p>Lọc nhanh theo tiêu đề, loại thông báo, nhóm nhận và trạng thái gửi.</p>
             </div>
+            <strong>{{ number_format($thongBaos->total()) }} bản ghi</strong>
         </div>
 
-        {{-- Custom Dropdown Đối tượng nhận --}}
-        <div class="relative min-w-[150px]" id="filterDoiTuongDropdownWrapper">
-            <input type="hidden" name="doi_tuong_nhan" id="filterDoiTuong" value="{{ request('doi_tuong_nhan', '') }}">
-            <label class="mb-1.5 block text-xs font-semibold text-gray-400">Đối tượng nhận</label>
-            <button type="button" id="filterDoiTuongDropdownBtn"
-                class="dropdown-trigger flex h-10 w-full items-center justify-between rounded-xl border border-white/10 bg-[#151515] px-3 text-left text-sm transition-all focus:border-[#d99a32] cursor-pointer">
-                <div class="flex items-center gap-2">
-                    <span id="filterDoiTuongIcon" class="flex h-6 w-6 items-center justify-center rounded-md">
-                        @php $filterDoiTuongValue = request('doi_tuong_nhan', ''); @endphp
-                        @switch($filterDoiTuongValue)
-                            @case('all')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#d99a32]/20 text-[#d99a32]">
-                                    <i class="fa-solid fa-globe text-xs"></i>
-                                </span>
-                                @break
-                            @case('user')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/20 text-blue-400">
-                                    <i class="fa-solid fa-user text-xs"></i>
-                                </span>
-                                @break
-                            @case('vip')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-yellow-500/20 text-yellow-400">
-                                    <i class="fa-solid fa-crown text-xs"></i>
-                                </span>
-                                @break
-                            @case('staff')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-green-500/20 text-green-400">
-                                    <i class="fa-solid fa-user-tie text-xs"></i>
-                                </span>
-                                @break
-                            @case('admin')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/20 text-purple-400">
-                                    <i class="fa-solid fa-user-shield text-xs"></i>
-                                </span>
-                                @break
-                            @case('nguoi_dung_cu_the')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-pink-500/20 text-pink-400">
-                                    <i class="fa-solid fa-user-pen text-xs"></i>
-                                </span>
-                                @break
-                            @default
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#d99a32]/20 text-[#d99a32]">
-                                    <i class="fa-solid fa-users text-xs"></i>
-                                </span>
-                        @endswitch
-                    </span>
-                    <span id="filterDoiTuongLabel" class="text-white">
-                        @switch($filterDoiTuongValue)
-                            @case('all') Tất cả @break
-                            @case('user') Người dùng @break
-                            @case('vip') VIP @break
-                            @case('staff') Nhân viên @break
-                            @case('admin') Quản trị @break
-                            @case('nguoi_dung_cu_the') Cụ thể @break
-                            @default Tất cả
-                        @endswitch
-                    </span>
+        <form method="GET" action="{{ route('admin.thong-bao-push.index') }}" class="push-filter">
+            <label class="push-field push-field--search">
+                <span>Tìm kiếm</span>
+                <div>
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Nhập tiêu đề thông báo...">
                 </div>
-                <i class="fa-solid fa-chevron-down text-gray-500 text-xs transition-transform duration-300 dropdown-arrow"></i>
-            </button>
-            <div id="filterDoiTuongDropdownMenu"
-                class="dropdown-menu absolute left-0 right-0 top-[calc(100%+8px)] z-50 hidden max-h-52 overflow-y-auto rounded-xl border border-white/10 bg-[#1a1a1a] p-1.5 shadow-2xl shadow-black/50 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterDoiTuongValue === '' ? 'selected' : '' }}"
-                    data-value="" data-label="Tất cả">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#d99a32]/20 text-[#d99a32]">
-                        <i class="fa-solid fa-layer-group text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Tất cả</span>
+            </label>
+
+            <label class="push-field">
+                <span>Loại</span>
+                <select name="loai">
+                    <option value="">Tất cả loại</option>
+                    @foreach ($typeMeta as $value => $meta)
+                        <option value="{{ $value }}" @selected(request('loai') === $value)>{{ $meta['label'] }}</option>
+                    @endforeach
+                </select>
+            </label>
+
+            <label class="push-field">
+                <span>Người nhận</span>
+                <select name="doi_tuong_nhan">
+                    <option value="">Tất cả nhóm</option>
+                    @foreach ($audienceMeta as $value => $meta)
+                        <option value="{{ $value }}" @selected(request('doi_tuong_nhan') === $value)>{{ $meta['label'] }}</option>
+                    @endforeach
+                </select>
+            </label>
+
+            <label class="push-field">
+                <span>Trạng thái</span>
+                <select name="trang_thai">
+                    <option value="">Tất cả trạng thái</option>
+                    @foreach ($statusMeta as $value => $meta)
+                        <option value="{{ $value }}" @selected(request('trang_thai') === $value)>{{ $meta['label'] }}</option>
+                    @endforeach
+                </select>
+            </label>
+
+            <div class="push-filter-actions">
+                <button type="submit" class="push-filter-btn">
+                    <i class="fa-solid fa-filter"></i>
+                    Lọc
+                    @if ($activeFilterCount > 0)
+                        <span>{{ $activeFilterCount }}</span>
+                    @endif
                 </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterDoiTuongValue === 'all' ? 'selected' : '' }}"
-                    data-value="all" data-label="Tất cả">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#d99a32]/20 text-[#d99a32]">
-                        <i class="fa-solid fa-globe text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Tất cả</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterDoiTuongValue === 'user' ? 'selected' : '' }}"
-                    data-value="user" data-label="Người dùng">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/20 text-blue-400">
-                        <i class="fa-solid fa-user text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Người dùng</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterDoiTuongValue === 'vip' ? 'selected' : '' }}"
-                    data-value="vip" data-label="VIP">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-yellow-500/20 text-yellow-400">
-                        <i class="fa-solid fa-crown text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">VIP</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterDoiTuongValue === 'staff' ? 'selected' : '' }}"
-                    data-value="staff" data-label="Nhân viên">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-green-500/20 text-green-400">
-                        <i class="fa-solid fa-user-tie text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Nhân viên</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterDoiTuongValue === 'admin' ? 'selected' : '' }}"
-                    data-value="admin" data-label="Quản trị">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-purple-500/20 text-purple-400">
-                        <i class="fa-solid fa-user-shield text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Quản trị</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterDoiTuongValue === 'nguoi_dung_cu_the' ? 'selected' : '' }}"
-                    data-value="nguoi_dung_cu_the" data-label="Cụ thể">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-pink-500/20 text-pink-400">
-                        <i class="fa-solid fa-user-pen text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Cụ thể</span>
-                </button>
+                @if ($activeFilterCount > 0)
+                    <a href="{{ route('admin.thong-bao-push.index') }}" class="push-reset-btn">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </a>
+                @endif
             </div>
-        </div>
+        </form>
 
-        {{-- Custom Dropdown Trạng thái --}}
-        <div class="relative min-w-[150px]" id="filterTrangThaiDropdownWrapper">
-            <input type="hidden" name="trang_thai" id="filterTrangThai" value="{{ request('trang_thai', '') }}">
-            <label class="mb-1.5 block text-xs font-semibold text-gray-400">Trạng thái</label>
-            <button type="button" id="filterTrangThaiDropdownBtn"
-                class="dropdown-trigger flex h-10 w-full items-center justify-between rounded-xl border border-white/10 bg-[#151515] px-3 text-left text-sm transition-all focus:border-[#d99a32] cursor-pointer">
-                <div class="flex items-center gap-2">
-                    <span id="filterTrangThaiIcon" class="flex h-6 w-6 items-center justify-center rounded-md">
-                        @php $filterTrangThaiValue = request('trang_thai', ''); @endphp
-                        @switch($filterTrangThaiValue)
-                            @case('da_gui')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/20 text-emerald-400">
-                                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                                </span>
-                                @break
-                            @case('chua_gui')
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/20 text-amber-400">
-                                    <i class="fa-solid fa-clock text-xs"></i>
-                                </span>
-                                @break
-                            @default
-                                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#d99a32]/20 text-[#d99a32]">
-                                    <i class="fa-solid fa-circle-half-stroke text-xs"></i>
-                                </span>
-                        @endswitch
-                    </span>
-                    <span id="filterTrangThaiLabel" class="text-white">
-                        @switch($filterTrangThaiValue)
-                            @case('da_gui') Đã gửi @break
-                            @case('chua_gui') Chưa gửi @break
-                            @default Tất cả
-                        @endswitch
-                    </span>
-                </div>
-                <i class="fa-solid fa-chevron-down text-gray-500 text-xs transition-transform duration-300 dropdown-arrow"></i>
-            </button>
-            <div id="filterTrangThaiDropdownMenu"
-                class="dropdown-menu absolute left-0 right-0 top-[calc(100%+8px)] z-50 hidden max-h-52 overflow-y-auto rounded-xl border border-white/10 bg-[#1a1a1a] p-1.5 shadow-2xl shadow-black/50 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterTrangThaiValue === '' ? 'selected' : '' }}"
-                    data-value="" data-label="Tất cả">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#d99a32]/20 text-[#d99a32]">
-                        <i class="fa-solid fa-layer-group text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Tất cả</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterTrangThaiValue === 'da_gui' ? 'selected' : '' }}"
-                    data-value="da_gui" data-label="Đã gửi">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/20 text-emerald-400">
-                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Đã gửi</span>
-                </button>
-                <button type="button"
-                    class="dropdown-option group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-all hover:bg-white/5 {{ $filterTrangThaiValue === 'chua_gui' ? 'selected' : '' }}"
-                    data-value="chua_gui" data-label="Chưa gửi">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-amber-500/20 text-amber-400">
-                        <i class="fa-solid fa-clock text-xs"></i>
-                    </span>
-                    <span class="text-sm text-white">Chưa gửi</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="flex items-end gap-2">
-            <button type="submit"
-                class="h-10 rounded-xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-4 text-sm font-bold text-white shadow-lg transition-all hover:opacity-90">
-                <i class="fa-solid fa-filter mr-1"></i>
-                Lọc
-            </button>
-            @if(request()->has('search') || request()->has('loai') || request()->has('trang_thai') || request()->has('doi_tuong_nhan'))
-                <a href="{{ route('admin.thong-bao-push.index') }}"
-                    class="flex h-10 items-center rounded-xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-gray-400 transition-all hover:bg-white/10 hover:text-white">
-                    <i class="fa-solid fa-xmark"></i>
-                </a>
-            @endif
-        </div>
-    </form>
-
-    {{-- TABLE --}}
-    <div class="mt-5 overflow-hidden rounded-2xl border border-white/10">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left">
-                <thead class="bg-gradient-to-r from-[#1a1a1a] to-[#151515] text-xs uppercase tracking-wider text-gray-400">
+        <div class="push-table-wrap">
+            <table class="push-table">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 font-semibold">ID</th>
-                        <th class="px-4 py-3 font-semibold">Tiêu đề</th>
-                        <th class="px-4 py-3 font-semibold">Loại</th>
-                        <th class="px-4 py-3 font-semibold">Người tạo</th>
-                        <th class="px-4 py-3 font-semibold">Ngày tạo</th>
-                        <th class="px-4 py-3 font-semibold">Trạng thái</th>
-                        <th class="px-4 py-3 text-right font-semibold">Thao tác</th>
+                        <th>Thông báo</th>
+                        <th>Loại</th>
+                        <th>Người nhận</th>
+                        <th>Người tạo</th>
+                        <th>Thời gian</th>
+                        <th>Trạng thái</th>
+                        <th class="is-right">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-white/5 text-sm text-gray-300">
+                <tbody>
                     @forelse ($thongBaos as $thongBao)
-                        <tr class="hover:bg-white/[0.02] transition-colors">
-                            <td class="px-4 py-3.5">
-                                <span class="font-mono text-xs text-gray-500">#{{ $thongBao->id }}</span>
-                            </td>
-                            <td class="px-4 py-3.5">
-                                <a href="{{ route('admin.thong-bao-push.show', $thongBao) }}"
-                                    class="font-medium text-[#d99a32] hover:underline">
-                                    {{ \Illuminate\Support\Str::limit($thongBao->tieu_de, 40) }}
+                        @php
+                            $type = $typeMeta[$thongBao->loai] ?? ['label' => ucfirst($thongBao->loai), 'icon' => 'fa-bell', 'class' => 'is-system'];
+                            $audience = $audienceMeta[$thongBao->doi_tuong_nhan] ?? ['label' => $thongBao->doi_tuong_nhan, 'icon' => 'fa-users', 'class' => 'is-all'];
+                            $status = $statusMeta[$thongBao->trang_thai] ?? ['label' => $thongBao->trang_thai, 'icon' => 'fa-clock', 'class' => 'is-pending'];
+                            $authorName = $thongBao->nguoiTao->ho_ten ?? 'Hệ thống';
+                        @endphp
+                        <tr>
+                            <td data-label="Thông báo">
+                                <a href="{{ route('admin.thong-bao-push.show', $thongBao) }}" class="push-message-cell">
+                                    <span>#{{ $thongBao->id }}</span>
+                                    <strong>{{ \Illuminate\Support\Str::limit($thongBao->tieu_de, 68) }}</strong>
+                                    <small>{{ \Illuminate\Support\Str::limit($thongBao->noi_dung, 96) }}</small>
                                 </a>
                             </td>
-                            <td class="px-4 py-3.5">
-                                @php
-                                    $loaiLabels = [
-                                        'info' => 'Thông tin',
-                                        'success' => 'Thành công',
-                                        'warning' => 'Cảnh báo',
-                                        'promo' => 'Khuyến mãi',
-                                        'system' => 'Hệ thống',
-                                    ];
-                                    $badgeClass = match ($thongBao->loai) {
-                                        'info' => 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-                                        'success' => 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-                                        'warning' => 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-                                        'promo' => 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
-                                        'system' => 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
-                                        default => 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
-                                    };
-                                    $icon = match ($thongBao->loai) {
-                                        'info' => 'fa-info-circle',
-                                        'success' => 'fa-circle-check',
-                                        'warning' => 'fa-triangle-exclamation',
-                                        'promo' => 'fa-gift',
-                                        'system' => 'fa-gear',
-                                        default => 'fa-bell',
-                                    };
-                                @endphp
-                                <span class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold {{ $badgeClass }}">
-                                    <i class="fa-solid {{ $icon }} text-[10px]"></i>
-                                    {{ $loaiLabels[$thongBao->loai] ?? $thongBao->loai }}
+                            <td data-label="Loại">
+                                <span class="push-chip {{ $type['class'] }}">
+                                    <i class="fa-solid {{ $type['icon'] }}"></i>
+                                    {{ $type['label'] }}
                                 </span>
                             </td>
-                            <td class="px-4 py-3.5">
-                                <div class="flex items-center gap-2">
-                                    <div class="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#8a4a21]/50 to-[#d99a32]/50 text-[10px] font-bold text-white">
-                                        {{ substr($thongBao->nguoiTao->ho_ten ?? 'H', 0, 1) }}
-                                    </div>
-                                    <span class="text-sm">{{ $thongBao->nguoiTao->ho_ten ?? 'Hệ thống' }}</span>
+                            <td data-label="Người nhận">
+                                <span class="push-chip {{ $audience['class'] }}">
+                                    <i class="fa-solid {{ $audience['icon'] }}"></i>
+                                    {{ $audience['label'] }}
+                                </span>
+                            </td>
+                            <td data-label="Người tạo">
+                                <div class="push-author">
+                                    <span>{{ strtoupper(mb_substr($authorName, 0, 1)) }}</span>
+                                    <strong>{{ $authorName }}</strong>
                                 </div>
                             </td>
-                            <td class="px-4 py-3.5">
-                                <span class="text-sm text-gray-400">{{ $thongBao->created_at->format('d/m/Y') }}</span>
-                                <span class="ml-1 text-xs text-gray-600">{{ $thongBao->created_at->format('H:i') }}</span>
+                            <td data-label="Thời gian">
+                                <span class="push-date">
+                                    <i class="fa-regular fa-calendar"></i>
+                                    {{ $thongBao->created_at->format('d/m/Y') }}
+                                    <small>{{ $thongBao->created_at->format('H:i') }}</small>
+                                </span>
                             </td>
-                            <td class="px-4 py-3.5">
-                                @if ($thongBao->trang_thai === 'da_gui')
-                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-bold text-emerald-400 border border-emerald-500/20">
-                                        <i class="fa-solid fa-paper-plane text-[10px]"></i>
-                                        Đã gửi
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-400 border border-amber-500/20">
-                                        <i class="fa-solid fa-clock text-[10px]"></i>
-                                        Chưa gửi
-                                    </span>
-                                @endif
+                            <td data-label="Trạng thái">
+                                <span class="push-status {{ $status['class'] }}">
+                                    <i class="fa-solid {{ $status['icon'] }}"></i>
+                                    {{ $status['label'] }}
+                                </span>
                             </td>
-                            <td class="px-4 py-3.5">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <a href="{{ route('admin.thong-bao-push.show', $thongBao) }}"
-                                        class="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-gray-400 transition-all hover:border-[#d99a32] hover:text-[#d99a32]"
-                                        title="Xem chi tiết">
-                                        <i class="fa-solid fa-eye text-xs"></i>
+                            <td data-label="Thao tác" class="is-right">
+                                <div class="push-action-buttons">
+                                    <a href="{{ route('admin.thong-bao-push.show', $thongBao) }}" class="push-icon-btn is-view" title="Xem chi tiết">
+                                        <i class="fa-solid fa-eye"></i>
                                     </a>
-                                    <form action="{{ route('admin.thong-bao-push.destroy', $thongBao) }}"
-                                        method="POST"
-                                        class="inline-block"
-                                        onsubmit="return confirm('Bạn có chắc chắn muốn xóa thông báo này không?');">
+                                    <form action="{{ route('admin.thong-bao-push.destroy', $thongBao) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thông báo này không?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit"
-                                            class="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-gray-400 transition-all hover:border-red-500/50 hover:text-red-400"
-                                            title="Xóa">
-                                            <i class="fa-solid fa-trash text-xs"></i>
+                                        <button type="submit" class="push-icon-btn is-delete" title="Xóa thông báo">
+                                            <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </form>
                                 </div>
@@ -452,14 +221,14 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-16 text-center">
-                                <div class="flex flex-col items-center">
-                                    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 mb-4">
-                                        <i class="fa-solid fa-bell-slash text-3xl text-gray-600"></i>
-                                    </div>
-                                    <p class="text-gray-400 font-medium">Chưa có thông báo đẩy nào</p>
-                                    <a href="{{ route('admin.thong-bao-push.create') }}" class="mt-3 text-sm text-[#d99a32] hover:underline">
-                                        Tạo thông báo đầu tiên
+                            <td colspan="7">
+                                <div class="push-empty">
+                                    <i class="fa-solid fa-bell-slash"></i>
+                                    <h3>Chưa có thông báo phù hợp</h3>
+                                    <p>Thử đổi bộ lọc hoặc tạo thông báo mới để gửi đến người dùng.</p>
+                                    <a href="{{ route('admin.thong-bao-push.create') }}" class="push-primary-btn">
+                                        <i class="fa-solid fa-plus"></i>
+                                        Tạo thông báo
                                     </a>
                                 </div>
                             </td>
@@ -468,132 +237,59 @@
                 </tbody>
             </table>
         </div>
-    </div>
 
-    {{-- PAGINATION --}}
-    @if ($thongBaos->hasPages())
-        <div class="mt-5 flex items-center justify-between">
-            <div class="text-sm text-gray-500">
-                Hiển thị <span class="font-semibold text-gray-400">{{ $thongBaos->firstItem() ?? 0 }}</span> -
-                <span class="font-semibold text-gray-400">{{ $thongBaos->lastItem() ?? 0 }}</span>
-                trong <span class="font-semibold text-gray-400">{{ $thongBaos->total() }}</span> thông báo
-            </div>
-            <div class="flex items-center gap-1">
-                @if ($thongBaos->onFirstPage())
-                    <span class="flex h-9 items-center rounded-lg border border-white/10 bg-white/5 px-3 text-sm font-medium text-gray-500">
-                        <i class="fa-solid fa-chevron-left mr-1 text-xs"></i> Trước
-                    </span>
-                @else
-                    <a href="{{ $thongBaos->previousPageUrl() }}"
-                    class="flex h-9 items-center rounded-lg border border-white/10 bg-white/5 px-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10">
-                        <i class="fa-solid fa-chevron-left mr-1 text-xs"></i> Trước
-                    </a>
-                @endif
-
-                @foreach ($thongBaos->getUrlRange(max(1, $thongBaos->currentPage() - 1), min($thongBaos->lastPage(), $thongBaos->currentPage() + 1)) as $page => $url)
-                    @if ($page == $thongBaos->currentPage())
-                        <span class="flex h-9 items-center rounded-lg bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-3 text-sm font-bold text-white">
-                            {{ $page }}
-                        </span>
+        @if ($thongBaos->hasPages())
+            @php
+                $currentPage = $thongBaos->currentPage();
+                $lastPage = $thongBaos->lastPage();
+                $startPage = max(1, $currentPage - 1);
+                $endPage = min($lastPage, $currentPage + 1);
+            @endphp
+            <div class="admin-pagination push-pagination">
+                <div class="admin-pagination__meta">
+                    Hiển thị
+                    <strong>{{ $thongBaos->firstItem() ?? 0 }} - {{ $thongBaos->lastItem() ?? 0 }}</strong>
+                    trong
+                    <strong>{{ $thongBaos->total() }}</strong>
+                    thông báo
+                </div>
+                <div class="admin-pagination__controls">
+                    @if ($thongBaos->onFirstPage())
+                        <span class="admin-pagination__btn is-disabled"><i class="fa-solid fa-chevron-left"></i> Trước</span>
                     @else
-                        <a href="{{ $url }}"
-                        class="flex h-9 items-center rounded-lg border border-white/10 bg-white/5 px-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10">
-                            {{ $page }}
-                        </a>
+                        <a href="{{ $thongBaos->previousPageUrl() }}" class="admin-pagination__btn"><i class="fa-solid fa-chevron-left"></i> Trước</a>
                     @endif
-                @endforeach
 
-                @if ($thongBaos->hasMorePages())
-                    <a href="{{ $thongBaos->nextPageUrl() }}"
-                    class="flex h-9 items-center rounded-lg border border-white/10 bg-white/5 px-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10">
-                        Sau <i class="fa-solid fa-chevron-right ml-1 text-xs"></i>
-                    </a>
-                @else
-                    <span class="flex h-9 items-center rounded-lg border border-white/10 bg-white/5 px-3 text-sm font-medium text-gray-500">
-                        Sau <i class="fa-solid fa-chevron-right ml-1 text-xs"></i>
-                    </span>
-                @endif
+                    @if ($startPage > 1)
+                        <a href="{{ $thongBaos->url(1) }}" class="admin-pagination__page">1</a>
+                        @if ($startPage > 2)
+                            <span class="admin-pagination__dots">...</span>
+                        @endif
+                    @endif
+
+                    @foreach ($thongBaos->getUrlRange($startPage, $endPage) as $page => $url)
+                        @if ($page === $currentPage)
+                            <span class="admin-pagination__page is-active">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="admin-pagination__page">{{ $page }}</a>
+                        @endif
+                    @endforeach
+
+                    @if ($endPage < $lastPage)
+                        @if ($endPage < $lastPage - 1)
+                            <span class="admin-pagination__dots">...</span>
+                        @endif
+                        <a href="{{ $thongBaos->url($lastPage) }}" class="admin-pagination__page">{{ $lastPage }}</a>
+                    @endif
+
+                    @if ($thongBaos->hasMorePages())
+                        <a href="{{ $thongBaos->nextPageUrl() }}" class="admin-pagination__btn">Sau <i class="fa-solid fa-chevron-right"></i></a>
+                    @else
+                        <span class="admin-pagination__btn is-disabled">Sau <i class="fa-solid fa-chevron-right"></i></span>
+                    @endif
+                </div>
             </div>
-        </div>
-    @endif
-
+        @endif
+    </section>
 </div>
-
 @endsection
-
-@push('scripts')
-<style>
-    .dropdown-menu {
-        animation: dropdownFadeIn 0.2s ease-out;
-    }
-
-    @keyframes dropdownFadeIn {
-        from { opacity: 0; transform: translateY(-8px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .dropdown-menu.active { display: block !important; }
-
-    .dropdown-arrow.rotate-180 { transform: rotate(180deg); }
-
-    .dropdown-option.selected {
-        background: rgba(217, 154, 50, 0.15) !important;
-        border: 1px solid rgba(217, 154, 50, 0.3);
-    }
-</style>
-
-<script>
-    function initFilterDropdown(wrapperId, hiddenInputId, iconId, labelId) {
-        const wrapper = document.getElementById(wrapperId);
-        if (!wrapper) return;
-
-        const trigger = wrapper.querySelector('.dropdown-trigger');
-        const menu = wrapper.querySelector('.dropdown-menu');
-        const arrow = trigger.querySelector('.dropdown-arrow');
-        const hiddenInput = document.getElementById(hiddenInputId);
-        const iconEl = document.getElementById(iconId);
-        const labelEl = document.getElementById(labelId);
-
-        trigger.addEventListener('click', function(e) {
-            e.stopPropagation();
-            closeAllDropdowns();
-            menu.classList.toggle('hidden');
-            arrow.classList.toggle('rotate-180');
-        });
-
-        wrapper.querySelectorAll('.dropdown-option').forEach(option => {
-            option.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const value = this.dataset.value;
-                const label = this.dataset.label;
-                const iconHtml = this.querySelector('span').innerHTML;
-                const iconClass = this.querySelector('span').className;
-
-                hiddenInput.value = value;
-                labelEl.textContent = label;
-                iconEl.innerHTML = iconHtml;
-                iconEl.querySelector('span').className = iconClass.replace('group-hover:', '').replace('transition-colors', '');
-
-                wrapper.querySelectorAll('.dropdown-option').forEach(opt => opt.classList.remove('selected'));
-                this.classList.add('selected');
-
-                menu.classList.add('hidden');
-                arrow.classList.remove('rotate-180');
-            });
-        });
-    }
-
-    function closeAllDropdowns() {
-        document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
-        document.querySelectorAll('.dropdown-arrow').forEach(arrow => arrow.classList.remove('rotate-180'));
-    }
-
-    document.addEventListener('click', closeAllDropdowns);
-
-    document.addEventListener('DOMContentLoaded', function() {
-        initFilterDropdown('filterLoaiDropdownWrapper', 'filterLoai', 'filterLoaiIcon', 'filterLoaiLabel');
-        initFilterDropdown('filterDoiTuongDropdownWrapper', 'filterDoiTuong', 'filterDoiTuongIcon', 'filterDoiTuongLabel');
-        initFilterDropdown('filterTrangThaiDropdownWrapper', 'filterTrangThai', 'filterTrangThaiIcon', 'filterTrangThaiLabel');
-    });
-</script>
-@endpush

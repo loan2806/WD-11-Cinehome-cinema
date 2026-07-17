@@ -49,10 +49,12 @@ return new class extends Migration
             // da_thanh_toan = đã thanh toán
             // da_huy = đã hủy
             // da_su_dung = đã soát vé / đã sử dụng
+            // het_han = vé đã hết hạn suất chiếu mà chưa dùng
             $table->enum('trang_thai', [
                 'da_thanh_toan',
                 'da_huy',
-                'da_su_dung'
+                'da_su_dung',
+                'het_han' // 🌟 BỔ SUNG TRẠNG THÁI NÀY ĐỂ TRÁNH LỖI TRUNCATED!
             ])->default('da_thanh_toan');
 
             $table->timestamps();

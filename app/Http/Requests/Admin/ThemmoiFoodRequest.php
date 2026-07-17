@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Models\FoodCategory;
+use App\Models\DanhMucDoAn;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -29,6 +29,10 @@ class ThemmoiFoodRequest extends FormRequest
 
             'sort_order' => (int) ($this->sort_order ?? 0),
 
+            'price' => filled($this->price)
+                ? (float) $this->price
+                : null,
+
             'is_active' => $this->boolean('is_active'),
         ]);
     }
@@ -52,6 +56,11 @@ class ThemmoiFoodRequest extends FormRequest
 
 
             'category_id' => ['required', 'exists:food_categories,id'],
+
+            'price' => $this->isComboCategory()
+                ? ['required', 'numeric', 'min:0']
+                : ['nullable', 'numeric', 'min:0'],
+
             'combo_items' => $this->isComboCategory()
                 ? ['required', 'array', 'min:2']
                 : ['nullable', 'array'],
@@ -121,6 +130,10 @@ class ThemmoiFoodRequest extends FormRequest
             'category_id.required' => 'Vui lòng chọn danh mục.',
             'category_id.exists' => 'Danh mục không tồn tại.',
 
+            'price.required' => 'Vui lòng nhập giá combo.',
+            'price.numeric' => 'Giá phải là số.',
+            'price.min' => 'Giá phải lớn hơn hoặc bằng 0.',
+
             'combo_items.required' => 'Vui lòng thêm ít nhất một thành phần cho combo.',
             'combo_items.array' => 'Danh sách thành phần không hợp lệ.',
             'combo_items.min' => 'Combo phải có ít nhất 2 món.',
@@ -159,14 +172,14 @@ class ThemmoiFoodRequest extends FormRequest
         ];
     }
 
-   protected function isComboCategory(): bool
-{
-    $category = FoodCategory::find($this->input('category_id'));
+    protected function isComboCategory(): bool
+    {
+        $category = DanhMucDoAn::find($this->input('category_id'));
 
-    return $category &&
-        str_contains(
-            strtolower($category->name),
-            'combo'
-        );
-}
+        return $category &&
+            str_contains(
+                strtolower($category->name),
+                'combo'
+            );
+    }
 }

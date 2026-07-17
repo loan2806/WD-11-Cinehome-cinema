@@ -3,222 +3,302 @@
 @section('title', 'Vé của tôi')
 
 @section('content')
-<div class="min-h-screen bg-[#080808] px-6 pt-28 pb-16 text-white">
+@php
+    $statusMeta = [
+        'da_thanh_toan' => [
+            'label' => 'Đã thanh toán',
+            'icon' => 'fa-solid fa-circle-check',
+            'class' => 'is-paid',
+            'description' => 'Sẵn sàng vào rạp',
+        ],
+        'da_su_dung' => [
+            'label' => 'Đã sử dụng',
+            'icon' => 'fa-solid fa-check-double',
+            'class' => 'is-used',
+            'description' => 'Vé đã được soát',
+        ],
+        'da_huy' => [
+            'label' => 'Đã hủy',
+            'icon' => 'fa-solid fa-circle-xmark',
+            'class' => 'is-cancelled',
+            'description' => 'Vé không còn hiệu lực',
+        ],
+        // 🌟 BỔ SUNG: Cấu hình hiển thị trạng thái "Hết hạn"
+        'het_han' => [
+            'label' => 'Hết hạn',
+            'icon' => 'fa-solid fa-clock-rotate-left',
+            'class' => 'is-cancelled',
+            'description' => 'Vé đã quá giờ chiếu',
+        ],
+    ];
 
-    <div class="mx-auto max-w-6xl">
+    $filterItems = [
+        ['status' => null, 'label' => 'Tất cả', 'count' => $ticketStats['total'] ?? $veXemPhims->total()],
+        ['status' => 'da_thanh_toan', 'label' => 'Đã thanh toán', 'count' => $ticketStats['paid'] ?? 0],
+        ['status' => 'da_su_dung', 'label' => 'Đã sử dụng', 'count' => $ticketStats['used'] ?? 0],
+        ['status' => 'het_han', 'label' => 'Hết hạn', 'count' => $ticketStats['expired'] ?? 0], // 🌟 Thêm thẻ lọc hết hạn
+        ['status' => 'da_huy', 'label' => 'Đã hủy', 'count' => $ticketStats['cancelled'] ?? 0],
+    ];
+@endphp
 
-        {{-- HEADER --}}
-        <div class="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+<section class="mytickets-page">
+    <div class="mytickets-shell">
+        <div class="mytickets-hero">
+            <div class="mytickets-hero-copy">
+                <span class="mytickets-eyebrow">
+                    <i class="fa-solid fa-ticket"></i>
+                    CineHome e-ticket
+                </span>
+                <h1>Vé của tôi</h1>
+                <p>Quản lý vé đã đặt, kiểm tra QR soát vé và theo dõi lịch chiếu phim dễ dàng.</p>
 
-            <div>
-                <p class="mb-2 text-sm font-bold uppercase tracking-[0.25em] text-[#d99a32]">
-                    CineHome Tickets
-                </p>
-
-                <h1 class="text-4xl font-black">
-                    Vé <span class="text-[#d99a32]">của tôi</span>
-                </h1>
-
-                <p class="mt-3 max-w-2xl text-gray-400">
-                    Quản lý vé đã đặt, xem chi tiết suất chiếu và thực hiện hủy vé trong thời gian cho phép.
-                </p>
+                <div class="mytickets-hero-actions">
+                    <a href="{{ route('dat_ve.chon_phim') }}" class="mytickets-primary-link">
+                        <i class="fa-solid fa-plus"></i>
+                        Đặt vé mới
+                    </a>
+                    <a href="{{ route('user.thanh-vien.index') }}" class="mytickets-secondary-link">
+                        <i class="fa-solid fa-crown"></i>
+                        Thẻ thành viên & điểm
+                    </a>
+                </div>
             </div>
 
-            <a href="{{ route('user.thanh-vien.index') }}"
-               class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-black text-white no-underline shadow-lg shadow-[#d99a32]/20 transition duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:shadow-[#d99a32]/35">
-                <i class="fa-solid fa-crown"></i>
-                Thẻ thành viên & Điểm
-            </a>
+            <aside class="mytickets-next-card">
+                <span>Suất gần nhất</span>
+                @if($nextTicket)
+                    <strong>{{ $nextTicket->ten_phim }}</strong>
+                    <p>{{ $nextTicket->thoi_gian_chieu?->format('H:i - d/m/Y') }}</p>
+                    <small>
+                        <i class="fa-solid fa-location-dot"></i>
+                        {{ $nextTicket->ten_rap ?? 'CineHome Cinema' }}
+                    </small>
+                    <a href="{{ route('user.ve_xem_phim.show', $nextTicket) }}">
+                        Mở vé điện tử
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                @else
+                    <strong>Chưa có suất sắp tới</strong>
+                    <p>Đặt vé mới để lịch xem phim của bạn xuất hiện tại đây.</p>
+                    <small>
+                        <i class="fa-solid fa-clock"></i>
+                        Vui lòng đến rạp trước suất chiếu 15 phút.
+                    </small>
+                @endif
+            </aside>
         </div>
 
-        {{-- THÔNG BÁO --}}
         @if(session('success'))
-            <div class="mb-6 rounded-2xl border border-green-500/30 bg-green-500/10 px-5 py-4 text-sm font-bold text-green-400">
-                <i class="fa-solid fa-circle-check mr-2"></i>
+            <div class="mytickets-alert is-success">
+                <i class="fa-solid fa-circle-check"></i>
                 {{ session('success') }}
             </div>
         @endif
 
         @if(session('error'))
-            <div class="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm font-bold text-red-400">
-                <i class="fa-solid fa-circle-xmark mr-2"></i>
+            <div class="mytickets-alert is-error">
+                <i class="fa-solid fa-circle-exclamation"></i>
                 {{ session('error') }}
             </div>
         @endif
 
-        {{-- BẢNG VÉ --}}
-        <div class="overflow-hidden rounded-[28px] border border-white/10 bg-[#121212] shadow-2xl shadow-black/30">
+        <div class="mytickets-stats" style="grid-template-columns: repeat(5, 1fr) !important;">
+            <article>
+                <span>Tổng vé</span>
+                <strong>{{ number_format($ticketStats['total'] ?? $veXemPhims->total()) }}</strong>
+                <small>Tất cả giao dịch</small>
+            </article>
+            <article>
+                <span>Đang hiệu lực</span>
+                <strong>{{ number_format($ticketStats['paid'] ?? 0) }}</strong>
+                <small>Có thể mở QR</small>
+            </article>
+            <article>
+                <span>Đã dùng</span>
+                <strong>{{ number_format($ticketStats['used'] ?? 0) }}</strong>
+                <small>Lịch sử xem phim</small>
+            </article>
+            <article>
+                <span>Hết hạn</span>
+                <strong style="color: #9ca3af;">{{ number_format($ticketStats['expired'] ?? 0) }}</strong>
+                <small>Vé quá giờ chiếu</small>
+            </article>
+            <article>
+                <span>Đã hủy</span>
+                <strong>{{ number_format($ticketStats['cancelled'] ?? 0) }}</strong>
+                <small>Lịch sử vé đã hủy</small>
+            </article>
+        </div>
 
-            <div class="flex flex-col justify-between gap-4 border-b border-white/10 bg-white/[0.03] px-6 py-5 md:flex-row md:items-center">
+        <section class="mytickets-board">
+            <div class="mytickets-board-head">
                 <div>
-                    <h2 class="text-xl font-black">
-                        Danh sách vé đã đặt
-                    </h2>
-
-                    <p class="mt-1 text-sm text-gray-400">
-                        Theo dõi trạng thái vé và thông tin suất chiếu của bạn.
-                    </p>
+                    <span>Danh sách vé</span>
+                    <h2>{{ $activeStatus ? ($statusMeta[$activeStatus]['label'] ?? 'Vé đã lọc') : 'Tất cả vé đã đặt' }}</h2>
                 </div>
 
-                <div class="inline-flex w-fit items-center gap-2 rounded-full bg-[#d99a32]/15 px-4 py-2 text-sm font-bold text-[#d99a32]">
-                    <i class="fa-solid fa-ticket"></i>
-                    {{ $veXemPhims->total() }} vé
-                </div>
+                <nav class="mytickets-filter" aria-label="Lọc vé theo trạng thái">
+                    @foreach($filterItems as $item)
+                        <a
+                            href="{{ $item['status'] ? route('user.ve_xem_phim.index', ['trang_thai' => $item['status']]) : route('user.ve_xem_phim.index') }}"
+                            class="{{ $activeStatus === $item['status'] ? 'is-active' : '' }}"
+                        >
+                            {{ $item['label'] }}
+                            <b>{{ number_format($item['count']) }}</b>
+                        </a>
+                    @endforeach
+                </nav>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[980px] text-left">
-                    <thead class="bg-[#1f1f1f] text-xs uppercase tracking-wider text-gray-400">
-                        <tr>
-                            <th class="px-6 py-4">Mã vé</th>
-                            <th class="px-6 py-4">Phim</th>
-                            <th class="px-6 py-4">Ghế</th>
-                            <th class="px-6 py-4">Suất chiếu</th>
-                            <th class="px-6 py-4">Tổng tiền</th>
-                            <th class="px-6 py-4">Trạng thái</th>
-                            <th class="px-6 py-4 text-right">Thao tác</th>
-                        </tr>
-                    </thead>
+            <div class="mytickets-list">
+                @forelse ($veXemPhims as $veXemPhim)
+                    @php
+                        $meta = $statusMeta[$veXemPhim->trang_thai] ?? [
+                            'label' => $veXemPhim->trang_thai,
+                            'icon' => 'fa-solid fa-circle-info',
+                            'class' => 'is-neutral',
+                            'description' => 'Đang cập nhật',
+                        ];
+                        $seats = collect(explode(',', (string) $veXemPhim->ma_ghe))
+                            ->map(fn ($seat) => trim($seat))
+                            ->filter()
+                            ->values();
+                    @endphp
 
-                    <tbody class="divide-y divide-white/10">
-                        @forelse ($veXemPhims as $veXemPhim)
-                            <tr class="group transition duration-300 hover:bg-white/[0.04]">
+                    <article class="myticket-card {{ $meta['class'] }}">
+                        <div class="myticket-code">
+                            <span>Mã vé</span>
+                            <strong>{{ $veXemPhim->ma_ve }}</strong>
+                            <small>{{ $veXemPhim->created_at?->format('d/m/Y H:i') }}</small>
+                        </div>
 
-                                {{-- MÃ VÉ --}}
-                                <td class="px-6 py-5">
-                                    <div class="font-black text-[#d99a32]">
-                                        {{ $veXemPhim->ma_ve }}
-                                    </div>
-
-                                    <div class="mt-1 text-xs text-gray-500">
-                                        {{ $veXemPhim->created_at?->format('d/m/Y H:i') }}
-                                    </div>
-                                </td>
-
-                                {{-- PHIM --}}
-                                <td class="px-6 py-5">
-                                    <div class="max-w-[220px] font-bold text-white">
-                                        {{ $veXemPhim->ten_phim }}
-                                    </div>
-
-                                    <div class="mt-1 text-xs text-gray-500">
-                                        {{ $veXemPhim->ten_rap ?? 'CineHome Cinema' }}
-                                    </div>
-                                </td>
-
-                                {{-- GHẾ --}}
-                                <td class="px-6 py-5">
-                                    <span class="inline-flex rounded-full border border-[#d99a32]/30 bg-[#d99a32]/10 px-3 py-1 text-sm font-black text-[#f4c56a]">
-                                        {{ $veXemPhim->ma_ghe ?? '---' }}
-                                    </span>
-                                </td>
-
-                                {{-- SUẤT CHIẾU --}}
-                                <td class="px-6 py-5">
-                                    <div class="font-bold text-white">
-                                        {{ $veXemPhim->thoi_gian_chieu?->format('H:i') }}
-                                    </div>
-
-                                    <div class="mt-1 text-sm text-gray-400">
-                                        {{ $veXemPhim->thoi_gian_chieu?->format('d/m/Y') }}
-                                    </div>
-                                </td>
-
-                                {{-- TỔNG TIỀN --}}
-                                <td class="px-6 py-5">
-                                    <div class="font-black text-white">
-                                        {{ number_format($veXemPhim->tong_tien, 0, ',', '.') }} VNĐ
-                                    </div>
-
-                                    @if($veXemPhim->tien_hoan > 0)
-                                        <div class="mt-1 text-xs text-green-400">
-                                            Hoàn: {{ number_format($veXemPhim->tien_hoan, 0, ',', '.') }} VNĐ
-                                        </div>
-                                    @endif
-                                </td>
-
-                                {{-- TRẠNG THÁI --}}
-                                <td class="px-6 py-5">
-                                    @if($veXemPhim->trang_thai === 'da_thanh_toan')
-                                        <span class="inline-flex items-center gap-2 rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-400">
-                                            <span class="h-2 w-2 rounded-full bg-green-400"></span>
-                                            Đã thanh toán
+                        <div class="myticket-movie">
+                            <h3>{{ $veXemPhim->ten_phim }}</h3>
+                            <p>
+                                <i class="fa-solid fa-location-dot"></i>
+                                {{ $veXemPhim->ten_rap ?? 'CineHome Cinema' }}
+                            </p>
+                            <p>
+                                <i class="fa-solid fa-door-open"></i>
+                                {{ $veXemPhim->ten_phong ?? 'Phòng chiếu' }}
+                            </p>
+                            
+                            @if(!empty($veXemPhim->food_items))
+                                <p style="margin-top: 8px; font-size: 13px; color: #facc15; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <i class="fa-solid fa-cookie-bite" style="font-size: 14px;"></i>
+                                    <span style="color: #9ca3af; font-weight: 600;">Đồ ăn kèm:</span>
+                                    @foreach($veXemPhim->food_items as $fItem)
+                                        <span style="background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.2); padding: 2px 8px; border-radius: 6px; font-weight: bold;">
+                                            {{ $fItem['name'] ?? 'Đồ ăn' }} (x{{ $fItem['qty'] ?? $fItem['quantity'] ?? 1 }})
                                         </span>
-                                    @elseif($veXemPhim->trang_thai === 'da_su_dung')
-                                        <span class="inline-flex items-center gap-2 rounded-full bg-blue-500/15 px-3 py-1 text-xs font-bold text-blue-400">
-                                            <span class="h-2 w-2 rounded-full bg-blue-400"></span>
-                                            Đã sử dụng
-                                        </span>
-                                    @elseif($veXemPhim->trang_thai === 'da_huy')
-                                        <span class="inline-flex items-center gap-2 rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold text-red-400">
-                                            <span class="h-2 w-2 rounded-full bg-red-400"></span>
-                                            Đã hủy
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center gap-2 rounded-full bg-gray-500/15 px-3 py-1 text-xs font-bold text-gray-400">
-                                            {{ $veXemPhim->trang_thai }}
-                                        </span>
-                                    @endif
-                                </td>
+                                    @endforeach
+                                </p>
+                            @endif
+                        </div>
 
-                                {{-- THAO TÁC --}}
-                                <td class="px-6 py-5 text-right">
-                                    <div class="flex justify-end gap-2">
-                                        <a href="{{ route('user.ve_xem_phim.show', $veXemPhim) }}"
-                                           class="inline-flex items-center justify-center rounded-xl bg-[#d99a32] px-4 py-2 text-xs font-black text-black no-underline transition duration-300 hover:-translate-y-0.5 hover:bg-[#f4c56a]">
-                                            Chi tiết
-                                        </a>
+                        <div class="myticket-info-grid">
+                            <div>
+                                <span>Ghế</span>
+                                <strong>
+                                    @forelse($seats as $seat)
+                                        <em>{{ $seat }}</em>
+                                    @empty
+                                        ---
+                                    @endforelse
+                                </strong>
+                            </div>
+                            <div>
+                                <span>Suất chiếu</span>
+                                <strong>{{ $veXemPhim->thoi_gian_chieu?->format('H:i') ?? '--:--' }}</strong>
+                                <small>{{ $veXemPhim->thoi_gian_chieu?->format('d/m/Y') ?? 'Đang cập nhật' }}</small>
+                            </div>
+                            <div>
+                                <span>Tổng tiền</span>
+                                <strong>{{ number_format($veXemPhim->tong_tien, 0, ',', '.') }}đ</strong>
+                                @if($veXemPhim->tien_hoan > 0)
+                                    <small class="is-refund">Hoàn {{ number_format($veXemPhim->tien_hoan, 0, ',', '.') }}đ</small>
+                                @endif
+                            </div>
+                            <div>
+                                <span>Trạng thái</span>
+                                <strong class="myticket-status">
+                                    <i class="{{ $meta['icon'] }}"></i>
+                                    {{ $meta['label'] }}
+                                </strong>
+                                <small>{{ $meta['description'] }}</small>
+                            </div>
+                        </div>
 
-                                        @if($veXemPhim->trang_thai === 'da_thanh_toan' && $veXemPhim->canCancel())
-                                            <form method="POST" action="{{ route('user.ve_xem_phim.cancel', $veXemPhim) }}"
-                                                  onsubmit="return confirm('Bạn có chắc muốn hủy vé này không?');">
-                                                @csrf
-                                                @method('PATCH')
-
-                                                <button type="submit"
-                                                        class="inline-flex items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-black text-red-400 transition duration-300 hover:-translate-y-0.5 hover:bg-red-500 hover:text-white">
-                                                    Hủy vé
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </td>
-
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="px-6 py-16 text-center">
-                                    <div class="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-white/5 text-gray-500">
-                                        <i class="fa-solid fa-ticket text-3xl"></i>
-                                    </div>
-
-                                    <h3 class="text-xl font-black text-white">
-                                        Bạn chưa có vé nào
-                                    </h3>
-
-                                    <p class="mt-2 text-gray-400">
-                                        Hãy chọn phim và đặt vé để bắt đầu trải nghiệm CineHome.
-                                    </p>
-
-                                    <a href="{{ route('dat_ve.chon_phim') }}"
-                                       class="mt-5 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-black text-white no-underline transition hover:-translate-y-1 hover:shadow-lg hover:shadow-[#d99a32]/30">
-                                        <i class="fa-solid fa-plus"></i>
-                                        Đặt vé ngay
-                                    </a>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                        <div class="myticket-actions">
+                            <a href="{{ route('user.ve_xem_phim.show', $veXemPhim) }}" class="myticket-detail-btn">
+                                <i class="fa-solid fa-qrcode"></i>
+                                Chi tiết
+                            </a>
+                        </div>
+                    </article>
+                @empty
+                    <div class="mytickets-empty">
+                        <span>
+                            <i class="fa-solid fa-ticket"></i>
+                        </span>
+                        <h3>Chưa có vé nào</h3>
+                        <p>Chọn một bộ phim yêu thích, đặt suất phù hợp và vé điện tử sẽ xuất hiện tại đây.</p>
+                        <a href="{{ route('dat_ve.chon_phim') }}" class="mytickets-primary-link">
+                            <i class="fa-solid fa-plus"></i>
+                            Đặt vé ngay
+                        </a>
+                    </div>
+                @endforelse
             </div>
 
             @if($veXemPhims->hasPages())
-                <div class="border-t border-white/10 px-6 py-4">
-                    {{ $veXemPhims->links() }}
+                <div class="mytickets-pagination">
+                    <div class="mytickets-page-summary">
+                        Hiển thị
+                        <strong>{{ $veXemPhims->firstItem() }}</strong>
+                        -
+                        <strong>{{ $veXemPhims->lastItem() }}</strong>
+                        trong
+                        <strong>{{ $veXemPhims->total() }}</strong>
+                        vé
+                    </div>
+
+                    <nav class="mytickets-page-controls" aria-label="Phân trang vé">
+                        @if($veXemPhims->onFirstPage())
+                            <span class="mytickets-page-link is-disabled">
+                                <i class="fa-solid fa-chevron-left"></i>
+                                Trước
+                            </span>
+                        @else
+                            <a href="{{ $veXemPhims->previousPageUrl() }}" class="mytickets-page-link">
+                                <i class="fa-solid fa-chevron-left"></i>
+                                Trước
+                            </a>
+                        @endif
+
+                        @foreach($veXemPhims->getUrlRange(max(1, $veXemPhims->currentPage() - 2), min($veXemPhims->lastPage(), $veXemPhims->currentPage() + 2)) as $page => $url)
+                            @if($page === $veXemPhims->currentPage())
+                                <span class="mytickets-page-link is-current">{{ $page }}</span>
+                            @else
+                                <a href="{{ $url }}" class="mytickets-page-link">{{ $page }}</a>
+                            @endif
+                        @endforeach
+
+                        @if($veXemPhims->hasMorePages())
+                            <a href="{{ $veXemPhims->nextPageUrl() }}" class="mytickets-page-link">
+                                Sau
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </a>
+                        @else
+                            <span class="mytickets-page-link is-disabled">
+                                Sau
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </span>
+                        @endif
+                    </nav>
                 </div>
             @endif
-
-        </div>
+        </section>
     </div>
-</div>
+</section>
 @endsection

@@ -5,58 +5,78 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Models\VeXemPhim;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class VeXemPhimController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $veXemPhims = VeXemPhim::where('nguoi_dung_id', Auth::id())
-            ->latest()
-            ->paginate(10);
+        // 🌟 BỔ SUNG: Tự động cập nhật các vé đã quá giờ chiếu thành trạng thái Hết Hạn 'het_han'
+        VeXemPhim::where('trang_thai', 'da_thanh_toan')
+            ->where('thoi_gian_chieu', '<', now('Asia/Ho_Chi_Minh'))
+            ->update(['trang_thai' => 'het_han']);
 
-        return view('user.ve_xem_phim.index', compact('veXemPhims'));
+        // 🌟 BỔ SUNG: Thêm 'het_han' vào danh sách bộ lọc được chấp nhận
+        $allowedStatuses = ['da_thanh_toan', 'da_su_dung', 'da_huy', 'het_han'];
+        $activeStatus = in_array($request->query('trang_thai'), $allowedStatuses, true)
+            ? $request->query('trang_thai')
+            : null;
+
+        $baseQuery = VeXemPhim::where('nguoi_dung_id', Auth::id());
+
+        // 🌟 BỔ SUNG: Thống kê cả số vé hết hạn 'expired'
+        $ticketStats = [
+            'total' => (clone $baseQuery)->count(),
+            'paid' => (clone $baseQuery)->where('trang_thai', 'da_thanh_toan')->count(),
+            'used' => (clone $baseQuery)->where('trang_thai', 'da_su_dung')->count(),
+            'cancelled' => (clone $baseQuery)->where('trang_thai', 'da_huy')->count(),
+            'expired' => (clone $baseQuery)->where('trang_thai', 'het_han')->count(),
+        ];
+
+        $nextTicket = (clone $baseQuery)
+            ->where('trang_thai', 'da_thanh_toan')
+            ->whereNotNull('thoi_gian_chieu')
+            ->where('thoi_gian_chieu', '>=', now())
+            ->orderBy('thoi_gian_chieu')
+            ->first();
+
+        $cancelMinutes = (int) SystemSetting::getValue('ticket_cancel_minutes', 5);
+
+        $veXemPhims = (clone $baseQuery)
+            ->when($activeStatus, fn ($query) => $query->where('trang_thai', $activeStatus))
+            ->latest()
+            ->paginate(8)
+            ->withQueryString();
+
+        $veXemPhims->getCollection()->transform(function ($ve) {
+            $ve->food_items = Cache::get("ve_foods:{$ve->id}", []);
+            return $ve;
+        });
+
+        return view('user.ve_xem_phim.index', compact(
+            'veXemPhims',
+            'ticketStats',
+            'nextTicket',
+            'activeStatus',
+            'cancelMinutes'
+        ));
     }
 
     public function show(VeXemPhim $veXemPhim)
     {
         abort_if($veXemPhim->nguoi_dung_id !== Auth::id(), 403);
 
-        return view('user.ve_xem_phim.show', compact('veXemPhim'));
-    }
-
-    public function cancel(VeXemPhim $veXemPhim)
-    {
-        abort_if($veXemPhim->nguoi_dung_id !== Auth::id(), 403);
-
-        if (! $veXemPhim->canCancel()) {
-            $minutes = (int) SystemSetting::getValue('ticket_cancel_minutes', 5);
-
-            return back()->with('error', 'Chỉ được hủy vé trong vòng ' . $minutes . ' phút sau khi đặt và khi vé chưa sử dụng.');
+        // 🌟 BỔ SUNG: Tự động cập nhật nếu người dùng xem chi tiết của một vé đã quá giờ chiếu
+        if ($veXemPhim->trang_thai === 'da_thanh_toan' && $veXemPhim->thoi_gian_chieu->lt(now('Asia/Ho_Chi_Minh'))) {
+            $veXemPhim->update(['trang_thai' => 'het_han']);
+            $veXemPhim->trang_thai = 'het_han'; // Gán nóng thuộc tính để view kết xuất chính xác luôn
         }
 
-        $refundPercent = max(0, min(100, (float) SystemSetting::getValue('refund_percent', 50)));
+        $cancelMinutes = (int) SystemSetting::getValue('ticket_cancel_minutes', 5);
+        $foodItems = Cache::get("ve_foods:{$veXemPhim->id}", []);
 
-        $veXemPhim->update([
-            'trang_thai' => 'da_huy',
-            'tien_hoan' => ((float) $veXemPhim->tong_tien) * $refundPercent / 100,
-        ]);
-
-        // Nếu vé đã được cộng điểm trước đó thì trừ lại điểm khi khách hủy vé
-        $lichSuCongDiem = $veXemPhim->lichSuDiems()
-            ->where('loai_giao_dich', 'cong_diem')
-            ->first();
-
-        if ($lichSuCongDiem && $veXemPhim->nguoiDung?->thanhVien) {
-            $veXemPhim->nguoiDung->thanhVien->truDiem(
-                $lichSuCongDiem->so_diem,
-                $veXemPhim,
-                'Trừ điểm do hủy vé phim ' . $veXemPhim->ten_phim
-            );
-        }
-
-        return redirect()
-            ->route('user.ve_xem_phim.index')
-            ->with('success', 'Hủy vé thành công. Bạn được hoàn ' . $refundPercent . '% giá trị vé.');
+        return view('user.ve_xem_phim.show', compact('veXemPhim', 'cancelMinutes', 'foodItems'));
     }
 }

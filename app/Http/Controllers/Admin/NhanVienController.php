@@ -16,19 +16,40 @@ class NhanVienController extends Controller
 
     public function index(Request $request)
     {
-        $query = NguoiDung::query()
+        $staffBase = NguoiDung::query()
             ->where('vai_tro', 'nhan_vien');
 
-        if ($request->keyword) {
-            $query->where(function ($q) use ($request) {
-                $q->where('ho_ten', 'like', '%' . $request->keyword . '%')
-                    ->orWhere('email', 'like', '%' . $request->keyword . '%');
+        $query = (clone $staffBase);
+
+        if ($request->filled('keyword')) {
+            $keyword = trim($request->keyword);
+            $query->where(function ($q) use ($keyword) {
+                $q->where('ho_ten', 'like', '%' . $keyword . '%')
+                    ->orWhere('email', 'like', '%' . $keyword . '%');
             });
         }
 
-        $nhanViens = $query->latest()->paginate(10);
+        if ($request->filled('status')) {
+            match ($request->status) {
+                'active' => $query->where('trang_thai_hoat_dong', true),
+                'locked' => $query->where('trang_thai_hoat_dong', false),
+                default => null,
+            };
+        }
 
-        return view('admin.nhanviens.index', compact('nhanViens'));
+        $nhanViens = $query
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        $summary = [
+            'total' => (clone $staffBase)->count(),
+            'active' => (clone $staffBase)->where('trang_thai_hoat_dong', true)->count(),
+            'locked' => (clone $staffBase)->where('trang_thai_hoat_dong', false)->count(),
+            'new_this_month' => (clone $staffBase)->where('created_at', '>=', now()->startOfMonth())->count(),
+        ];
+
+        return view('admin.nhanviens.index', compact('nhanViens', 'summary'));
     }
 
     public function create()

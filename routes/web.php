@@ -8,7 +8,9 @@ use App\Http\Controllers\Admin\FoodInvoiceController;
 use App\Http\Controllers\Admin\GheNgoiController;
 use App\Http\Controllers\Admin\HangGheController;
 use App\Http\Controllers\Admin\LoaiGheController as AdminLoaiGheController;
-use App\Http\Controllers\Admin\NhanVienController as AdminNhanVienController;
+use App\Http\Controllers\Admin\NhanVienController;
+use App\Http\Controllers\Admin\ChamCongController;
+use App\Http\Controllers\Admin\BangLuongController;
 use App\Http\Controllers\Admin\NhatKyHoatDongHeThongController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PhanQuyenController;
@@ -98,9 +100,9 @@ Route::get('/tin-tuc/{slug}', [\App\Http\Controllers\User\TinTucController::clas
 Route::get('/khuyen-mai', [\App\Http\Controllers\User\TinTucController::class, 'voucherIndex'])->name('user.khuyen-mai.index');
 
 Route::get('/cinemas', [RapChieuPhimController::class, 'index'])->name('user.cinemas.index');
-Route::get('/cinemas/{rapChieuPhim}', [RapChieuPhimController::class, 'show'])->name('user.cinemas.show');
 Route::get('/cinemas/map', BandoRapController::class)->name('user.cinemas.map');
 Route::get('/api/cinemas', BandoRapApiController::class)->name('api.cinemas.index');
+Route::get('/cinemas/{rapChieuPhim}', [RapChieuPhimController::class, 'show'])->name('user.cinemas.show');
 
 Route::get('/showtime', [UserSuatChieuController::class, 'index'])->name('user.showtimes.index');
 Route::get('/showtime/{suatChieu}', [UserSuatChieuController::class, 'show'])->name('user.showtimes.show');
@@ -169,7 +171,6 @@ Route::middleware(['auth'])
     ->group(function () {
         Route::get('/ve-xem-phim', [VeXemPhimController::class, 'index'])->name('ve_xem_phim.index');
         Route::get('/ve-xem-phim/{veXemPhim}', [VeXemPhimController::class, 'show'])->name('ve_xem_phim.show');
-        Route::patch('/ve-xem-phim/{veXemPhim}/huy', [VeXemPhimController::class, 'cancel'])->name('ve_xem_phim.cancel');
         Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
         Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('thanh-vien.index');
 
@@ -186,23 +187,34 @@ Route::middleware(['auth'])
 | STAFF PANEL
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])
-    ->prefix('staff')
-    ->name('staff.')
-    ->group(function () {
+Route::middleware(['auth'])->prefix('staff')->name('staff.')->group(function () {
         Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
 
-        Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
-            Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
-            Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
-        });
+        Route::get('/cham-congs', [\App\Http\Controllers\Staff\ChamCongController::class, 'index'])->name('cham-congs.index');
+        Route::post('/cham-congs/check-in', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkIn'])->name('cham-congs.check-in');
+        Route::post('/cham-congs/check-out', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkOut'])->name('cham-congs.check-out');
 
-        Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
-            Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
-            Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
-            Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
-            Route::post('/ban-ve/{suatChieu}', [BanVeController::class, 'store'])->name('ban-ve.store');
-        });
+        Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
+                Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
+                Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
+            });
+        Route::middleware(['permission:ban_ve_tai_quay'])
+            ->group(function () {
+                // Trang chính bán vé - chọn suất chiếu
+                Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
+                // Lịch sử bán vé
+                Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
+                // Bước 1: Chọn suất chiếu -> chọn ghế
+                Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
+                // Bước 2: Chọn ghế -> chọn đồ ăn
+                Route::post('/ban-ve/{suatChieu}/food', [BanVeController::class, 'food'])->name('ban-ve.food');
+                // Bước 3: Hiển thị trang checkout
+                Route::get('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'showCheckout'])->name('ban-ve.checkout.show');
+                // Bước 4: Xử lý dữ liệu checkout
+                Route::post('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'checkout'])->name('ban-ve.checkout');
+                // Bước 5: Xác nhận bán vé và lưu DB
+                Route::post('/ban-ve/{suatChieu}/store', [BanVeController::class, 'store'])->name('ban-ve.store');
+            });
     });
 
 /*
@@ -243,8 +255,8 @@ Route::middleware(['auth'])
         });
 
         Route::middleware(['permission:quan_ly_nhan_vien'])->group(function () {
-            Route::resource('nhanviens', AdminNhanVienController::class);
-            Route::patch('nhanviens/{nhanvien}/toggle-status', [AdminNhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
+            Route::resource('nhanviens', NhanVienController::class);
+            Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
         });
 
         Route::middleware(['permission:quan_ly_khach_hang'])->group(function () {
@@ -368,8 +380,15 @@ Route::middleware(['auth'])
         });
 
         Route::middleware(['permission:quan_ly_nhan_vien'])->group(function () {
-            Route::resource('nhanviens', AdminNhanVienController::class);
-            Route::patch('nhanviens/{nhanvien}/toggle-status', [AdminNhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
+            Route::resource('nhanviens', NhanVienController::class);
+            Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
+            Route::resource('cham-congs', ChamCongController::class)->names('cham-congs');
+            
+            Route::get('bang-luongs/calculate', [BangLuongController::class, 'showCalculateForm'])->name('bang-luongs.calculate');
+            Route::post('bang-luongs', [BangLuongController::class, 'store'])->name('bang-luongs.store');
+            Route::get('bang-luongs', [BangLuongController::class, 'index'])->name('bang-luongs.index');
+            Route::patch('bang-luongs/{bangLuong}/toggle-payment', [BangLuongController::class, 'togglePaymentStatus'])->name('bang-luongs.toggle-payment');
+            Route::delete('bang-luongs/{bangLuong}', [BangLuongController::class, 'destroy'])->name('bang-luongs.destroy');
         });
 
         Route::middleware(['permission:thong_ke_doanh_thu'])->group(function () {
@@ -496,6 +515,15 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('user.thanh-vien.index');
     Route::get('/user/thong-bao', [NotificationController::class, 'index'])->name('user.thong-bao.index');
+});
+
+
+Route::get('/test-php', function () {
+    return [
+        'php_version' => phpversion(),
+        'curl' => ini_get('curl.cainfo'),
+        'openssl' => ini_get('openssl.cafile'),
+    ];
 });
 
 require __DIR__ . '/auth.php';

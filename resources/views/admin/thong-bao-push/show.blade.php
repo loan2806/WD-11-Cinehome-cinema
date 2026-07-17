@@ -3,203 +3,182 @@
 @section('page-title', 'Chi tiết thông báo đẩy')
 
 @section('content')
+@php
+    $typeMeta = [
+        'info' => ['label' => 'Thông tin', 'icon' => 'fa-circle-info', 'class' => 'is-info'],
+        'success' => ['label' => 'Thành công', 'icon' => 'fa-circle-check', 'class' => 'is-success'],
+        'warning' => ['label' => 'Cảnh báo', 'icon' => 'fa-triangle-exclamation', 'class' => 'is-warning'],
+        'promo' => ['label' => 'Khuyến mãi', 'icon' => 'fa-gift', 'class' => 'is-promo'],
+        'system' => ['label' => 'Hệ thống', 'icon' => 'fa-gear', 'class' => 'is-system'],
+    ];
 
-<div class="admin-panel max-w-3xl mx-auto">
+    $audienceMeta = [
+        'all' => ['label' => 'Tất cả người dùng', 'icon' => 'fa-globe', 'class' => 'is-all'],
+        'user' => ['label' => 'Khách hàng thường', 'icon' => 'fa-user', 'class' => 'is-user'],
+        'vip' => ['label' => 'Khách hàng VIP', 'icon' => 'fa-crown', 'class' => 'is-vip'],
+        'staff' => ['label' => 'Nhân viên', 'icon' => 'fa-user-tie', 'class' => 'is-staff'],
+        'admin' => ['label' => 'Quản trị viên', 'icon' => 'fa-user-shield', 'class' => 'is-admin'],
+        'nguoi_dung_cu_the' => ['label' => 'Người dùng cụ thể', 'icon' => 'fa-user-pen', 'class' => 'is-specific'],
+        'khach_hang' => ['label' => 'Khách hàng', 'icon' => 'fa-user', 'class' => 'is-user'],
+        'nhan_vien' => ['label' => 'Nhân viên', 'icon' => 'fa-user-tie', 'class' => 'is-staff'],
+        'quan_tri_vien' => ['label' => 'Quản trị viên', 'icon' => 'fa-user-shield', 'class' => 'is-admin'],
+    ];
 
-    {{-- HEADER --}}
-    <div class="panel-header flex items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('admin.thong-bao-push.index') }}"
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 transition-all hover:bg-white/10 hover:text-white">
+    $statusMeta = [
+        'da_gui' => ['label' => 'Đã gửi', 'icon' => 'fa-paper-plane', 'class' => 'is-sent'],
+        'chua_gui' => ['label' => 'Chưa gửi', 'icon' => 'fa-clock', 'class' => 'is-pending'],
+    ];
+
+    $type = $typeMeta[$thongBaoPush->loai] ?? ['label' => ucfirst($thongBaoPush->loai), 'icon' => 'fa-bell', 'class' => 'is-system'];
+    $audience = $audienceMeta[$thongBaoPush->doi_tuong_nhan] ?? ['label' => $thongBaoPush->doi_tuong_nhan, 'icon' => 'fa-users', 'class' => 'is-all'];
+    $status = $statusMeta[$thongBaoPush->trang_thai] ?? ['label' => $thongBaoPush->trang_thai, 'icon' => 'fa-clock', 'class' => 'is-pending'];
+    $recipientCollection = collect($nguoiNhanList);
+    $recipientTotal = $recipientCount ?? $recipientCollection->count();
+@endphp
+
+<div class="push-admin-page">
+    <section class="push-hero push-hero--detail">
+        <div class="push-hero-content">
+            <a href="{{ route('admin.thong-bao-push.index') }}" class="push-back-link">
                 <i class="fa-solid fa-arrow-left"></i>
+                Quay lại danh sách
             </a>
-            <div>
-                <h5 class="text-xl font-bold text-white flex items-center gap-3">
-                    Chi tiết thông báo đẩy
-                    <span class="rounded-lg bg-white/10 px-2.5 py-1 text-sm font-mono text-gray-400">#{{ $thongBaoPush->id }}</span>
-                </h5>
-                <p class="text-sm text-gray-500">
-                    Thông tin chi tiết thông báo
-                </p>
-            </div>
-        </div>
-    </div>
-
-    {{-- MAIN CONTENT CARD --}}
-    <div class="mt-5 rounded-2xl border border-white/10 bg-gradient-to-br from-[#1a1a1a] to-[#151515] overflow-hidden">
-        
-        {{-- Header Badge --}}
-        <div class="flex items-center justify-between border-b border-white/10 bg-white/[0.02] px-6 py-4">
-            <div class="flex items-center gap-3">
-                @php
-                    $loaiLabels = [
-                        'info' => 'Thông tin',
-                        'success' => 'Thành công',
-                        'warning' => 'Cảnh báo',
-                        'promo' => 'Khuyến mãi',
-                        'system' => 'Hệ thống',
-                    ];
-                    $badgeClass = match ($thongBaoPush->loai) {
-                        'info' => 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-                        'success' => 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
-                        'warning' => 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-                        'promo' => 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
-                        'system' => 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
-                        default => 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
-                    };
-                    $icon = match ($thongBaoPush->loai) {
-                        'info' => 'fa-info-circle',
-                        'success' => 'fa-circle-check',
-                        'warning' => 'fa-triangle-exclamation',
-                        'promo' => 'fa-gift',
-                        'system' => 'fa-gear',
-                        default => 'fa-bell',
-                    };
-                @endphp
-                <span class="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-bold {{ $badgeClass }}">
-                    <i class="fa-solid {{ $icon }}"></i>
-                    {{ $loaiLabels[$thongBaoPush->loai] ?? ucfirst($thongBaoPush->loai) }}
-                </span>
-                
-                @if ($thongBaoPush->trang_thai === 'da_gui')
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-400 border border-emerald-500/20">
-                        <i class="fa-solid fa-paper-plane text-[10px]"></i>
-                        Đã gửi
-                    </span>
-                @else
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1 text-xs font-bold text-amber-400 border border-amber-500/20">
-                        <i class="fa-solid fa-clock text-[10px]"></i>
-                        Chưa gửi
-                    </span>
-                @endif
-            </div>
-            <div class="text-xs text-gray-500">
-                <i class="fa-regular fa-calendar mr-1"></i>
-                {{ $thongBaoPush->created_at->format('d/m/Y H:i') }}
+            <span class="push-kicker">
+                <i class="fa-solid fa-receipt"></i>
+                Mã thông báo #{{ $thongBaoPush->id }}
+            </span>
+            <h2>{{ $thongBaoPush->tieu_de }}</h2>
+            <p>Kiểm tra nội dung, nhóm nhận và thời điểm gửi của thông báo đẩy.</p>
+            <div class="push-hero-meta">
+                <span><i class="fa-solid {{ $type['icon'] }}"></i>{{ $type['label'] }}</span>
+                <span><i class="fa-solid {{ $audience['icon'] }}"></i>{{ $audience['label'] }}</span>
+                <span><i class="fa-solid fa-users"></i>{{ number_format($recipientTotal) }} người nhận</span>
             </div>
         </div>
 
-        {{-- Content --}}
-        <div class="p-6">
-            {{-- Title --}}
-            <div class="mb-6">
-                <h3 class="text-xl font-bold text-white leading-tight">
-                    {{ $thongBaoPush->tieu_de }}
-                </h3>
-            </div>
+        <form action="{{ route('admin.thong-bao-push.destroy', $thongBaoPush) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thông báo này không?');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="push-danger-btn">
+                <i class="fa-solid fa-trash"></i>
+                Xóa thông báo
+            </button>
+        </form>
+    </section>
 
-            {{-- Info Grid --}}
-            <div class="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
-                <div class="rounded-xl bg-white/5 p-4">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        <i class="fa-solid fa-user mr-1"></i> Người tạo
-                    </label>
-                    <p class="mt-1 font-medium text-white">
-                        {{ $thongBaoPush->nguoiTao->ho_ten ?? 'Hệ thống' }}
-                    </p>
-                </div>
-                <div class="rounded-xl bg-white/5 p-4">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        <i class="fa-solid fa-users mr-1"></i> Đối tượng
-                    </label>
-                    <p class="mt-1 font-medium text-white">
-                        @switch($thongBaoPush->doi_tuong_nhan)
-                            @case('all') Tất cả @break
-                            @case('user') Người dùng @break
-                            @case('vip') VIP @break
-                            @case('staff') Nhân viên @break
-                            @case('admin') Quản trị @break
-                            @case('nguoi_dung_cu_the') Người dùng cụ thể @break
-                            @case('khach_hang') Khách hàng @break
-                            @case('nhan_vien') Nhân viên @break
-                            @case('quan_tri_vien') Quản trị @break
-                            @default {{ $thongBaoPush->doi_tuong_nhan }}
-                        @endswitch
-                    </p>
-                </div>
-                @if ($thongBaoPush->thoi_gian_gui)
-                <div class="rounded-xl bg-white/5 p-4">
-                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-500">
-                        <i class="fa-solid fa-clock mr-1"></i> Thời gian gửi
-                    </label>
-                    <p class="mt-1 font-medium text-white">
-                        {{ $thongBaoPush->thoi_gian_gui->format('d/m/Y H:i') }}
-                    </p>
-                </div>
-                @endif
-            </div>
-
-            {{-- Nội dung --}}
-            <div class="rounded-xl border border-white/10 bg-[#111] p-5">
-                <label class="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-500">
-                    <i class="fa-solid fa-align-left text-[#d99a32]"></i>
-                    Nội dung thông báo
-                </label>
-                <div class="text-sm leading-relaxed text-gray-300 whitespace-pre-line">
-                    {{ $thongBaoPush->noi_dung }}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- NGƯỜI NHẬN (nếu có) --}}
-    @if ($thongBaoPush->doi_tuong_nhan === 'nguoi_dung_cu_the' && $nguoiNhanList->count() > 0)
-        <div class="mt-5 rounded-2xl border border-white/10 bg-gradient-to-br from-[#1a1a1a] to-[#151515] overflow-hidden">
-            <div class="flex items-center gap-3 border-b border-white/10 bg-white/[0.02] px-6 py-4">
-                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#d99a32]/20">
-                    <i class="fa-solid fa-users text-[#d99a32]"></i>
-                </div>
+    <div class="push-detail-grid">
+        <section class="push-panel push-detail-message">
+            <div class="push-panel-head">
                 <div>
-                    <h6 class="font-bold text-white">Danh sách người nhận</h6>
-                    <p class="text-xs text-gray-500">{{ $nguoiNhanList->count() }} người dùng</p>
+                    <span>Nội dung</span>
+                    <h3>Bản xem thông báo</h3>
+                    <p>Nội dung bên dưới là thông tin người dùng sẽ nhận được trên hệ thống.</p>
+                </div>
+                <span class="push-status {{ $status['class'] }}">
+                    <i class="fa-solid {{ $status['icon'] }}"></i>
+                    {{ $status['label'] }}
+                </span>
+            </div>
+
+            <article class="push-message-shell">
+                <span class="push-preview-icon">
+                    <i class="fa-solid fa-bell"></i>
+                </span>
+                <div>
+                    <div class="push-message-top">
+                        <strong>CineHome</strong>
+                        <small>{{ $thongBaoPush->created_at->format('d/m/Y H:i') }}</small>
+                    </div>
+                    <h3>{{ $thongBaoPush->tieu_de }}</h3>
+                    <p>{{ $thongBaoPush->noi_dung }}</p>
+                    <span class="push-chip {{ $type['class'] }}">
+                        <i class="fa-solid {{ $type['icon'] }}"></i>
+                        {{ $type['label'] }}
+                    </span>
+                </div>
+            </article>
+        </section>
+
+        <aside class="push-panel push-detail-side">
+            <div class="push-panel-head">
+                <div>
+                    <span>Thông tin gửi</span>
+                    <h3>Chi tiết vận hành</h3>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="text-xs uppercase tracking-wider text-gray-500">
+
+            <div class="push-detail-facts">
+                <article>
+                    <i class="fa-solid fa-user-gear"></i>
+                    <span>Người tạo</span>
+                    <strong>{{ $thongBaoPush->nguoiTao->ho_ten ?? 'Hệ thống' }}</strong>
+                </article>
+                <article>
+                    <i class="fa-solid {{ $audience['icon'] }}"></i>
+                    <span>Đối tượng nhận</span>
+                    <strong>{{ $audience['label'] }}</strong>
+                </article>
+                <article>
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Thời gian gửi</span>
+                    <strong>{{ optional($thongBaoPush->thoi_gian_gui)->format('d/m/Y H:i') ?? 'Chưa gửi' }}</strong>
+                </article>
+                <article>
+                    <i class="fa-solid fa-users"></i>
+                    <span>Số người nhận</span>
+                    <strong>{{ number_format($recipientTotal) }}</strong>
+                </article>
+            </div>
+        </aside>
+    </div>
+
+    @if ($thongBaoPush->doi_tuong_nhan === 'nguoi_dung_cu_the' && $recipientCollection->count() > 0)
+        <section class="push-panel">
+            <div class="push-panel-head">
+                <div>
+                    <span>Người nhận</span>
+                    <h3>Danh sách người dùng cụ thể</h3>
+                    <p>Những tài khoản đã được gắn với thông báo này.</p>
+                </div>
+                <strong>{{ number_format($recipientCollection->count()) }} người</strong>
+            </div>
+
+            <div class="push-table-wrap">
+                <table class="push-table">
+                    <thead>
                         <tr>
-                            <th class="px-6 py-3 font-semibold">ID</th>
-                            <th class="px-6 py-3 font-semibold">Họ tên</th>
-                            <th class="px-6 py-3 font-semibold">Email</th>
+                            <th>ID</th>
+                            <th>Họ tên</th>
+                            <th>Email</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5 text-gray-300">
-                        @foreach ($nguoiNhanList as $nguoiDung)
-                            <tr class="hover:bg-white/[0.02] transition-colors">
-                                <td class="px-6 py-3">
-                                    <span class="font-mono text-xs text-gray-500">#{{ $nguoiDung->id }}</span>
-                                </td>
-                                <td class="px-6 py-3 font-medium">{{ $nguoiDung->ho_ten }}</td>
-                                <td class="px-6 py-3 text-gray-400">{{ $nguoiDung->email }}</td>
+                    <tbody>
+                        @foreach ($recipientCollection as $nguoiDung)
+                            <tr>
+                                <td data-label="ID"><span class="push-code">#{{ $nguoiDung->id }}</span></td>
+                                <td data-label="Họ tên"><strong>{{ $nguoiDung->ho_ten }}</strong></td>
+                                <td data-label="Email">{{ $nguoiDung->email }}</td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
-        </div>
+        </section>
     @endif
 
-    {{-- ACTION BAR --}}
-    <div class="mt-5 flex items-center justify-between gap-4">
-        <a href="{{ route('admin.thong-bao-push.index') }}"
-            class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-gray-400 transition-all hover:bg-white/10 hover:text-white">
+    <div class="push-form-actions">
+        <a href="{{ route('admin.thong-bao-push.index') }}" class="push-soft-btn">
             <i class="fa-solid fa-list"></i>
             Danh sách thông báo
         </a>
-        <form action="{{ route('admin.thong-bao-push.destroy', $thongBaoPush) }}"
-            method="POST"
-            class="inline-block"
-            onsubmit="return confirm('Bạn có chắc chắn muốn xóa thông báo này không?');">
+        <form action="{{ route('admin.thong-bao-push.destroy', $thongBaoPush) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa thông báo này không?');">
             @csrf
             @method('DELETE')
-            <button type="submit"
-                class="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20">
+            <button type="submit" class="push-danger-btn">
                 <i class="fa-solid fa-trash"></i>
                 Xóa thông báo
             </button>
         </form>
     </div>
-
 </div>
-
 @endsection

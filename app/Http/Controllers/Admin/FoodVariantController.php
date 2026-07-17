@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CapnhatFoodVariantRequest;
 use App\Http\Requests\Admin\ThemmoiFoodVariantRequest;
-use App\Models\Food;
-use App\Models\FoodVariant;
+use App\Models\Doan;
+use App\Models\BienTheDoAn;
 use App\Services\AdminNotificationService;
 use App\Traits\Loggable;
 use Illuminate\Http\Request;
@@ -15,7 +15,7 @@ class FoodVariantController extends Controller
 {
     use Loggable;
 
-    public function index(Food $food)
+    public function index(Doan $food)
     {
         $variants = $food->variants()
             ->orderBy('value')
@@ -27,7 +27,7 @@ class FoodVariantController extends Controller
         );
     }
 
-    public function create(Food $food)
+    public function create(Doan $food)
     {
         return view(
             'admin.foods.variants.create',
@@ -37,7 +37,7 @@ class FoodVariantController extends Controller
 
     public function store(
         ThemmoiFoodVariantRequest $request,
-        Food $food
+        Doan $food
     ) {
         $exists = $food->variants()
             ->where('value', trim($request->value))
@@ -52,6 +52,9 @@ class FoodVariantController extends Controller
         $variant = $food->variants()->create(
             $request->validated()
         );
+        $food->update([
+            'price' => $food->variants()->min('price')
+        ]);
 
         AdminNotificationService::push(
             'Thêm biến thể',
@@ -78,8 +81,8 @@ class FoodVariantController extends Controller
     }
 
     public function edit(
-        Food $food,
-        FoodVariant $variant
+        Doan $food,
+        BienTheDoAn $variant
     ) {
         abort_if(
             $variant->food_id != $food->id,
@@ -96,8 +99,8 @@ class FoodVariantController extends Controller
     }
     public function update(
         CapnhatFoodVariantRequest $request,
-        Food $food,
-        FoodVariant $variant
+        Doan $food,
+        BienTheDoAn $variant
     ) {
         abort_if($variant->food_id != $food->id, 404);
 
@@ -114,6 +117,10 @@ class FoodVariantController extends Controller
 
         $variant->update($request->validated());
 
+        $food->update([
+            'price' => $food->variants()->min('price')
+        ]);
+
         $this->ghiNhatKy(
             $request,
             'Cập nhật biến thể',
@@ -128,8 +135,8 @@ class FoodVariantController extends Controller
 
     public function updateStock(
         Request $request,
-        Food $food,
-        FoodVariant $variant
+        Doan $food,
+        BienTheDoAn $variant
     ) {
         abort_if(
             $variant->food_id != $food->id,
@@ -175,8 +182,8 @@ class FoodVariantController extends Controller
 
     public function destroy(
         Request $request,
-        Food $food,
-        FoodVariant $variant
+        Doan $food,
+        BienTheDoAn $variant
     ) {
         abort_if(
             $variant->food_id != $food->id,
@@ -186,6 +193,10 @@ class FoodVariantController extends Controller
         $name = $variant->value;
 
         $variant->delete();
+
+        $food->update([
+            'price' => $food->variants()->min('price')
+        ]);
 
         $this->ghiNhatKy(
             $request,

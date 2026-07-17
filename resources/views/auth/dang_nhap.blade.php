@@ -1,64 +1,115 @@
 <x-guest-layout>
     @php
         $heThongSettings = \App\Models\CaiDatHeThong::first();
-        $urlAnhNen = ($heThongSettings && $heThongSettings->anh_nen_login) 
-            ? asset('storage/' . $heThongSettings->anh_nen_login) 
-            : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1920';
+        $urlAnhNen = ($heThongSettings && $heThongSettings->anh_nen_login)
+            ? asset('storage/' . $heThongSettings->anh_nen_login)
+            : 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1920&auto=format&fit=crop';
     @endphp
 
-    <div class="fixed inset-0 z-0 h-screen w-screen overflow-hidden bg-cover bg-center bg-no-repeat" style="background-image: url('{{ $urlAnhNen }}');">
-        <div class="absolute inset-0 bg-black/75 backdrop-blur-[3px]"></div>
-    </div>
+    <main class="auth-page" style="--auth-bg: url('{{ $urlAnhNen }}')" lang="vi" spellcheck="false">
+        <section class="auth-page-shell">
+            <aside class="auth-page-visual">
+                <a href="{{ route('home') }}" class="auth-page-brand">
+                    <span class="cinehome-logo-sparkle">
+                        <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome" class="cinehome-logo-img">
+                    </span>
+                    Cine<span>Home</span>
+                </a>
 
-    <div class="fixed inset-0 z-10 flex h-screen w-screen overflow-hidden items-center justify-center px-4">
-        <div class="w-full max-w-[500px] rounded-2xl border border-white/10 bg-[#151515]/95 p-10 shadow-2xl backdrop-blur-md">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-black tracking-tight text-white m-0">Cine<span class="text-[#d99a32]">Home</span></h2>
-                <p class="mt-2 text-sm text-gray-400 uppercase tracking-widest font-semibold">Hệ thống quản lý rạp phim</p>
-            </div>
-
-            <div class="flex rounded-xl bg-[#2a2a2a]/60 p-1.5 mb-6 border border-white/5">
-                <a href="{{ route('login') }}" class="w-1/2 text-center py-2.5 text-sm font-black rounded-lg bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white text-decoration-none shadow-md">Đăng nhập</a>
-                <a href="{{ route('register') }}" class="w-1/2 text-center py-2.5 text-sm font-bold text-gray-400 hover:text-white transition-colors text-decoration-none flex items-center justify-center">Đăng ký</a>
-            </div>
-
-            <x-auth-session-status class="mb-4 text-base" :status="session('status')" />
-            @if (session('error'))
-                <div class="mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-base font-semibold">
-                    <i class="fa-solid fa-circle-exclamation mr-1.5"></i> {{ session('error') }}
-                </div>
-            @endif
-            
-            <form method="POST" action="{{ route('login') }}" id="loginForm" class="space-y-6 m-0">
-                @csrf
-                <div class="space-y-2">
-                    <label for="email" class="block text-sm font-bold uppercase tracking-wide text-[#e8d2bb]">Địa chỉ Email</label>
-                    <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus class="block h-12 w-full rounded-xl border border-[#8a4a21] bg-[#2a2a2a]/60 px-4 text-base text-white outline-none focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32] transition-colors" />
-                    @if($errors->has('email')) <div class="text-sm text-red-400 font-medium mt-1">{{ $errors->first('email') }}</div> @endif
+                <div>
+                    <span class="auth-side-kicker">Thành viên CineHome</span>
+                    <h1>Chào mừng bạn quay lại.</h1>
+                    <p>Đăng nhập để tiếp tục đặt vé, quản lý vé đã mua và lưu các voucher đang có.</p>
                 </div>
 
-                <div class="space-y-2">
-                    <label for="mat_khau" class="block text-sm font-bold uppercase tracking-wide text-[#e8d2bb]">Mật khẩu bảo mật</label>
-                    <input id="mat_khau" type="password" name="mat_khau" required class="block h-12 w-full rounded-xl border border-[#8a4a21] bg-[#2a2a2a]/60 px-4 text-base text-white outline-none focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32] transition-colors" />
-                    @if($errors->has('mat_khau')) <div class="text-sm text-red-400 font-medium mt-1">{{ $errors->first('mat_khau') }}</div> @endif
+                <div class="auth-page-benefits">
+                    <span><i class="fa-solid fa-couch"></i> Chọn ghế yêu thích</span>
+                    <span><i class="fa-solid fa-qrcode"></i> Nhận vé điện tử nhanh</span>
+                    <span><i class="fa-solid fa-gift"></i> Dùng voucher thành viên</span>
+                </div>
+            </aside>
+
+            <section class="auth-page-card">
+                <div class="auth-brand-block">
+                    <div class="auth-logo-mark cinehome-logo-sparkle">
+                        <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome" class="cinehome-logo-img">
+                    </div>
+                    <div>
+                        <h2>Cine<span>Home</span></h2>
+                        <p>Đăng nhập để đặt vé và quản lý tài khoản</p>
+                    </div>
                 </div>
 
-                <div class="flex items-center justify-between pt-1">
-                    <label for="remember_me" class="inline-flex items-center cursor-pointer select-none">
-                        <input id="remember_me" type="checkbox" class="rounded h-4 w-4 bg-[#2a2a2a] border-[#8a4a21] text-[#d99a32] shadow-sm focus:ring-[#d99a32]" name="remember">
-                        <span class="ms-2 text-sm text-gray-400 hover:text-white transition-colors">Ghi nhớ đăng nhập</span>
+                <div class="auth-tab-switch">
+                    <a href="{{ route('login') }}" class="auth-tab-btn is-active">Đăng nhập</a>
+                    <a href="{{ route('register') }}" class="auth-tab-btn">Đăng ký</a>
+                </div>
+
+                <x-auth-session-status class="auth-alert is-success" :status="session('status')" />
+
+                @if (session('error'))
+                    <div class="auth-alert">{{ session('error') }}</div>
+                @endif
+
+                <form method="POST" action="{{ route('login') }}" class="auth-form auth-form-animate">
+                    @csrf
+
+                    <label class="auth-field">
+                        <span>Email</span>
+                        <div class="auth-input-wrap">
+                            <i class="fa-solid fa-envelope"></i>
+                            <input
+                                id="email"
+                                type="email"
+                                name="email"
+                                value="{{ old('email') }}"
+                                required
+                                autofocus
+                                placeholder="Nhập email của bạn"
+                            >
+                        </div>
+                        @if ($errors->has('email'))
+                            <small class="auth-error">{{ $errors->first('email') }}</small>
+                        @endif
                     </label>
-                    @if (Route::has('password.request'))
-                        <a class="text-sm text-gray-400 hover:text-[#d99a32] text-decoration-none font-medium" href="{{ route('password.request') }}">Quên mật khẩu?</a>
-                    @endif
-                </div>
 
-                <div class="pt-2">
-                    <button type="submit" class="w-full h-12 rounded-xl font-bold text-base bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white border-0 cursor-pointer hover:from-[#d99a32] hover:to-[#8a4a21] flex items-center justify-center gap-2">
-                        Xác nhận Đăng nhập <i class="fa-solid fa-right-to-bracket text-sm"></i>
+                    <label class="auth-field">
+                        <span>Mật khẩu</span>
+                        <div class="auth-input-wrap">
+                            <i class="fa-solid fa-lock"></i>
+                            <input
+                                id="loginPagePassword"
+                                type="password"
+                                name="mat_khau"
+                                required
+                                placeholder="Nhập mật khẩu"
+                            >
+                            <button type="button" data-toggle-password="loginPagePassword" class="auth-password-toggle" aria-label="Hiện mật khẩu">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                        @if ($errors->has('mat_khau'))
+                            <small class="auth-error">{{ $errors->first('mat_khau') }}</small>
+                        @endif
+                    </label>
+
+                    <div class="auth-row">
+                        <label class="auth-check">
+                            <input id="remember_me" type="checkbox" name="remember">
+                            <span>Ghi nhớ đăng nhập</span>
+                        </label>
+
+                        @if (Route::has('password.request'))
+                            <a href="{{ route('password.request') }}">Quên mật khẩu?</a>
+                        @endif
+                    </div>
+
+                    <button type="submit" class="auth-submit-btn">
+                        Đăng nhập
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i>
                     </button>
-                </div>
-            </form>
-        </div>
-    </div>
+                </form>
+            </section>
+        </section>
+    </main>
 </x-guest-layout>

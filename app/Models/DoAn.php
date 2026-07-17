@@ -23,11 +23,13 @@ class DoAn extends Model
         'description',
         'is_active',
         'sort_order',
+        'price',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'sort_order' => 'integer',
+        'price' => 'float',
     ];
 
     public function invoiceItems(): HasMany
@@ -56,9 +58,7 @@ class DoAn extends Model
     public function getPriceAttribute(): float
     {
         if ($this->isCombo()) {
-            return (float) $this->comboItems->sum(function ($item) {
-                return (float) ($item->variant?->price ?? 0) * (int) ($item->quantity ?? 1);
-            });
+            return (float) ($this->attributes['price'] ?? 0);
         }
 
         return (float) ($this->saleVariant()?->price ?? 0);

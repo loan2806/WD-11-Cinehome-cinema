@@ -17,10 +17,7 @@
         
         @php
             // ĐỒNG BỘ LOGO: Tự động kết nối kho dữ liệu cấu hình tối cao của rạp từ Admin
-            $heThongSettings = \App\Models\CaiDatHeThong::first();
-            $urlLogo = ($heThongSettings && $heThongSettings->logo) 
-                ? asset('storage/' . $heThongSettings->logo) 
-                : asset('assets/images/logo.png');
+            $urlLogo = asset('assets/images/LOGO copy.png');
             $user = Auth::user();
         @endphp
 
@@ -32,8 +29,8 @@
                 <div class="flex items-center gap-6">
                     {{-- Logo cấu hình động --}}
                     <a href="{{ route('home') }}" class="flex items-center gap-3 text-decoration-none group">
-                        <div class="h-11 w-11 rounded-xl bg-white/5 p-1.5 border border-white/10 flex items-center justify-center overflow-hidden transition group-hover:border-[#d99a32]/40">
-                            <img src="{{ $urlLogo }}" alt="CineHome Logo" class="object-contain max-h-full max-w-full">
+                        <div class="cinehome-logo-sparkle h-[52px] w-[52px] rounded-2xl bg-white/5 p-1.5 border border-white/10 flex items-center justify-center overflow-hidden transition group-hover:border-[#d99a32]/40">
+                            <img src="{{ $urlLogo }}" alt="CineHome Logo" class="cinehome-logo-img object-contain max-h-full max-w-full">
                         </div>
                         <div class="hidden sm:block">
                             <span class="block text-lg font-black text-white tracking-tight leading-none">Cine<span class="text-[#d99a32]">Home</span></span>

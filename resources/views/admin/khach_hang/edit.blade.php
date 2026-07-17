@@ -2,135 +2,253 @@
 
 @section('title', 'Sửa khách hàng')
 @section('page-title', 'Sửa khách hàng')
-@section('page-subtitle', 'Cập nhật hồ sơ và trạng thái tài khoản khách hàng')
+@section('page-subtitle', 'Cập nhật hồ sơ, liên hệ và trạng thái tài khoản khách hàng')
 
 @section('content')
-<div class="mx-auto max-w-4xl space-y-6">
+@php
+    $isActive = (bool) old('trang_thai_hoat_dong', $khachHang->trang_thai_hoat_dong);
+    $displayName = old('ho_ten', $khachHang->ho_ten) ?: 'Khách hàng';
+    $displayEmail = old('email', $khachHang->email) ?: 'Chưa có email';
+    $displayPhone = old('so_dien_thoai', $khachHang->so_dien_thoai) ?: 'Chưa có số điện thoại';
+    $displayBirthday = old('ngay_sinh', $khachHang->ngay_sinh?->format('Y-m-d'));
+    try {
+        $displayBirthdayText = $displayBirthday ? \Carbon\Carbon::parse($displayBirthday)->format('d/m/Y') : 'Chưa nhập ngày sinh';
+    } catch (\Throwable $e) {
+        $displayBirthdayText = $displayBirthday ?: 'Chưa nhập ngày sinh';
+    }
+    $memberCard = $khachHang->thanhVien;
+@endphp
 
-    <a href="{{ route('admin.khach-hang.show', $khachHang) }}"
-        class="inline-flex items-center gap-2 text-sm font-bold text-[#d99a32] no-underline transition hover:translate-x-1">
-        <i class="fa-solid fa-arrow-left"></i>
-        Quay lại chi tiết khách hàng
-    </a>
+<div class="staff-create-page customer-create-page customer-edit-page">
+    @include('admin.partials.flash')
 
-    <div class="rounded-3xl border border-white/10 bg-[#121212] p-6 shadow-2xl">
-        <h2 class="mb-6 text-2xl font-black text-white">
-            Thông tin khách hàng
-        </h2>
+    <section class="staff-create-hero">
+        <div>
+            <span class="staff-create-kicker">
+                <i class="fa-solid fa-user-pen"></i>
+                Hồ sơ khách hàng
+            </span>
+            <h2>Cập nhật khách hàng</h2>
+            <p>Điều chỉnh thông tin liên hệ, ngày sinh và trạng thái tài khoản. Các thay đổi nên được kiểm tra kỹ để tránh ảnh hưởng đến đặt vé, voucher sinh nhật và chăm sóc khách hàng.</p>
+        </div>
 
-        <form method="POST" action="{{ route('admin.khach-hang.update', $khachHang) }}" class="space-y-5">
-            @csrf
-            @method('PATCH')
+        <div class="customer-edit-hero-actions">
+            <a href="{{ route('admin.khach-hang.show', $khachHang) }}" class="staff-create-soft-btn">
+                <i class="fa-solid fa-arrow-left"></i>
+                Chi tiết khách hàng
+            </a>
+            <a href="{{ route('admin.khach-hang.index') }}" class="staff-create-soft-btn">
+                <i class="fa-solid fa-list"></i>
+                Danh sách
+            </a>
+        </div>
+    </section>
 
-            {{-- Họ tên --}}
+    @if ($errors->any())
+        <section class="staff-create-alert">
+            <i class="fa-solid fa-circle-exclamation"></i>
             <div>
-                <label class="mb-2 block text-sm font-bold text-gray-300">
-                    Họ tên khách hàng
-                </label>
+                <strong>Thông tin cập nhật chưa hợp lệ</strong>
+                <p>Vui lòng kiểm tra lại các trường đang báo lỗi rồi lưu lại hồ sơ khách hàng.</p>
+            </div>
+        </section>
+    @endif
 
-                <input type="text" name="ho_ten" value="{{ old('ho_ten', $khachHang->ho_ten) }}"
-                    class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+    <form method="POST" action="{{ route('admin.khach-hang.update', $khachHang) }}" class="staff-create-layout">
+        @csrf
+        @method('PATCH')
 
-                @error('ho_ten')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
+        <main class="staff-create-panel">
+            <div class="staff-create-panel-head">
+                <span class="staff-create-panel-icon">
+                    <i class="fa-solid fa-address-card"></i>
+                </span>
+                <div>
+                    <span class="staff-create-kicker">Thông tin tài khoản</span>
+                    <h3>Hồ sơ khách hàng</h3>
+                    <p>Cập nhật tên, email và số điện thoại để nhân viên dễ tìm khách khi bán vé tại quầy hoặc hỗ trợ sau giao dịch.</p>
+                </div>
             </div>
 
-            {{-- Email --}}
-            <div>
-                <label class="mb-2 block text-sm font-bold text-gray-300">
-                    Email
+            <div class="staff-create-fields">
+                <label class="staff-create-field">
+                    <span>Họ và tên</span>
+                    <div class="staff-create-control @error('ho_ten') is-invalid @enderror">
+                        <i class="fa-solid fa-user"></i>
+                        <input
+                            type="text"
+                            name="ho_ten"
+                            value="{{ old('ho_ten', $khachHang->ho_ten) }}"
+                            placeholder="VD: Nguyễn Văn A"
+                            autocomplete="name"
+                            required
+                            autofocus
+                        >
+                    </div>
+                    @error('ho_ten')
+                        <small class="staff-create-error">{{ $message }}</small>
+                    @enderror
                 </label>
 
-                <input type="email" name="email" value="{{ old('email', $khachHang->email) }}"
-                    class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
-
-                @error('email')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Số điện thoại --}}
-            <div>
-                <label class="mb-2 block text-sm font-bold text-gray-300">
-                    Số điện thoại
+                <label class="staff-create-field">
+                    <span>Email đăng nhập</span>
+                    <div class="staff-create-control @error('email') is-invalid @enderror">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input
+                            type="email"
+                            name="email"
+                            value="{{ old('email', $khachHang->email) }}"
+                            placeholder="khachhang@cinehome.vn"
+                            autocomplete="email"
+                            required
+                        >
+                    </div>
+                    @error('email')
+                        <small class="staff-create-error">{{ $message }}</small>
+                    @enderror
                 </label>
 
-                <input type="text" name="so_dien_thoai" value="{{ old('so_dien_thoai', $khachHang->so_dien_thoai) }}"
-                    placeholder="Ví dụ: 0987654321"
-                    class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
-
-                @error('so_dien_thoai')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Ngày sinh --}}
-            <div>
-                <label class="mb-2 block text-sm font-bold text-gray-300">
-                    Ngày sinh
+                <label class="staff-create-field">
+                    <span>Số điện thoại</span>
+                    <div class="staff-create-control @error('so_dien_thoai') is-invalid @enderror">
+                        <i class="fa-solid fa-phone"></i>
+                        <input
+                            type="tel"
+                            name="so_dien_thoai"
+                            value="{{ old('so_dien_thoai', $khachHang->so_dien_thoai) }}"
+                            placeholder="VD: 0987654321"
+                            autocomplete="tel"
+                        >
+                    </div>
+                    @error('so_dien_thoai')
+                        <small class="staff-create-error">{{ $message }}</small>
+                    @else
+                        <small class="staff-create-hint">Nên nhập số điện thoại để tìm khách nhanh tại quầy vé.</small>
+                    @enderror
                 </label>
 
-                @if($khachHang->ngay_sinh)
-                {{-- Đã có ngày sinh thì khóa lại, tránh đổi ngày sinh để nhận voucher nhiều lần --}}
-                <input type="date" value="{{ $khachHang->ngay_sinh->format('Y-m-d') }}" disabled
-                    class="w-full cursor-not-allowed rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-gray-400 outline-none">
-
-                <input type="hidden" name="ngay_sinh" value="{{ $khachHang->ngay_sinh->format('Y-m-d') }}">
-
-                <p class="mt-2 text-xs text-yellow-400">
-                    Ngày sinh đã được khóa sau khi lưu để đảm bảo chính sách voucher sinh nhật.
-                </p>
-                @else
-                {{-- Chưa có ngày sinh thì admin được nhập một lần --}}
-                <input type="date" name="ngay_sinh" value="{{ old('ngay_sinh') }}"
-                    class="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
-
-                <p class="mt-2 text-xs text-gray-500">
-                    Ngày sinh chỉ được nhập một lần. Sau khi lưu sẽ không thể chỉnh sửa.
-                </p>
-                @endif
-
-                @error('ngay_sinh')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
-            </div>
-
-            {{-- Trạng thái hoạt động --}}
-            <div>
-                <label class="mb-2 block text-sm font-bold text-gray-300">
-                    Trạng thái tài khoản
+                <label class="staff-create-field">
+                    <span>Trạng thái tài khoản</span>
+                    <div class="staff-create-control @error('trang_thai_hoat_dong') is-invalid @enderror">
+                        <i class="fa-solid {{ $isActive ? 'fa-circle-check' : 'fa-lock' }}"></i>
+                        <select name="trang_thai_hoat_dong" required>
+                            <option value="1" @selected($isActive)>Đang hoạt động</option>
+                            <option value="0" @selected(! $isActive)>Bị khóa</option>
+                        </select>
+                    </div>
+                    @error('trang_thai_hoat_dong')
+                        <small class="staff-create-error">{{ $message }}</small>
+                    @else
+                        <small class="staff-create-hint">Khóa tài khoản sẽ ngăn khách sử dụng một số thao tác trên website.</small>
+                    @enderror
                 </label>
 
-                <select name="trang_thai_hoat_dong"
-                    class="w-full rounded-2xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
-                    <option value="1" @selected(old('trang_thai_hoat_dong', $khachHang->trang_thai_hoat_dong) == 1)>
-                        Đang hoạt động
-                    </option>
-
-                    <option value="0" @selected(old('trang_thai_hoat_dong', $khachHang->trang_thai_hoat_dong) == 0)>
-                        Bị khóa
-                    </option>
-                </select>
-
-                @error('trang_thai_hoat_dong')
-                <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                @enderror
+                <label class="staff-create-field is-wide">
+                    <span>Ngày sinh</span>
+                    @if($khachHang->ngay_sinh)
+                        <div class="staff-create-control is-disabled">
+                            <i class="fa-solid fa-cake-candles"></i>
+                            <input
+                                type="date"
+                                value="{{ $khachHang->ngay_sinh->format('Y-m-d') }}"
+                                disabled
+                            >
+                        </div>
+                        <input type="hidden" name="ngay_sinh" value="{{ $khachHang->ngay_sinh->format('Y-m-d') }}">
+                        <small class="staff-create-hint is-warning">Ngày sinh đã được khóa để đảm bảo chính sách voucher sinh nhật.</small>
+                    @else
+                        <div class="staff-create-control @error('ngay_sinh') is-invalid @enderror">
+                            <i class="fa-solid fa-cake-candles"></i>
+                            <input
+                                type="date"
+                                name="ngay_sinh"
+                                value="{{ old('ngay_sinh') }}"
+                                autocomplete="bday"
+                            >
+                        </div>
+                        @error('ngay_sinh')
+                            <small class="staff-create-error">{{ $message }}</small>
+                        @else
+                            <small class="staff-create-hint">Ngày sinh chỉ được nhập một lần, sau khi lưu sẽ không thể chỉnh sửa.</small>
+                        @enderror
+                    @endif
+                </label>
             </div>
 
-            <div class="flex justify-end gap-3 border-t border-white/10 pt-5">
-                <a href="{{ route('admin.khach-hang.show', $khachHang) }}"
-                    class="rounded-2xl bg-white/10 px-5 py-3 text-sm font-bold text-white no-underline transition hover:bg-white/15">
-                    Hủy
-                </a>
+            <div class="staff-create-status-card {{ $isActive ? 'is-active' : 'is-locked' }}">
+                <span>
+                    <i class="fa-solid {{ $isActive ? 'fa-circle-check' : 'fa-lock' }}"></i>
+                </span>
+                <div>
+                    <strong>{{ $isActive ? 'Tài khoản đang hoạt động' : 'Tài khoản đang bị khóa' }}</strong>
+                    <p>{{ $isActive ? 'Khách hàng có thể đăng nhập, đặt vé và sử dụng voucher hợp lệ.' : 'Khách hàng bị hạn chế thao tác cho đến khi tài khoản được mở lại.' }}</p>
+                </div>
+            </div>
 
-                <button type="submit"
-                    class="rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-6 py-3 text-sm font-black text-white transition hover:-translate-y-1">
-                    <i class="fa-solid fa-save mr-2"></i>
+            <div class="staff-create-actions">
+                <button type="submit" class="staff-create-primary-btn">
+                    <i class="fa-solid fa-floppy-disk"></i>
                     Lưu thay đổi
                 </button>
+                <a href="{{ route('admin.khach-hang.show', $khachHang) }}" class="staff-create-soft-btn">
+                    Hủy
+                </a>
             </div>
-        </form>
-    </div>
+        </main>
+
+        <aside class="staff-create-side">
+            <section class="staff-create-preview">
+                <span class="staff-create-avatar">
+                    <i class="fa-solid fa-user"></i>
+                </span>
+                <div>
+                    <small>Xem nhanh hồ sơ</small>
+                    <h3>{{ $displayName }}</h3>
+                    <p>{{ $displayEmail }}</p>
+                </div>
+
+                <div class="customer-create-preview-list">
+                    <span>
+                        <i class="fa-solid fa-phone"></i>
+                        {{ $displayPhone }}
+                    </span>
+                    <span>
+                        <i class="fa-solid fa-cake-candles"></i>
+                        {{ $displayBirthdayText }}
+                    </span>
+                    <span>
+                        <i class="fa-solid fa-id-card"></i>
+                        {{ $memberCard?->ma_thanh_vien ?? 'Chưa có thẻ thành viên' }}
+                    </span>
+                </div>
+
+                <span class="staff-create-status {{ $isActive ? 'is-active' : 'is-locked' }}">
+                    <i class="fa-solid {{ $isActive ? 'fa-circle-check' : 'fa-lock' }}"></i>
+                    {{ $isActive ? 'Đang hoạt động' : 'Bị khóa' }}
+                </span>
+            </section>
+
+            <section class="staff-create-note">
+                <h3>
+                    <i class="fa-solid fa-shield-halved"></i>
+                    Lưu ý khi chỉnh sửa
+                </h3>
+                <ul>
+                    <li>
+                        <i class="fa-solid fa-check"></i>
+                        Email và số điện thoại không được trùng với tài khoản khác.
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-check"></i>
+                        Ngày sinh chỉ dùng để xét voucher sinh nhật nên cần giữ ổn định.
+                    </li>
+                    <li>
+                        <i class="fa-solid fa-check"></i>
+                        Không chỉnh điểm tại đây, hãy dùng trang Thẻ thành viên & Điểm.
+                    </li>
+                </ul>
+            </section>
+        </aside>
+    </form>
 </div>
 @endsection

@@ -12,6 +12,7 @@ use App\Traits\Loggable;
 use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 class PhimsController extends Controller
 {
@@ -68,42 +69,64 @@ class PhimsController extends Controller
     | STORE
     |--------------------------------------------------------------------------
     */
- public function store(ThemmoiPhimsRequest $request)
-{
-    $data = $request->validated();
+    public function store(ThemmoiPhimsRequest $request)
+    {
+        $data = $request->validated();
 
-    // upload ảnh đúng cách
-    if ($request->hasFile('poster')) {
-        $path = $data['poster'] = $request->file('poster')->store('movies', 'public');
-        $data['poster'] = basename($path);
+
+        if (!empty($data['trailer'])) {
+
+            $response = Http::get(
+                'https://www.youtube.com/oembed',
+                [
+                    'url' => $data['trailer'],
+                    'format' => 'json'
+                ]
+            );
+
+            if (!$response->successful()) {
+                return back()
+                    ->withErrors([
+                        'trailer' => 'Trailer không tồn tại hoặc đã bị xóa.'
+                    ])
+                    ->withInput();
+            }
+        }
+
+        // upload ảnh đúng cách
+
+        // upload ảnh đúng cách
+        if ($request->hasFile('poster')) {
+            $path = $data['poster'] = $request->file('poster')->store('movies', 'public');
+            $data['poster'] = basename($path);
+        }
+
+        $data['slug'] = Str::slug($data['ten_phim']) . '-' . uniqid();
+
+        // tạo phim trước
+        $movie = Phims::create($data);
+
+        $this->ghiNhatKy(
+            $request,
+            'Thêm phim mới',
+            'Quản lý phim & lịch chiếu',
+            "Thêm phim: {$data['ten_phim']}"
+        );
+
+        if (!empty($data['the_loai_id'])) {
+            $movie->genres()->sync($data['the_loai_id']);
+        }
+
+        AdminNotificationService::push(
+            '🎬 Phim mới được thêm',
+            'Đã thêm phim ' . $movie->ten_phim,
+            'Success'
+        );
+
+        return redirect()
+            ->route('admin.phims.index')
+            ->with('success', 'Thêm phim thành công');
     }
-
-    $data['slug'] = Str::slug($data['ten_phim']) . '-' . uniqid();
-
-    // tạo phim trước
-    $movie = Phims::create($data);
-
-    $this->ghiNhatKy(
-        $request,
-        'Thêm phim mới',
-        'Quản lý phim & lịch chiếu',
-        "Thêm phim: {$data['ten_phim']}"
-    );
-
-    if (!empty($data['the_loai_id'])) {
-        $movie->genres()->sync($data['the_loai_id']);
-    }
-
-    AdminNotificationService::push(
-        '🎬 Phim mới được thêm',
-        'Đã thêm phim ' . $movie->ten_phim,
-        'Success'
-    );
-
-    return redirect()
-        ->route('admin.phims.index')
-        ->with('success', 'Thêm phim thành công');
-}
 
     /*
     |--------------------------------------------------------------------------
@@ -112,7 +135,7 @@ class PhimsController extends Controller
     */
     public function show(Phims $phim)
     {
-        $phim->load(['country', 'genres', 'showtimes']);
+        $phim->load(['country', 'genres', 'showtimes.rapChieuPhim', 'showtimes.phongChieu']);
 
         return view('admin.phims.show', compact('phim'));
     }
@@ -147,6 +170,25 @@ class PhimsController extends Controller
     public function update(CapnhatPhims $request, Phims $phim)
     {
         $data = $request->validated();
+
+        if (!empty($data['trailer'])) {
+
+            $response = Http::get(
+                'https://www.youtube.com/oembed',
+                [
+                    'url' => $data['trailer'],
+                    'format' => 'json'
+                ]
+            );
+
+            if (!$response->successful()) {
+                return back()
+                    ->withErrors([
+                        'trailer' => 'Trailer không tồn tại hoặc đã bị xóa.'
+                    ])
+                    ->withInput();
+            }
+        }
 
         if ($request->hasFile('poster')) {
             $data['poster'] = $request->file('poster')->store('movies', 'public');

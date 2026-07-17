@@ -52,11 +52,21 @@ class KhachHangController extends Controller
             ->where('trang_thai_hoat_dong', false)
             ->count();
 
+        $tongMoiTrongThang = NguoiDung::where('vai_tro', 'khach_hang')
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->count();
+
+        $tongCoTheThanhVien = NguoiDung::where('vai_tro', 'khach_hang')
+            ->whereHas('thanhVien')
+            ->count();
+
         return view('admin.khach_hang.index', compact(
             'khachHangs',
             'tongKhachHang',
             'tongDangHoatDong',
-            'tongBiKhoa'
+            'tongBiKhoa',
+            'tongMoiTrongThang',
+            'tongCoTheThanhVien'
         ));
     }
 
