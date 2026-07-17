@@ -170,7 +170,6 @@ Route::middleware(['auth'])
     ->group(function () {
         Route::get('/ve-xem-phim', [VeXemPhimController::class, 'index'])->name('ve_xem_phim.index');
         Route::get('/ve-xem-phim/{veXemPhim}', [VeXemPhimController::class, 'show'])->name('ve_xem_phim.show');
-        Route::patch('/ve-xem-phim/{veXemPhim}/huy', [VeXemPhimController::class, 'cancel'])->name('ve_xem_phim.cancel');
         Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
         Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('thanh-vien.index');
 

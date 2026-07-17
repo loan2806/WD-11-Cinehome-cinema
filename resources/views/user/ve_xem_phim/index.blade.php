@@ -23,12 +23,20 @@
             'class' => 'is-cancelled',
             'description' => 'Vé không còn hiệu lực',
         ],
+        // 🌟 BỔ SUNG: Cấu hình hiển thị trạng thái "Hết hạn"
+        'het_han' => [
+            'label' => 'Hết hạn',
+            'icon' => 'fa-solid fa-clock-rotate-left',
+            'class' => 'is-cancelled',
+            'description' => 'Vé đã quá giờ chiếu',
+        ],
     ];
 
     $filterItems = [
         ['status' => null, 'label' => 'Tất cả', 'count' => $ticketStats['total'] ?? $veXemPhims->total()],
         ['status' => 'da_thanh_toan', 'label' => 'Đã thanh toán', 'count' => $ticketStats['paid'] ?? 0],
         ['status' => 'da_su_dung', 'label' => 'Đã sử dụng', 'count' => $ticketStats['used'] ?? 0],
+        ['status' => 'het_han', 'label' => 'Hết hạn', 'count' => $ticketStats['expired'] ?? 0], // 🌟 Thêm thẻ lọc hết hạn
         ['status' => 'da_huy', 'label' => 'Đã hủy', 'count' => $ticketStats['cancelled'] ?? 0],
     ];
 @endphp
@@ -42,7 +50,7 @@
                     CineHome e-ticket
                 </span>
                 <h1>Vé của tôi</h1>
-                <p>Quản lý vé đã đặt, kiểm tra QR soát vé, theo dõi suất chiếu và hủy vé trong thời gian cho phép.</p>
+                <p>Quản lý vé đã đặt, kiểm tra QR soát vé và theo dõi lịch chiếu phim dễ dàng.</p>
 
                 <div class="mytickets-hero-actions">
                     <a href="{{ route('dat_ve.chon_phim') }}" class="mytickets-primary-link">
@@ -74,7 +82,7 @@
                     <p>Đặt vé mới để lịch xem phim của bạn xuất hiện tại đây.</p>
                     <small>
                         <i class="fa-solid fa-clock"></i>
-                        Hủy vé trong {{ $cancelMinutes }} phút sau khi đặt
+                        Vui lòng đến rạp trước suất chiếu 15 phút.
                     </small>
                 @endif
             </aside>
@@ -94,7 +102,7 @@
             </div>
         @endif
 
-        <div class="mytickets-stats">
+        <div class="mytickets-stats" style="grid-template-columns: repeat(5, 1fr) !important;">
             <article>
                 <span>Tổng vé</span>
                 <strong>{{ number_format($ticketStats['total'] ?? $veXemPhims->total()) }}</strong>
@@ -111,9 +119,14 @@
                 <small>Lịch sử xem phim</small>
             </article>
             <article>
+                <span>Hết hạn</span>
+                <strong style="color: #9ca3af;">{{ number_format($ticketStats['expired'] ?? 0) }}</strong>
+                <small>Vé quá giờ chiếu</small>
+            </article>
+            <article>
                 <span>Đã hủy</span>
                 <strong>{{ number_format($ticketStats['cancelled'] ?? 0) }}</strong>
-                <small>Đã xử lý hoàn tiền</small>
+                <small>Lịch sử vé đã hủy</small>
             </article>
         </div>
 
@@ -169,6 +182,18 @@
                                 <i class="fa-solid fa-door-open"></i>
                                 {{ $veXemPhim->ten_phong ?? 'Phòng chiếu' }}
                             </p>
+                            
+                            @if(!empty($veXemPhim->food_items))
+                                <p style="margin-top: 8px; font-size: 13px; color: #facc15; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <i class="fa-solid fa-cookie-bite" style="font-size: 14px;"></i>
+                                    <span style="color: #9ca3af; font-weight: 600;">Đồ ăn kèm:</span>
+                                    @foreach($veXemPhim->food_items as $fItem)
+                                        <span style="background: rgba(250, 204, 21, 0.1); border: 1px solid rgba(250, 204, 21, 0.2); padding: 2px 8px; border-radius: 6px; font-weight: bold;">
+                                            {{ $fItem['name'] ?? 'Đồ ăn' }} (x{{ $fItem['qty'] ?? $fItem['quantity'] ?? 1 }})
+                                        </span>
+                                    @endforeach
+                                </p>
+                            @endif
                         </div>
 
                         <div class="myticket-info-grid">
@@ -209,17 +234,6 @@
                                 <i class="fa-solid fa-qrcode"></i>
                                 Chi tiết
                             </a>
-
-                            @if($veXemPhim->trang_thai === 'da_thanh_toan' && $veXemPhim->canCancel())
-                                <form method="POST" action="{{ route('user.ve_xem_phim.cancel', $veXemPhim) }}" onsubmit="return confirm('Bạn có chắc muốn hủy vé này không?');">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="myticket-cancel-btn">
-                                        <i class="fa-solid fa-ban"></i>
-                                        Hủy vé
-                                    </button>
-                                </form>
-                            @endif
                         </div>
                     </article>
                 @empty
