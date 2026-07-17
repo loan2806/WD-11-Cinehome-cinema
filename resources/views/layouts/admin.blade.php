@@ -355,7 +355,7 @@
                     @if (auth()->user()->can('thong_ke_doanh_thu'))
                     @php
                     $isBaoCaoActive =
-                    request()->routeIs('admin.revenue-reports.*') ||
+                    request()->routeIs('admin.thong-ke.*') ||
                     request()->routeIs('admin.activity-logs.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isBaoCaoActive ? 'open' : '' }}">
@@ -367,7 +367,7 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="{{ route('admin.revenue-reports.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.revenue-reports.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thống
+                            <a href="{{ route('admin.thong-ke.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-ke.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thống
                                 kê doanh thu</a>
                             <a href="{{ route('admin.activity-logs.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.activity-logs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Nhật
                                 ký vết hệ thống</a>
