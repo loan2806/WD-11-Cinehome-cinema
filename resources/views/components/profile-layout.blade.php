@@ -14,10 +14,7 @@
 </head>
 <body class="profile-body">
     @php
-        $heThongSettings = \App\Models\CaiDatHeThong::first();
-        $urlLogo = ($heThongSettings && $heThongSettings->logo)
-            ? asset('storage/' . $heThongSettings->logo)
-            : asset('assets/images/logo.png');
+        $urlLogo = asset('assets/images/LOGO copy.png');
         $user = Auth::user();
         $roleLabel = $user?->vai_tro === 'admin'
             ? 'Quản trị viên'
@@ -27,8 +24,8 @@
     <div class="profile-layout">
         <nav class="profile-navbar" aria-label="Thanh điều hướng hồ sơ">
             <a href="{{ route('home') }}" class="profile-brand">
-                <span class="profile-brand-mark">
-                    <img src="{{ $urlLogo }}" alt="CineHome">
+                <span class="profile-brand-mark cinehome-logo-sparkle">
+                    <img src="{{ $urlLogo }}" alt="CineHome" class="cinehome-logo-img">
                 </span>
                 <span>
                     Cine<span>Home</span>

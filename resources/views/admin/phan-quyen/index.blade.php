@@ -2,143 +2,233 @@
 
 @section('title', 'Phân quyền hệ thống động - CineHome')
 @section('page-title', 'Quản lý phân quyền động')
-@section('page-subtitle', 'Cấu hình ma trận phân bổ chức năng trực quan cho các bộ phận vận hành rạp phim CineHome')
+@section('page-subtitle', 'Cấu hình quyền truy cập theo vai trò vận hành trong hệ thống CineHome')
 
 @section('content')
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-    
-    {{-- THANH ĐIỀU HƯỚNG DANH SÁCH VAI TRÒ (ẨN ADMIN TỐI CAO) --}}
-    <div class="lg:col-span-1">
-        <div class="rounded-2xl border border-white/10 bg-[#101010] p-5 shadow-xl">
-            <h3 class="mb-3 text-lg font-black text-white flex items-center gap-2">
-                <i class="fa-solid fa-users-gear text-[#d99a32]"></i> Vai trò vận hành
-            </h3>
-            <p class="text-xs text-gray-400 mb-5">Chọn vai trò dưới đây để tiến hành tích chọn phân bổ danh mục chức năng được phép sử dụng.</p>
-            
-            <div class="space-y-3">
-                @foreach($roles as $role)
-                    @if($role->name !== 'Quản trị viên')
-                        <a href="{{ route('admin.phan-quyen.index', ['role_id' => $role->id]) }}"
-                            class="flex items-center justify-between px-4 py-4 rounded-xl border transition-all duration-200 {{ $selectedRole->id == $role->id ? 'bg-[#d99a32]/10 border-[#d99a32] text-[#d99a32] shadow-lg shadow-[#d99a32]/5' : 'bg-white/5 border-white/5 text-gray-300 hover:bg-white/10' }}">
-                            <div class="flex items-center gap-3">
-                                <i class="fa-solid @if($role->name === 'Khách hàng') fa-user @elseif($role->name === 'Quản lý hệ thống') fa-gears @else fa-user-shield @endif text-base opacity-80"></i>
-                                <span class="text-sm font-bold">{{ $role->name }}</span>
-                            </div>
-                            <span class="rounded-md bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-gray-400">
-                                {{ $role->permissions->count() }} quyền
-                            </span>
-                        </a>
-                    @endif
-                @endforeach
-            </div>
-        </div>
-    </div>
+@php
+    $editableRoles = $roles->reject(fn ($role) => $role->name === 'Quản trị viên')->values();
+    $summary = $summary ?? [
+        'roles' => $editableRoles->count(),
+        'permissions' => $permissions->count(),
+        'assigned' => $editableRoles->sum(fn ($role) => $role->permissions->count()),
+        'selected' => $selectedRole?->permissions->count() ?? 0,
+    ];
 
-    {{-- BẢNG MA TRẬN TÍCH CHỌN CẤP QUYỀN ĐỘNG THEO 3 PHÂN KHU CHỨC NĂNG --}}
-    <div class="lg:col-span-2">
-        <div class="rounded-2xl border border-white/10 bg-[#101010] p-6 shadow-xl h-full">
-            
-            @if($selectedRole && $selectedRole->name !== 'Quản trị viên')
-                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5 mb-6">
+    $systemPermissionKeys = [
+        'phan_quyen_he_thong',
+        'quan_ly_cau_hinh_he_thong',
+        'xem_nhat_ky_hoat_dong',
+        'quan_ly_thong_bao_day',
+    ];
+
+    $permissionGroups = collect([
+        [
+            'key' => 'system',
+            'tone' => 'is-system',
+            'icon' => 'fa-shield-halved',
+            'title' => 'Hệ thống & bảo mật',
+            'description' => 'Các quyền tác động sâu đến cấu hình, nhật ký và ma trận phân quyền.',
+            'items' => $permissions->filter(fn ($permission) => in_array($permission->name, $systemPermissionKeys, true)),
+        ],
+        [
+            'key' => 'operation',
+            'tone' => 'is-operation',
+            'icon' => 'fa-clapperboard',
+            'title' => 'Vận hành rạp',
+            'description' => 'Quản lý phim, phòng chiếu, suất chiếu, bán vé, đồ ăn và báo cáo doanh thu.',
+            'items' => $permissions->reject(fn ($permission) => in_array($permission->name, $systemPermissionKeys, true) || str_contains($permission->name, 'khach_hang_')),
+        ],
+        [
+            'key' => 'customer',
+            'tone' => 'is-customer',
+            'icon' => 'fa-users',
+            'title' => 'Dịch vụ khách hàng',
+            'description' => 'Quyền thao tác của khách hàng trên website và lịch sử vé cá nhân.',
+            'items' => $permissions->filter(fn ($permission) => str_contains($permission->name, 'khach_hang_')),
+        ],
+    ])->filter(fn ($group) => $group['items']->isNotEmpty());
+
+    $selectedPermissionCount = $selectedRole?->permissions->count() ?? 0;
+    $permissionTotal = max($permissions->count(), 1);
+    $selectedPercent = round(($selectedPermissionCount / $permissionTotal) * 100);
+@endphp
+
+<div class="permission-page">
+    @include('admin.partials.flash')
+
+    <section class="permission-hero">
+        <div>
+            <span class="permission-kicker">
+                <i class="fa-solid fa-user-shield"></i>
+                Ma trận phân quyền
+            </span>
+            <h2>Quản lý quyền truy cập theo vai trò</h2>
+            <p>Chọn một vai trò, bật/tắt các quyền nghiệp vụ cần thiết và lưu lại để hệ thống áp dụng ngay cho nhân sự đang sử dụng CineHome.</p>
+        </div>
+    </section>
+
+    <section class="permission-stats">
+        <article class="permission-stat">
+            <span class="is-role"><i class="fa-solid fa-users-gear"></i></span>
+            <div>
+                <small>Vai trò cấu hình</small>
+                <strong>{{ number_format($summary['roles']) }}</strong>
+            </div>
+        </article>
+        <article class="permission-stat">
+            <span class="is-permission"><i class="fa-solid fa-key"></i></span>
+            <div>
+                <small>Tổng quyền</small>
+                <strong>{{ number_format($summary['permissions']) }}</strong>
+            </div>
+        </article>
+        <article class="permission-stat">
+            <span class="is-assigned"><i class="fa-solid fa-link"></i></span>
+            <div>
+                <small>Quyền đã gán</small>
+                <strong>{{ number_format($summary['assigned']) }}</strong>
+            </div>
+        </article>
+        <article class="permission-stat">
+            <span class="is-selected"><i class="fa-solid fa-circle-check"></i></span>
+            <div>
+                <small>Vai trò hiện tại</small>
+                <strong>{{ number_format($summary['selected']) }}</strong>
+            </div>
+        </article>
+    </section>
+
+    <div class="permission-layout">
+        <aside class="permission-role-panel">
+            <div class="permission-panel-head">
+                <div>
+                    <span class="permission-kicker">Vai trò</span>
+                    <h3>Bộ phận vận hành</h3>
+                    <p>Chọn vai trò để xem và cập nhật nhóm quyền tương ứng.</p>
+                </div>
+            </div>
+
+            <div class="permission-role-list">
+                @forelse($editableRoles as $role)
+                    @php
+                        $isSelected = $selectedRole?->id === $role->id;
+                        $roleIcon = match ($role->name) {
+                            'Quản lý hệ thống' => 'fa-gears',
+                            'Quản lý', 'Quản lý phòng chiếu' => 'fa-user-tie',
+                            'Nhân viên' => 'fa-headset',
+                            'Khách hàng' => 'fa-user',
+                            default => 'fa-user-shield',
+                        };
+                        $rolePercent = $permissions->count()
+                            ? round(($role->permissions->count() / $permissions->count()) * 100)
+                            : 0;
+                    @endphp
+
+                    <a href="{{ route('admin.phan-quyen.index', ['role_id' => $role->id]) }}" class="permission-role-card {{ $isSelected ? 'is-active' : '' }}">
+                        <span class="permission-role-icon">
+                            <i class="fa-solid {{ $roleIcon }}"></i>
+                        </span>
+                        <div>
+                            <strong>{{ $role->name }}</strong>
+                            <small>{{ $role->permissions->count() }} / {{ $permissions->count() }} quyền</small>
+                            <span class="permission-role-progress">
+                                <i style="width: {{ $rolePercent }}%"></i>
+                            </span>
+                        </div>
+                        <em>{{ $rolePercent }}%</em>
+                    </a>
+                @empty
+                    <div class="permission-empty is-compact">
+                        <i class="fa-solid fa-users-slash"></i>
+                        <h3>Chưa có vai trò</h3>
+                        <p>Hệ thống chưa có vai trò nào có thể cấu hình.</p>
+                    </div>
+                @endforelse
+            </div>
+        </aside>
+
+        <main class="permission-matrix-panel">
+            @if($selectedRole)
+                <div class="permission-matrix-head">
                     <div>
-                        <h2 class="text-xl font-black text-white">
-                            Thiết lập quyền: <span class="text-[#d99a32]">{{ $selectedRole->name }}</span>
-                        </h2>
-                        <p class="text-sm text-gray-400 mt-1">Đánh dấu vào ô vuông để cấp chức năng hoặc bỏ chọn để tước quyền nhân viên ngay lặp tức.</p>
+                        <span class="permission-kicker">Đang cấu hình</span>
+                        <h3>{{ $selectedRole->name }}</h3>
+                        <p>Bật quyền cần dùng, bỏ chọn quyền không nên truy cập. Quyền sẽ có hiệu lực sau khi lưu.</p>
+                    </div>
+                    <div class="permission-score">
+                        <strong>{{ $selectedPercent }}%</strong>
+                        <span>{{ $selectedPermissionCount }} / {{ $permissions->count() }} quyền</span>
                     </div>
                 </div>
 
-                <form action="{{ route('admin.phan-quyen.updateMatrix', $selectedRole->id) }}" method="POST">
+                <form action="{{ route('admin.phan-quyen.updateMatrix', $selectedRole->id) }}" method="POST" class="permission-form">
                     @csrf
                     @method('PUT')
 
-                    {{-- PHÂN KHU 1: HỆ THỐNG & KỸ THUẬT (MÀU ĐỎ/CAM) --}}
-                    <div class="mb-8">
-                        <h4 class="text-xs font-black uppercase tracking-wider text-orange-400 mb-3 flex items-center gap-2">
-                            <i class="fa-solid fa-sliders"></i> Phân khu 1: Kỹ Thuật & Cấu Hình Hệ Thống (Admin Backend)
-                        </h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($permissions as $permission)
-                                @if($permission->name === 'phan_quyen_he_thong' || $permission->name === 'quan_ly_cau_hinh_he_thong')
-                                    @php $hasPermission = $selectedRole->hasPermissionTo($permission->name); @endphp
-                                    <label class="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 cursor-pointer transition duration-150 select-none group">
-                                        <div class="flex h-5 items-center mt-0.5">
-                                            <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" {{ $hasPermission ? 'checked' : '' }} class="h-5 w-5 rounded border-white/20 bg-white/10 text-orange-400 focus:ring-0 focus:ring-offset-0 accent-orange-400">
-                                        </div>
-                                        <div class="text-sm">
-                                            <span class="block font-bold text-white group-hover:text-orange-400 transition duration-150">{{ $permission->description }}</span>
-                                            <span class="block text-xs text-gray-500 font-mono mt-1">Mã: {{ $permission->name }}</span>
-                                        </div>
-                                    </label>
-                                @endif
-                            @endforeach
-                        </div>
+                    <div class="permission-group-list">
+                        @foreach($permissionGroups as $group)
+                            @php
+                                $enabledInGroup = $group['items']->filter(fn ($permission) => $selectedRole->hasPermissionTo($permission->name))->count();
+                            @endphp
+
+                            <section class="permission-group {{ $group['tone'] }}">
+                                <div class="permission-group-head">
+                                    <span class="permission-group-icon">
+                                        <i class="fa-solid {{ $group['icon'] }}"></i>
+                                    </span>
+                                    <div>
+                                        <h4>{{ $group['title'] }}</h4>
+                                        <p>{{ $group['description'] }}</p>
+                                    </div>
+                                    <em>{{ $enabledInGroup }} / {{ $group['items']->count() }}</em>
+                                </div>
+
+                                <div class="permission-grid">
+                                    @foreach($group['items'] as $permission)
+                                        @php
+                                            $hasPermission = $selectedRole->hasPermissionTo($permission->name);
+                                        @endphp
+
+                                        <label class="permission-check {{ $hasPermission ? 'is-checked' : '' }}">
+                                            <input
+                                                type="checkbox"
+                                                name="permissions[]"
+                                                value="{{ $permission->name }}"
+                                                @checked($hasPermission)
+                                            >
+                                            <span class="permission-check-box">
+                                                <i class="fa-solid fa-check"></i>
+                                            </span>
+                                            <span class="permission-check-copy">
+                                                <strong>{{ $permission->description }}</strong>
+                                                <small>{{ $permission->name }}</small>
+                                            </span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </section>
+                        @endforeach
                     </div>
 
-                    {{-- PHÂN KHU 2: VẬN HÀNH RẠP & KINH DOANH (MÀU VÀNG GOLD) --}}
-                    <div class="mb-8 pt-4 border-t border-white/5">
-                        <h4 class="text-xs font-black uppercase tracking-wider text-[#d99a32] mb-3 flex items-center gap-2">
-                            <i class="fa-solid fa-door-open"></i> Phân khu 2: Vận Hành & Nghiệp Vụ Kinh Doanh (Quầy Bán Vé)
-                        </h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($permissions as $permission)
-                                @if(!str_contains($permission->name, 'khach_hang_') && $permission->name !== 'phan_quyen_he_thong' && $permission->name !== 'quan_ly_cau_hinh_he_thong')
-                                    @php $hasPermission = $selectedRole->hasPermissionTo($permission->name); @endphp
-                                    <label class="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 cursor-pointer transition duration-150 select-none group">
-                                        <div class="flex h-5 items-center mt-0.5">
-                                            <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" {{ $hasPermission ? 'checked' : '' }} class="h-5 w-5 rounded border-white/20 bg-white/10 text-[#d99a32] focus:ring-0 focus:ring-offset-0 accent-[#d99a32]">
-                                        </div>
-                                        <div class="text-sm">
-                                            <span class="block font-bold text-white group-hover:text-[#d99a32] transition duration-150">{{ $permission->description }}</span>
-                                            <span class="block text-xs text-gray-500 font-mono mt-1">Mã: {{ $permission->name }}</span>
-                                        </div>
-                                    </label>
-                                @endif
-                            @endforeach
+                    <div class="permission-submit-bar">
+                        <div>
+                            <strong>Sẵn sàng cập nhật quyền?</strong>
+                            <span>Spatie cache sẽ được làm mới sau khi lưu để quyền mới có hiệu lực.</span>
                         </div>
-                    </div>
-
-                    {{-- PHÂN KHU 3: DỊCH VỤ KHÁCH HÀNG (MÀU XANH LÁ) --}}
-                    <div class="mb-8 pt-4 border-t border-white/5">
-                        <h4 class="text-xs font-black uppercase tracking-wider text-[#4ade80] mb-3 flex items-center gap-2">
-                            <i class="fa-solid fa-users"></i> Phân khu 3: Dịch Vụ Khách Hàng (Giao diện Website công cộng)
-                        </h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            @foreach($permissions as $permission)
-                                @if(str_contains($permission->name, 'khach_hang_'))
-                                    @php $hasPermission = $selectedRole->hasPermissionTo($permission->name); @endphp
-                                    <label class="flex items-start gap-4 p-4 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 cursor-pointer transition duration-150 select-none group">
-                                        <div class="flex h-5 items-center mt-0.5">
-                                            <input type="checkbox" name="permissions[]" value="{{ $permission->name }}" {{ $hasPermission ? 'checked' : '' }} class="h-5 w-5 rounded border-white/20 bg-white/10 text-[#4ade80] focus:ring-0 focus:ring-offset-0 accent-[#4ade80]">
-                                        </div>
-                                        <div class="text-sm">
-                                            <span class="block font-bold text-white group-hover:text-[#4ade80] transition duration-150">{{ $permission->description }}</span>
-                                            <span class="block text-xs text-gray-500 font-mono mt-1">Mã: {{ $permission->name }}</span>
-                                        </div>
-                                    </label>
-                                @endif
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-end border-t border-white/10 pt-5">
-                        <button type="submit" class="flex h-12 items-center justify-center gap-2 rounded-xl bg-[#d99a32] px-6 text-sm font-black text-[#2b1208] shadow-lg hover:opacity-90 transition duration-150">
-                            <i class="fa-solid fa-square-check"></i> Lưu lại cấu hình ma trận
+                        <button type="submit" class="permission-primary-btn">
+                            <i class="fa-solid fa-square-check"></i>
+                            Lưu ma trận quyền
                         </button>
                     </div>
                 </form>
             @else
-                <div class="flex h-full flex-col items-center justify-center text-center p-6">
-                    <div class="flex h-16 w-16 items-center justify-center rounded-full bg-white/5 text-[#d99a32] mb-4 text-2xl shadow-xl">
-                        <i class="fa-solid fa-user-check"></i>
-                    </div>
-                    <h3 class="text-lg font-black text-white">Cấu hình vai trò tối cao</h3>
-                    <p class="text-sm text-gray-400 max-w-sm mt-2">Vui lòng lựa chọn vai trò ở danh sách bên cạnh để tiến hành cấu hình.</p>
+                <div class="permission-empty">
+                    <i class="fa-solid fa-user-check"></i>
+                    <h3>Chưa chọn vai trò</h3>
+                    <p>Chọn một vai trò ở khung bên trái để bắt đầu cấu hình quyền truy cập.</p>
                 </div>
             @endif
-
-        </div>
+        </main>
     </div>
-
 </div>
 @endsection

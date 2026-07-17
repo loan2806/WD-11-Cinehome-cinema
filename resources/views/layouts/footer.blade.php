@@ -4,7 +4,9 @@
 
             <div class="col-md-4">
                 <div class="footer-logo">
-                    <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome Logo">
+                    <span class="footer-logo-mark cinehome-logo-sparkle">
+                        <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome Logo" class="cinehome-logo-img">
+                    </span>
                     <strong>Cine<span>Home</span></strong>
                 </div>
 

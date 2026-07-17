@@ -10,7 +10,9 @@
         <section class="auth-page-shell">
             <aside class="auth-page-visual">
                 <a href="{{ route('home') }}" class="auth-page-brand">
-                    <span><i class="fa-solid fa-ticket"></i></span>
+                    <span class="cinehome-logo-sparkle">
+                        <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome" class="cinehome-logo-img">
+                    </span>
                     Cine<span>Home</span>
                 </a>
 
@@ -29,8 +31,8 @@
 
             <section class="auth-page-card">
                 <div class="auth-brand-block">
-                    <div class="auth-logo-mark">
-                        <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome">
+                    <div class="auth-logo-mark cinehome-logo-sparkle">
+                        <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome" class="cinehome-logo-img">
                     </div>
                     <div>
                         <h2>Cine<span>Home</span></h2>

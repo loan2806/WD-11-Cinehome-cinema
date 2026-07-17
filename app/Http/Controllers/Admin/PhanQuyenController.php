@@ -16,6 +16,7 @@ class PhanQuyenController extends Controller
     {
         // Lấy tất cả vai trò kèm theo danh sách quyền hiện tại của chúng
         $roles = Role::with('permissions')->get();
+        $editableRoles = $roles->reject(fn ($role) => $role->name === 'Quản trị viên')->values();
         
         // Lấy toàn bộ danh sách các quyền hạn được định nghĩa trong hệ thống
         $permissions = Permission::all();
@@ -27,11 +28,18 @@ class PhanQuyenController extends Controller
         }
 
         // Nếu không lựa chọn vai trò cụ thể, mặc định hiển thị vai trò đầu tiên trong danh sách
-        if (!$selectedRole) {
-            $selectedRole = Role::first();
+        if (!$selectedRole || $selectedRole->name === 'Quản trị viên') {
+            $selectedRole = $editableRoles->first();
         }
 
-        return view('admin.phan-quyen.index', compact('roles', 'permissions', 'selectedRole'));
+        $summary = [
+            'roles' => $editableRoles->count(),
+            'permissions' => $permissions->count(),
+            'assigned' => $editableRoles->sum(fn ($role) => $role->permissions->count()),
+            'selected' => $selectedRole?->permissions->count() ?? 0,
+        ];
+
+        return view('admin.phan-quyen.index', compact('roles', 'permissions', 'selectedRole', 'summary'));
     }
 
     /**

@@ -14,24 +14,35 @@ class RevenueReportController extends Controller
         $from = ($request->date('from') ?? now()->startOfMonth())->startOfDay();
         $to = ($request->date('to') ?? now())->endOfDay();
 
-        $tickets = VeXemPhim::query()
-            ->whereBetween('created_at', [$from->copy(), $to->copy()])
-            ->get();
+        $ticketQuery = VeXemPhim::query()
+            ->whereBetween('created_at', [$from->copy(), $to->copy()]);
 
-        $foodInvoices = FoodInvoice::query()
-            ->whereBetween('created_at', [$from->copy(), $to->copy()])
-            ->get();
+        $foodInvoiceQuery = FoodInvoice::query()
+            ->whereBetween('created_at', [$from->copy(), $to->copy()]);
 
-        $paidTickets = $tickets->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung']);
-        $paidFoodInvoices = $foodInvoices->where('payment_status', 'paid');
+        $paidTicketQuery = (clone $ticketQuery)
+            ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung']);
+
+        $paidFoodInvoiceQuery = (clone $foodInvoiceQuery)
+            ->where('payment_status', 'paid');
 
         $summary = [
-            'ticket_revenue' => $paidTickets->sum('tong_tien'),
-            'food_revenue' => $paidFoodInvoices->sum('total'),
-            'tickets_sold' => $paidTickets->count(),
-            'food_invoices' => $paidFoodInvoices->count(),
+            'ticket_revenue' => (clone $paidTicketQuery)->sum('tong_tien'),
+            'food_revenue' => (clone $paidFoodInvoiceQuery)->sum('total'),
+            'tickets_sold' => (clone $paidTicketQuery)->count(),
+            'food_invoices' => (clone $paidFoodInvoiceQuery)->count(),
         ];
         $summary['total_revenue'] = $summary['ticket_revenue'] + $summary['food_revenue'];
+
+        $tickets = (clone $ticketQuery)
+            ->latest()
+            ->paginate(8, ['*'], 'tickets_page')
+            ->withQueryString();
+
+        $foodInvoices = (clone $foodInvoiceQuery)
+            ->latest()
+            ->paginate(8, ['*'], 'food_page')
+            ->withQueryString();
 
         return view('admin.revenue-reports.index', compact('from', 'to', 'summary', 'tickets', 'foodInvoices'));
     }

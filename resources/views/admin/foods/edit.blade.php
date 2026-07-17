@@ -1,337 +1,380 @@
 @extends('layouts.admin')
 
+@section('title', 'Chỉnh sửa món')
 @section('page-title', 'Chỉnh sửa món')
-@section('page-subtitle', 'Cập nhật thông tin món và biến thể')
+@section('page-subtitle', 'Cập nhật thông tin món, ảnh, giá bán, tồn kho và thành phần combo')
 
 @section('content')
+@php
+    $isCombo = $food->isCombo();
+    $imagePath = $food->image
+        ? asset('storage/' . (str_starts_with($food->image, 'foods/') ? $food->image : 'foods/' . $food->image))
+        : null;
 
+    $comboItems = collect(
+        old(
+            'combo_items',
+            $food->comboItems
+                ->map(fn ($item) => [
+                    'variant_id' => $item->food_variant_id,
+                    'quantity' => $item->quantity,
+                ])
+                ->toArray(),
+        ),
+    )->map(fn ($item) => [
+        'variant_id' => $item['variant_id'] ?? ($item['food_variant_id'] ?? null),
+        'quantity' => $item['quantity'] ?? 1,
+    ]);
+@endphp
+
+<div class="food-edit-page">
     @include('admin.partials.flash')
 
-    <div class="max-w-4xl mx-auto space-y-6">
-        <div class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-5">
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <h3 class="text-lg font-black text-white">Chỉnh sửa {{ $food->name }}</h3>
-                </div>
-                <a href="{{ route('admin.foods.index') }}" class="btn-admin-outline">Quay lại danh sách</a>
-            </div>
+    <section class="food-edit-hero">
+        <div>
+            <span class="food-edit-eyebrow">
+                <i class="fa-solid fa-pen-to-square"></i>
+                Chỉnh sửa menu
+            </span>
+            <h2>{{ $food->name }}</h2>
+            <p>Cập nhật thông tin bán hàng, ảnh hiển thị, trạng thái và cấu hình {{ $isCombo ? 'thành phần combo' : 'biến thể kho' }}.</p>
         </div>
 
-        <form method="POST" action="{{ route('admin.foods.update', $food) }}" enctype="multipart/form-data"
-            class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-6 space-y-6">
-            @csrf
-            @method('PATCH')
+        <div class="food-edit-actions">
+            <a href="{{ route('admin.foods.index') }}" class="food-edit-action is-soft">
+                <i class="fa-solid fa-arrow-left"></i>
+                Danh sách
+            </a>
+            <a href="{{ route('admin.foods.show', $food) }}" class="food-edit-action is-soft">
+                <i class="fa-solid fa-eye"></i>
+                Chi tiết
+            </a>
+        </div>
+    </section>
 
-            <div class="grid gap-4 lg:grid-cols-2">
-                <div>
-                    <label class="text-xs uppercase tracking-wider text-gray-400">Tên sản phẩm</label>
-                    <input name="name"
-                        value="{{ old('name') !== null && old('name') !== '' ? old('name') : $food->name }}"
-                        class="admin-input" placeholder="Tên sản phẩm">
-                    @error('name')
-                        <small class="text-red-500">{{ $message }}</small>
-                    @enderror
+    <form method="POST" action="{{ route('admin.foods.update', $food) }}" enctype="multipart/form-data" class="food-edit-form">
+        @csrf
+        @method('PATCH')
+
+        <div class="food-edit-grid">
+            <section class="food-edit-panel">
+                <div class="food-edit-panel-head">
+                    <div>
+                        <span class="food-edit-eyebrow">Thông tin chính</span>
+                        <h3>Dữ liệu món</h3>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="text-xs uppercase tracking-wider text-gray-400">Danh mục</label>
-                    <select class="admin-input" disabled>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category->id }}" {{ $food->category_id == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="mt-2 text-xs text-yellow-400">
-                        Danh mục không thể thay đổi sau khi tạo món.
-                    </p>
-
-                    <input type="hidden" name="category_id" value="{{ $food->category_id }}">
-                    @error('category_id')
-                        <small class="text-red-500">{{ $message }}</small>
-                    @enderror
-                </div>
-
-                <div>
-                    <label class="text-xs uppercase tracking-wider text-gray-400 mb-2 block">Ảnh sản phẩm</label>
-                    <label for="image"
-                        class="group relative flex h-56 w-full cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed border-white/20 bg-[#181818] hover:border-red-500 transition overflow-hidden">
-                        <div id="preview-container" class="absolute inset-0 hidden">
-                            <img id="preview-image" class="h-full w-full object-cover">
-                        </div>
-
-                        @if ($food->image)
-                            <img id="current-image" src="{{ asset('storage/' . (str_starts_with($food->image, 'foods/') ? $food->image : 'foods/' . $food->image)) }}"
-                                class="absolute inset-0 h-full w-full object-cover rounded-2xl">
-                        @else
-                            <div id="upload-placeholder"
-                                class="relative flex flex-col items-center text-gray-400 group-hover:text-red-500 transition">
-                                <div class="text-6xl font-light leading-none">+</div>
-                                <p class="mt-2 text-sm">Chọn ảnh sản phẩm</p>
-                            </div>
-                        @endif
-
-                        <input id="image" type="file" name="image" accept="image/*" class="hidden">
+                <div class="food-edit-fields">
+                    <label class="food-edit-field is-wide">
+                        <span>Tên món</span>
+                        <input name="name"
+                            value="{{ old('name') !== null && old('name') !== '' ? old('name') : $food->name }}"
+                            class="admin-input @error('name') is-invalid @enderror"
+                            placeholder="Nhập tên món">
+                        @error('name')
+                            <small>{{ $message }}</small>
+                        @enderror
                     </label>
-                    @error('image')
-                        <small class="text-red-500">{{ $message }}</small>
-                    @enderror
-                </div>
-            </div>
 
-            <div>
-                <label class="text-xs uppercase tracking-wider text-gray-400">Mô tả</label>
-                <textarea name="description" class="admin-input" rows="5" placeholder="Mô tả sản phẩm">{{ old('description') !== null && old('description') !== '' ? old('description') : $food->description }}</textarea>
-                @error('description')
-                    <small class="text-red-500">{{ $message }}</small>
-                @enderror
-            </div>
+                    <label class="food-edit-field">
+                        <span>SKU</span>
+                        <input name="sku"
+                            value="{{ old('sku') !== null && old('sku') !== '' ? old('sku') : $food->sku }}"
+                            class="admin-input @error('sku') is-invalid @enderror"
+                            placeholder="VD: POPCORN-L">
+                        @error('sku')
+                            <small>{{ $message }}</small>
+                        @enderror
+                    </label>
 
-            @if (!str_contains(strtolower(optional($food->category)->name), 'combo'))
-                <div class="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-4">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h4 class="text-sm font-black text-white">Biến thể</h4>
-                            <p class="text-xs text-gray-400">Thêm hoặc sửa các biến thể đã tạo.</p>
-                        </div>
-                        <a href="{{ route('admin.foods.variants.create', $food) }}"
-                            class="btn-admin-outline text-xs px-3 py-2">
-                            Thêm biến thể
-                        </a>
-                    </div>
+                    <label class="food-edit-field">
+                        <span>Thứ tự hiển thị</span>
+                        <input type="number" min="0" name="sort_order"
+                            value="{{ old('sort_order', $food->sort_order ?? 0) }}"
+                            class="admin-input @error('sort_order') is-invalid @enderror"
+                            placeholder="0">
+                        @error('sort_order')
+                            <small>{{ $message }}</small>
+                        @enderror
+                    </label>
 
-                    @if ($food->variants->isEmpty())
-                        <div class="rounded-3xl border border-dashed border-white/10 p-4 text-gray-400">
-                            Chưa có biến thể nào.
-                        </div>
-                    @else
-                        <div class="space-y-3">
-                            @foreach ($food->variants as $variant)
-                                <div
-                                    class="rounded-3xl border border-white/10 bg-[#181818] p-4 grid gap-3 sm:grid-cols-[1fr_auto] items-center">
-                                    <div>
-                                        <div class="flex flex-wrap items-center gap-2 mb-2">
-                                            <span
-                                                class="rounded-full bg-[#d99a32]/20 px-3 py-1 text-xs font-bold text-[#f4c56a]">{{ $variant->value }}</span>
-                                            <span
-                                                class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-300">{{ number_format($variant->price) }}đ</span>
-                                            <span
-                                                class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-300">Tồn
-                                                kho: {{ $variant->stock_quantity }}</span>
-                                        </div>
-                                        <p class="text-xs text-gray-400">
-                                            Trạng thái: {{ $variant->is_active ? 'Đang bán' : 'Tạm ẩn' }}
-                                        </p>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <a href="{{ route('admin.foods.variants.edit', [$food, $variant]) }}"
-                                            class="btn-admin-outline text-xs px-3 py-2">Sửa</a>
-                                    </div>
-                                </div>
+                    <label class="food-edit-field is-wide">
+                        <span>Danh mục</span>
+                        <select class="admin-input" disabled>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}" @selected($food->category_id == $category->id)>
+                                    {{ $category->name }}
+                                </option>
                             @endforeach
-                        </div>
-                    @endif
+                        </select>
+                        <input type="hidden" name="category_id" value="{{ $food->category_id }}">
+                        <em>Danh mục được khóa để tránh đổi sai loại món/combo sau khi đã tạo.</em>
+                        @error('category_id')
+                            <small>{{ $message }}</small>
+                        @enderror
+                    </label>
+
+                    <label class="food-edit-field is-wide">
+                        <span>Mô tả</span>
+                        <textarea name="description" class="admin-input @error('description') is-invalid @enderror" rows="5" placeholder="Nhập mô tả món">{{ old('description') !== null && old('description') !== '' ? old('description') : $food->description }}</textarea>
+                        @error('description')
+                            <small>{{ $message }}</small>
+                        @enderror
+                    </label>
                 </div>
-            @endif
+            </section>
 
-            @if (str_contains(strtolower(optional($food->category)->name), 'combo'))
+            <aside class="food-edit-panel">
+                <div class="food-edit-panel-head">
+                    <div>
+                        <span class="food-edit-eyebrow">Hiển thị</span>
+                        <h3>Ảnh & trạng thái</h3>
+                    </div>
+                </div>
 
-                <div class="rounded-3xl border border-white/10 bg-white/5 p-4 space-y-4">
+                <label for="image" class="food-edit-upload">
+                    <div id="preview-container" class="food-edit-preview {{ $imagePath ? '' : 'is-hidden' }}">
+                        <img id="preview-image" src="{{ $imagePath ?: '' }}" alt="{{ $food->name }}">
+                    </div>
+                    <div id="upload-placeholder" class="food-edit-upload-empty {{ $imagePath ? 'is-hidden' : '' }}">
+                        <i class="fa-solid fa-image"></i>
+                        <strong>Chọn ảnh món</strong>
+                        <span>JPG, PNG, WEBP tối đa 2MB</span>
+                    </div>
+                    <input id="image" type="file" name="image" accept="image/*">
+                </label>
+                @error('image')
+                    <small class="food-edit-error">{{ $message }}</small>
+                @enderror
 
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="text-sm font-black text-white">
-                                Thành phần combo
-                            </h4>
+                <input type="hidden" name="is_active" value="0">
+                <label class="food-edit-switch">
+                    <input type="checkbox" name="is_active" value="1" @checked(old('is_active', $food->is_active))>
+                    <span></span>
+                    <div>
+                        <strong>Hiển thị trên menu</strong>
+                        <small>{{ $food->is_active ? 'Món đang bán cho khách.' : 'Món đang tạm ẩn.' }}</small>
+                    </div>
+                </label>
 
-                            <p class="text-xs text-gray-400">
-                                Các biến thể có trong combo.
-                            </p>
+                @if ($isCombo)
+                    <label class="food-edit-field">
+                        <span>Giá combo</span>
+                        <input type="number" name="price" min="0" value="{{ old('price', $food->price) }}" class="admin-input @error('price') is-invalid @enderror" placeholder="Nhập giá combo">
+                        @error('price')
+                            <small>{{ $message }}</small>
+                        @enderror
+                    </label>
+                @else
+                    <div class="food-edit-hint">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Giá bán món lẻ được lấy từ biến thể có giá thấp nhất.
+                    </div>
+                @endif
+            </aside>
+        </div>
+
+        @if (! $isCombo)
+            <section class="food-edit-panel">
+                <div class="food-edit-panel-head">
+                    <div>
+                        <span class="food-edit-eyebrow">Kho & giá</span>
+                        <h3>Biến thể hiện có</h3>
+                        <p>Biến thể được chỉnh ở màn quản lý riêng để tránh sai lệch tồn kho.</p>
+                    </div>
+                    <a href="{{ route('admin.foods.variants.create', $food) }}" class="food-edit-small-btn">
+                        <i class="fa-solid fa-plus"></i>
+                        Thêm biến thể
+                    </a>
+                </div>
+
+                <div class="food-edit-variant-list">
+                    @forelse ($food->variants as $variant)
+                        <article class="food-edit-variant-card {{ ! $variant->is_active ? 'is-inactive' : '' }}">
+                            <div>
+                                <span>Biến thể</span>
+                                <strong>{{ $variant->value ?: 'Mặc định' }}</strong>
+                            </div>
+                            <div>
+                                <span>Giá</span>
+                                <strong>{{ number_format((float) $variant->price, 0, ',', '.') }}đ</strong>
+                            </div>
+                            <div class="{{ $variant->stock_quantity <= $food->min_stock_quantity ? 'is-low' : '' }}">
+                                <span>Tồn kho</span>
+                                <strong>{{ $variant->stock_quantity }}</strong>
+                            </div>
+                            <div>
+                                <span>Trạng thái</span>
+                                <strong>{{ $variant->is_active ? 'Đang bán' : 'Tạm ẩn' }}</strong>
+                            </div>
+                            <a href="{{ route('admin.foods.variants.edit', [$food, $variant]) }}" class="food-edit-mini-btn">
+                                <i class="fa-solid fa-pen"></i>
+                                Sửa
+                            </a>
+                        </article>
+                    @empty
+                        <div class="food-edit-empty">
+                            <i class="fa-solid fa-box-open"></i>
+                            <h3>Chưa có biến thể</h3>
+                            <p>Thêm biến thể để quản lý giá bán và tồn kho.</p>
                         </div>
-
-
+                    @endforelse
+                </div>
+            </section>
+        @else
+            <section class="food-edit-panel">
+                <div class="food-edit-panel-head">
+                    <div>
+                        <span class="food-edit-eyebrow">Combo</span>
+                        <h3>Thành phần combo</h3>
+                        <p>Combo cần tối thiểu 2 thành phần và không được chọn trùng biến thể.</p>
                     </div>
-
-                    <div id="combo-item-list" class="space-y-3">
-                        @php
-                            $comboItems = collect(
-                                old(
-                                    'combo_items',
-                                    $food->comboItems
-                                        ->map(function ($item) {
-                                            return [
-                                                'variant_id' => $item->food_variant_id,
-                                                'quantity' => $item->quantity,
-                                            ];
-                                        })
-                                        ->toArray(),
-                                ),
-                            )->map(function ($item) {
-                                return [
-                                    'variant_id' => $item['variant_id'] ?? ($item['food_variant_id'] ?? null),
-                                    'quantity' => $item['quantity'] ?? 1,
-                                ];
-                            });
-                        @endphp
-
-                        @forelse ($comboItems as $index => $item)
-                            <div class="combo-row">
-
-                                <div class="grid grid-cols-12 gap-3 items-start">
-
-                                    <div class="col-span-8">
-                                        <select name="combo_items[{{ $index }}][variant_id]"
-                                            class="admin-input @error("combo_items.$index.variant_id") border-red-500 ring-2 ring-red-500 @enderror">
-
-                                            <option value="">-- Chọn biến thể --</option>
-
-                                            @foreach ($variants as $variant)
-                                                <option value="{{ $variant->id }}"
-                                                    {{ old("combo_items.$index.variant_id", $item['variant_id']) == $variant->id ? 'selected' : '' }}>
-                                                    {{ $variant->doAn->name }} ({{ $variant->value }})
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    <div class="col-span-3">
-                                        <input type="number" min="1"
-                                            name="combo_items[{{ $index }}][quantity]"
-                                            value="{{ $item['quantity'] }}" class="admin-input">
-                                    </div>
-
-                                    <div class="col-span-1 flex items-start">
-                                        <button type="button" class="remove-combo-row btn-admin-outline w-full remove-btn">
-                                            ✕
-                                        </button>
-                                    </div>
-
-                                </div>
-
-                                @error("combo_items.$index.variant_id")
-                                    <small class="text-red-500 mt-1 block">
-                                        {{ $message }}
-                                    </small>
-                                @enderror
-
-                            </div>
-                        @empty
-                            <div class="rounded-3xl border border-dashed border-white/10 p-4 text-gray-400">
-                                Combo chưa có thành phần.
-                            </div>
-                        @endforelse
-
-                    </div>
-
-                    <button type="button" id="add-combo-item" class="btn-admin-outline">
-                        + Thêm dòng
+                    <button type="button" id="add-combo-item" class="food-edit-small-btn">
+                        <i class="fa-solid fa-plus"></i>
+                        Thêm dòng
                     </button>
+                </div>
 
-                    <template id="combo-item-template">
-
-                        <div class="grid grid-cols-12 gap-3 combo-row">
-
-                            <div class="col-span-8">
-
-                                <select name="combo_items[__index__][variant_id]" class="admin-input">
-                                    <option value="">-- Chọn biến thể --</option>
-
+                <div id="combo-item-list" class="food-edit-combo-list">
+                    @forelse ($comboItems as $index => $item)
+                        <div class="food-edit-combo-row combo-row">
+                            <label class="food-edit-field">
+                                <span>Biến thể thành phần</span>
+                                <select name="combo_items[{{ $index }}][variant_id]" class="admin-input @error("combo_items.$index.variant_id") is-invalid @enderror">
+                                    <option value="">Chọn biến thể</option>
                                     @foreach ($variants as $variant)
-                                        <option value="{{ $variant->id }}">
-                                            {{ $variant->doAn->name }} ({{ $variant->value }})
+                                        <option value="{{ $variant->id }}" @selected(old("combo_items.$index.variant_id", $item['variant_id']) == $variant->id)>
+                                            {{ $variant->doAn->name }} - {{ $variant->value ?: 'Mặc định' }} (kho {{ $variant->stock_quantity }})
                                         </option>
                                     @endforeach
                                 </select>
+                                @error("combo_items.$index.variant_id")
+                                    <small>{{ $message }}</small>
+                                @enderror
+                            </label>
 
-                            </div>
+                            <label class="food-edit-field">
+                                <span>Số lượng</span>
+                                <input type="number" min="1" name="combo_items[{{ $index }}][quantity]" value="{{ old("combo_items.$index.quantity", $item['quantity']) }}" class="admin-input @error("combo_items.$index.quantity") is-invalid @enderror">
+                                @error("combo_items.$index.quantity")
+                                    <small>{{ $message }}</small>
+                                @enderror
+                            </label>
 
-                            <div class="col-span-3">
-
-                                <input type="number" min="1" value="1"
-                                    name="combo_items[__index__][quantity]" class="admin-input">
-
-                            </div>
-
-                            <div class="col-span-1 flex items-end">
-
-                                <button type="button" class="remove-combo-row btn-admin-outline w-full remove-btn">
-                                    ✕
-                                </button>
-
-                            </div>
-
+                            <button type="button" class="food-edit-remove-btn remove-combo-row remove-btn" title="Xóa dòng">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
                         </div>
-
-                    </template>
+                    @empty
+                        <div class="food-edit-empty">
+                            <i class="fa-solid fa-box-open"></i>
+                            <h3>Combo chưa có thành phần</h3>
+                            <p>Thêm ít nhất 2 thành phần để lưu combo.</p>
+                        </div>
+                    @endforelse
                 </div>
 
-            @endif
+                <template id="combo-item-template">
+                    <div class="food-edit-combo-row combo-row">
+                        <label class="food-edit-field">
+                            <span>Biến thể thành phần</span>
+                            <select name="combo_items[__index__][variant_id]" class="admin-input">
+                                <option value="">Chọn biến thể</option>
+                                @foreach ($variants as $variant)
+                                    <option value="{{ $variant->id }}">
+                                        {{ $variant->doAn->name }} - {{ $variant->value ?: 'Mặc định' }} (kho {{ $variant->stock_quantity }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </label>
 
-            <input type="hidden" name="is_active" value="0">
-            @if (str_contains(strtolower(optional($food->category)->name), 'combo'))
-                <div class="mt-4">
-                    <label class="text-xs uppercase tracking-wider text-gray-400">
-                        Giá combo
-                    </label>
+                        <label class="food-edit-field">
+                            <span>Số lượng</span>
+                            <input type="number" min="1" value="1" name="combo_items[__index__][quantity]" class="admin-input">
+                        </label>
 
-                    <input type="number" name="price" min="0" value="{{ old('price', $food->price) }}"
-                        class="admin-input" placeholder="Nhập giá combo">
+                        <button type="button" class="food-edit-remove-btn remove-combo-row remove-btn" title="Xóa dòng">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </template>
+            </section>
+        @endif
 
-                    @error('price')
-                        <small class="text-red-500">{{ $message }}</small>
-                    @enderror
-                </div>
-            @endif
-            <label class="flex items-center gap-2 text-sm text-gray-300">
-                <input type="checkbox" name="is_active" value="1"
-                    {{ old('is_active', $food->is_active) ? 'checked' : '' }}>
-                Hiển thị menu
-            </label>
-
-            <button class="btn-admin w-full">Lưu thay đổi</button>
-        </form>
-    </div>
-
+        <div class="food-edit-submitbar">
+            <a href="{{ route('admin.foods.index') }}" class="food-edit-action is-soft">
+                Hủy
+            </a>
+            <button type="submit" class="food-edit-action">
+                <i class="fa-solid fa-floppy-disk"></i>
+                Lưu thay đổi
+            </button>
+        </div>
+    </form>
+</div>
 @endsection
 
+@push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
+    const imageInput = document.getElementById('image');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImage = document.getElementById('preview-image');
+    const uploadPlaceholder = document.getElementById('upload-placeholder');
 
-        const addBtn = document.getElementById('add-combo-item');
-        if (!addBtn) return;
+    if (imageInput && previewContainer && previewImage && uploadPlaceholder) {
+        imageInput.addEventListener('change', function () {
+            const file = imageInput.files && imageInput.files[0];
 
-        const list = document.getElementById('combo-item-list');
-        const template = document.getElementById('combo-item-template').innerHTML;
-
-        let index = Date.now();
-        updateRemoveButtons();
-
-        addBtn.addEventListener('click', function() {
-            let html = template.replaceAll('__index__', index);
-            list.insertAdjacentHTML('beforeend', html);
-            index++;
-
-            updateRemoveButtons();
-        });
-
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('remove-combo-row')) {
-                e.target.closest('.combo-row').remove();
-
-                updateRemoveButtons();
+            if (!file) {
+                return;
             }
-        });
 
-    });
+            previewImage.src = URL.createObjectURL(file);
+            previewContainer.classList.remove('is-hidden');
+            uploadPlaceholder.classList.add('is-hidden');
+        });
+    }
+
+    const addBtn = document.getElementById('add-combo-item');
+    const list = document.getElementById('combo-item-list');
+    const template = document.getElementById('combo-item-template');
+
+    if (!addBtn || !list || !template) {
+        return;
+    }
+
+    let index = list.querySelectorAll('.combo-row').length || 0;
 
     function updateRemoveButtons() {
-        const rows = document.querySelectorAll('#combo-item-list .combo-row');
-        const buttons = document.querySelectorAll('#combo-item-list .remove-btn');
+        const buttons = list.querySelectorAll('.remove-btn');
+        const rows = list.querySelectorAll('.combo-row');
 
-        if (rows.length <= 2) {
-            buttons.forEach(btn => btn.classList.add('hidden'));
-        } else {
-            buttons.forEach(btn => btn.classList.remove('hidden'));
-        }
+        buttons.forEach(function (button) {
+            button.classList.toggle('is-hidden', rows.length <= 2);
+        });
     }
+
+    addBtn.addEventListener('click', function () {
+        const html = template.innerHTML.replaceAll('__index__', index);
+        list.insertAdjacentHTML('beforeend', html);
+        index += 1;
+        updateRemoveButtons();
+    });
+
+    list.addEventListener('click', function (event) {
+        const button = event.target.closest('.remove-combo-row');
+
+        if (!button) {
+            return;
+        }
+
+        button.closest('.combo-row').remove();
+        updateRemoveButtons();
+    });
+
+    updateRemoveButtons();
+});
 </script>
+@endpush

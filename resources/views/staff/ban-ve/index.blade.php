@@ -1,725 +1,258 @@
 @extends('layouts.admin')
 
-@section('title','Bán vé tại quầy')
-@section('page-title','Bán vé tại quầy')
+@section('title', 'Bán vé tại quầy')
+@section('page-title', 'Bán vé tại quầy')
 
 @section('content')
-
-<div class="sell-page">
-
     @php
-        $movies = collect($showtimes)->groupBy('phim_id');
-
-        $dates = collect($showtimes)
-            ->map(function($item){
-                return $item->thoi_gian_chieu->format('Y-m-d');
-            })
+        $showtimeCollection = collect($showtimes);
+        $dates = $showtimeCollection
+            ->map(fn ($item) => $item->thoi_gian_chieu?->format('Y-m-d'))
+            ->filter()
             ->unique()
             ->sort()
             ->values();
 
-        $selectedDate = request('ngay_chieu') ?? $dates->first();
+        $selectedDate = request('ngay_chieu') ?: $dates->first();
+        $keyword = trim((string) request('q', ''));
+        $keywordLower = \Illuminate\Support\Str::lower($keyword);
 
+        $dayShowtimes = $showtimeCollection
+            ->filter(fn ($item) => $selectedDate && $item->thoi_gian_chieu?->format('Y-m-d') === $selectedDate)
+            ->filter(function ($item) use ($keyword, $keywordLower) {
+                if ($keyword === '') {
+                    return true;
+                }
+
+                $haystack = \Illuminate\Support\Str::lower(implode(' ', [
+                    $item->phim?->ten_phim,
+                    $item->rapChieuPhim?->ten_rap,
+                    $item->phongChieu?->ten_phong,
+                    $item->trang_thai,
+                ]));
+
+                return str_contains($haystack, $keywordLower);
+            })
+            ->sortBy('thoi_gian_chieu')
+            ->values();
+
+        $movieGroups = $dayShowtimes->groupBy('phim_id');
+        $selectedCarbon = $selectedDate ? \Carbon\Carbon::parse($selectedDate) : null;
+        $nextShowtime = $dayShowtimes->first();
+        $roomCount = $dayShowtimes->pluck('phong_chieu_id')->filter()->unique()->count();
+        $soldTickets = $dayShowtimes->sum(fn ($item) => (int) ($item->sold_tickets_count ?? 0));
+
+        $statusLabels = [
+            'sap_ra_mat' => 'Sắp ra mắt',
+            'sap_chieu' => 'Sắp chiếu',
+            'dang_chieu' => 'Đang chiếu',
+            'da_chieu' => 'Đã chiếu',
+            'huy' => 'Đã hủy',
+        ];
     @endphp
 
-
-    <div class="sell-header">
-
-        <div>
-            <h2>Bán vé tại quầy</h2>
-
-            <p>
-                Chọn ngày, phim và suất chiếu để bán vé trực tiếp cho khách hàng.
-            </p>
-        </div>
-
-
-        <div class="sell-icon">
-            <i class="fa-solid fa-ticket"></i>
-        </div>
-
-    </div>
-
-
-
-    {{-- Chọn ngày --}}
-
-    <div class="date-box">
-
-        <div class="date-title">
-            <i class="fa-solid fa-calendar-days"></i>
-            Chọn ngày xem
-        </div>
-
-
-        <div class="date-list">
-
-            @foreach($dates as $date)
-
-                @php
-                    $carbonDate = \Carbon\Carbon::parse($date);
-                @endphp
-
-
-                <a href="{{ request()->fullUrlWithQuery(['ngay_chieu'=>$date]) }}"
-                   class="date-item {{ $selectedDate == $date ? 'active' : '' }}">
-
-                    <span>
-                        {{ $carbonDate->translatedFormat('D') }}
-                    </span>
-
-                    <strong>
-                        {{ $carbonDate->format('d') }}
-                    </strong>
-
-                    <small>
-                        {{ $carbonDate->format('m/Y') }}
-                    </small>
-
-                </a>
-
-            @endforeach
-
-        </div>
-
-    </div>
-
-
-
-
-    {{-- Danh sách phim --}}
-
-    <div class="movie-list">
-
-
-        @forelse($movies as $movieId => $movieShowtimes)
-
-
-            @php
-                $movie = $movieShowtimes->first()->phim;
-
-                $showtimesByDate = $movieShowtimes
-                    ->filter(function($item) use ($selectedDate){
-                        return $item->thoi_gian_chieu->format('Y-m-d') == $selectedDate;
-                    });
-
-            @endphp
-
-
-
-            @if($showtimesByDate->count())
-
-
-            <div class="movie-card">
-
-
-                <div class="movie-poster-box">
-
-                    <img src="{{ $movie->poster ? asset('storage/movies/'.$movie->poster) : asset('images/no-poster.jpg') }}"
-                         class="movie-poster">
-
-
-                </div>
-
-
-
-                <div class="movie-content">
-
-
-                    <h3>
-                        {{ $movie->ten_phim }}
-                    </h3>
-
-
-
-                    <div class="movie-tags">
-
-                        @if($movie->do_tuoi)
-
-                            <span class="age-tag">
-                                {{ $movie->do_tuoi }}
-                            </span>
-
-                        @endif
-
-
-                        <span class="type-tag">
-                            2D
-                        </span>
-
-                    </div>
-
-
-
-                    <div class="showtime-title">
-
-                        <i class="fa-solid fa-clock"></i>
-
-                        Suất chiếu
-
-                    </div>
-
-
-
-                    <div class="showtime-list">
-
-
-                        @foreach($showtimesByDate as $showtime)
-
-
-                            <a href="{{ route('staff.ban-ve.show',$showtime->id) }}"
-                               class="showtime-item">
-
-
-                                <strong>
-                                    {{ $showtime->thoi_gian_chieu->format('H:i') }}
-                                </strong>
-
-
-                                <span>
-
-                                    {{ $showtime->phongChieu->ten_phong ?? 'Phòng chiếu' }}
-
-                                </span>
-
-
-                            </a>
-
-
-                        @endforeach
-
-
-                    </div>
-
-
-                </div>
-
-
-            </div>
-
-
-            @endif
-
-
-        @empty
-
-
-            <div class="empty-box">
-
-                <i class="fa-solid fa-calendar-xmark"></i>
-
+    <div class="counter-sale-page">
+        @include('admin.partials.flash')
+
+        <section class="counter-sale-hero">
+            <div class="counter-sale-hero-copy">
+                <span class="counter-sale-kicker">
+                    <i class="fa-solid fa-ticket"></i>
+                    Quầy vé CineHome
+                </span>
+                <h1>Bán vé tại quầy</h1>
                 <p>
-                    Chưa có suất chiếu.
+                    Chọn ngày, tìm phim hoặc phòng chiếu, sau đó vào suất chiếu để chọn ghế, đồ ăn và thanh toán cho khách.
+                    Giao diện này ưu tiên tốc độ thao tác trong ca vận hành.
                 </p>
 
+                <div class="counter-sale-hero-meta">
+                    <span><i class="fa-solid fa-calendar-day"></i> {{ $selectedCarbon?->format('d/m/Y') ?? 'Chưa có lịch' }}</span>
+                    <span><i class="fa-solid fa-clock"></i> Suất gần nhất: {{ $nextShowtime?->thoi_gian_chieu?->format('H:i') ?? '--:--' }}</span>
+                    <span><i class="fa-solid fa-chair"></i> {{ number_format($soldTickets) }} vé đã bán</span>
+                </div>
             </div>
 
+            <div class="counter-sale-hero-actions">
+                <a href="{{ route('staff.lich-su-ve.index') }}" class="movie-action-btn is-soft">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    Lịch sử vé
+                </a>
+                <a href="{{ route('staff.ban-ve.index') }}" class="movie-action-btn is-ghost">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Làm mới
+                </a>
+            </div>
+        </section>
 
-        @endforelse
+        <section class="counter-sale-stats" aria-label="Tổng quan bán vé tại quầy">
+            <article>
+                <span class="counter-sale-stat-icon is-showtime"><i class="fa-solid fa-calendar-check"></i></span>
+                <div>
+                    <small>Suất trong ngày</small>
+                    <strong>{{ number_format($dayShowtimes->count()) }}</strong>
+                </div>
+            </article>
+            <article>
+                <span class="counter-sale-stat-icon is-movie"><i class="fa-solid fa-film"></i></span>
+                <div>
+                    <small>Phim đang bán</small>
+                    <strong>{{ number_format($movieGroups->count()) }}</strong>
+                </div>
+            </article>
+            <article>
+                <span class="counter-sale-stat-icon is-room"><i class="fa-solid fa-door-open"></i></span>
+                <div>
+                    <small>Phòng chiếu</small>
+                    <strong>{{ number_format($roomCount) }}</strong>
+                </div>
+            </article>
+            <article>
+                <span class="counter-sale-stat-icon is-ticket"><i class="fa-solid fa-ticket-simple"></i></span>
+                <div>
+                    <small>Vé đã bán</small>
+                    <strong>{{ number_format($soldTickets) }}</strong>
+                </div>
+            </article>
+        </section>
 
+        <section class="counter-sale-filter">
+            <div>
+                <span class="counter-sale-kicker">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    Chọn ngày xem
+                </span>
+                <div class="counter-date-list">
+                    @forelse ($dates as $date)
+                        @php
+                            $carbonDate = \Carbon\Carbon::parse($date);
+                            $dateShowtimeCount = $showtimeCollection
+                                ->filter(fn ($item) => $item->thoi_gian_chieu?->format('Y-m-d') === $date)
+                                ->count();
+                        @endphp
 
+                        <a
+                            href="{{ route('staff.ban-ve.index', array_filter(['ngay_chieu' => $date, 'q' => $keyword ?: null])) }}"
+                            class="counter-date-item {{ $selectedDate === $date ? 'is-active' : '' }}"
+                        >
+                            <span>{{ $carbonDate->translatedFormat('D') }}</span>
+                            <strong>{{ $carbonDate->format('d') }}</strong>
+                            <small>{{ $carbonDate->format('m/Y') }}</small>
+                            <em>{{ $dateShowtimeCount }} suất</em>
+                        </a>
+                    @empty
+                        <div class="counter-date-empty">Chưa có ngày chiếu sắp tới.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <form method="GET" action="{{ route('staff.ban-ve.index') }}" class="counter-sale-search">
+                <input type="hidden" name="ngay_chieu" value="{{ $selectedDate }}">
+                <label>
+                    <span>Tìm nhanh</span>
+                    <div>
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" name="q" value="{{ $keyword }}" placeholder="Tên phim, rạp hoặc phòng chiếu...">
+                    </div>
+                </label>
+                <button type="submit" class="movie-action-btn is-primary">
+                    <i class="fa-solid fa-filter"></i>
+                    Lọc
+                </button>
+            </form>
+        </section>
+
+        <section class="counter-movie-section">
+            <div class="counter-section-head">
+                <div>
+                    <span class="counter-sale-kicker">
+                        <i class="fa-solid fa-clapperboard"></i>
+                        Suất chiếu khả dụng
+                    </span>
+                    <h2>{{ $selectedCarbon ? 'Lịch ngày ' . $selectedCarbon->format('d/m/Y') : 'Chưa có lịch chiếu' }}</h2>
+                </div>
+                <span>{{ number_format($dayShowtimes->count()) }} suất</span>
+            </div>
+
+            <div class="counter-movie-list">
+                @forelse ($movieGroups as $movieId => $movieShowtimes)
+                    @php
+                        $movie = $movieShowtimes->first()->phim;
+                        $poster = $movie?->poster
+                            ? asset('storage/movies/' . $movie->poster)
+                            : asset('images/no-poster.jpg');
+                    @endphp
+
+                    <article class="counter-movie-card">
+                        <div class="counter-movie-poster">
+                            <img src="{{ $poster }}" alt="{{ $movie?->ten_phim ?? 'Poster phim' }}">
+                        </div>
+
+                        <div class="counter-movie-body">
+                            <div class="counter-movie-info">
+                                <div>
+                                    <h3>{{ $movie?->ten_phim ?? 'Phim chưa cập nhật' }}</h3>
+                                    <p>
+                                        <i class="fa-solid fa-location-dot"></i>
+                                        {{ $movieShowtimes->first()->rapChieuPhim?->ten_rap ?? 'CineHome' }}
+                                    </p>
+                                </div>
+
+                                <div class="counter-movie-tags">
+                                    @if ($movie?->do_tuoi)
+                                        <span class="is-age">{{ $movie->do_tuoi }}</span>
+                                    @endif
+                                    <span>2D</span>
+                                    <span>{{ $movieShowtimes->count() }} suất</span>
+                                </div>
+                            </div>
+
+                            <div class="counter-showtime-grid">
+                                @foreach ($movieShowtimes as $showtime)
+                                    @php
+                                        $statusClass = match ($showtime->trang_thai) {
+                                            'dang_chieu' => 'is-live',
+                                            'huy' => 'is-cancelled',
+                                            default => 'is-upcoming',
+                                        };
+                                    @endphp
+
+                                    <a href="{{ route('staff.ban-ve.show', $showtime->id) }}" class="counter-showtime-card">
+                                        <strong>{{ $showtime->thoi_gian_chieu?->format('H:i') ?? '--:--' }}</strong>
+                                        <span>
+                                            <i class="fa-solid fa-door-open"></i>
+                                            {{ $showtime->phongChieu?->ten_phong ?? 'Phòng chiếu' }}
+                                        </span>
+                                        <span>
+                                            <i class="fa-solid fa-ticket-simple"></i>
+                                            {{ number_format((int) ($showtime->sold_tickets_count ?? 0)) }} vé
+                                        </span>
+                                        <em class="{{ $statusClass }}">
+                                            {{ $statusLabels[$showtime->trang_thai] ?? 'Sắp chiếu' }}
+                                        </em>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    </article>
+                @empty
+                    <div class="counter-sale-empty">
+                        <span><i class="fa-solid fa-calendar-xmark"></i></span>
+                        <h3>Không có suất chiếu phù hợp</h3>
+                        <p>Thử chọn ngày khác hoặc bỏ từ khóa tìm kiếm để xem toàn bộ lịch bán vé.</p>
+                        <a href="{{ route('staff.ban-ve.index') }}" class="movie-action-btn is-primary">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            Xem tất cả
+                        </a>
+                    </div>
+                @endforelse
+            </div>
+        </section>
     </div>
-
-
-</div>
-
 @endsection
-@push('styles')
 
-<style>
-
-.sell-page{
-    animation:fadeIn .35s ease;
-}
-
-
-
-.sell-header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:25px;
-}
-
-
-
-.sell-header h2{
-    margin:0;
-    color:#fff;
-    font-size:32px;
-    font-weight:900;
-}
-
-
-
-.sell-header p{
-    margin-top:8px;
-    color:#999;
-}
-
-
-
-.sell-icon{
-
-    width:64px;
-    height:64px;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border-radius:22px;
-
-    color:#f4c56a;
-
-    background:rgba(244,197,106,.12);
-
-    box-shadow:0 0 35px rgba(244,197,106,.2);
-
-}
-
-
-
-.sell-icon i{
-    font-size:28px;
-}
-
-
-
-
-/* DATE */
-
-.date-box{
-
-    background:#121212;
-
-    border:1px solid rgba(255,255,255,.1);
-
-    border-radius:24px;
-
-    padding:20px;
-
-    margin-bottom:25px;
-
-}
-
-
-
-.date-title{
-
-    color:#f4c56a;
-
-    font-weight:900;
-
-    margin-bottom:15px;
-
-    display:flex;
-
-    align-items:center;
-
-    gap:10px;
-
-}
-
-
-
-.date-list{
-
-    display:flex;
-
-    gap:12px;
-
-    overflow-x:auto;
-
-}
-
-
-
-.date-item{
-
-    min-width:90px;
-
-    padding:14px;
-
-    border-radius:18px;
-
-    background:#1a1a1a;
-
-    border:1px solid rgba(255,255,255,.1);
-
-    color:#aaa;
-
-    text-decoration:none;
-
-    text-align:center;
-
-    transition:.25s;
-
-}
-
-
-
-.date-item span{
-
-    display:block;
-
-    font-size:12px;
-
-    text-transform:uppercase;
-
-}
-
-
-
-.date-item strong{
-
-    display:block;
-
-    font-size:28px;
-
-    color:#fff;
-
-}
-
-
-
-.date-item small{
-
-    font-size:12px;
-
-}
-
-
-
-.date-item:hover,
-.date-item.active{
-
-    background:linear-gradient(135deg,#f4c56a,#d99a32);
-
-    color:#222;
-
-    transform:translateY(-3px);
-
-}
-
-
-
-.date-item.active strong,
-.date-item.active span,
-.date-item.active small{
-
-    color:#222;
-
-}
-
-
-
-/* MOVIE */
-
-.movie-list{
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:22px;
-
-}
-
-
-
-.movie-card{
-
-    display:flex;
-
-    gap:22px;
-
-    padding:22px;
-
-    border-radius:26px;
-
-    background:#121212;
-
-    border:1px solid rgba(255,255,255,.1);
-
-    box-shadow:0 20px 50px rgba(0,0,0,.3);
-
-}
-
-
-
-.movie-poster-box{
-
-    width:150px;
-
-    flex-shrink:0;
-
-}
-
-
-
-.movie-poster{
-
-    width:100%;
-
-    height:220px;
-
-    object-fit:cover;
-
-    border-radius:18px;
-
-}
-
-
-
-.movie-content{
-
-    flex:1;
-
-}
-
-
-
-.movie-content h3{
-
-    margin:0;
-
-    color:#fff;
-
-    font-size:26px;
-
-    font-weight:900;
-
-}
-
-
-
-.movie-tags{
-
-    display:flex;
-
-    gap:10px;
-
-    margin-top:15px;
-
-}
-
-
-
-.age-tag,
-.type-tag{
-
-    padding:6px 12px;
-
-    border-radius:999px;
-
-    font-size:11px;
-
-    font-weight:900;
-
-    text-transform:uppercase;
-
-}
-
-
-
-.age-tag{
-
-    background:#ef4444;
-
-    color:#fff;
-
-}
-
-
-
-.type-tag{
-
-    background:rgba(244,197,106,.15);
-
-    border:1px solid rgba(244,197,106,.4);
-
-    color:#f4c56a;
-
-}
-
-
-
-.showtime-title{
-
-    margin-top:30px;
-
-    margin-bottom:12px;
-
-    color:#888;
-
-    font-size:12px;
-
-    font-weight:900;
-
-    text-transform:uppercase;
-
-    letter-spacing:2px;
-
-}
-
-
-
-.showtime-list{
-
-    display:flex;
-
-    flex-wrap:wrap;
-
-    gap:12px;
-
-}
-
-
-
-.showtime-item{
-
-    min-width:110px;
-
-    padding:14px;
-
-    border-radius:18px;
-
-    text-align:center;
-
-    text-decoration:none;
-
-    color:#111;
-
-    background:linear-gradient(135deg,#f4c56a,#d99a32);
-
-    transition:.25s;
-
-}
-
-
-
-.showtime-item strong{
-
-    display:block;
-
-    font-size:20px;
-
-}
-
-
-
-.showtime-item span{
-
-    display:block;
-
-    margin-top:5px;
-
-    font-size:12px;
-
-    color:#333;
-
-}
-
-
-
-.showtime-item:hover{
-
-    transform:translateY(-4px);
-
-    box-shadow:0 15px 35px rgba(244,197,106,.25);
-
-}
-
-
-
-.empty-box{
-
-    height:250px;
-
-    border-radius:25px;
-
-    background:#121212;
-
-    border:1px dashed rgba(255,255,255,.2);
-
-    display:flex;
-
-    flex-direction:column;
-
-    align-items:center;
-
-    justify-content:center;
-
-    color:#777;
-
-}
-
-
-
-.empty-box i{
-
-    font-size:45px;
-
-    color:#d99a32;
-
-    margin-bottom:15px;
-
-}
-
-
-
-@keyframes fadeIn{
-
-    from{
-
-        opacity:0;
-
-        transform:translateY(10px);
-
-    }
-
-    to{
-
-        opacity:1;
-
-        transform:translateY(0);
-
-    }
-
-}
-
-
-
-@media(max-width:900px){
-
-    .movie-card{
-
-        flex-direction:column;
-
-    }
-
-
-    .movie-poster-box{
-
-        width:100%;
-
-    }
-
-
-    .movie-poster{
-
-        height:300px;
-
-    }
-
-}
-
-
-</style>
-
-<script>
-localStorage.removeItem("staff_food_cart");
-</script>
-
+@push('scripts')
+    <script>
+        localStorage.removeItem("staff_food_cart");
+    </script>
 @endpush

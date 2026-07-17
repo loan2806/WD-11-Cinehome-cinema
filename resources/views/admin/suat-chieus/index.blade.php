@@ -6,7 +6,7 @@
 @php
     $posterUrl = function (?string $poster): string {
         if (empty($poster)) {
-            return asset('assets/images/logo.png');
+            return asset('assets/images/LOGO copy.png');
         }
 
         $poster = ltrim($poster, '/');
