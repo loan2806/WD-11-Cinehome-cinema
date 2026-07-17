@@ -5,6 +5,23 @@
 @section('page-subtitle', 'Thông tin chi tiết vé xem phim')
 
 @section('content')
+@php
+    // 🌟 ĐỒNG BỘ ĐA TẦNG: Lấy dữ liệu đồ ăn từ Cache giống User, tự động fallback sang Quan hệ DB nếu có
+    $foodItems = \Illuminate\Support\Facades\Cache::get("ve_foods:{$veXemPhim->id}", []);
+    
+    if (empty($foodItems)) {
+        if ($veXemPhim->relationLoaded('foods') && $veXemPhim->foods->isNotEmpty()) {
+            $foodItems = $veXemPhim->foods->map(function($f) {
+                return [
+                    'name' => $f->ten_do_an ?? $f->ten_mon ?? $f->name ?? 'Đồ ăn',
+                    'qty' => $f->pivot->so_luong ?? 1
+                ];
+            })->toArray();
+        } elseif (isset($veXemPhim->foods) && !empty($veXemPhim->foods)) {
+            $foodItems = $veXemPhim->foods;
+        }
+    }
+@endphp
 
 <div class="rounded-3xl border border-white/10 bg-[#101010] shadow-xl">
 
@@ -148,6 +165,36 @@
                     <span class="text-white">{{ $veXemPhim->updated_at?->format('d/m/Y H:i') }}</span>
                 </div>
             </div>
+        </div>
+
+        {{-- 🌟 BỔ SUNG: Khối hiển thị Đồ ăn & Combo kèm theo (Spans full 2 cột trên màn hình rộng) --}}
+        <div class="rounded-3xl border border-white/10 bg-white/[0.03] p-6 transition duration-300 hover:-translate-y-1 hover:border-[#d99a32]/40 xl:col-span-2">
+            <h6 class="mb-5 flex items-center gap-2 text-lg font-black text-white">
+                <i class="fa-solid fa-cookie-bite text-[#d99a32]"></i>
+                Đồ ăn & Combo kèm theo
+            </h6>
+
+            @if(!empty($foodItems) && count($foodItems) > 0)
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach($foodItems as $item)
+                        @php
+                            $tenMon = $item['name'] ?? $item['ten_mon'] ?? 'Đồ ăn';
+                            $soLuong = $item['qty'] ?? $item['quantity'] ?? $item['so_luong'] ?? 1;
+                        @endphp
+                        <div class="flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition hover:bg-white/[0.05]">
+                            <span class="font-bold text-gray-200">{{ $tenMon }}</span>
+                            <span class="rounded-xl bg-[#d99a32]/15 px-3 py-1.5 text-sm font-black text-[#d99a32]">
+                                x{{ $soLuong }}
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="flex items-center gap-3 rounded-2xl border border-dashed border-white/10 bg-white/[0.01] p-5 text-sm text-gray-400">
+                    <i class="fa-solid fa-circle-info text-[#d99a32] text-base"></i>
+                    <span>Không có đồ ăn hoặc combo nào được đặt kèm theo vé này.</span>
+                </div>
+            @endif
         </div>
 
     </div>

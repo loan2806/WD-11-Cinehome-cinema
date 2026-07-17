@@ -8,7 +8,7 @@ use App\Http\Controllers\Admin\FoodInvoiceController;
 use App\Http\Controllers\Admin\GheNgoiController;
 use App\Http\Controllers\Admin\HangGheController;
 use App\Http\Controllers\Admin\LoaiGheController as AdminLoaiGheController;
-use App\Http\Controllers\Admin\NhanVienController as AdminNhanVienController;
+use App\Http\Controllers\Admin\NhanVienController;
 use App\Http\Controllers\Admin\ChamCongController;
 use App\Http\Controllers\Admin\BangLuongController;
 use App\Http\Controllers\Admin\NhatKyHoatDongHeThongController;
@@ -254,8 +254,8 @@ Route::middleware(['auth'])
         });
 
         Route::middleware(['permission:quan_ly_nhan_vien'])->group(function () {
-            Route::resource('nhanviens', AdminNhanVienController::class);
-            Route::patch('nhanviens/{nhanvien}/toggle-status', [AdminNhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
+            Route::resource('nhanviens', NhanVienController::class);
+            Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
         });
 
         Route::middleware(['permission:quan_ly_khach_hang'])->group(function () {
