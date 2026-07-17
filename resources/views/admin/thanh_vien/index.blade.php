@@ -5,151 +5,199 @@
 @section('page-subtitle', 'Quản lý khách hàng thân thiết, điểm tích lũy và hạng thành viên')
 
 @section('content')
-<div class="space-y-6">
+@php
+    $rankStats = [
+        ['label' => 'Tổng thành viên', 'value' => $tongThanhVien, 'icon' => 'fa-users', 'tone' => 'is-total'],
+        ['label' => 'Member', 'value' => $tongMember, 'icon' => 'fa-user', 'tone' => 'is-member'],
+        ['label' => 'Silver', 'value' => $tongSilver, 'icon' => 'fa-medal', 'tone' => 'is-silver'],
+        ['label' => 'Gold', 'value' => $tongGold, 'icon' => 'fa-crown', 'tone' => 'is-gold'],
+        ['label' => 'Platinum', 'value' => $tongPlatinum, 'icon' => 'fa-gem', 'tone' => 'is-platinum'],
+    ];
 
-    {{-- THỐNG KÊ NHANH --}}
-    <div class="grid grid-cols-1 gap-5 md:grid-cols-5">
-        @foreach([
-        ['Tổng thành viên', $tongThanhVien, 'fa-users'],
-        ['Member', $tongMember, 'fa-user'],
-        ['Silver', $tongSilver, 'fa-medal'],
-        ['Gold', $tongGold, 'fa-crown'],
-        ['Platinum', $tongPlatinum, 'fa-gem'],
-        ] as $card)
-        <div
-            class="rounded-3xl border border-white/10 bg-[#121212] p-5 shadow-xl transition duration-300 hover:-translate-y-1 hover:border-[#d99a32]/50">
-            <div
-                class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32]">
-                <i class="fa-solid {{ $card[2] }} text-white"></i>
+    $rankMeta = [
+        'member' => ['label' => 'Member', 'icon' => 'fa-user', 'tone' => 'is-member'],
+        'silver' => ['label' => 'Silver', 'icon' => 'fa-medal', 'tone' => 'is-silver'],
+        'gold' => ['label' => 'Gold', 'icon' => 'fa-crown', 'tone' => 'is-gold'],
+        'platinum' => ['label' => 'Platinum', 'icon' => 'fa-gem', 'tone' => 'is-platinum'],
+    ];
+@endphp
+
+<div class="member-admin-page">
+    <section class="member-hero">
+        <div>
+            <span class="member-kicker">
+                <i class="fa-solid fa-crown"></i>
+                Loyalty Center
+            </span>
+            <h2>Thẻ thành viên & điểm thưởng</h2>
+            <p>Theo dõi hạng thành viên, điểm khả dụng và lịch sử tích lũy để chăm sóc khách hàng tốt hơn.</p>
+            <div class="member-hero-actions">
+                <a href="{{ route('admin.vouchers.index') }}" class="member-primary-btn">
+                    <i class="fa-solid fa-gift"></i>
+                    Quản lý voucher
+                </a>
+                <a href="{{ route('admin.khach-hang.index') }}" class="member-ghost-btn">
+                    <i class="fa-solid fa-users-gear"></i>
+                    Tài khoản khách hàng
+                </a>
             </div>
-            <p class="text-sm text-gray-400">{{ $card[0] }}</p>
-            <h3 class="mt-2 text-3xl font-black text-white">{{ number_format($card[1]) }}</h3>
         </div>
+
+        <div class="member-rank-guide">
+            <span>Quy tắc hạng</span>
+            <strong>0 - 499 Member</strong>
+            <strong>500+ Silver</strong>
+            <strong>1000+ Gold</strong>
+            <strong>2000+ Platinum</strong>
+        </div>
+    </section>
+
+    <section class="member-stat-grid">
+        @foreach($rankStats as $stat)
+            <article class="member-stat-card {{ $stat['tone'] }}">
+                <span><i class="fa-solid {{ $stat['icon'] }}"></i></span>
+                <div>
+                    <small>{{ $stat['label'] }}</small>
+                    <strong>{{ number_format($stat['value']) }}</strong>
+                </div>
+            </article>
         @endforeach
-    </div>
+    </section>
 
-    {{-- BỘ LỌC --}}
-    <div class="rounded-3xl border border-white/10 bg-[#121212] p-5">
-        <form method="GET" class="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}"
-                placeholder="Tìm mã thành viên, tên hoặc email..."
-                class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+    <section class="member-panel">
+        <div class="member-panel-head">
+            <div>
+                <span class="member-kicker">Bộ lọc</span>
+                <h3>Tìm nhanh thành viên</h3>
+                <p>Lọc theo mã thẻ, tên, email, số điện thoại hoặc hạng thành viên.</p>
+            </div>
+        </div>
 
-            <select name="hang_thanh_vien"
-                class="rounded-2xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+        <form method="GET" action="{{ route('admin.thanh-vien.index') }}" class="member-filter">
+            <label class="member-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}"
+                    placeholder="Tìm mã thành viên, tên, email hoặc số điện thoại...">
+            </label>
+
+            <select name="hang_thanh_vien" class="member-select">
                 <option value="">Tất cả hạng</option>
-                <option value="member" @selected(request('hang_thanh_vien')==='member' )>Member</option>
-                <option value="silver" @selected(request('hang_thanh_vien')==='silver' )>Silver</option>
-                <option value="gold" @selected(request('hang_thanh_vien')==='gold' )>Gold</option>
-                <option value="platinum" @selected(request('hang_thanh_vien')==='platinum' )>Platinum</option>
+                <option value="member" @selected(request('hang_thanh_vien') === 'member')>Member</option>
+                <option value="silver" @selected(request('hang_thanh_vien') === 'silver')>Silver</option>
+                <option value="gold" @selected(request('hang_thanh_vien') === 'gold')>Gold</option>
+                <option value="platinum" @selected(request('hang_thanh_vien') === 'platinum')>Platinum</option>
             </select>
 
-            <button
-                class="rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 font-black text-white transition hover:-translate-y-1">
-                <i class="fa-solid fa-filter mr-2"></i>
+            <button type="submit" class="member-filter-btn">
+                <i class="fa-solid fa-filter"></i>
                 Lọc dữ liệu
             </button>
-        </form>
-    </div>
 
-    {{-- DANH SÁCH THÀNH VIÊN --}}
-    <div class="overflow-hidden rounded-3xl border border-white/10 bg-[#121212] shadow-2xl">
-        <div class="border-b border-white/10 px-6 py-5">
-            <h2 class="text-xl font-black text-white">Danh sách thành viên</h2>
-            <p class="mt-1 text-sm text-gray-400">Theo dõi điểm, hạng và thông tin khách hàng thân thiết</p>
+            @if(request()->hasAny(['tim_kiem', 'hang_thanh_vien']))
+                <a href="{{ route('admin.thanh-vien.index') }}" class="member-reset-btn">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            @endif
+        </form>
+    </section>
+
+    <section class="member-panel">
+        <div class="member-panel-head">
+            <div>
+                <span class="member-kicker">Danh sách</span>
+                <h3>Thành viên thân thiết</h3>
+                <p>Ưu tiên khách có tổng điểm cao để dễ nhận diện nhóm VIP và chăm sóc lại.</p>
+            </div>
+            <span class="member-result-count">
+                <i class="fa-solid fa-id-card"></i>
+                {{ number_format($thanhViens->total()) }} thẻ
+            </span>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[1150px] table-fixed text-left">
-                <colgroup>
-                    <col class="w-[13%]">
-                    <col class="w-[18%]">
-                    <col class="w-[14%]">
-                    <col class="w-[11%]">
-                    <col class="w-[13%]">
-                    <col class="w-[12%]">
-                    <col class="w-[12%]">
-                    <col class="w-[7%]">
-                </colgroup>
-
-                <thead class="bg-white/[0.04] text-xs uppercase tracking-wider text-gray-400">
+        <div class="member-table-wrap">
+            <table class="member-table">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left">Mã thành viên</th>
-                        <th class="px-6 py-4 text-left">Khách hàng</th>
-                        <th class="px-6 py-4 text-left">Số điện thoại</th>
-                        <th class="px-6 py-4 text-center">Hạng</th>
-                        <th class="px-6 py-4 text-center">Điểm hiện tại</th>
-                        <th class="px-6 py-4 text-center">Tổng điểm</th>
-                        <th class="px-6 py-4 text-center">Ngày tham gia</th>
-                        <th class="px-6 py-4 text-right">Thao tác</th>
+                        <th>Khách hàng</th>
+                        <th>Mã thành viên</th>
+                        <th>Liên hệ</th>
+                        <th>Hạng</th>
+                        <th>Điểm hiện tại</th>
+                        <th>Tổng tích lũy</th>
+                        <th>Ngày tham gia</th>
+                        <th class="is-right">Thao tác</th>
                     </tr>
                 </thead>
-
-                <tbody class="divide-y divide-white/10">
+                <tbody>
                     @forelse($thanhViens as $item)
-                    <tr class="transition duration-300 hover:bg-white/[0.04]">
-                        <td class="px-6 py-5 align-middle font-black text-[#d99a32]">
-                            {{ $item->ma_thanh_vien }}
-                        </td>
-
-                        <td class="px-6 py-5 align-middle">
-                            <div class="truncate font-bold text-white">
-                                {{ $item->nguoiDung->ho_ten ?? 'Không xác định' }}
-                            </div>
-                            <div class="truncate text-sm text-gray-500">
-                                {{ $item->nguoiDung->email ?? '---' }}
-                            </div>
-                        </td>
-
-                        <td class="px-6 py-5 align-middle font-bold text-white">
-                            {{ $item->nguoiDung->so_dien_thoai ?? '---' }}
-                        </td>
-
-                        <td class="px-6 py-5 text-center align-middle">
-                            <span class="inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-black
-                        @class([
-                            'bg-gray-500/15 text-gray-300' => $item->hang_thanh_vien === 'member',
-                            'bg-slate-400/15 text-slate-300' => $item->hang_thanh_vien === 'silver',
-                            'bg-yellow-500/15 text-yellow-400' => $item->hang_thanh_vien === 'gold',
-                            'bg-purple-500/15 text-purple-400' => $item->hang_thanh_vien === 'platinum',
-                        ])">
-                                {{ strtoupper($item->ten_hang) }}
-                            </span>
-                        </td>
-
-                        <td class="px-6 py-5 text-center align-middle font-bold text-white">
-                            {{ number_format($item->diem_hien_tai) }}
-                        </td>
-
-                        <td class="px-6 py-5 text-center align-middle font-bold text-[#f4c56a]">
-                            {{ number_format($item->tong_diem_tich_luy) }}
-                        </td>
-
-                        <td class="px-6 py-5 text-center align-middle text-gray-400">
-                            {{ $item->ngay_tham_gia?->format('d/m/Y') ?? '---' }}
-                        </td>
-
-                        <td class="px-6 py-5 text-right align-middle">
-                            <a href="{{ route('admin.thanh-vien.show', $item) }}"
-                                class="inline-flex rounded-xl bg-[#d99a32] px-4 py-2 text-xs font-black text-black no-underline transition hover:bg-[#f4c56a]">
-                                Chi tiết
-                            </a>
-                        </td>
-                    </tr>
+                        @php
+                            $user = $item->nguoiDung;
+                            $name = $user?->ho_ten ?: 'Khách chưa cập nhật';
+                            $initial = mb_strtoupper(mb_substr($name, 0, 1));
+                            $rank = $rankMeta[$item->hang_thanh_vien] ?? $rankMeta['member'];
+                        @endphp
+                        <tr>
+                            <td data-label="Khách hàng">
+                                <div class="member-profile">
+                                    <span class="member-avatar {{ $rank['tone'] }}">{{ $initial }}</span>
+                                    <div>
+                                        <strong>{{ $name }}</strong>
+                                        <small>{{ $user?->email ?? 'Chưa có email' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-label="Mã thành viên">
+                                <span class="member-code">{{ $item->ma_thanh_vien }}</span>
+                            </td>
+                            <td data-label="Liên hệ">
+                                <span class="member-contact">
+                                    <i class="fa-solid fa-phone"></i>
+                                    {{ $user?->so_dien_thoai ?? 'Chưa cập nhật' }}
+                                </span>
+                            </td>
+                            <td data-label="Hạng">
+                                <span class="member-rank-chip {{ $rank['tone'] }}">
+                                    <i class="fa-solid {{ $rank['icon'] }}"></i>
+                                    {{ $rank['label'] }}
+                                </span>
+                            </td>
+                            <td data-label="Điểm hiện tại">
+                                <span class="member-point is-current">{{ number_format($item->diem_hien_tai) }}</span>
+                            </td>
+                            <td data-label="Tổng tích lũy">
+                                <span class="member-point">{{ number_format($item->tong_diem_tich_luy) }}</span>
+                            </td>
+                            <td data-label="Ngày tham gia">
+                                <span class="member-date">
+                                    <i class="fa-regular fa-calendar"></i>
+                                    {{ $item->ngay_tham_gia?->format('d/m/Y') ?? '---' }}
+                                </span>
+                            </td>
+                            <td data-label="Thao tác" class="is-right">
+                                <a href="{{ route('admin.thanh-vien.show', $item) }}" class="member-action-btn">
+                                    <i class="fa-solid fa-eye"></i>
+                                    Chi tiết
+                                </a>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center text-gray-400">
-                            Chưa có thành viên nào.
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="8">
+                                <div class="member-empty">
+                                    <i class="fa-regular fa-id-card"></i>
+                                    <h3>Chưa có thẻ thành viên</h3>
+                                    <p>Khi khách hàng đăng ký hoặc phát sinh điểm, dữ liệu sẽ hiển thị tại đây.</p>
+                                </div>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="border-t border-white/10 px-6 py-4">
+        <div class="member-pagination">
             {{ $thanhViens->links() }}
         </div>
-    </div>
+    </section>
 </div>
 @endsection

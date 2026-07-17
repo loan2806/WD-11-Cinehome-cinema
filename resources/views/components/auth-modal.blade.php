@@ -30,8 +30,8 @@
 
         <section class="auth-modal-main">
             <div class="auth-brand-block">
-                <div class="auth-logo-mark">
-                    <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome">
+                <div class="auth-logo-mark cinehome-logo-sparkle">
+                    <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome" class="cinehome-logo-img">
                 </div>
                 <div>
                     <h2>Cine<span>Home</span></h2>

@@ -21,7 +21,12 @@ class FoodController extends Controller
 
     public function index(Request $request)
     {
-        $query = Doan::with(['variants', 'category'])
+        $query = Doan::with([
+            'variants',
+            'category',
+            'comboItems.variant',
+            'defaultVariant',
+        ])
             ->withCount('invoiceItems');
 
         if ($request->filled('q')) {
@@ -46,6 +51,14 @@ class FoodController extends Controller
             match ($request->status) {
                 'active' => $query->where('is_active', true),
                 'inactive' => $query->where('is_active', false),
+                'low' => $query->where(function ($q) {
+                    $q->whereHas('variants', function ($variantQuery) {
+                        $variantQuery->where('is_active', true)
+                            ->where('stock_quantity', '<=', 10);
+                    })->orWhereHas('comboItems.variant', function ($variantQuery) {
+                        $variantQuery->where('stock_quantity', '<=', 10);
+                    });
+                }),
                 default => null,
             };
         }
@@ -57,11 +70,20 @@ class FoodController extends Controller
             ->withQueryString();
 
         $categories = DanhMucDoAn::orderBy('name')->get();
+        $allFoods = Doan::with([
+            'category',
+            'variants',
+            'comboItems.variant',
+            'defaultVariant',
+        ])->get();
 
         $summary = [
-            'total' => Doan::count(),
-            'active' => Doan::where('is_active', true)->count(),
-            'inactive' => Doan::where('is_active', false)->count(),
+            'total' => $allFoods->count(),
+            'active' => $allFoods->where('is_active', true)->count(),
+            'inactive' => $allFoods->where('is_active', false)->count(),
+            'low_stock' => $allFoods
+                ->filter(fn (Doan $food) => $food->stock_quantity <= $food->min_stock_quantity)
+                ->count(),
         ];
 
         return view('admin.foods.index', compact(
@@ -94,18 +116,28 @@ class FoodController extends Controller
 
     public function show(Doan $food)
     {
-        $food->load('variants');
+        $food->load([
+            'category',
+            'variants',
+            'defaultVariant',
+            'comboItems.variant.doAn.category',
+        ])->loadCount('invoiceItems');
 
         return view('admin.foods.show', compact('food'));
     }
 
     public function edit(Doan $food)
     {
-        $food->load('category', 'variants', 'comboItems');
+        $food->load([
+            'category',
+            'variants',
+            'defaultVariant',
+            'comboItems.variant.doAn.category',
+        ]);
 
         $categories = DanhMucDoAn::orderBy('name')->get();
 
-        $variants = BienTheDoAn::with('doAn')
+        $variants = BienTheDoAn::with('doAn.category')
             ->whereHas('doAn', function ($q) {
                 $q->where('category_id', '!=', DanhMucDoAn::where('name', 'Combo')->value('id'));
             })

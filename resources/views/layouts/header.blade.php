@@ -3,8 +3,8 @@
         <div class="booking-navbar-inner">
 
             <a href="{{ route('home') }}" class="booking-brand text-decoration-none">
-                <span class="booking-brand-mark">
-                    <i class="fa-solid fa-ticket"></i>
+                <span class="booking-brand-mark cinehome-logo-sparkle">
+                    <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome Logo" class="cinehome-logo-img">
                 </span>
                 <span>Cine<span>Home</span></span>
             </a>

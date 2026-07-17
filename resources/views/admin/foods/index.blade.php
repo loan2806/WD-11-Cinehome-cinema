@@ -1,214 +1,218 @@
 @extends('layouts.admin')
 
+@section('title', 'Cấu hình Menu & Kho hàng')
 @section('page-title', 'Cấu hình Menu & Kho hàng')
 @section('page-subtitle', 'Quản lý món, giá bán, tồn kho và trạng thái hiển thị')
 
 @section('content')
+@php
+    $activeFilters = collect([
+        request('q'),
+        request('category_id'),
+        request('status'),
+    ])->filter()->count();
 
+    $statusOptions = [
+        'active' => 'Đang bán',
+        'inactive' => 'Tạm ẩn',
+        'low' => 'Sắp hết hàng',
+    ];
+@endphp
+
+<div class="food-menu-page">
     @include('admin.partials.flash')
 
-    {{-- TOP STATS --}}
-    <div class="mb-6 grid gap-4 md:grid-cols-3">
-        <div class="rounded-2xl border border-white/10 bg-[#0f0f0f] p-4">
-            <div class="text-sm text-gray-400">Tổng món</div>
-            <div class="text-2xl font-black text-white">{{ $summary['total'] }}</div>
+    <section class="food-menu-hero">
+        <div>
+            <span class="food-menu-eyebrow">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                Menu & kho hàng
+            </span>
+            <h2>Quản lý đồ ăn, nước uống và combo</h2>
+            <p>Theo dõi giá bán, tồn kho, trạng thái hiển thị và thao tác nhanh với từng món tại quầy.</p>
         </div>
 
-        <div class="rounded-2xl border border-white/10 bg-[#0f0f0f] p-4">
-            <div class="text-sm text-gray-400">Đang bán</div>
-            <div class="text-2xl font-black text-green-400">{{ $summary['active'] }}</div>
+        <div class="food-menu-actions">
+            <a href="{{ route('admin.foods.categories.index') }}" class="food-menu-btn is-soft">
+                <i class="fa-solid fa-layer-group"></i>
+                Danh mục
+            </a>
+            <a href="{{ route('admin.foods.create') }}" class="food-menu-btn">
+                <i class="fa-solid fa-plus"></i>
+                Thêm món
+            </a>
         </div>
+    </section>
 
-        <div class="rounded-2xl border border-white/10 bg-[#0f0f0f] p-4">
-            <div class="text-sm text-gray-400">Tạm ẩn</div>
-            <div class="text-2xl font-black text-red-400">{{ $summary['inactive'] }}</div>
+    <section class="food-menu-stats">
+        <div class="food-menu-stat">
+            <span>Tổng món</span>
+            <strong>{{ $summary['total'] }}</strong>
         </div>
-    </div>
+        <div class="food-menu-stat is-good">
+            <span>Đang bán</span>
+            <strong>{{ $summary['active'] }}</strong>
+        </div>
+        <div class="food-menu-stat is-muted">
+            <span>Tạm ẩn</span>
+            <strong>{{ $summary['inactive'] }}</strong>
+        </div>
+        <div class="food-menu-stat is-warn">
+            <span>Sắp hết hàng</span>
+            <strong>{{ $summary['low_stock'] ?? 0 }}</strong>
+        </div>
+    </section>
 
-    {{-- MAIN GRID --}}
-    <div class="space-y-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <section class="food-menu-panel">
+        <div class="food-menu-panel-head">
             <div>
-                <h3 class="text-lg font-black text-white">Danh sách món</h3>
-                <p class="text-xs text-gray-500">Quản lý món ăn, nước uống và combo.</p>
-            </div>
-
-            <div class="flex flex-wrap gap-3">
-                <a href="{{ route('admin.foods.categories.index') }}" class="btn-admin-outline">
-                    Danh mục loại món
-                </a>
-                <a href="{{ route('admin.foods.create') }}" class="btn-admin">
-                    + Thêm món mới
-                </a>
+                <span class="food-menu-eyebrow">Danh sách</span>
+                <h3>Món đang cấu hình</h3>
+                <p>{{ $foods->total() }} kết quả theo bộ lọc hiện tại.</p>
             </div>
         </div>
 
-        <div class="space-y-4">
+        <form method="GET" action="{{ route('admin.foods.index') }}" class="food-menu-filter">
+            <label class="food-menu-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" name="q" value="{{ request('q') }}" placeholder="Tìm món, SKU hoặc nhóm món...">
+            </label>
 
-            {{-- FILTER --}}
-            <form method="GET" action="{{ route('admin.foods.index') }}"
-                class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-4 grid gap-3 lg:grid-cols-4">
-
-                {{-- Tìm kiếm --}}
-                <input type="text" name="q" value="{{ request('q') }}" class="admin-input"
-                    placeholder="Tìm món hoặc SKU...">
-
-                {{-- Nhóm món --}}
-                <select name="category_id" class="admin-input">
-                    <option value="">Nhóm món</option>
-
-                    @foreach ($categories as $category)
-                        <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                            {{ $category->name }}
-                        </option>
-                    @endforeach
-                </select>
-
-                {{-- Trạng thái --}}
-                <select name="status" class="admin-input">
-                    <option value="">Trạng thái</option>
-
-                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>
-                        Đang bán
+            <select name="category_id" class="admin-input">
+                <option value="">Tất cả nhóm món</option>
+                @foreach ($categories as $category)
+                    <option value="{{ $category->id }}" @selected(request('category_id') == $category->id)>
+                        {{ $category->name }}
                     </option>
+                @endforeach
+            </select>
 
-                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>
-                        Tạm ẩn
-                    </option>
-                </select>
+            <select name="status" class="admin-input">
+                <option value="">Tất cả trạng thái</option>
+                @foreach ($statusOptions as $value => $label)
+                    <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
 
-                {{-- Nút --}}
-                <div class="flex gap-3">
-                    <button type="submit"
-                        class="flex-1 h-12 rounded-2xl bg-[#d99a32] font-bold text-white hover:bg-[#c98b25] transition">
-                        Lọc
-                    </button>
+            <button type="submit" class="food-menu-filter-btn">
+                <i class="fa-solid fa-filter"></i>
+                Lọc
+                @if ($activeFilters)
+                    <span>{{ $activeFilters }}</span>
+                @endif
+            </button>
 
-                    <a href="{{ route('admin.foods.index') }}"
-                        class="flex-1 flex items-center justify-center h-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition">
-                        ⟳
-                    </a>
-                </div>
+            @if ($activeFilters)
+                <a href="{{ route('admin.foods.index') }}" class="food-menu-reset-btn" title="Xóa bộ lọc">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            @endif
+        </form>
 
-            </form>
-
-            {{-- ITEMS --}}
+        <div class="food-menu-list">
             @forelse ($foods as $food)
-                <div class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-5">
+                @php
+                    $isCombo = $food->isCombo();
+                    $stock = $food->stock_quantity;
+                    $isLowStock = $stock <= $food->min_stock_quantity;
+                    $imagePath = $food->image
+                        ? asset('storage/' . (str_starts_with($food->image, 'foods/') ? $food->image : 'foods/' . $food->image))
+                        : null;
+                @endphp
 
-                    <div class="flex gap-4">
-
-                        {{-- IMAGE --}}
-                        <div class="h-20 w-20 rounded-2xl overflow-hidden bg-white/5 flex items-center justify-center">
-                            @if ($food->image)
-                                <img src="{{ asset('storage/' . (str_starts_with($food->image, 'foods/') ? $food->image : 'foods/' . $food->image)) }}"
-                                    class="object-cover w-full h-full">
-                            @else
-                                <i class="fa-solid fa-burger text-[#d99a32] text-xl"></i>
-                            @endif
-                        </div>
-
-                        {{-- INFO --}}
-                        <div class="flex-1">
-                            <div class="flex flex-wrap gap-2 items-center">
-
-                                <span
-                                    class="text-xs px-2 py-1 rounded-full
-                                {{ $food->is_active ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400' }}">
-                                    {{ $food->is_active ? 'Đang bán' : 'Tạm ẩn' }}
-                                </span>
-
-                                <span class="text-xs text-gray-400">
-                                    SKU: {{ $food->sku }}
-                                </span>
-
-                                <span class="text-xs text-[#f4c56a]">
-                                    {{ optional($food->category)->name }}
-                                </span>
-
-                            </div>
-
-                            <h3 class="text-lg font-black text-white mt-1">
-                                {{ $food->name }}
-                            </h3>
-
-                            @if ($food->isCombo())
-                                <p class="text-sm text-gray-400 mt-1">
-                                    Thành phần:
-                                    <b class="text-white">
-                                        {{ $food->comboItems->count() }}
-                                    </b>
-                                </p>
-                            @else
-                                <p class="text-sm text-gray-400 mt-1">
-                                    Biến thể:
-                                    <b class="text-white">
-                                        {{ $food->variants->count() }}
-                                    </b>
-                                </p>
-                            @endif
-                        </div>
-
-                        {{-- ACTION --}}
-                        {{-- ACTION --}}
-                        <div class="flex items-center gap-2">
-
-                            <a href="{{ route('admin.foods.show', $food) }}"
-                                class="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-500/15 text-blue-300 hover:bg-blue-500/25 transition">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-
-                            <a href="{{ route('admin.foods.edit', $food) }}"
-                                class="h-10 w-10 flex items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300 hover:bg-yellow-500/25 transition">
-                                <i class="fa-solid fa-pen"></i>
-                            </a>
-
-                            <form method="POST" action="{{ route('admin.foods.destroy', $food) }}"
-                                onsubmit="return confirm('Xóa món này?')">
-                                @csrf
-                                @method('DELETE')
-
-                                <button type="submit"
-                                    class="h-10 w-10 flex items-center justify-center rounded-xl bg-red-500/15 text-red-300 hover:bg-red-500/25 transition">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </form>
-
-                            <form method="POST" action="{{ route('admin.foods.toggle-status', $food) }}">
-                                @csrf
-                                @method('PATCH')
-
-                                <button
-                                    class="h-10 w-10 flex items-center justify-center rounded-xl transition
-        {{ $food->is_active
-            ? 'bg-red-500/15 text-red-300 hover:bg-red-500/25'
-            : 'bg-green-500/15 text-green-300 hover:bg-green-500/25' }}"
-                                    title="{{ $food->is_active ? 'Ẩn món' : 'Hiện món' }}">
-
-                                    @if ($food->is_active)
-                                        <i class="fa-solid fa-eye-slash"></i>
-                                    @else
-                                        <i class="fa-solid fa-eye"></i>
-                                    @endif
-
-                                </button>
-                            </form>
-                        </div>
-
+                <article class="food-menu-card {{ ! $food->is_active ? 'is-inactive' : '' }}">
+                    <div class="food-menu-media">
+                        @if ($imagePath)
+                            <img src="{{ $imagePath }}" alt="{{ $food->name }}">
+                        @else
+                            <i class="fa-solid fa-burger"></i>
+                        @endif
                     </div>
 
-                </div>
+                    <div class="food-menu-info">
+                        <div class="food-menu-tags">
+                            <span class="food-menu-status {{ $food->is_active ? 'is-active' : 'is-hidden' }}">
+                                {{ $food->is_active ? 'Đang bán' : 'Tạm ẩn' }}
+                            </span>
+                            <span>{{ $isCombo ? 'Combo' : 'Món lẻ' }}</span>
+                            <span>{{ optional($food->category)->name ?? 'Chưa phân loại' }}</span>
+                        </div>
+
+                        <h3>{{ $food->name }}</h3>
+
+                        <p>
+                            SKU: <strong>{{ $food->sku ?: 'Chưa có' }}</strong>
+                            @if ($food->description)
+                                <span>{{ \Illuminate\Support\Str::limit($food->description, 90) }}</span>
+                            @endif
+                        </p>
+                    </div>
+
+                    <div class="food-menu-metrics">
+                        <div>
+                            <span>Giá bán</span>
+                            <strong>{{ number_format((float) $food->price, 0, ',', '.') }}đ</strong>
+                        </div>
+                        <div class="{{ $isLowStock ? 'is-low' : '' }}">
+                            <span>Tồn kho</span>
+                            <strong>{{ $stock }}</strong>
+                        </div>
+                        <div>
+                            <span>{{ $isCombo ? 'Thành phần' : 'Biến thể' }}</span>
+                            <strong>{{ $isCombo ? $food->comboItems->count() : $food->variants->count() }}</strong>
+                        </div>
+                        <div>
+                            <span>Đã bán</span>
+                            <strong>{{ $food->invoice_items_count }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="food-menu-card-actions">
+                        <a href="{{ route('admin.foods.show', $food) }}" class="food-menu-icon-btn is-view">
+                            <i class="fa-solid fa-eye"></i>
+                            Xem
+                        </a>
+
+                        <a href="{{ route('admin.foods.edit', $food) }}" class="food-menu-icon-btn is-edit">
+                            <i class="fa-solid fa-pen"></i>
+                            Sửa
+                        </a>
+
+                        <form method="POST" action="{{ route('admin.foods.toggle-status', $food) }}">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="food-menu-icon-btn {{ $food->is_active ? 'is-hide' : 'is-show' }}">
+                                <i class="fa-solid {{ $food->is_active ? 'fa-eye-slash' : 'fa-eye' }}"></i>
+                                {{ $food->is_active ? 'Ẩn' : 'Hiện' }}
+                            </button>
+                        </form>
+
+                        <form method="POST" action="{{ route('admin.foods.destroy', $food) }}" onsubmit="return confirm('Xóa món {{ $food->name }}?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="food-menu-icon-btn is-delete">
+                                <i class="fa-solid fa-trash"></i>
+                                Xóa
+                            </button>
+                        </form>
+                    </div>
+                </article>
             @empty
-                <div class="text-center text-gray-400 p-10">
-                    Chưa có món nào
+                <div class="food-menu-empty">
+                    <i class="fa-solid fa-burger"></i>
+                    <h3>Chưa có món phù hợp</h3>
+                    <p>Thử đổi bộ lọc hoặc thêm món mới để bắt đầu cấu hình menu.</p>
+                    <a href="{{ route('admin.foods.create') }}" class="food-menu-btn">
+                        <i class="fa-solid fa-plus"></i>
+                        Thêm món
+                    </a>
                 </div>
             @endforelse
-
-            <div>
-                {{ $foods->links() }}
-            </div>
-
         </div>
-    </div>
 
+        <div class="food-menu-pagination">
+            {{ $foods->links() }}
+        </div>
+    </section>
+</div>
 @endsection

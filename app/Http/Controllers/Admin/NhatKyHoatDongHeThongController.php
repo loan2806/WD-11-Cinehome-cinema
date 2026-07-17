@@ -3,31 +3,50 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\NhatKyHoatDongHeThong; // Đã đổi Model sang tiếng Việt
+use App\Models\NhatKyHoatDongHeThong;
 use Illuminate\Http\Request;
 
 class NhatKyHoatDongHeThongController extends Controller
 {
     public function index(Request $request)
     {
-        // ĐÃ SỬA: Thực hiện câu lệnh lọc tìm kiếm bằng các trường dữ liệu tiếng Việt mới
-        $logs = NhatKyHoatDongHeThong::with('nguoiDung')
+        $query = NhatKyHoatDongHeThong::query()
             ->when($request->filled('chuc_nang'), fn ($query) => $query->where('chuc_nang', $request->chuc_nang))
             ->when($request->filled('keyword'), function ($query) use ($request) {
-                $keyword = '%' . $request->keyword . '%';
+                $keyword = '%' . trim($request->keyword) . '%';
 
                 $query->where(function ($inner) use ($keyword) {
                     $inner->where('hanh_dong', 'like', $keyword)
-                        ->orWhere('mo_ta', 'like', $keyword);
+                        ->orWhere('mo_ta', 'like', $keyword)
+                        ->orWhere('dia_chi_ip', 'like', $keyword)
+                        ->orWhereHas('nguoiDung', function ($userQuery) use ($keyword) {
+                            $userQuery->where('ho_ten', 'like', $keyword)
+                                ->orWhere('email', 'like', $keyword);
+                        });
                 });
             })
+            ->when($request->filled('from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('from')))
+            ->when($request->filled('to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date('to')));
+
+        $logs = (clone $query)
+            ->with('nguoiDung')
             ->latest()
-            ->paginate(20)
+            ->paginate(12)
             ->withQueryString();
 
-        $modules = NhatKyHoatDongHeThong::query()->whereNotNull('chuc_nang')->distinct()->pluck('chuc_nang');
+        $modules = NhatKyHoatDongHeThong::query()
+            ->whereNotNull('chuc_nang')
+            ->distinct()
+            ->orderBy('chuc_nang')
+            ->pluck('chuc_nang');
 
-        // Tạm thời vẫn trỏ về thư mục view cũ, lát nữa đổi tên view sau
-        return view('admin.activity-logs.index', compact('logs', 'modules'));
+        $summary = [
+            'filtered' => (clone $query)->count(),
+            'today' => NhatKyHoatDongHeThong::whereDate('created_at', today())->count(),
+            'modules' => $modules->count(),
+            'actors' => (clone $query)->whereNotNull('nguoi_dung_id')->distinct('nguoi_dung_id')->count('nguoi_dung_id'),
+        ];
+
+        return view('admin.activity-logs.index', compact('logs', 'modules', 'summary'));
     }
 }

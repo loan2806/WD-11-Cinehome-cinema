@@ -20,6 +20,11 @@ class BanVeController extends Controller
             'rapChieuPhim',
             'phongChieu'
         ])
+            ->withCount([
+                'veXemPhims as sold_tickets_count' => function ($query) {
+                    $query->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung']);
+                }
+            ])
             ->where('thoi_gian_chieu', '>=', now())
             ->orderBy('thoi_gian_chieu')
             ->get();

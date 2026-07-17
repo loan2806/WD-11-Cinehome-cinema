@@ -57,13 +57,29 @@ class VeXemPhimController extends Controller
         $totalTickets = VeXemPhim::count();
         $onlineTickets = VeXemPhim::where('loai_ve', 'truc_tuyen')->count();
         $counterTickets = VeXemPhim::where('loai_ve', 'tai_quay')->count();
+        $paidTickets = VeXemPhim::where('trang_thai', 'da_thanh_toan')->count();
+        $usedTickets = VeXemPhim::where('trang_thai', 'da_su_dung')->count();
         $cancelledTickets = VeXemPhim::where('trang_thai', 'da_huy')->count();
+        $ticketRevenue = VeXemPhim::whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung'])->sum('tong_tien');
+
+        $summary = [
+            'total' => $totalTickets,
+            'online' => $onlineTickets,
+            'counter' => $counterTickets,
+            'paid' => $paidTickets,
+            'used' => $usedTickets,
+            'cancelled' => $cancelledTickets,
+            'revenue' => $ticketRevenue,
+        ];
 
         return view('admin.ve-xem-phims.index', compact(
             'tickets',
+            'summary',
             'totalTickets',
             'onlineTickets',
             'counterTickets',
+            'paidTickets',
+            'usedTickets',
             'cancelledTickets'
         ));
     }

@@ -26,9 +26,11 @@
 
         {{-- LOGO --}}
         <div class="flex items-center gap-3 px-5 py-6">
-            <img src="{{ asset('assets/images/logo.png') }}"
-                class="h-16 w-16 rounded-2xl bg-white object-contain p-1"
-                alt="Logo">
+            <span class="cinehome-logo-sparkle flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-3xl bg-transparent p-0">
+                <img src="{{ asset('assets/images/LOGO copy.png') }}"
+                    class="cinehome-logo-img h-full w-full object-contain"
+                    alt="Logo">
+            </span>
 
             <div>
                 <h3 class="text-2xl font-black text-white">

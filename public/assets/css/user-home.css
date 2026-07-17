@@ -36,6 +36,71 @@ body {
     text-rendering: optimizeLegibility;
 }
 
+/* Shared CineHome logo sparkle */
+.cinehome-logo-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform: scale(1.86);
+    transform-origin: center;
+    filter: drop-shadow(0 0 10px rgba(255, 47, 69, 0.34));
+    animation: cinehomeLogoPulse 3.8s ease-in-out infinite;
+}
+
+.cinehome-logo-sparkle {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+}
+
+.cinehome-logo-sparkle::after {
+    content: "";
+    position: absolute;
+    inset: -45%;
+    z-index: 2;
+    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.72) 50%, transparent 58%);
+    transform: translateX(-120%) rotate(10deg);
+    animation: cinehomeLogoShine 4.6s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes cinehomeLogoPulse {
+    0%,
+    100% {
+        filter: drop-shadow(0 0 8px rgba(255, 47, 69, 0.28));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 18px rgba(255, 47, 69, 0.58));
+    }
+}
+
+@keyframes cinehomeLogoShine {
+    0%,
+    64% {
+        transform: translateX(-120%) rotate(10deg);
+        opacity: 0;
+    }
+
+    72% {
+        opacity: 0.9;
+    }
+
+    84%,
+    100% {
+        transform: translateX(120%) rotate(10deg);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cinehome-logo-img,
+    .cinehome-logo-sparkle::after {
+        animation: none;
+    }
+}
+
 a,
 button,
 input,
@@ -164,7 +229,7 @@ body.overflow-hidden {
 }
 
 .auth-close-btn:hover {
-    background: #ffffff;
+    background: transparent;
     color: #111722;
     transform: rotate(90deg);
 }
@@ -260,12 +325,12 @@ body.overflow-hidden {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 62px;
-    height: 62px;
+    width: 72px;
+    height: 72px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 18px;
-    background: #ffffff;
+    background: transparent;
     box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
 }
 
@@ -528,8 +593,8 @@ body.overflow-hidden {
     }
 
     .auth-logo-mark {
-        width: 52px;
-        height: 52px;
+        width: 58px;
+        height: 58px;
     }
 }
 
@@ -621,10 +686,11 @@ body.overflow-hidden {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 52px;
+    height: 52px;
+    overflow: hidden;
     border-radius: 14px;
-    background: linear-gradient(135deg, var(--cinema-red), #9f111a);
+    background: rgba(255, 255, 255, 0.04);
     box-shadow: 0 18px 34px rgba(229, 9, 20, 0.34);
 }
 
@@ -816,10 +882,10 @@ body.overflow-hidden {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--cinema-red), #8c0d14);
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
     color: #ffffff;
     box-shadow: 0 14px 30px rgba(229, 9, 20, 0.3);
 }
@@ -8536,8 +8602,8 @@ body.profile-body {
 
 .profile-brand-mark {
     display: grid;
-    width: 46px;
-    height: 46px;
+    width: 54px;
+    height: 54px;
     place-items: center;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.14);
@@ -9293,8 +9359,8 @@ body.profile-body {
     }
 
     .profile-brand-mark {
-        width: 40px;
-        height: 40px;
+        width: 46px;
+        height: 46px;
     }
 
     .profile-brand > span:last-child {
@@ -13214,8 +13280,17 @@ body.profile-body {
     margin-bottom: 14px;
 }
 
+.footer-logo-mark {
+    display: inline-flex;
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+}
+
 .footer-logo img {
-    width: 48px;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .footer-logo strong,

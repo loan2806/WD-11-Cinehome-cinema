@@ -24,6 +24,13 @@ class ThongBaoPushController extends Controller
      */
     public function index(Request $request): View
     {
+        $summary = [
+            'total' => ThongBaoPush::count(),
+            'sent' => ThongBaoPush::where('trang_thai', 'da_gui')->count(),
+            'promo' => ThongBaoPush::where('loai', 'promo')->count(),
+            'today' => ThongBaoPush::whereDate('created_at', now()->toDateString())->count(),
+        ];
+
         $query = ThongBaoPush::with('nguoiTao');
 
         // Tìm kiếm theo tiêu đề
@@ -48,7 +55,7 @@ class ThongBaoPushController extends Controller
 
         $thongBaos = $query->latest()->paginate(15)->withQueryString();
 
-        return view('admin.thong-bao-push.index', compact('thongBaos'));
+        return view('admin.thong-bao-push.index', compact('thongBaos', 'summary'));
     }
 
     /**
@@ -73,9 +80,21 @@ class ThongBaoPushController extends Controller
             'nguoi_dung_cu_the' => 'Người dùng cụ thể',
         ];
 
+        $audienceCounts = [
+            'all' => NguoiDung::count(),
+            'user' => NguoiDung::where('vai_tro', 'user')->count(),
+            'vip' => NguoiDung::where('vai_tro', 'vip')->count(),
+            'staff' => NguoiDung::where('vai_tro', 'nhan_vien')->count(),
+            'admin' => NguoiDung::where(function ($query) {
+                $query->where('vai_tro', 'admin')
+                    ->orWhere('vai_tro', 'quan_ly_he_thong');
+            })->count(),
+        ];
+
         return view('admin.thong-bao-push.create', compact(
             'loaiOptions',
-            'doiTuongOptions'
+            'doiTuongOptions',
+            'audienceCounts'
         ));
     }
 
@@ -141,6 +160,7 @@ class ThongBaoPushController extends Controller
     public function show(ThongBaoPush $thongBaoPush): View
     {
         $thongBaoPush->load('nguoiTao');
+        $recipientCount = ThongBaoPushNguoiDung::where('thong_bao_push_id', $thongBaoPush->id)->count();
 
         // Lấy danh sách người nhận cụ thể nếu có
         $nguoiNhanList = [];
@@ -153,7 +173,8 @@ class ThongBaoPushController extends Controller
 
         return view('admin.thong-bao-push.show', compact(
             'thongBaoPush',
-            'nguoiNhanList'
+            'nguoiNhanList',
+            'recipientCount'
         ));
     }
 
