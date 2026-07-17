@@ -190,27 +190,7 @@
                     </a>
                 </div>
 
-                {{-- QUẢN TRỊ NỀN TẢNG ĐẶC QUYỀN --}}
-                @if (auth()->user()->hasRole('Quản lý hệ thống') || auth()->user()->vai_tro === 'admin')
-                @php
-                $isNenTangActive = request()->routeIs('admin.cai-dat-thanh-toan.*');
-                @endphp
-                <div class="sidebar-dropdown-box {{ $isNenTangActive ? 'open' : '' }}">
-                    <button type="button" class="sidebar-dropdown-btn flex w-full items-center justify-between rounded-xl border border-[#d99a32]/30 bg-white/5 px-4 py-3 text-left text-[16px] font-black leading-none text-[#f4c56a] outline-none transition duration-200 hover:bg-white/10">
-                        <span class="flex items-center gap-3.5">
-                            <i class="fa-solid fa-server w-5 text-center text-xl text-[#d99a32]"></i>
-                            <span>Quản trị nền tảng</span>
-                        </span>
-                        <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-[#f4c56a]"></i>
-                    </button>
-                    <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32] ml-6 space-y-1">
-                        {{-- Đã lược bỏ Cụm rạp chi nhánh theo mô hình 1 rạp duy nhất --}}
-                        <a href="{{ route('admin.cai-dat-thanh-toan.edit') }}" class="block py-2.5 pl-3 text-[15px] font-bold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.cai-dat-thanh-toan.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Cài
-                            đặt cổng thanh toán</a>
-
-                    </div>
-                </div>
-                @endif
+                
 
                 {{-- NHÓM DROPDOWN 1: QUẢN LÝ NỘI DUNG --}}
                     @if (auth()->user()->can('quan_ly_phim_suat_chieu'))
@@ -319,14 +299,16 @@
 
                     {{-- NHÓM DROPDOWN 4: QUẢN LÝ TÀI KHOẢN & NHÂN LỰC --}}
                     @if (auth()->user()->can('quan_ly_khach_hang') ||
-                    auth()->user()->can('quan_ly_nhan_vien') ||
-                    auth()->user()->can('phan_quyen_he_thong'))
+                        auth()->user()->can('quan_ly_nhan_vien') ||
+                        auth()->user()->can('phan_quyen_he_thong'))
                     @php
-                    $isTaiKhoanActive =
-                    request()->routeIs('admin.nhanviens.*') ||
-                    request()->routeIs('admin.phan-quyen.*') ||
-                    request()->routeIs('admin.khach-hang.*') ||
-                    request()->routeIs('admin.thanh-vien.*');
+                        $isTaiKhoanActive =
+                            request()->routeIs('admin.nhanviens.*') ||
+                            request()->routeIs('admin.phan-quyen.*') ||
+                            request()->routeIs('admin.khach-hang.*') ||
+                            request()->routeIs('admin.thanh-vien.*') ||
+                            request()->routeIs('admin.cham-congs.*') ||
+                            request()->routeIs('admin.bang-luongs.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isTaiKhoanActive ? 'open' : '' }}">
                         <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
@@ -341,6 +323,12 @@
                             <a href="{{ route('admin.nhanviens.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.nhanviens.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                 Danh sách nhân viên
                             </a>
+                            <a href="{{ route('admin.cham-congs.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.cham-congs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
+                                Quản lý chấm công
+                            </a>
+                            <a href="{{ route('admin.bang-luongs.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.bang-luongs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
+                                Thống kê lương
+                            </a>
                             @endcan
                             @can('phan_quyen_he_thong')
                             <a href="{{ route('admin.phan-quyen.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phan-quyen.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
@@ -348,18 +336,20 @@
                             </a>
                             @endcan
                             @can('quan_ly_khach_hang')
-                            <a href="{{ route('admin.khach-hang.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.khach-hang.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
-                                Tài khoản khách hàng
-                            </a>
+                                <a href="{{ route('admin.khach-hang.index') }}"
+                                    class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.khach-hang.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
+                                    Tài khoản khách hàng
+                                </a>
+                                <a href="{{ route('admin.thanh-vien.index') }}"
+                                    class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thanh-vien.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
+                                    <i class="fa-solid fa-crown mr-2"></i>
+                                    Thẻ thành viên & Điểm
+                                </a>
                             @endcan
-
-                            <a href="{{ route('admin.thanh-vien.index') }}" class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thanh-vien.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
-                                <i class="fa-solid fa-crown mr-2"></i>
-                                Thẻ thành viên & Điểm
-                            </a>
                         </div>
                     </div>
-                    @endif
+                @endif
+
 
                     {{-- NHÓM DROPDOWN 5: BÁO CÁO & THỐNG KÊ --}}
                     @if (auth()->user()->can('thong_ke_doanh_thu'))

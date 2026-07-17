@@ -26,4 +26,14 @@ class RapChieuPhim extends Model
     {
         return $this->hasMany(SuatChieu::class, 'rap_chieu_phim_id');
     }
+
+    public function nhanViens(): HasMany
+    {
+        return $this->hasMany(NguoiDung::class, 'rap_chieu_phim_id')->where('vai_tro', 'nhan_vien');
+    }
+
+    public function subAdmins(): HasMany
+    {
+        return $this->hasMany(NguoiDung::class, 'rap_chieu_phim_id')->where('vai_tro', 'admin');
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\VeXemPhim;
 use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class VeXemPhimController extends Controller
 {
@@ -87,19 +88,18 @@ class VeXemPhimController extends Controller
     /**
      * Xem chi tiết một vé.
      */
-    public function show(VeXemPhim $veXemPhim)
-    {
-        // Load thêm dữ liệu liên quan để hiển thị đầy đủ trong trang chi tiết
-        $veXemPhim->load([
-            'nguoiDung',
-            'nhanVien',
-            'suatChieu.phim',
-            'suatChieu.rapChieuPhim',
-            'suatChieu.phongChieu',
-        ]);
+    
 
-        return view('admin.ve-xem-phims.show', compact('veXemPhim'));
-    }
+public function show($id)
+{
+    // Tìm thông tin vé xem phim
+    $veXemPhim = \App\Models\VeXemPhim::findOrFail($id);
+
+    // 🌟 ĐỒNG BỘ CACHE: Lấy dữ liệu đồ ăn từ Cache giống hệt phía User
+    $foodItems = Cache::get("ve_foods:{$veXemPhim->id}", []);
+
+    return view('admin.ve-xem-phims.show', compact('veXemPhim', 'foodItems'));
+}
 
     /**
      * Hiển thị form cập nhật trạng thái vé.

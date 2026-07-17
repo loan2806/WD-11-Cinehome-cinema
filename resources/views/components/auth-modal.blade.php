@@ -58,16 +58,39 @@
                 </button>
             </div>
 
+            {{-- 🌟 ĐÃ VIỆT HÓA: Tự động dịch các lỗi hệ thống từ Validator (Errors) --}}
             @if ($errors->any())
                 <div class="auth-alert">
                     @foreach ($errors->all() as $error)
-                        <div>{{ $error }}</div>
+                        @php
+                            $translatedError = match (trim($error)) {
+                                'These credentials do not match our records.' => 'Tài khoản hoặc mật khẩu không chính xác.',
+                                'The email has already been taken.' => 'Email này đã được sử dụng bởi một tài khoản khác.',
+                                'The password field is required.' => 'Vui lòng nhập mật khẩu.',
+                                'The email field is required.' => 'Vui lòng nhập địa chỉ email.',
+                                'The ho ten field is required.' => 'Vui lòng nhập họ tên của bạn.',
+                                'The mat khau confirmation does not match.' => 'Mật khẩu xác nhận không trùng khớp.',
+                                'The password must be at least 8 characters.' => 'Mật khẩu phải chứa ít nhất 8 ký tự.',
+                                default => $error
+                            };
+                        @endphp
+                        <div>{{ $translatedError }}</div>
                     @endforeach
                 </div>
             @endif
 
+            {{-- 🌟 ĐÃ VIỆT HÓA: Tự động dịch các lỗi từ Session Flash --}}
             @if (session('error'))
-                <div class="auth-alert">{{ session('error') }}</div>
+                <div class="auth-alert">
+                    @php
+                        $sessionError = session('error');
+                        $translatedSessionError = match (trim($sessionError)) {
+                            'These credentials do not match our records.' => 'Tài khoản hoặc mật khẩu không chính xác.',
+                            default => $sessionError
+                        };
+                    @endphp
+                    {{ $translatedSessionError }}
+                </div>
             @endif
 
             <form

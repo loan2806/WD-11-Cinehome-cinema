@@ -12,6 +12,17 @@
             'da_huy' => 'Đã hủy',
         ];
 
+        $foodItems = collect($foodItems ?? ($veXemPhim->foods_list ?? []));
+
+        if ($foodItems->isEmpty() && $veXemPhim->relationLoaded('foods') && $veXemPhim->foods->isNotEmpty()) {
+            $foodItems = $veXemPhim->foods->map(function ($food) {
+                return [
+                    'name' => $food->ten_do_an ?? $food->ten_mon ?? $food->name ?? 'Đồ ăn',
+                    'qty' => $food->pivot->so_luong ?? 1,
+                ];
+            });
+        }
+
         $typeLabels = [
             'truc_tuyen' => 'Online',
             'tai_quay' => 'Tại quầy',
@@ -198,6 +209,37 @@
                             <strong>#{{ $veXemPhim->suat_chieu_id ?? '--' }}</strong>
                         </div>
                     </div>
+                </section>
+
+                <section class="ticket-detail-panel ticket-detail-food-panel">
+                    <div class="ticket-detail-panel-head">
+                        <span><i class="fa-solid fa-cookie-bite"></i></span>
+                        <div>
+                            <h2>Đồ ăn & Combo kèm theo</h2>
+                            <p>Danh sách bắp nước hoặc combo đã đặt cùng vé.</p>
+                        </div>
+                    </div>
+
+                    @if ($foodItems->isNotEmpty())
+                        <div class="ticket-detail-food-list">
+                            @foreach ($foodItems as $item)
+                                @php
+                                    $tenMon = is_array($item) ? ($item['name'] ?? $item['ten_mon'] ?? 'Đồ ăn') : ($item->name ?? $item->ten_mon ?? $item->ten_do_an ?? 'Đồ ăn');
+                                    $soLuong = is_array($item) ? ($item['qty'] ?? $item['quantity'] ?? $item['so_luong'] ?? 1) : ($item->qty ?? $item->quantity ?? $item->so_luong ?? 1);
+                                @endphp
+
+                                <article class="ticket-detail-food-item">
+                                    <span>{{ $tenMon }}</span>
+                                    <strong>x{{ $soLuong }}</strong>
+                                </article>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="ticket-detail-empty-note">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>Không có đồ ăn hoặc combo nào được đặt kèm theo vé này.</span>
+                        </div>
+                    @endif
                 </section>
 
                 <section class="ticket-detail-panel">

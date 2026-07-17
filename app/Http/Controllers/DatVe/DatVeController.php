@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use PayOS\PayOS; // Khai báo thư viện PayOS chính thức
+use PayOS\PayOS; 
 
 class DatVeController extends Controller
 {
@@ -42,15 +42,14 @@ class DatVeController extends Controller
             try {
                 $selectedDate = Carbon::createFromFormat('Y-m-d', request('ngay_chieu'), 'Asia/Ho_Chi_Minh');
             } catch (\Exception $e) {
-
-                \Log::error('PAYOS ERROR', [
+                \Log::error('DATE PARSING ERROR', [
                     'message' => $e->getMessage(),
                     'line' => $e->getLine(),
                     'file' => $e->getFile(),
                 ]);
 
                 return redirect()->back()
-                    ->with('error', 'Lỗi kết nối API VietQR: ' . $e->getMessage());
+                    ->with('error', 'Lỗi định dạng ngày chiếu: ' . $e->getMessage());
             }
         }
 
@@ -151,6 +150,29 @@ class DatVeController extends Controller
         $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])->findOrFail($suat_chieu_id);
         $identifier = Auth::id() ?? session()->getId();
         $selectedSeats = collect(explode(',', request('ghe')))->map(fn($seat) => strtoupper(trim($seat)))->filter()->unique()->values();
+
+        // 🌟 BỔ SUNG: Kiểm tra ghế liền kề
+       if (!$this->validateSeatsAdjacent($selectedSeats->toArray(), $suat_chieu_id)) {
+            // 🔥 ĐÃ SỬA: Giải phóng (Xóa) khóa Cache của các ghế này ngay lập tức để người dùng có thể chọn lại
+            foreach ($selectedSeats as $seat) {
+                Cache::forget("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
+            }
+
+            $message = 'Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!';
+
+            // 🔥 ĐÃ SỬA: Hỗ trợ xử lý thông minh nếu UI của bạn gửi qua AJAX
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message
+                ], 422);
+            }
+
+            // 🔥 ĐÃ SỬA: Chuyển hướng back() an toàn giữ nguyên cấu trúc URL
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $message);
+        }
 
         foreach ($selectedSeats as $seat) {
             $lock = Cache::get("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
@@ -254,6 +276,27 @@ class DatVeController extends Controller
         $identifier = Auth::id() ?? session()->getId();
         $selectedSeats = collect(explode(',', request('ghe')))->map(fn($seat) => strtoupper(trim($seat)))->filter()->unique()->values();
 
+        // 🌟 BỔ SUNG: Kiểm tra ghế liền kề
+        if (!$this->validateSeatsAdjacent($selectedSeats->toArray(), $suat_chieu_id)) {
+            // 🔥 ĐÃ SỬA: Giải phóng (Xóa) khóa Cache của các ghế này ngay lập tức
+            foreach ($selectedSeats as $seat) {
+                Cache::forget("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
+            }
+
+            $message = 'Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!';
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message
+                ], 422);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $message);
+        }
+
         foreach ($selectedSeats as $seat) {
             $lock = Cache::get("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
             if (!$lock || ($lock['identifier'] ?? null) != $identifier || ($lock['expires_at'] ?? 0) < now()->timestamp) {
@@ -280,14 +323,30 @@ class DatVeController extends Controller
 
     public function xuLyThanhToan(Request $request, $movie)
     {
-
-        //  dd('Đã vào controller');
-        // dd($request->all());
-
-
         $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])->findOrFail($movie);
         $selectedSeats = collect(explode(',', $request->input('ghe')))->map(fn($s) => strtoupper(trim($s)))->filter()->unique()->values();
         $identifier = Auth::id() ?? session()->getId();
+
+        // 🌟 BỔ SUNG: Kiểm tra ghế liền kề bảo mật phía server
+        if (!$this->validateSeatsAdjacent($selectedSeats->toArray(), $suatChieu->id)) {
+            // 🔥 ĐÃ SỬA: Giải phóng (Xóa) khóa Cache của các ghế này ngay lập tức
+            foreach ($selectedSeats as $seat) {
+                Cache::forget("seat_lock:suat:{$suatChieu->id}:seat:{$seat}");
+            }
+
+            $message = 'Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!';
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message
+                ], 422);
+            }
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $message);
+        }
 
         foreach ($selectedSeats as $seat) {
             $lock = Cache::get("seat_lock:suat:{$suatChieu->id}:seat:{$seat}");
@@ -296,8 +355,6 @@ class DatVeController extends Controller
             }
         }
 
-        //  dd('Đã vào controller');
-
         $seatModels = GheNgoi::with('loaiGhe')->where('phong_chieu_id', $suatChieu->phong_chieu_id)->whereIn('ma_ghe', $selectedSeats)->get();
         $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
             return $seat->loaiGhe?->la_couple ? ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0) : $suatChieu->gia_ve + ($seat->loaiGhe->phu_thu ?? 0);
@@ -305,9 +362,11 @@ class DatVeController extends Controller
 
         $foodItems = collect(json_decode($request->input('food_cart', '[]'), true));
         $foodTotal = $foodItems->sum(fn($i) => ($i['price'] ?? 0) * ($i['qty'] ?? 0));
-        $grandTotal = max(0, ($seatTotalPrice + $foodTotal) - 20000);
-
-        //  dd('Đã vào controller');
+        
+        $grandTotal = $seatTotalPrice + $foodTotal;
+        if ($request->filled('voucher_code')) {
+            $grandTotal = max(0, $grandTotal - 20000); 
+        }
 
         $maVe = $this->taoMaVeLocal();
 
@@ -322,9 +381,9 @@ class DatVeController extends Controller
             'thoi_gian_chieu' => $suatChieu->thoi_gian_chieu->toDateTimeString(),
             'tong_tien' => $grandTotal,
             'loai_ve' => 'truc_tuyen',
-            'danh_sach_ghe' => $selectedSeats->toArray()
+            'danh_sach_ghe' => $selectedSeats->toArray(),
+            'food_items' => $foodItems->toArray() 
         ];
-        //  dd('Đã vào controller');
 
         Cache::put("pending_ve:{$maVe}", $duLieuTam, now()->addMinutes(15));
 
@@ -375,37 +434,26 @@ class DatVeController extends Controller
             }
             return redirect()->away($vnp_Url);
         }
-        //  dd('Đã vào controller');
-
 
         // =======================================================
         // LUỒNG 2: THANH TOÁN QUA CỔNG VIETQR (PAYOS)
         // =======================================================
         if ($method === 'vietqr') {
-
-
-    try {
-
-                // Biến đổi chuỗi chữ mã vé thành số nguyên int duy nhất tương thích với PayOS
+            try {
                 $orderCode = intval(filter_var(microtime(true) * 10000, FILTER_SANITIZE_NUMBER_INT)) % 9007199254740991;
-                // dd('2');
-                // Ánh xạ số orderCode của PayOS sang mã vé chuỗi để giải mã khi Callback phản hồi
                 Cache::put("payos_mapping:{$orderCode}", $maVe, now()->addMinutes(15));
-                // dd('3');
-                // Khởi tạo cổng kết nối cục bộ
+                
                 $payOS = new PayOS(env('PAYOS_CLIENT_ID'), env('PAYOS_API_KEY'), env('PAYOS_CHECKSUM_KEY'));
-                // dd('4');
+                
                 $paymentData = [
                     "orderCode" => $orderCode,
                     "amount" => (int) $grandTotal,
                     "description" => "Cinema " . $maVe,
-                    "returnUrl" => env('PAYOS_RETURN_URL'),
-                    "cancelUrl" => env('PAYOS_CANCEL_URL')
+                    "returnUrl" => url('/dat-ve/vnpay-callback'), 
+                    "cancelUrl" => url('/')                       
                 ];
 
-
                 $response = $payOS->createPaymentLink($paymentData);
-                // dd($response);
 
                 if (isset($response['checkoutUrl'])) {
                     return redirect()->away($response['checkoutUrl']);
@@ -413,16 +461,14 @@ class DatVeController extends Controller
 
                 return redirect()->back()->with('error', 'Không thể khởi tạo đường dẫn kết nối VietQR.');
             } catch (\Exception $e) {
-    dd([
-        'message' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine(),
-    ]);
-}
+                \Log::error('PAYOS CREATE LINK ERROR', [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+                return redirect()->back()->with('error', 'Lỗi kết nối API VietQR: ' . $e->getMessage());
+            }
         }
-
-        //  dd('Đã vào controller');
-
 
         $ve = VeXemPhim::create([
             'nguoi_dung_id' => $duLieuTam['nguoi_dung_id'],
@@ -438,6 +484,10 @@ class DatVeController extends Controller
             'trang_thai' => 'da_thanh_toan',
         ]);
 
+        if (!empty($duLieuTam['food_items'])) {
+            Cache::put("ve_foods:{$ve->id}", $duLieuTam['food_items'], now()->addDays(30));
+        }
+
         foreach ($selectedSeats as $seat) {
             Cache::forget("seat_lock:suat:{$suatChieu->id}:seat:{$seat}");
         }
@@ -448,7 +498,6 @@ class DatVeController extends Controller
 
     public function vnpayCallback(Request $request)
     {
-        // 🌟 KIỂM TRA ĐIỀU HƯỚNG THÔNG MINH: Nếu có tham số của PayOS truyền về
         if ($request->filled('orderCode') && $request->filled('status')) {
             $orderCode = $request->input('orderCode');
             $status = $request->input('status');
@@ -478,6 +527,10 @@ class DatVeController extends Controller
                     'trang_thai' => 'da_thanh_toan',
                 ]);
 
+                if (!empty($bookingData['food_items'])) {
+                    Cache::put("ve_foods:{$ve->id}", $bookingData['food_items'], now()->addDays(30));
+                }
+
                 foreach ($bookingData['danh_sach_ghe'] as $seat) {
                     Cache::forget("seat_lock:suat:{$bookingData['suat_chieu_id']}:seat:{$seat}");
                 }
@@ -492,7 +545,6 @@ class DatVeController extends Controller
             return redirect()->route('home')->with('error', 'Hủy bỏ thanh toán qua cổng VietQR.');
         }
 
-        // 🌟 NẾU KHÔNG THÌ CHẠY TIẾP TỤC LUỒNG CALLBACK CŨ CỦA VNPAY
         $vnp_TxnRef = $request->input('vnp_TxnRef');
         $vnp_ResponseCode = $request->input('vnp_ResponseCode');
         $maVe = $vnp_TxnRef;
@@ -516,6 +568,10 @@ class DatVeController extends Controller
                 'loai_ve' => $bookingData['loai_ve'],
                 'trang_thai' => 'da_thanh_toan',
             ]);
+
+            if (!empty($bookingData['food_items'])) {
+                Cache::put("ve_foods:{$ve->id}", $bookingData['food_items'], now()->addDays(30));
+            }
 
             foreach ($bookingData['danh_sach_ghe'] as $seat) {
                 Cache::forget("seat_lock:suat:{$bookingData['suat_chieu_id']}:seat:{$seat}");
@@ -550,6 +606,10 @@ class DatVeController extends Controller
             'trang_thai' => 'da_thanh_toan',
         ]);
 
+        if (!empty($bookingData['food_items'])) {
+            Cache::put("ve_foods:{$ve->id}", $bookingData['food_items'], now()->addDays(30));
+        }
+
         foreach ($bookingData['danh_sach_ghe'] as $seat) {
             Cache::forget("seat_lock:suat:{$bookingData['suat_chieu_id']}:seat:{$seat}");
         }
@@ -567,6 +627,28 @@ class DatVeController extends Controller
         $gioChieu = $thoiGianChieu->format('H:i');
 
         $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" . urlencode($ve->ma_ve);
+
+        $foodItems = Cache::get("ve_foods:{$ve->id}", []);
+        $foodHtml = '';
+
+        if (!empty($foodItems)) {
+            $foodHtml .= "
+            <div style='background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); padding:16px 20px; border-radius:14px; margin-bottom:20px;'>
+                <span style='font-size:12px; color:#9ca3af; text-transform:uppercase; font-weight:700; letter-spacing: 0.5px; display:block; margin-bottom:10px;'>🍿 ĐỒ ĂN ĐI KÈM ĐÃ ĐẶT</span>
+            ";
+            foreach ($foodItems as $item) {
+                $qty = $item['qty'] ?? $item['quantity'] ?? 1;
+                $price = $item['price'] ?? 0;
+                $name = $item['name'] ?? 'Đồ ăn';
+                $foodHtml .= "
+                <div style='display:flex; justify-content:space-between; font-size:14px; color:#e5e7eb; margin-bottom:6px;'>
+                    <span>{$name} <span style='color:#facc15;'>x{$qty}</span></span>
+                    <span style='font-weight:600; color:#fff;'>".number_format($price * $qty)."đ</span>
+                </div>
+                ";
+            }
+            $foodHtml .= "</div>";
+        }
 
         return response("
         <div style='background:#0a0a0a; color:#fff; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family: system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; padding:30px; box-sizing: border-box;'>
@@ -603,16 +685,18 @@ class DatVeController extends Controller
                         </div>
                     </div>
 
-                    <div style='background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:16px 20px; border-radius:14px; margin-bottom:28px; display:flex; justify-content:space-between; align-items:center;'>
+                    <div style='background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:16px 20px; border-radius:14px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center;'>
                         <div>
                             <span style='font-size:12px; color:#9ca3af; text-transform:uppercase; font-weight:700; letter-spacing: 0.5px;'>Ghế đã chọn</span>
                             <div style='font-size:18px; font-weight:900; color:#fff; margin-top:4px;'>{$ve->ma_ghe}</div>
                         </div>
                         <div style='text-align:right;'>
                             <span style='font-size:12px; color:#9ca3af; text-transform:uppercase; font-weight:700; letter-spacing: 0.5px;'>Tổng tiền</span>
-                            <div style='font-size:18px; font-weight:900; color:#facc15; margin-top:4px;'>" . number_format($ve->tong_tien) . "đ</div>
+                            <div style='font-size:18px; font-weight:900; color:#facc15; margin-top:4px;'>".number_format($ve->tong_tien)."đ</div>
                         </div>
                     </div>
+
+                    {$foodHtml}
 
                     <div style='border-top: 2px dashed rgba(255,255,255,0.15); margin: 28px 0; position: relative;'>
                         <div style='position:absolute; width:24px; height:24px; background:#0a0a0a; border-radius:50%; top:-12px; left:-45px; border-right:1px solid rgba(255,255,255,0.08); box-sizing:border-box;'></div>
@@ -632,11 +716,11 @@ class DatVeController extends Controller
                 </div>
 
                 <div style='padding:0 32px 32px 32px; display:flex; flex-direction:column; gap:14px;'>
-                    <a href='" . route('user.ve_xem_phim.index') . "' style='background:#facc15; color:#000; text-align:center; padding:15px; font-weight:900; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; transition:0.2s; box-shadow:0 4px 14px rgba(234,179,8,0.3); display:block;'>
+                    <a href='".route('user.ve_xem_phim.index')."' style='background:#facc15; color:#000; text-align:center; padding:15px; font-weight:900; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; transition:0.2s; box-shadow:0 4px 14px rgba(234,179,8,0.3); display:block;'>
                         🎫 Quản lý vé của tôi
                     </a>
                     
-                    <a href='" . route('home') . "' style='background:rgba(255,255,255,0.05); color:#9ca3af; text-align:center; padding:15px; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; border:1px solid rgba(255,255,255,0.08); transition:0.2s; display:block;'>
+                    <a href='".route('home')."' style='background:rgba(255,255,255,0.05); color:#9ca3af; text-align:center; padding:15px; font-weight:700; font-size:14px; text-transform:uppercase; letter-spacing:1px; text-decoration:none; border-radius:14px; border:1px solid rgba(255,255,255,0.08); transition:0.2s; display:block;'>
                         🏠 Quay lại Trang chủ
                     </a>
                 </div>
@@ -645,6 +729,8 @@ class DatVeController extends Controller
         </div>
         ");
     }
+
+    
 
     private function taoMaVeLocal(): string
     {
@@ -657,6 +743,7 @@ class DatVeController extends Controller
     private function congDiemThanhVienLocal(VeXemPhim $veXemPhim): void
     {
         if (!$veXemPhim->nguoi_dung_id || $veXemPhim->trang_thai !== 'da_thanh_toan') return;
+        
         $thanhVien = ThanhVien::firstOrCreate(['nguoi_dung_id' => $veXemPhim->nguoi_dung_id], [
             'ma_thanh_vien' => 'TV' . str_pad($veXemPhim->nguoi_dung_id, 6, '0', STR_PAD_LEFT),
             'hang_thanh_vien' => 'member',
@@ -665,6 +752,7 @@ class DatVeController extends Controller
             'ngay_tham_gia' => now(),
             'ma_gioi_thieu' => '',
         ]);
+
         $diemCong = (int) floor((float) $veXemPhim->tong_tien / 10000);
         if (method_exists($thanhVien, 'congDiem')) {
             $thanhVien->congDiem($diemCong, $veXemPhim, 'Tích lũy mua vé.');
@@ -673,4 +761,105 @@ class DatVeController extends Controller
             $thanhVien->increment('tong_diem_tich_luy', $diemCong);
         }
     }
+    private function validateSeatsAdjacent(array $seats, $suatChieuId): bool
+{
+    if (count($seats) <= 1) {
+        return true;
+    }
+
+    $parsedSeats = [];
+    foreach ($seats as $seat) {
+        $seat = strtoupper(trim($seat));
+        
+        if (preg_match('/^([A-Z]+)([0-9]+)$/', $seat, $matches)) {
+            $parsedSeats[] = [
+                'row' => $matches[1],
+                'num' => (int) $matches[2]
+            ];
+        } else {
+            // Hỗ trợ xử lý ghế đôi ghép chuỗi
+            if (str_contains($seat, '-')) {
+                $subSeats = explode('-', $seat);
+                foreach ($subSeats as $sub) {
+                    if (preg_match('/^([A-Z]+)([0-9]+)$/', $sub, $matches)) {
+                        $parsedSeats[] = [
+                            'row' => $matches[1],
+                            'num' => (int) $matches[2]
+                        ];
+                    }
+                }
+            } elseif (str_contains($seat, '|')) {
+                $subSeats = explode('|', $seat);
+                foreach ($subSeats as $sub) {
+                    if (preg_match('/^([A-Z]+)([0-9]+)$/', $sub, $matches)) {
+                        $parsedSeats[] = [
+                            'row' => $matches[1],
+                            'num' => (int) $matches[2]
+                        ];
+                    }
+                }
+            }
+        }
+    }
+
+    if (empty($parsedSeats)) {
+        return true;
+    }
+
+    // 1. Lấy thông tin suất chiếu và rạp
+    $suatChieu = \App\Models\SuatChieu::findOrFail($suatChieuId);
+
+    // 2. Lấy danh sách toàn bộ ghế ĐÃ ĐẶT thành công của suất chiếu này
+    $bookedTickets = \App\Models\VeXemPhim::where('suat_chieu_id', $suatChieuId)
+        ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat'])
+        ->pluck('ma_ghe');
+    
+    $unavailableSeats = [];
+    foreach ($bookedTickets as $maGheString) {
+        foreach (explode(',', $maGheString) as $code) {
+            $unavailableSeats[strtoupper(trim($code))] = true;
+        }
+    }
+
+    // 3. Lấy danh sách ghế đang BẢO TRÌ hoặc KHÔNG HOẠT ĐỘNG
+    $inactiveSeats = \App\Models\GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
+        ->where('trang_thai', '!=', 'hoat_dong')
+        ->pluck('ma_ghe');
+    foreach ($inactiveSeats as $code) {
+        $unavailableSeats[strtoupper(trim($code))] = true;
+    }
+
+    // Nhóm các ghế khách hàng đang chọn theo hàng (Row)
+    $groupedByRow = collect($parsedSeats)->groupBy('row');
+
+    foreach ($groupedByRow as $row => $seatsInRow) {
+        // Sắp xếp số thứ tự ghế tăng dần trong hàng
+        $nums = $seatsInRow->pluck('num')->unique()->sort()->values();
+        
+        for ($i = 0; $i < $nums->count() - 1; $i++) {
+            $start = $nums[$i];
+            $end = $nums[$i + 1];
+            
+            // Nếu có khoảng trống vật lý (ví dụ C4 và C8 có khoảng cách > 1)
+            if ($end - $start > 1) {
+                // Quét từng số ghế nằm giữa khoảng trống này
+                for ($middleNum = $start + 1; $middleNum < $end; $middleNum++) {
+                    $middleSeatCode = $row . $middleNum;
+                    
+                    // Kiểm tra xem ghế ở giữa này có đang khả dụng (trống) hay không?
+                    $isBookedOrInactive = isset($unavailableSeats[$middleSeatCode]);
+                    $isLockedInCache = \Illuminate\Support\Facades\Cache::has("seat_lock:suat:{$suatChieuId}:seat:{$middleSeatCode}");
+                    
+                    // Nếu ghế ở giữa này KHÔNG bị đặt, KHÔNG bị khóa, KHÔNG bảo trì
+                    // Nghĩa là nó hoàn toàn TRỐNG mà khách lại chọn nhảy cóc qua nó -> Báo lỗi!
+                    if (!$isBookedOrInactive && !$isLockedInCache && !in_array($middleSeatCode, $seats)) {
+                        return false; 
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
 }

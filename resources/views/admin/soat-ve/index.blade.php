@@ -7,6 +7,15 @@
 @section('content')
 @php
     $ticket = session('ticket');
+    $foods = [];
+
+    if ($ticket) {
+        if (is_array($ticket)) {
+            $foods = $ticket['foods'] ?? [];
+        } else {
+            $foods = $ticket->foods_list ?? [];
+        }
+    }
 
     $statusLabel = [
         'da_thanh_toan' => 'Đã thanh toán',
@@ -161,15 +170,57 @@
                             <div><span>Loại vé</span><strong>{{ $typeLabel[$ticket->loai_ve] ?? 'Không rõ' }}</strong></div>
                         </div>
 
+                        <div class="food-result-section">
+                            <h3 class="food-section-title">
+                                <i class="fa-solid fa-utensils"></i>
+                                Đồ ăn & Combo kèm theo
+                            </h3>
+
+                            @if (count($foods) > 0)
+                                <table class="food-table">
+                                    <tbody>
+                                        @foreach ($foods as $food)
+                                            @php
+                                                $tenMon = is_array($food) ? ($food['ten_mon'] ?? $food['name'] ?? 'Đồ ăn') : ($food->ten_mon ?? $food->name ?? 'Đồ ăn');
+                                                $soLuong = is_array($food) ? ($food['so_luong'] ?? $food['quantity'] ?? $food['qty'] ?? 1) : ($food->so_luong ?? $food->quantity ?? $food->qty ?? 1);
+                                            @endphp
+                                            <tr>
+                                                <td class="food-name">{{ $tenMon }}</td>
+                                                <td class="food-qty">x{{ $soLuong }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @else
+                                <div class="no-food-alert">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    Không có đồ ăn/bắp nước đi kèm với vé này.
+                                </div>
+                            @endif
+                        </div>
+
                         @if ($ticket->trang_thai === 'da_thanh_toan')
-                            <form method="POST" action="{{ route('admin.soat-ve.confirm') }}" class="confirm-form">
-                                @csrf
-                                <input type="hidden" name="ma_ve" value="{{ $ticket->ma_ve }}">
-                                <button type="submit" class="scan-btn scan-btn-confirm" data-confirm-ticket="{{ $ticket->ma_ve }}">
-                                    <i class="fa-solid fa-door-open"></i>
-                                    Xác nhận sử dụng vé
+                            <div class="confirm-form">
+                                <button
+                                    type="button"
+                                    class="scan-btn scan-btn-confirm"
+                                    id="btnPrintConfirm"
+                                    data-ticket-data='@json([
+                                        'ma_ve' => $ticket->ma_ve,
+                                        'ten_phim' => $ticket->ten_phim,
+                                        'ten_rap' => $ticket->ten_rap,
+                                        'ten_phong' => $ticket->ten_phong ?? 'Chưa có',
+                                        'ma_ghe' => $ticket->ma_ghe ?? 'Chưa có',
+                                        'thoi_gian_chieu' => $ticket->thoi_gian_chieu ? $ticket->thoi_gian_chieu->format('d/m/Y H:i') : 'Chưa có',
+                                        'tong_tien' => number_format((float) $ticket->tong_tien, 0, ',', '.') . 'đ',
+                                        'loai_ve_label' => $typeLabel[$ticket->loai_ve] ?? 'Không rõ',
+                                        'foods' => $foods,
+                                    ])'
+                                >
+                                    <i class="fa-solid fa-print"></i>
+                                    In vé cứng & Xác nhận sử dụng
                                 </button>
-                            </form>
+                            </div>
                         @endif
                     </div>
                 @else
@@ -181,6 +232,30 @@
                 @endif
             </div>
         </aside>
+    </div>
+</div>
+
+<div id="printTicketSection"></div>
+
+<div id="confirmCheckInModal" class="admin-checkin-modal" aria-hidden="true">
+    <div class="admin-checkin-modal-content">
+        <div class="admin-checkin-modal-header">
+            <h3><i class="fa-solid fa-print"></i> Xác nhận soát vé</h3>
+        </div>
+        <div class="admin-checkin-modal-body">
+            <p>Yêu cầu in vé đã được gửi tới trình duyệt.</p>
+            <p class="admin-checkin-modal-highlight">Bạn đã in vé cứng và sẵn sàng cho khách vào rạp chưa?</p>
+        </div>
+        <div class="admin-checkin-modal-footer">
+            <button type="button" id="modalBtnCancel" class="admin-checkin-modal-btn is-secondary">
+                <i class="fa-solid fa-xmark"></i>
+                Hủy lệnh soát
+            </button>
+            <button type="button" id="modalBtnConfirm" class="admin-checkin-modal-btn is-primary">
+                <i class="fa-solid fa-check"></i>
+                Đã in & Cho khách vào
+            </button>
+        </div>
     </div>
 </div>
 @endsection
@@ -202,6 +277,9 @@
         const checkUrl = @json(route('admin.soat-ve.check'));
         const confirmUrl = @json(route('admin.soat-ve.confirm'));
         const csrfToken = @json(csrf_token());
+        const modal = document.getElementById('confirmCheckInModal');
+        const modalBtnConfirm = document.getElementById('modalBtnConfirm');
+        const modalBtnCancel = document.getElementById('modalBtnCancel');
 
         let stream = null;
         let detector = null;
@@ -211,6 +289,7 @@
         let activeScanner = null;
         let lastValue = '';
         let lastScanAt = 0;
+        let pendingTicketCode = '';
 
         function setStatus(message, type = '') {
             statusText.textContent = message;
@@ -254,10 +333,55 @@
                 return;
             }
 
+            let rawFoods = ticket.foods_list || ticket.foods || ticket.food || ticket.do_an || ticket.danh_sach_do_an || [];
+
+            if (typeof rawFoods === 'string') {
+                try {
+                    rawFoods = JSON.parse(rawFoods);
+                } catch (error) {
+                    rawFoods = [];
+                }
+            }
+
+            const foodHtml = Array.isArray(rawFoods) && rawFoods.length > 0 ? `
+                <div class="food-result-section">
+                    <h3 class="food-section-title">
+                        <i class="fa-solid fa-utensils"></i>
+                        Đồ ăn & Combo kèm theo
+                    </h3>
+                    <table class="food-table">
+                        <tbody>
+                            ${rawFoods.map(function (food) {
+                                const tenMon = food.ten_mon || food.name || 'Đồ ăn';
+                                const soLuong = food.so_luong || food.quantity || food.qty || 1;
+
+                                return `
+                                    <tr>
+                                        <td class="food-name">${escapeHtml(tenMon)}</td>
+                                        <td class="food-qty">x${escapeHtml(soLuong)}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            ` : `
+                <div class="food-result-section">
+                    <h3 class="food-section-title">
+                        <i class="fa-solid fa-utensils"></i>
+                        Đồ ăn & Combo kèm theo
+                    </h3>
+                    <div class="no-food-alert">
+                        <i class="fa-solid fa-circle-info"></i>
+                        Không có đồ ăn/bắp nước đi kèm với vé này.
+                    </div>
+                </div>
+            `;
+
             const confirmButton = ticket.can_check_in ? `
-                <button type="button" class="scan-btn scan-btn-confirm" data-confirm-ticket="${escapeHtml(ticket.ma_ve)}">
-                    <i class="fa-solid fa-door-open"></i>
-                    Xác nhận sử dụng vé
+                <button type="button" class="scan-btn scan-btn-confirm" id="btnPrintConfirm" data-ticket-data="${escapeHtml(JSON.stringify(ticket))}">
+                    <i class="fa-solid fa-print"></i>
+                    In vé cứng & Xác nhận sử dụng
                 </button>
             ` : '';
 
@@ -281,6 +405,7 @@
                         <div><span>Tổng tiền</span><strong>${escapeHtml(ticket.tong_tien || '0đ')}</strong></div>
                         <div><span>Loại vé</span><strong>${escapeHtml(ticket.loai_ve_label || 'Không rõ')}</strong></div>
                     </div>
+                    ${foodHtml}
                     ${confirmButton}
                 </div>
             `;
@@ -355,12 +480,8 @@
                 return;
             }
 
-            if (!confirm('Xác nhận khách đã vào rạp và đánh dấu vé này là đã sử dụng?')) {
-                return;
-            }
-
             requestBusy = true;
-            setStatus('Đang xác nhận sử dụng vé...');
+            setStatus('Đang cập nhật trạng thái vé...');
 
             try {
                 const { response, data } = await postTicket(confirmUrl, value);
@@ -371,18 +492,107 @@
                 }
 
                 if (response.ok && data.success) {
-                    setStatus(data.message || 'Đã xác nhận sử dụng vé.', 'success');
+                    setStatus(data.message || 'Đã in và soát vé thành công!', 'success');
                 } else {
-                    setStatus(data.message || Object.values(data.errors || {})[0]?.[0] || 'Không thể xác nhận vé.', 'error');
+                    setStatus(data.message || Object.values(data.errors || {})[0]?.[0] || 'Có lỗi khi cập nhật trạng thái vé.', 'error');
                 }
             } catch (error) {
-                setStatus('Không thể kết nối máy chủ. Vui lòng thử lại.', 'error');
+                setStatus('Đã xảy ra lỗi hệ thống khi cập nhật.', 'error');
             } finally {
+                pendingTicketCode = '';
                 setTimeout(function () {
                     requestBusy = false;
                 }, 700);
             }
         }
+
+        function handlePrintAndConfirm(ticket) {
+            const printSection = document.getElementById('printTicketSection');
+            let rawFoods = ticket.foods_list || ticket.foods || ticket.food || ticket.do_an || ticket.danh_sach_do_an || [];
+
+            if (typeof rawFoods === 'string') {
+                try {
+                    rawFoods = JSON.parse(rawFoods);
+                } catch (error) {
+                    rawFoods = [];
+                }
+            }
+
+            const foodHtml = Array.isArray(rawFoods) && rawFoods.length > 0 ? `
+                <div class="print-foods">
+                    <div class="print-foods-title">ĐỒ ĂN / COMBO KÈM THEO</div>
+                    <table>
+                        ${rawFoods.map(function (food) {
+                            const tenMon = food.ten_mon || food.name || 'Đồ ăn';
+                            const soLuong = food.so_luong || food.quantity || food.qty || 1;
+
+                            return `
+                                <tr>
+                                    <td>${escapeHtml(tenMon)}</td>
+                                    <td class="print-food-qty">x${escapeHtml(soLuong)}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </table>
+                </div>
+            ` : '';
+
+            printSection.innerHTML = `
+                <div class="print-header">
+                    <div class="print-brand">CINEHOME CINEMA</div>
+                    <div>VÉ XEM PHIM KIÊM PHIẾU ĐỒ ĂN</div>
+                    <div class="print-code">Mã vé: ${escapeHtml(ticket.ma_ve)}</div>
+                </div>
+
+                <div class="print-movie-title">${escapeHtml(ticket.ten_phim || 'Chưa có tên phim')}</div>
+
+                <table class="print-info-table">
+                    <tr><td class="label">Rạp:</td><td class="value">${escapeHtml(ticket.ten_rap || 'Chưa có')}</td></tr>
+                    <tr><td class="label">Phòng chiếu:</td><td class="value">${escapeHtml(ticket.ten_phong || 'Chưa có')}</td></tr>
+                    <tr><td class="label">Suất chiếu:</td><td class="value">${escapeHtml(ticket.thoi_gian_chieu || 'Chưa có')}</td></tr>
+                    <tr><td class="label">Kênh đặt:</td><td class="value">${escapeHtml(ticket.loai_ve_label || 'Không rõ')}</td></tr>
+                </table>
+
+                <div class="print-seat">
+                    GHẾ: ${escapeHtml(ticket.ma_ghe || 'Chưa có')}
+                </div>
+
+                ${foodHtml}
+
+                <div class="print-total">Tổng tiền: ${escapeHtml(ticket.tong_tien || '0đ')}</div>
+
+                <div class="print-footer">
+                    <p>Cảm ơn quý khách đã đồng hành cùng CineHome!</p>
+                    <div>Thời gian in: ${new Date().toLocaleString('vi-VN')}</div>
+                </div>
+            `;
+
+            pendingTicketCode = ticket.ma_ve;
+            document.body.classList.add('is-printing-ticket');
+            window.print();
+
+            setTimeout(function () {
+                modal.classList.add('is-active');
+            }, 500);
+        }
+
+        modalBtnConfirm.addEventListener('click', function () {
+            modal.classList.remove('is-active');
+
+            if (pendingTicketCode) {
+                confirmTicket(pendingTicketCode);
+            }
+        });
+
+        modalBtnCancel.addEventListener('click', function () {
+            modal.classList.remove('is-active');
+            setStatus(`Đã hủy lệnh soát. Vé "${pendingTicketCode}" vẫn giữ trạng thái Đã thanh toán.`, 'success');
+            pendingTicketCode = '';
+        });
+
+        window.addEventListener('afterprint', function () {
+            document.body.classList.remove('is-printing-ticket');
+        });
 
         function handleDecodedQr(value) {
             value = String(value || '').trim();
@@ -543,14 +753,24 @@
         });
 
         resultBox.addEventListener('click', function (event) {
-            const button = event.target.closest('[data-confirm-ticket]');
+            const button = event.target.closest('[data-ticket-data]');
 
-            if (!button || !window.fetch) {
+            if (!button) {
                 return;
             }
 
             event.preventDefault();
-            confirmTicket(button.dataset.confirmTicket);
+
+            if (!window.fetch) {
+                setStatus('Trình duyệt không hỗ trợ xác nhận vé bằng Ajax. Vui lòng cập nhật trình duyệt.', 'error');
+                return;
+            }
+
+            try {
+                handlePrintAndConfirm(JSON.parse(button.getAttribute('data-ticket-data')));
+            } catch (error) {
+                setStatus('Không thể tải dữ liệu in vé. Vui lòng kiểm tra lại vé.', 'error');
+            }
         });
     });
 </script>

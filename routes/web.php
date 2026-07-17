@@ -8,7 +8,9 @@ use App\Http\Controllers\Admin\FoodInvoiceController;
 use App\Http\Controllers\Admin\GheNgoiController;
 use App\Http\Controllers\Admin\HangGheController;
 use App\Http\Controllers\Admin\LoaiGheController as AdminLoaiGheController;
-use App\Http\Controllers\Admin\NhanVienController as AdminNhanVienController;
+use App\Http\Controllers\Admin\NhanVienController;
+use App\Http\Controllers\Admin\ChamCongController;
+use App\Http\Controllers\Admin\BangLuongController;
 use App\Http\Controllers\Admin\NhatKyHoatDongHeThongController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\PhanQuyenController;
@@ -168,7 +170,6 @@ Route::middleware(['auth'])
     ->group(function () {
         Route::get('/ve-xem-phim', [VeXemPhimController::class, 'index'])->name('ve_xem_phim.index');
         Route::get('/ve-xem-phim/{veXemPhim}', [VeXemPhimController::class, 'show'])->name('ve_xem_phim.show');
-        Route::patch('/ve-xem-phim/{veXemPhim}/huy', [VeXemPhimController::class, 'cancel'])->name('ve_xem_phim.cancel');
         Route::get('/notifications', [UserNotificationController::class, 'index'])->name('notifications.index');
         Route::get('/thanh-vien', [ThanhVienController::class, 'index'])->name('thanh-vien.index');
 
@@ -187,6 +188,11 @@ Route::middleware(['auth'])
 */
 Route::middleware(['auth'])->prefix('staff')->name('staff.')->group(function () {
         Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/cham-congs', [\App\Http\Controllers\Staff\ChamCongController::class, 'index'])->name('cham-congs.index');
+        Route::post('/cham-congs/check-in', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkIn'])->name('cham-congs.check-in');
+        Route::post('/cham-congs/check-out', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkOut'])->name('cham-congs.check-out');
+
         Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
                 Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
                 Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
@@ -248,8 +254,8 @@ Route::middleware(['auth'])
         });
 
         Route::middleware(['permission:quan_ly_nhan_vien'])->group(function () {
-            Route::resource('nhanviens', AdminNhanVienController::class);
-            Route::patch('nhanviens/{nhanvien}/toggle-status', [AdminNhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
+            Route::resource('nhanviens', NhanVienController::class);
+            Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
         });
 
         Route::middleware(['permission:quan_ly_khach_hang'])->group(function () {
@@ -370,8 +376,15 @@ Route::middleware(['auth'])
         });
 
         Route::middleware(['permission:quan_ly_nhan_vien'])->group(function () {
-            Route::resource('nhanviens', AdminNhanVienController::class);
-            Route::patch('nhanviens/{nhanvien}/toggle-status', [AdminNhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
+            Route::resource('nhanviens', NhanVienController::class);
+            Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
+            Route::resource('cham-congs', ChamCongController::class)->names('cham-congs');
+            
+            Route::get('bang-luongs/calculate', [BangLuongController::class, 'showCalculateForm'])->name('bang-luongs.calculate');
+            Route::post('bang-luongs', [BangLuongController::class, 'store'])->name('bang-luongs.store');
+            Route::get('bang-luongs', [BangLuongController::class, 'index'])->name('bang-luongs.index');
+            Route::patch('bang-luongs/{bangLuong}/toggle-payment', [BangLuongController::class, 'togglePaymentStatus'])->name('bang-luongs.toggle-payment');
+            Route::delete('bang-luongs/{bangLuong}', [BangLuongController::class, 'destroy'])->name('bang-luongs.destroy');
         });
 
         Route::middleware(['permission:thong_ke_doanh_thu'])->group(function () {
