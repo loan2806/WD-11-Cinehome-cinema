@@ -59,6 +59,10 @@ class TicketCheckInService
         ];
     }
 
+    /**
+     * 🌟 ĐÃ CẬP NHẬT: Đóng gói dữ liệu vé gửi về Client qua AJAX quét QR,
+     * tự động tích hợp danh sách đồ ăn bắp nước chuẩn hóa từ Accessor của Model.
+     */
     public function ticketPayload(?VeXemPhim $ticket): ?array
     {
         if (! $ticket) {
@@ -78,6 +82,7 @@ class TicketCheckInService
             'trang_thai_label' => $this->statusLabel($ticket->trang_thai),
             'loai_ve_label' => $this->typeLabel($ticket->loai_ve),
             'can_check_in' => $ticket->trang_thai === 'da_thanh_toan',
+            'foods' => $ticket->foods_list, // 🌟 ĐỒNG BỘ: Sử dụng Accessor mới tự động kéo từ Cache
         ];
     }
 

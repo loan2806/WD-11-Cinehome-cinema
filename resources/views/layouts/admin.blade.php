@@ -188,27 +188,7 @@
                     </a>
                 </div>
 
-                {{-- QUẢN TRỊ NỀN TẢNG ĐẶC QUYỀN --}}
-                @if (auth()->user()->hasRole('Quản lý hệ thống') || auth()->user()->vai_tro === 'admin')
-                @php
-                $isNenTangActive = request()->routeIs('admin.cai-dat-thanh-toan.*');
-                @endphp
-                <div class="sidebar-dropdown-box {{ $isNenTangActive ? 'open' : '' }}">
-                    <button type="button" class="sidebar-dropdown-btn flex w-full items-center justify-between rounded-xl border border-[#d99a32]/30 bg-white/5 px-4 py-3 text-left text-[16px] font-black leading-none text-[#f4c56a] outline-none transition duration-200 hover:bg-white/10">
-                        <span class="flex items-center gap-3.5">
-                            <i class="fa-solid fa-server w-5 text-center text-xl text-[#d99a32]"></i>
-                            <span>Quản trị nền tảng</span>
-                        </span>
-                        <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-[#f4c56a]"></i>
-                    </button>
-                    <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32] ml-6 space-y-1">
-                        {{-- Đã lược bỏ Cụm rạp chi nhánh theo mô hình 1 rạp duy nhất --}}
-                        <a href="{{ route('admin.cai-dat-thanh-toan.edit') }}" class="block py-2.5 pl-3 text-[15px] font-bold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.cai-dat-thanh-toan.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Cài
-                            đặt cổng thanh toán</a>
-
-                    </div>
-                </div>
-                @endif
+                
 
                 {{-- NHÓM DROPDOWN 1: QUẢN LÝ NỘI DUNG --}}
                     @if (auth()->user()->can('quan_ly_phim_suat_chieu'))

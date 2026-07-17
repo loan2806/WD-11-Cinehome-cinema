@@ -20,6 +20,12 @@
             'icon' => 'fa-solid fa-circle-xmark',
             'class' => 'is-cancelled',
         ],
+        // 🌟 BỔ SUNG: Trạng thái "Hết hạn" hiển thị trong chi tiết vé
+        'het_han' => [
+            'label' => 'Hết hạn',
+            'icon' => 'fa-solid fa-clock-rotate-left',
+            'class' => 'is-cancelled',
+        ],
     ];
 
     $meta = $statusMeta[$veXemPhim->trang_thai] ?? [
@@ -83,17 +89,6 @@
                         <i class="fa-solid fa-plus"></i>
                         Đặt thêm vé
                     </a>
-
-                    @if($veXemPhim->trang_thai === 'da_thanh_toan' && $veXemPhim->canCancel())
-                        <form method="POST" action="{{ route('user.ve_xem_phim.cancel', $veXemPhim) }}" onsubmit="return confirm('Hủy vé này và hoàn tiền theo chính sách?');">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="myticket-cancel-btn">
-                                <i class="fa-solid fa-ban"></i>
-                                Hủy vé
-                            </button>
-                        </form>
-                    @endif
                 </div>
             </div>
         </article>
@@ -155,10 +150,31 @@
             @endif
         </section>
 
-        <div class="myticket-policy-card">
-            <i class="fa-solid fa-circle-info"></i>
-            <p>Vé chỉ được hủy trong vòng {{ $cancelMinutes }} phút sau khi đặt và khi chưa được sử dụng. Khi đến rạp, hãy mở QR vé này để nhân viên soát vé nhanh hơn.</p>
-        </div>
+        @if(!empty($foodItems))
+            <section class="myticket-detail-foods" style="margin-top: 24px; background: #141414; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 24px;">
+                <h3 style="color: #facc15; font-size: 16px; font-weight: 800; text-transform: uppercase; margin-top: 0; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; letter-spacing: 0.5px;">
+                    <i class="fa-solid fa-cookie-bite" style="color: #facc15;"></i> Đồ ăn & Combo mua kèm
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                    @foreach($foodItems as $item)
+                        @php
+                            $qty = $item['qty'] ?? $item['quantity'] ?? 1;
+                            $price = $item['price'] ?? 0;
+                            $name = $item['name'] ?? 'Đồ ăn';
+                        @endphp
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="color: #fff; display: block; font-size: 14px; font-weight: 700;">{{ $name }}</strong>
+                                <span style="color: #9ca3af; font-size: 12px; display: block; margin-top: 4px;">Đơn giá: {{ number_format($price) }}đ</span>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="background: #facc15; color: #000; font-weight: 900; padding: 4px 10px; border-radius: 8px; font-size: 13px;">x{{ $qty }}</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
     </div>
 </section>
 @endsection
