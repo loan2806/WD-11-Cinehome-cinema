@@ -26,6 +26,8 @@ class Phims extends Model
         'ngon_ngu',
         'thoi_luong',
         'gioi_han_tuoi',
+        'trang_thai',
+        'ngay_ra_rap',
     ];
 
 

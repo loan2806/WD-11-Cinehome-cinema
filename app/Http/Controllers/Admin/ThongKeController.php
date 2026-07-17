@@ -12,27 +12,26 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ThongKeController extends Controller
 {
-    protected ThongKeService $thongKeService;
-
-    public function __construct(ThongKeService $thongKeService)
+    public function __construct()
     {
-        $this->thongKeService = $thongKeService;
+        // No dependency injection needed - service is instantiated with params
     }
 
     public function index(Request $request)
     {
-        $from = $request->input('from') ? Carbon::parse($request->input('from'))->startOfDay() : Carbon::now()->startOfMonth();
-        $to = $request->input('to') ? Carbon::parse($request->input('to'))->endOfDay() : Carbon::now()->endOfDay();
+        $from = $request->input('from') 
+            ? Carbon::parse($request->input('from'))->startOfDay()->toDateTimeString() 
+            : Carbon::now()->startOfMonth()->toDateTimeString();
+        
+        $to = $request->input('to') 
+            ? Carbon::parse($request->input('to'))->endOfDay()->toDateTimeString() 
+            : Carbon::now()->endOfDay()->toDateTimeString();
+        
         $periodType = $request->input('period_type', 'day');
         $phimId = $request->input('phim_id') ? (int) $request->input('phim_id') : null;
         $phongChieuId = $request->input('phong_chieu_id') ? (int) $request->input('phong_chieu_id') : null;
 
-        $service = new ThongKeService(
-            $from->toDateTimeString(),
-            $to->toDateTimeString(),
-            $phimId,
-            $phongChieuId
-        );
+        $service = new ThongKeService($from, $to, $phimId, $phongChieuId);
 
         $kpi = $service->getKPISummary();
         $revenueByTime = $service->getRevenueByTime($periodType);
@@ -44,7 +43,7 @@ class ThongKeController extends Controller
         $paymentMethods = $service->getPaymentMethodStats();
         $voucherStats = $service->getVoucherStats();
         $revenueStructure = $service->getRevenueStructure();
-        $detailedInvoices = $service->getDetailedInvoiceData(50);
+        $detailedInvoices = $service->getDetailedInvoiceData(100);
 
         $movies = $service->getMoviesList();
         $rooms = $service->getRoomsList();
@@ -73,36 +72,38 @@ class ThongKeController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $from = $request->input('from') ? Carbon::parse($request->input('from'))->startOfDay() : Carbon::now()->startOfMonth();
-        $to = $request->input('to') ? Carbon::parse($request->input('to'))->endOfDay() : Carbon::now()->endOfDay();
+        $from = $request->input('from') 
+            ? Carbon::parse($request->input('from'))->startOfDay()->toDateTimeString() 
+            : Carbon::now()->startOfMonth()->toDateTimeString();
+        
+        $to = $request->input('to') 
+            ? Carbon::parse($request->input('to'))->endOfDay()->toDateTimeString() 
+            : Carbon::now()->endOfDay()->toDateTimeString();
+        
         $phimId = $request->input('phim_id') ? (int) $request->input('phim_id') : null;
         $phongChieuId = $request->input('phong_chieu_id') ? (int) $request->input('phong_chieu_id') : null;
 
-        $service = new ThongKeService(
-            $from->toDateTimeString(),
-            $to->toDateTimeString(),
-            $phimId,
-            $phongChieuId
-        );
+        $service = new ThongKeService($from, $to, $phimId, $phongChieuId);
 
-        $fileName = 'bao-cao-doanh-thu-' . $from->format('Y-m-d') . '-' . $to->format('Y-m-d') . '.xlsx';
+        $fileName = 'bao-cao-doanh-thu-cinehome-' . Carbon::parse($from)->format('Y-m-d') . '-to-' . Carbon::parse($to)->format('Y-m-d') . '.xlsx';
 
         return Excel::download(new RevenueExport($service), $fileName);
     }
 
     public function exportPdf(Request $request)
     {
-        $from = $request->input('from') ? Carbon::parse($request->input('from'))->startOfDay() : Carbon::now()->startOfMonth();
-        $to = $request->input('to') ? Carbon::parse($request->input('to'))->endOfDay() : Carbon::now()->endOfDay();
+        $from = $request->input('from') 
+            ? Carbon::parse($request->input('from'))->startOfDay()->toDateTimeString() 
+            : Carbon::now()->startOfMonth()->toDateTimeString();
+        
+        $to = $request->input('to') 
+            ? Carbon::parse($request->input('to'))->endOfDay()->toDateTimeString() 
+            : Carbon::now()->endOfDay()->toDateTimeString();
+        
         $phimId = $request->input('phim_id') ? (int) $request->input('phim_id') : null;
         $phongChieuId = $request->input('phong_chieu_id') ? (int) $request->input('phong_chieu_id') : null;
 
-        $service = new ThongKeService(
-            $from->toDateTimeString(),
-            $to->toDateTimeString(),
-            $phimId,
-            $phongChieuId
-        );
+        $service = new ThongKeService($from, $to, $phimId, $phongChieuId);
 
         $kpi = $service->getKPISummary();
         $revenueByTime = $service->getRevenueByTime('day');
@@ -118,7 +119,7 @@ class ThongKeController extends Controller
             'to'
         ));
 
-        $fileName = 'bao-cao-doanh-thu-' . $from->format('Y-m-d') . '-' . $to->format('Y-m-d') . '.pdf';
+        $fileName = 'bao-cao-doanh-thu-cinehome-' . Carbon::parse($from)->format('Y-m-d') . '-to-' . Carbon::parse($to)->format('Y-m-d') . '.pdf';
 
         return $pdf->download($fileName);
     }
