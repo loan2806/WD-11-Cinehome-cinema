@@ -179,7 +179,7 @@
                                         }
                                         $imageUrl = $imagePath !== ''
                                             ? asset('storage/' . $imagePath)
-                                            : asset('assets/images/logo.png');
+                                            : asset('assets/images/LOGO copy.png');
                                         $stock = (int) ($item['stock'] ?? 0);
                                         $isSoldOut = $stock <= 0;
                                         $searchText = mb_strtolower($item['name'] . ' ' . $category['category'] . ' ' . $item['badge']);
@@ -296,7 +296,7 @@
 <script>
     const storageKey = 'booking_deadline_{{ $suatChieu->id }}';
     const baseSeatPrice = parseInt("{{ $seatTotalPrice }}") || 0;
-    const fallbackFoodImage = "{{ asset('assets/images/logo.png') }}";
+    const fallbackFoodImage = "{{ asset('assets/images/LOGO copy.png') }}";
 
     let cart = {};
     let countdownInterval = null;

@@ -11,10 +11,7 @@
 
     {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
-
-    {{-- ChartJS --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}?v={{ filemtime(public_path('assets/css/admin.css')) }}">
 
     <style>
         /* Hiệu ứng accordion đóng mở mượt mà độc lập */
@@ -47,8 +44,10 @@
             
             {{-- LOGO BRANDING ROOT SYSTEM --}}
             <div class="flex items-center gap-3.5 px-5 py-6 border-b border-white/5">
-                <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome Logo"
-                    class="h-16 w-16 rounded-2xl bg-white object-contain p-1 shadow-lg shadow-[#d99a32]/20">
+                <span class="cinehome-logo-sparkle flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-3xl bg-transparent p-0 shadow-lg shadow-[#ff2f45]/20">
+                    <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome Logo"
+                        class="cinehome-logo-img h-full w-full object-contain">
+                </span>
 
                 <div>
                     <h3 class="text-2xl font-black text-white tracking-wide m-0">

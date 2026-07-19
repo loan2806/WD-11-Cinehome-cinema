@@ -18,9 +18,6 @@
 
     @stack('styles')
 
-    {{-- ChartJS --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
     <style>
         /* Hiệu ứng trượt đóng mở mượt mà độc lập */
         .sidebar-dropdown-content {
@@ -163,7 +160,9 @@
 
             {{-- LOGO --}}
             <div class="flex items-center gap-3.5 border-b border-white/5 px-5 py-6">
-                <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome Logo" class="h-16 w-16 rounded-2xl bg-white object-contain p-1 shadow-lg shadow-[#d99a32]/10">
+                <span class="cinehome-logo-sparkle flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-3xl bg-transparent p-0 shadow-lg shadow-[#ff2f45]/20">
+                    <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome Logo" class="cinehome-logo-img h-full w-full object-contain">
+                </span>
 
                 <div>
                     <h3 class="m-0 text-2xl font-black tracking-wide text-white">
@@ -353,7 +352,7 @@
                     @if (auth()->user()->can('thong_ke_doanh_thu'))
                     @php
                     $isBaoCaoActive =
-                    request()->routeIs('admin.revenue-reports.*') ||
+                    request()->routeIs('admin.thong-ke.*') ||
                     request()->routeIs('admin.activity-logs.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isBaoCaoActive ? 'open' : '' }}">
@@ -365,7 +364,7 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="{{ route('admin.revenue-reports.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.revenue-reports.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thống
+                            <a href="{{ route('admin.thong-ke.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-ke.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thống
                                 kê doanh thu</a>
                             <a href="{{ route('admin.activity-logs.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.activity-logs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Nhật
                                 ký vết hệ thống</a>
@@ -440,13 +439,18 @@
 
                     {{-- ADMIN USER --}}
                     <div class="flex items-center gap-3">
+                        @php
+                            $notificationCount = $notificationCount ?? 0;
+                            $adminRoleLabel = match (Auth::user()->vai_tro) {
+                                'quan_ly_he_thong' => 'Quản lý hệ thống',
+                                'nhan_vien' => 'Nhân viên',
+                                default => 'Quản trị viên',
+                            };
+                        @endphp
+
                         <div class="relative">
                             <button type="button" id="bellBtn" class="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 hover:bg-white/15 transition">
                                 <i class="fa-solid fa-bell text-white"></i>
-                                @php
-                                $notificationCount = \App\Models\AdminNotification::where('da_doc', false)->count();
-                                @endphp
-
                                 @if ($notificationCount > 0)
                                 <span id="notifyBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
                                     {{ $notificationCount > 99 ? '99+' : $notificationCount }}
@@ -505,7 +509,7 @@
                                         {{ Auth::user()->ho_ten }}
                                     </div>
                                     <div class="mt-0.5 text-xs font-semibold text-[#d99a32]">
-                                        {{ Auth::user()->roles->pluck('name')->first() ?? 'Quản trị viên' }}
+                                        {{ $adminRoleLabel }}
                                     </div>
                                 </div>
 
@@ -551,9 +555,6 @@
             </section>
         </main>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     @stack('scripts')
 

@@ -73,7 +73,7 @@
                     @endif
 
                     @if ($canSeeRevenue)
-                        <a href="{{ route('admin.revenue-reports.index') }}" class="dashboard-secondary-action">
+                        <a href="{{ route('admin.thong-ke.index') }}" class="dashboard-secondary-action">
                             <i class="fa-solid fa-chart-pie"></i>
                             Báo cáo doanh thu
                         </a>

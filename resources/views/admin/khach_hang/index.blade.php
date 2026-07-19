@@ -5,176 +5,225 @@
 @section('page-subtitle', 'Quản lý hồ sơ, trạng thái và hoạt động tài khoản khách hàng')
 
 @section('content')
-<div class="space-y-6">
+@php
+    $summary = [
+        'total' => $tongKhachHang ?? $khachHangs->total(),
+        'active' => $tongDangHoatDong ?? 0,
+        'locked' => $tongBiKhoa ?? 0,
+        'new_this_month' => $tongMoiTrongThang ?? 0,
+        'members' => $tongCoTheThanhVien ?? 0,
+    ];
 
-    {{-- THỐNG KÊ NHANH --}}
-    <div class="grid grid-cols-1 gap-5 md:grid-cols-3">
-        @foreach([
-        ['Tổng khách hàng', $tongKhachHang, 'fa-users'],
-        ['Đang hoạt động', $tongDangHoatDong, 'fa-user-check'],
-        ['Bị khóa', $tongBiKhoa, 'fa-user-lock'],
-        ] as $card)
-        <div
-            class="rounded-3xl border border-white/10 bg-[#121212] p-5 shadow-xl transition duration-300 hover:-translate-y-1 hover:border-[#d99a32]/50">
-            <div
-                class="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32]">
-                <i class="fa-solid {{ $card[2] }} text-white"></i>
+    $activeFilters = collect([
+        request('tim_kiem'),
+        request('trang_thai'),
+    ])->filter(fn ($value) => filled($value))->count();
+@endphp
+
+<div class="customer-account-page">
+    @include('admin.partials.flash')
+
+    <section class="customer-account-hero">
+        <div>
+            <span class="customer-account-kicker">
+                <i class="fa-solid fa-users"></i>
+                Hồ sơ khách hàng
+            </span>
+            <h2>Quản lý tài khoản khách hàng</h2>
+            <p>Tìm nhanh khách theo tên, email hoặc số điện thoại; kiểm tra hạng thành viên, số vé đã mua và trạng thái hoạt động của tài khoản.</p>
+            <div class="customer-account-hero-meta">
+                <span><i class="fa-solid fa-user-check"></i> {{ number_format($summary['active']) }} đang hoạt động</span>
+                <span><i class="fa-solid fa-crown"></i> {{ number_format($summary['members']) }} có thẻ thành viên</span>
+                <span><i class="fa-solid fa-calendar-plus"></i> {{ number_format($summary['new_this_month']) }} mới trong tháng</span>
             </div>
-            <p class="text-sm text-gray-400">{{ $card[0] }}</p>
-            <h3 class="mt-2 text-3xl font-black text-white">{{ number_format($card[1]) }}</h3>
         </div>
-        @endforeach
-    </div>
 
-    {{-- BỘ LỌC --}}
-    <div class="rounded-3xl border border-white/10 bg-[#121212] p-5">
-        <form method="GET" class="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}"
-                placeholder="Tìm tên hoặc email khách hàng..."
-                class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+        <a href="{{ route('admin.khach-hang.create') }}" class="customer-account-primary-btn">
+            <i class="fa-solid fa-user-plus"></i>
+            Thêm khách hàng
+        </a>
+    </section>
 
-            <select name="trang_thai"
-                class="rounded-2xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-white outline-none focus:border-[#d99a32]">
+    <section class="customer-account-stats">
+        <article class="customer-account-stat">
+            <span class="is-total"><i class="fa-solid fa-users"></i></span>
+            <div>
+                <small>Tổng khách hàng</small>
+                <strong>{{ number_format($summary['total']) }}</strong>
+            </div>
+        </article>
+        <article class="customer-account-stat">
+            <span class="is-active"><i class="fa-solid fa-user-check"></i></span>
+            <div>
+                <small>Đang hoạt động</small>
+                <strong>{{ number_format($summary['active']) }}</strong>
+            </div>
+        </article>
+        <article class="customer-account-stat">
+            <span class="is-locked"><i class="fa-solid fa-user-lock"></i></span>
+            <div>
+                <small>Bị khóa</small>
+                <strong>{{ number_format($summary['locked']) }}</strong>
+            </div>
+        </article>
+        <article class="customer-account-stat">
+            <span class="is-member"><i class="fa-solid fa-crown"></i></span>
+            <div>
+                <small>Có thẻ thành viên</small>
+                <strong>{{ number_format($summary['members']) }}</strong>
+            </div>
+        </article>
+    </section>
+
+    <section class="customer-account-panel">
+        <div class="customer-account-panel-head">
+            <div>
+                <span class="customer-account-kicker">Danh sách</span>
+                <h3>Tài khoản khách hàng</h3>
+                <p>Đang hiển thị {{ $khachHangs->count() }} / {{ $khachHangs->total() }} khách hàng theo bộ lọc hiện tại.</p>
+            </div>
+        </div>
+
+        <form method="GET" action="{{ route('admin.khach-hang.index') }}" class="customer-account-filter">
+            <label class="customer-account-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input
+                    type="text"
+                    name="tim_kiem"
+                    value="{{ request('tim_kiem') }}"
+                    placeholder="Tìm tên, email hoặc số điện thoại..."
+                >
+            </label>
+
+            <select name="trang_thai" class="admin-input">
                 <option value="">Tất cả trạng thái</option>
-                <option value="1" @selected(request('trang_thai')==='1' )>Đang hoạt động</option>
-                <option value="0" @selected(request('trang_thai')==='0' )>Bị khóa</option>
+                <option value="1" @selected(request('trang_thai') === '1')>Đang hoạt động</option>
+                <option value="0" @selected(request('trang_thai') === '0')>Bị khóa</option>
             </select>
 
-            <button
-                class="rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 font-black text-white transition hover:-translate-y-1">
-                <i class="fa-solid fa-filter mr-2"></i>
-                Lọc dữ liệu
+            <button type="submit" class="customer-account-filter-btn">
+                <i class="fa-solid fa-filter"></i>
+                Lọc
+                @if($activeFilters)
+                    <span>{{ $activeFilters }}</span>
+                @endif
             </button>
+
+            @if($activeFilters)
+                <a href="{{ route('admin.khach-hang.index') }}" class="customer-account-reset-btn" title="Xóa bộ lọc">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            @endif
         </form>
-    </div>
 
-    {{-- DANH SÁCH KHÁCH HÀNG --}}
-    <div class="overflow-hidden rounded-3xl border border-white/10 bg-[#121212] shadow-2xl">
-        <div class="flex items-center justify-between border-b border-white/10 px-6 py-5">
-            <div>
-                <h2 class="text-xl font-black text-white">Danh sách tài khoản</h2>
-                <p class="mt-1 text-sm text-gray-400">
-                    Theo dõi hồ sơ, trạng thái và lịch sử hoạt động khách hàng
-                </p>
-            </div>
-
-            <a href="{{ route('admin.khach-hang.create') }}"
-                class="rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-5 py-3 text-sm font-black text-white no-underline transition hover:-translate-y-1">
-                <i class="fa-solid fa-user-plus mr-2"></i>
-                Thêm khách hàng
-            </a>
-        </div>
-
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[1200px] table-fixed text-left">
-                <colgroup>
-                    <col class="w-[15%]">
-                    <col class="w-[18%]">
-                    <col class="w-[12%]">
-                    <col class="w-[11%]">
-                    <col class="w-[10%]">
-                    <col class="w-[8%]">
-                    <col class="w-[12%]">
-                    <col class="w-[14%]">
-                </colgroup>
-
-                <thead class="bg-white/[0.04] text-xs uppercase tracking-wider text-gray-400">
+        <div class="customer-account-table-wrap">
+            <table class="customer-account-table">
+                <thead>
                     <tr>
-                        <th class="px-6 py-4 text-left">Khách hàng</th>
-                        <th class="px-6 py-4 text-left">Email</th>
-                        <th class="px-6 py-4 text-left">SĐT</th>
-                        <th class="px-6 py-4 text-center">Ngày sinh</th>
-                        <th class="px-6 py-4 text-center">Hạng TV</th>
-                        <th class="px-6 py-4 text-center">Số vé</th>
-                        <th class="px-6 py-4 text-center">Trạng thái</th>
-                        <th class="px-6 py-4 text-right">Thao tác</th>
+                        <th>Khách hàng</th>
+                        <th>Liên hệ</th>
+                        <th>Thành viên</th>
+                        <th>Vé đã mua</th>
+                        <th>Ngày sinh</th>
+                        <th>Trạng thái</th>
+                        <th class="is-right">Thao tác</th>
                     </tr>
                 </thead>
-
-                <tbody class="divide-y divide-white/10">
+                <tbody>
                     @forelse($khachHangs as $item)
-                    <tr class="transition duration-300 hover:bg-white/[0.04]">
-                        <td class="px-6 py-5 align-middle">
-                            <div class="truncate font-bold text-white">
-                                {{ $item->ho_ten }}
-                            </div>
-                        </td>
+                        @php
+                            $isActive = (bool) $item->trang_thai_hoat_dong;
+                            $memberName = $item->thanhVien?->ten_hang;
+                        @endphp
 
-                        <td class="px-6 py-5 align-middle">
-                            <div class="truncate text-gray-400">
-                                {{ $item->email }}
-                            </div>
-                        </td>
-
-                        <td class="px-6 py-5 align-middle text-gray-400">
-                            {{ $item->so_dien_thoai ?? '---' }}
-                        </td>
-
-                        <td class="px-6 py-5 text-center align-middle text-gray-400">
-                            {{ $item->ngay_sinh?->format('d/m/Y') ?? '---' }}
-                        </td>
-
-                        <td class="px-6 py-5 text-center align-middle">
-                            <span
-                                class="inline-flex items-center justify-center rounded-full bg-[#d99a32]/15 px-3 py-1 text-xs font-black text-[#f4c56a]">
-                                {{ strtoupper($item->thanhVien->ten_hang ?? 'Chưa có') }}
-                            </span>
-                        </td>
-
-                        <td class="px-6 py-5 text-center align-middle font-bold text-white">
-                            {{ number_format($item->ve_xem_phims_count) }}
-                        </td>
-
-                        <td class="px-6 py-5 text-center align-middle">
-                            @if($item->trang_thai_hoat_dong)
-                            <span
-                                class="inline-flex items-center justify-center rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-400">
-                                Hoạt động
-                            </span>
-                            @else
-                            <span
-                                class="inline-flex items-center justify-center rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold text-red-400">
-                                Bị khóa
-                            </span>
-                            @endif
-                        </td>
-
-                        <td class="px-6 py-5 text-right align-middle">
-                            <div class="flex justify-end gap-2">
-                                <a href="{{ route('admin.khach-hang.show', $item) }}"
-                                    class="rounded-xl bg-[#d99a32] px-4 py-2 text-xs font-black text-black no-underline transition hover:bg-[#f4c56a]">
-                                    Chi tiết
-                                </a>
-
-                                <form method="POST" action="{{ route('admin.khach-hang.toggle-status', $item) }}"
-                                    onsubmit="return confirm('Bạn có chắc muốn thay đổi trạng thái tài khoản này?')">
-                                    @csrf
-                                    @method('PATCH')
-
-                                    <button type="submit" class="rounded-xl px-4 py-2 text-xs font-black transition
-                                        {{ $item->trang_thai_hoat_dong
-                                            ? 'bg-red-500/15 text-red-400 hover:bg-red-500 hover:text-white'
-                                            : 'bg-green-500/15 text-green-400 hover:bg-green-500 hover:text-white' }}">
-                                        {{ $item->trang_thai_hoat_dong ? 'Khóa' : 'Mở khóa' }}
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td>
+                                <div class="customer-profile-cell">
+                                    <span class="customer-avatar">
+                                        <i class="fa-solid fa-user"></i>
+                                    </span>
+                                    <div>
+                                        <strong>{{ $item->ho_ten }}</strong>
+                                        <small>
+                                            <i class="fa-regular fa-calendar"></i>
+                                            Tạo {{ $item->created_at?->format('d/m/Y') ?? '-' }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="customer-contact">
+                                    <strong>{{ $item->email }}</strong>
+                                    <small>
+                                        <i class="fa-solid fa-phone"></i>
+                                        {{ $item->so_dien_thoai ?: 'Chưa có SĐT' }}
+                                    </small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="customer-member-badge {{ $memberName ? 'is-member' : 'is-empty' }}">
+                                    <i class="fa-solid {{ $memberName ? 'fa-crown' : 'fa-circle-minus' }}"></i>
+                                    {{ $memberName ? strtoupper($memberName) : 'Chưa có' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="customer-ticket-count">
+                                    <i class="fa-solid fa-ticket"></i>
+                                    {{ number_format($item->ve_xem_phims_count) }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="customer-date">
+                                    <i class="fa-solid fa-cake-candles"></i>
+                                    {{ $item->ngay_sinh?->format('d/m/Y') ?? '-' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="customer-status {{ $isActive ? 'is-active' : 'is-locked' }}">
+                                    <i class="fa-solid {{ $isActive ? 'fa-circle-check' : 'fa-lock' }}"></i>
+                                    {{ $isActive ? 'Hoạt động' : 'Bị khóa' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="customer-actions">
+                                    <a href="{{ route('admin.khach-hang.show', $item) }}" class="customer-action-btn is-view" title="Chi tiết">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </a>
+                                    <a href="{{ route('admin.khach-hang.edit', $item) }}" class="customer-action-btn is-edit" title="Chỉnh sửa">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </a>
+                                    <form method="POST" action="{{ route('admin.khach-hang.toggle-status', $item) }}" onsubmit="return confirm('Bạn có chắc muốn thay đổi trạng thái tài khoản này?')">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="customer-action-btn {{ $isActive ? 'is-lock' : 'is-unlock' }}" title="{{ $isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản' }}">
+                                            <i class="fa-solid {{ $isActive ? 'fa-lock' : 'fa-lock-open' }}"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center text-gray-400">
-                            Chưa có tài khoản khách hàng nào.
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="7">
+                                <div class="customer-account-empty">
+                                    <i class="fa-solid fa-user-group"></i>
+                                    <h3>Chưa có khách hàng phù hợp</h3>
+                                    <p>Thử đổi bộ lọc hoặc tạo tài khoản khách hàng mới để hỗ trợ đặt vé tại quầy.</p>
+                                    <a href="{{ route('admin.khach-hang.create') }}" class="customer-account-primary-btn">
+                                        <i class="fa-solid fa-user-plus"></i>
+                                        Thêm khách hàng
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="border-t border-white/10 px-6 py-4">
+        <div class="customer-account-pagination">
             {{ $khachHangs->links() }}
         </div>
-    </div>
+    </section>
 </div>
 @endsection

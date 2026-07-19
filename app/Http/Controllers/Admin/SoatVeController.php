@@ -29,6 +29,7 @@ class SoatVeController extends Controller
 
         $result = $ticketCheckInService->inspect($data['ma_ve']);
         $ticket = $result['ticket'];
+        $foodsFromCache = [];
 
         // 🌟 LẤY TRỰC TIẾP TỪ USER SIDE: Kéo đồ ăn từ Cache theo ID của vé giống hệt Controller của User
         if ($ticket) {
@@ -37,17 +38,7 @@ class SoatVeController extends Controller
         }
 
         if ($request->expectsJson()) {
-            $payload = $ticketCheckInService->ticketPayload($ticket);
-            
-            // Đồng bộ dữ liệu đồ ăn vào payload Ajax để camera quét xong hiển thị ngay
-            if ($ticket) {
-                $payload['foods'] = array_map(function($item) {
-                    return [
-                        'ten_mon' => $item['name'] ?? $item['ten_mon'] ?? 'Đồ ăn',
-                        'so_luong' => $item['qty'] ?? $item['quantity'] ?? $item['so_luong'] ?? 1,
-                    ];
-                }, \Illuminate\Support\Facades\Cache::get("ve_foods:{$ticket->id}", []));
-            }
+            $payload = $ticketCheckInService->ticketPayload($ticket, $foodsFromCache);
             
             return response()->json([
                 'success' => $result['success'],

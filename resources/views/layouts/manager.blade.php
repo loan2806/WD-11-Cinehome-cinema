@@ -11,7 +11,7 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
+    <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}?v={{ filemtime(public_path('assets/css/admin.css')) }}">
 
     @stack('styles')
 
@@ -70,8 +70,10 @@
             class="admin-scrollbar fixed left-0 top-0 z-[60] h-screen w-[285px] overflow-y-auto overflow-x-hidden border-r border-[#d99a32]/20 bg-gradient-to-b from-[#110702] to-[#200d05] transition-transform duration-300">
 
             <div class="flex items-center gap-3.5 border-b border-white/5 px-5 py-6">
-                <img src="{{ asset('assets/images/logo.png') }}" alt="CineHome Logo"
-                    class="h-16 w-16 rounded-2xl bg-white object-contain p-1 shadow-lg shadow-[#d99a32]/10">
+                <span class="cinehome-logo-sparkle flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-3xl bg-transparent p-0 shadow-lg shadow-[#ff2f45]/20">
+                    <img src="{{ asset('assets/images/LOGO copy.png') }}" alt="CineHome Logo"
+                        class="cinehome-logo-img h-full w-full object-contain">
+                </span>
 
                 <div>
                     <h3 class="m-0 text-2xl font-black tracking-wide text-white">
@@ -306,9 +308,6 @@
             </section>
         </main>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

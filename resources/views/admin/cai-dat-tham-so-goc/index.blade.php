@@ -49,7 +49,7 @@
                             <div class="flex flex-col items-center p-4 rounded-xl border border-white/5 bg-[#151515]">
                                 <label class="text-xs text-gray-400 font-bold uppercase tracking-wide">Logo Rạp Hiện Tại</label>
                                 <div class="my-3 h-24 w-24 rounded-2xl bg-white p-1 flex items-center justify-center overflow-hidden shadow-inner">
-                                    <img id="logo_preview" src="{{ $settings->logo ? asset('storage/' . $settings->logo) : asset('assets/images/logo.png') }}" class="object-contain max-h-full max-w-full">
+                                    <img id="logo_preview" src="{{ $settings->logo ? asset('storage/' . $settings->logo) : asset('assets/images/LOGO copy.png') }}" class="object-contain max-h-full max-w-full">
                                 </div>
                                 <input type="file" name="logo" id="logo_input" accept="image/*" class="hidden">
                                 <button type="button" onclick="document.getElementById('logo_input').click()" class="px-3 py-1.5 rounded-lg bg-white/10 text-xs font-bold text-gray-200 hover:bg-[#d99a32] hover:text-[#2b1208] transition border-0 cursor-pointer">

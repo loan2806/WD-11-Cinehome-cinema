@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Http\Controllers\Admin\ThanhVienController as AdminThanhVienController;
 use App\Http\Controllers\Admin\KhachHangController as AdminKhachHangController;
+use App\Http\Controllers\Admin\ThongKeController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\DatVe\DatVeController;
 use App\Http\Controllers\DongBoDuLieuController;
@@ -272,6 +273,9 @@ Route::middleware(['auth'])
 
         Route::middleware(['permission:thong_ke_doanh_thu'])->group(function () {
             Route::get('/revenue-reports', [ManagerRevenueReportController::class, 'index'])->name('revenue-reports.index');
+            Route::get('/thong-ke', [ThongKeController::class, 'index'])->name('thong-ke.index');
+            Route::get('/thong-ke/export-excel', [ThongKeController::class, 'exportExcel'])->name('thong-ke.export-excel');
+            Route::get('/thong-ke/export-pdf', [ThongKeController::class, 'exportPdf'])->name('thong-ke.export-pdf');
         });
     });
 
@@ -393,6 +397,9 @@ Route::middleware(['auth'])
 
         Route::middleware(['permission:thong_ke_doanh_thu'])->group(function () {
             Route::get('/revenue-reports', [AdminRevenueReportController::class, 'index'])->name('revenue-reports.index');
+            Route::get('/thong-ke', [ThongKeController::class, 'index'])->name('thong-ke.index');
+            Route::get('/thong-ke/export-excel', [ThongKeController::class, 'exportExcel'])->name('thong-ke.export-excel');
+            Route::get('/thong-ke/export-pdf', [ThongKeController::class, 'exportPdf'])->name('thong-ke.export-pdf');
         });
 
         Route::middleware(['permission:xem_nhat_ky_hoat_dong'])->group(function () {

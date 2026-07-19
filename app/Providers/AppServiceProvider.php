@@ -41,18 +41,18 @@ class AppServiceProvider extends ServiceProvider
             return null;
         });
 
-         View::composer('layouts.admin', function ($view) {
+        View::composer('layouts.admin', function ($view) {
+            $notifications = AdminNotification::query()
+                ->latest()
+                ->take(5)
+                ->get(['id', 'tieu_de', 'noi_dung', 'da_doc', 'created_at']);
 
-        $notifications = AdminNotification::latest()
-            ->take(5)
-            ->get();
+            $count = AdminNotification::where('da_doc', false)->count();
 
-        $count = AdminNotification::count();
-
-        $view->with([
-            'adminNotifications' => $notifications,
-            'notificationCount' => $count,
-        ]);
-    });
+            $view->with([
+                'adminNotifications' => $notifications,
+                'notificationCount' => $count,
+            ]);
+        });
     }
 }
