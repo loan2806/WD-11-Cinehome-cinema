@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\VeXemPhim;
 use Illuminate\Http\Request;
+use App\Models\VeXemPhimGhe;
+use Illuminate\Support\Facades\DB;
 
 class SoatVeController extends Controller
 {
@@ -23,60 +25,129 @@ class SoatVeController extends Controller
      */
     public function check(Request $request)
     {
-        // Kiểm tra nhân viên đã nhập mã vé chưa
-        $request->validate([
-            'ma_ve' => 'required|string|max:255',
+        $validated = $request->validate([
+            'qr_code' => [
+                'required',
+                'string',
+                'max:150',
+            ],
         ], [
-            'ma_ve.required' => 'Vui lòng nhập mã vé cần kiểm tra.',
+            'qr_code.required' =>
+            'Không nhận được nội dung QR.',
         ]);
 
-        // Chuẩn hóa mã vé để tránh lỗi thừa khoảng trắng khi nhập
-        $maVe = trim($request->ma_ve);
+        try {
+            $result = DB::transaction(function () use ($validated) {
+                $seatTicket = VeXemPhimGhe::query()
+                    ->with([
+                        'veXemPhim.suatChieu.phim',
+                        'veXemPhim.suatChieu.phongChieu',
+                    ])
+                    ->where('ma_qr', trim($validated['qr_code']))
+                    ->lockForUpdate()
+                    ->first();
 
-        // Tìm vé trong hệ thống theo mã vé
-        $ve = VeXemPhim::where('ma_ve', $maVe)->first();
+                if (!$seatTicket) {
+                    throw new \RuntimeException(
+                        'Mã QR không tồn tại hoặc không hợp lệ.'
+                    );
+                }
 
-        // Nếu không tìm thấy vé thì báo lỗi
-        if (!$ve) {
-            return back()
-                ->withInput()
-                ->with('error', 'Không tìm thấy vé trong hệ thống.');
+                $ve = $seatTicket->veXemPhim;
+
+                if (!$ve) {
+                    throw new \RuntimeException(
+                        'Không tìm thấy thông tin vé gốc.'
+                    );
+                }
+
+                if ($ve->trang_thai === 'da_huy') {
+                    throw new \RuntimeException(
+                        'Vé này đã bị hủy.'
+                    );
+                }
+
+                if ($seatTicket->trang_thai === 'da_huy') {
+                    throw new \RuntimeException(
+                        'Vé ghế '
+                            . $seatTicket->ma_ghe
+                            . ' đã bị hủy.'
+                    );
+                }
+
+                if ($seatTicket->trang_thai === 'da_su_dung') {
+                    $usedAt = optional(
+                        $seatTicket->checked_in_at
+                    )->format('d/m/Y H:i:s');
+
+                    throw new \RuntimeException(
+                        'QR ghế '
+                            . $seatTicket->ma_ghe
+                            . ' đã được sử dụng'
+                            . ($usedAt ? ' lúc ' . $usedAt : '')
+                            . '.'
+                    );
+                }
+
+                /*
+             * Có thể bổ sung giới hạn chỉ cho vào trước giờ chiếu.
+             */
+                $seatTicket->update([
+                    'trang_thai' =>
+                    VeXemPhimGhe::DA_SU_DUNG,
+
+                    'checked_in_at' => now(),
+
+                    'checked_in_by' => auth()->id(),
+                ]);
+
+                /*
+             * Chỉ đánh dấu vé gốc đã sử dụng khi tất cả ghế
+             * trong giao dịch đều đã được quét.
+             */
+                $remainingSeatCount = VeXemPhimGhe::where(
+                    've_xem_phim_id',
+                    $ve->id
+                )
+                    ->where(
+                        'trang_thai',
+                        VeXemPhimGhe::CHUA_SU_DUNG
+                    )
+                    ->count();
+
+                if ($remainingSeatCount === 0) {
+                    $ve->update([
+                        'trang_thai' => 'da_su_dung',
+                    ]);
+                }
+
+                return [
+                    'seat_ticket' => $seatTicket,
+                    'ticket' => $ve,
+                    'remaining' => $remainingSeatCount,
+                ];
+            });
+
+            $seatTicket = $result['seat_ticket'];
+            $ve = $result['ticket'];
+
+            return back()->with(
+                'success',
+                'Soát vé thành công: '
+                    . $ve->ten_phim
+                    . ' - Ghế '
+                    . $seatTicket->ma_ghe
+                    . '. Còn '
+                    . $result['remaining']
+                    . ' ghế chưa vào.'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with(
+                'error',
+                $e->getMessage()
+            );
         }
-
-        // Nếu vé đã bị hủy thì không được check-in
-        if ($ve->trang_thai === 'da_huy') {
-            return back()
-                ->withInput()
-                ->with('ticket', $ve)
-                ->with('error', 'Vé này đã bị hủy, không thể sử dụng.');
-        }
-
-        // Nếu vé đã được dùng rồi thì không cho dùng lại
-        if ($ve->trang_thai === 'da_su_dung') {
-            return back()
-                ->withInput()
-                ->with('ticket', $ve)
-                ->with('error', 'Vé này đã được sử dụng trước đó.');
-        }
-
-        // Chỉ vé đã thanh toán mới được phép vào rạp
-        if ($ve->trang_thai !== 'da_thanh_toan') {
-            return back()
-                ->withInput()
-                ->with('ticket', $ve)
-                ->with('error', 'Vé chưa được thanh toán hoặc trạng thái không hợp lệ.');
-        }
-
-        // Vé hợp lệ thì cập nhật trạng thái sang đã sử dụng
-        $ve->update([
-            'trang_thai' => 'da_su_dung',
-        ]);
-
-        // Lấy lại dữ liệu mới nhất sau khi cập nhật.
-        $ve = $ve->fresh();
-
-        return back()
-            ->with('ticket', $ve)
-            ->with('success', 'Soát vé thành công. Vé hợp lệ.');
     }
 }

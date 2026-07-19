@@ -135,16 +135,20 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
                                 $isBooked=$soldSeatCodes->contains($seatCode);
                                 $isMaintenance=in_array($seatCode,$maintenanceSeatCodes,true);
 
-                                $seatType=strtolower($ghe->loaiGhe->ten_loai??'thường');
-                                if(str_contains($seatType,'vip')) {
-                                $seatClass='seat-vip';
-                                $seatPrice=120000;
-                                } elseif(str_contains($seatType,'đôi')||str_contains($seatType,'doi')||str_contains($seatType,'couple')) {
-                                $seatClass='seat-couple';
-                                $seatPrice=$ghe->gia ?? 200000;
+                                $seatType = strtolower($ghe->loaiGhe->ten_loai ?? 'thường');
+                                $basePrice = (float) ($suatChieu->gia_ve ?? 0);
+                                $surcharge = (float) ($ghe->loaiGhe?->phu_thu ?? 0);
+                                $isCouple = (bool) ($ghe->loaiGhe?->la_couple ?? false);
+
+                                if ($isCouple || str_contains($seatType, 'đôi') || str_contains($seatType, 'doi') || str_contains($seatType, 'couple')) {
+                                    $seatClass = 'seat-couple';
+                                    $seatPrice = ($basePrice * 2) + $surcharge;
+                                } elseif (str_contains($seatType, 'vip')) {
+                                    $seatClass = 'seat-vip';
+                                    $seatPrice = $basePrice + $surcharge;
                                 } else {
-                                $seatClass='seat-normal';
-                                $seatPrice=100000;
+                                    $seatClass = 'seat-normal';
+                                    $seatPrice = $basePrice + $surcharge;
                                 }
                                 @endphp
                                 <div class="seat-wrapper">
@@ -177,16 +181,50 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
                 <h2>Thông tin chọn</h2>
             </div>
 
+            @php
+                $seatTypePriceList = $seatsByRow
+                    ->flatten()
+                    ->groupBy(fn($seat) => $seat->loaiGhe->id ?? 0)
+                    ->map(function ($seatGroup) use ($suatChieu) {
+                        $seat = $seatGroup->first();
+                        $typeName = $seat->loaiGhe->ten_loai ?? 'Thường';
+                        $typeNameLower = strtolower($typeName);
+                        $basePrice = (float) ($suatChieu->gia_ve ?? 0);
+                        $surcharge = (float) ($seat->loaiGhe?->phu_thu ?? 0);
+                        $isCouple = (bool) ($seat->loaiGhe?->la_couple ?? false);
+
+                        if ($isCouple || str_contains($typeNameLower, 'đôi') || str_contains($typeNameLower, 'doi') || str_contains($typeNameLower, 'couple')) {
+                            $price = ($basePrice * 2) + $surcharge;
+                            $dotClass = 'is-couple';
+                        } elseif (str_contains($typeNameLower, 'vip')) {
+                            $price = $basePrice + $surcharge;
+                            $dotClass = 'is-vip';
+                        } else {
+                            $price = $basePrice + $surcharge;
+                            $dotClass = 'is-empty';
+                        }
+
+                        return [
+                            'name' => $typeName,
+                            'price' => $price,
+                            'dotClass' => $dotClass,
+                        ];
+                    })
+                    ->values();
+            @endphp
+
             <div class="booking-seat-price-info">
                 <span class="price-info-title">LOẠI GHẾ</span>
-                <div class="price-info-row">
-                    <span><i class="price-dot is-empty"></i> Thường</span>
-                    <strong>100.000đ</strong>
-                </div>
-                <div class="price-info-row">
-                    <span><i class="price-dot is-vip"></i> VIP</span>
-                    <strong>120.000đ</strong>
-                </div>
+
+                @foreach($seatTypePriceList as $seatTypePrice)
+                    <div class="price-info-row">
+                        <span>
+                            <i class="price-dot {{ $seatTypePrice['dotClass'] }}"></i>
+                            {{ $seatTypePrice['name'] }}
+                        </span>
+                        <strong>{{ number_format($seatTypePrice['price'], 0, ',', '.') }}đ</strong>
+                    </div>
+                @endforeach
             </div>
 
             <div class="booking-order-section">
@@ -760,6 +798,10 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
 
     .price-dot.is-vip {
         background: #e4a81e;
+    }
+
+    .price-dot.is-couple {
+        background: #e50914;
     }
 
     /* Order Card Cột 3 */

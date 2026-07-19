@@ -12,6 +12,7 @@
         "laravel/tinker": "^2.10.1",
         "nesbot/carbon": "^3.8",
         "payos/payos": "^2.0",
+        "simplesoftwareio/simple-qrcode": "~4",
         "spatie/laravel-permission": "^6.0"
     },
     "require-dev": {

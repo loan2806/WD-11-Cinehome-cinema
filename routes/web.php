@@ -149,6 +149,8 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
             ->name('xu_ly_thanh_toan');
         Route::get('/vnpay-callback', [DatVeController::class, 'vnpayCallback'])
             ->name('vnpay_callback');
+        Route::get('/payos-callback', [DatVeController::class, 'vnpayCallback'])
+            ->name('payos_callback');
         Route::get('/xac-nhan-vietqr/{ve}', [DatVeController::class, 'xacNhanVietQR'])
             ->name('xac_nhan_vietqr');
         Route::get('/thanh-toan-thanh-cong/{ve}', [DatVeController::class, 'thanhToanThanhCong'])
@@ -186,7 +188,10 @@ Route::middleware(['auth'])
 | STAFF PANEL
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth'])->prefix('staff')->name('staff.')->group(function () {
+Route::middleware(['auth'])
+    ->prefix('staff')
+    ->name('staff.')
+    ->group(function () {
         Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
 
         Route::get('/cham-congs', [\App\Http\Controllers\Staff\ChamCongController::class, 'index'])->name('cham-congs.index');
@@ -194,26 +199,25 @@ Route::middleware(['auth'])->prefix('staff')->name('staff.')->group(function () 
         Route::post('/cham-congs/check-out', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkOut'])->name('cham-congs.check-out');
 
         Route::middleware(['permission:soat_ve_vao_cua'])->group(function () {
-                Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
-                Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
-            });
-        Route::middleware(['permission:ban_ve_tai_quay'])
-            ->group(function () {
-                // Trang chính bán vé - chọn suất chiếu
-                Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
-                // Lịch sử bán vé
-                Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
-                // Bước 1: Chọn suất chiếu -> chọn ghế
-                Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->name('ban-ve.show');
-                // Bước 2: Chọn ghế -> chọn đồ ăn
-                Route::post('/ban-ve/{suatChieu}/food', [BanVeController::class, 'food'])->name('ban-ve.food');
-                // Bước 3: Hiển thị trang checkout
-                Route::get('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'showCheckout'])->name('ban-ve.checkout.show');
-                // Bước 4: Xử lý dữ liệu checkout
-                Route::post('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'checkout'])->name('ban-ve.checkout');
-                // Bước 5: Xác nhận bán vé và lưu DB
-                Route::post('/ban-ve/{suatChieu}/store', [BanVeController::class, 'store'])->name('ban-ve.store');
-            });
+            Route::get('/soat-ve', [SoatVeController::class, 'index'])->name('soat-ve.index');
+            Route::post('/soat-ve/check', [SoatVeController::class, 'check'])->name('soat-ve.check');
+        });
+
+        Route::middleware(['permission:ban_ve_tai_quay'])->group(function () {
+            // Route tĩnh phải đứng trước /ban-ve/{suatChieu}.
+            Route::get('/ban-ve/payos-callback', [BanVeController::class, 'payosCallback'])->name('ban-ve.payos-callback');
+            Route::get('/ban-ve/ket-qua/{id}', [BanVeController::class, 'success'])->whereNumber('id')->name('ban-ve.success');
+            Route::get('/ban-ve/in-ve/{id}', [BanVeController::class, 'printTicket'])->whereNumber('id')->name('ban-ve.print-ticket');
+            Route::get('/ban-ve/in-hoa-don/{id}', [BanVeController::class, 'printInvoice'])->whereNumber('id')->name('ban-ve.print-invoice');
+
+            Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
+            Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
+            Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->whereNumber('suatChieu')->name('ban-ve.show');
+            Route::post('/ban-ve/{suatChieu}/food', [BanVeController::class, 'food'])->whereNumber('suatChieu')->name('ban-ve.food');
+            Route::get('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'showCheckout'])->whereNumber('suatChieu')->name('ban-ve.checkout.show');
+            Route::post('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'checkout'])->whereNumber('suatChieu')->name('ban-ve.checkout');
+            Route::post('/ban-ve/{suatChieu}/store', [BanVeController::class, 'store'])->whereNumber('suatChieu')->name('ban-ve.store');
+        });
     });
 
 /*
@@ -379,7 +383,7 @@ Route::middleware(['auth'])
             Route::resource('nhanviens', NhanVienController::class);
             Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
             Route::resource('cham-congs', ChamCongController::class)->names('cham-congs');
-            
+
             Route::get('bang-luongs/calculate', [BangLuongController::class, 'showCalculateForm'])->name('bang-luongs.calculate');
             Route::post('bang-luongs', [BangLuongController::class, 'store'])->name('bang-luongs.store');
             Route::get('bang-luongs', [BangLuongController::class, 'index'])->name('bang-luongs.index');
