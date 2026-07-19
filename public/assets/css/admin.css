@@ -4927,16 +4927,22 @@ body {
 }
 
 #adminLayout[data-sidebar="closed"] #adminSidebar .cinehome-logo-sparkle {
-    width: 72px !important;
-    height: 72px !important;
-    flex: 0 0 72px !important;
+    width: 58px !important;
+    height: 58px !important;
+    flex: 0 0 58px !important;
+    border-radius: 999px !important;
 }
 
 #adminLayout[data-sidebar="closed"] #adminSidebar > div:first-child img {
-    width: 54px !important;
-    height: 54px !important;
-    max-width: 54px !important;
-    flex-basis: 54px !important;
+    width: 58px !important;
+    height: 58px !important;
+    max-width: 58px !important;
+    flex-basis: 58px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border-radius: 999px !important;
+    transform: scale(1.18) !important;
+    transform-origin: center !important;
 }
 
 #adminLayout[data-sidebar="closed"] #adminSidebar > div:first-child > div,

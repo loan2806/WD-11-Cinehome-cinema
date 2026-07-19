@@ -11,10 +11,7 @@
 
     {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}">
-
-    {{-- ChartJS --}}
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link class="router-css" rel="stylesheet" href="{{ asset('assets/css/admin.css') }}?v={{ filemtime(public_path('assets/css/admin.css')) }}">
 
     <style>
         /* Hiệu ứng accordion đóng mở mượt mà độc lập */
