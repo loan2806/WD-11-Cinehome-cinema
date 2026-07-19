@@ -8,8 +8,11 @@
     $seatCount = $selectedSeats->count();
     
     // Giả định giá vé trung bình (ví dụ: 100.000đ/ghế) để tính tiền vé riêng biệt
-    // Bạn có thể sửa con số 100000 này thành biến động từ Controller truyền qua nếu có
-    $baseSeatPrice = $seatCount * 100000; 
+    // Tổng tiền ghế do backend tính theo đúng nghiệp vụ:
+    // giá vé suất chiếu + phụ thu loại ghế;
+    // ghế đôi = giá vé gốc x 2 + phụ thu.
+    $baseSeatPrice = (float) $seatTotal;
+ 
 @endphp
 
 <div class="min-h-screen bg-[#0a0a0a] text-white pt-28 pb-20 px-4 md:px-6">
@@ -183,7 +186,7 @@
 <script>
     const cartKey = 'staff_food_cart_{{auth()->id()}}_{{$suatChieu->id}}';
     let cart = JSON.parse(localStorage.getItem(cartKey) || '{}');
-    const baseSeatPrice = {{ $baseSeatPrice }};
+    const baseSeatPrice = @json((int) $baseSeatPrice);
 
     // 1. RENDER ĐỒ ĂN TRONG GIỎ & CỘNG DỒN TỔNG TIỀN RIÊNG BIỆT
     function renderCart() {
