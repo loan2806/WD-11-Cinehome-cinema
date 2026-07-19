@@ -200,22 +200,26 @@
                         </div>
 
                         @if ($ticket->trang_thai === 'da_thanh_toan')
+                            @php
+                                $printTicketData = [
+                                    'ma_ve' => $ticket->ma_ve,
+                                    'ten_phim' => $ticket->ten_phim,
+                                    'ten_rap' => $ticket->ten_rap,
+                                    'ten_phong' => $ticket->ten_phong ?? 'Chưa có',
+                                    'ma_ghe' => $ticket->ma_ghe ?? 'Chưa có',
+                                    'thoi_gian_chieu' => $ticket->thoi_gian_chieu ? $ticket->thoi_gian_chieu->format('d/m/Y H:i') : 'Chưa có',
+                                    'tong_tien' => number_format((float) $ticket->tong_tien, 0, ',', '.') . 'đ',
+                                    'loai_ve_label' => $typeLabel[$ticket->loai_ve] ?? 'Không rõ',
+                                    'foods' => $foods,
+                                ];
+                            @endphp
+
                             <div class="confirm-form">
                                 <button
                                     type="button"
                                     class="scan-btn scan-btn-confirm"
                                     id="btnPrintConfirm"
-                                    data-ticket-data='@json([
-                                        'ma_ve' => $ticket->ma_ve,
-                                        'ten_phim' => $ticket->ten_phim,
-                                        'ten_rap' => $ticket->ten_rap,
-                                        'ten_phong' => $ticket->ten_phong ?? 'Chưa có',
-                                        'ma_ghe' => $ticket->ma_ghe ?? 'Chưa có',
-                                        'thoi_gian_chieu' => $ticket->thoi_gian_chieu ? $ticket->thoi_gian_chieu->format('d/m/Y H:i') : 'Chưa có',
-                                        'tong_tien' => number_format((float) $ticket->tong_tien, 0, ',', '.') . 'đ',
-                                        'loai_ve_label' => $typeLabel[$ticket->loai_ve] ?? 'Không rõ',
-                                        'foods' => $foods,
-                                    ])'
+                                    data-ticket-data="{{ e(json_encode($printTicketData, JSON_UNESCAPED_UNICODE)) }}"
                                 >
                                     <i class="fa-solid fa-print"></i>
                                     In vé cứng & Xác nhận sử dụng
@@ -261,9 +265,9 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const html5QrcodeSrc = 'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js';
         const video = document.getElementById('qrVideo');
         const html5QrReader = document.getElementById('html5QrReader');
         const cameraBox = document.querySelector('.camera-box');
@@ -290,6 +294,55 @@
         let lastValue = '';
         let lastScanAt = 0;
         let pendingTicketCode = '';
+        let printCleanupTimer = null;
+        let html5QrcodeLoader = null;
+
+        function ensureHtml5Qrcode() {
+            if (window.Html5Qrcode) {
+                return Promise.resolve();
+            }
+
+            if (html5QrcodeLoader) {
+                return html5QrcodeLoader;
+            }
+
+            html5QrcodeLoader = new Promise(function (resolve, reject) {
+                const script = document.createElement('script');
+                script.src = html5QrcodeSrc;
+                script.async = true;
+                script.onload = function () {
+                    resolve();
+                };
+                script.onerror = function () {
+                    html5QrcodeLoader = null;
+                    reject(new Error('Không tải được thư viện quét QR.'));
+                };
+                document.head.appendChild(script);
+            });
+
+            return html5QrcodeLoader;
+        }
+
+        function exitPrintMode() {
+            document.body.classList.remove('is-printing-ticket');
+
+            if (printCleanupTimer) {
+                clearTimeout(printCleanupTimer);
+                printCleanupTimer = null;
+            }
+        }
+
+        function enterPrintMode() {
+            document.body.classList.add('is-printing-ticket');
+
+            if (printCleanupTimer) {
+                clearTimeout(printCleanupTimer);
+            }
+
+            printCleanupTimer = setTimeout(function () {
+                exitPrintMode();
+            }, 5000);
+        }
 
         function setStatus(message, type = '') {
             statusText.textContent = message;
@@ -568,7 +621,7 @@
             `;
 
             pendingTicketCode = ticket.ma_ve;
-            document.body.classList.add('is-printing-ticket');
+            enterPrintMode();
             window.print();
 
             setTimeout(function () {
@@ -578,6 +631,7 @@
 
         modalBtnConfirm.addEventListener('click', function () {
             modal.classList.remove('is-active');
+            exitPrintMode();
 
             if (pendingTicketCode) {
                 confirmTicket(pendingTicketCode);
@@ -586,12 +640,25 @@
 
         modalBtnCancel.addEventListener('click', function () {
             modal.classList.remove('is-active');
+            exitPrintMode();
             setStatus(`Đã hủy lệnh soát. Vé "${pendingTicketCode}" vẫn giữ trạng thái Đã thanh toán.`, 'success');
             pendingTicketCode = '';
         });
 
         window.addEventListener('afterprint', function () {
-            document.body.classList.remove('is-printing-ticket');
+            exitPrintMode();
+        });
+
+        window.addEventListener('focus', function () {
+            if (!modal.classList.contains('is-active')) {
+                exitPrintMode();
+            }
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && !modal.classList.contains('is-active')) {
+                exitPrintMode();
+            }
         });
 
         function handleDecodedQr(value) {
@@ -674,7 +741,9 @@
         }
 
         async function startFallbackScanner() {
-            if (!window.Html5Qrcode) {
+            try {
+                await ensureHtml5Qrcode();
+            } catch (error) {
                 setStatus('Không tải được thư viện quét QR dự phòng. Hãy nhập mã vé thủ công.', 'error');
                 return;
             }
