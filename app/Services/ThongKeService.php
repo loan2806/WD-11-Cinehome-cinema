@@ -410,7 +410,7 @@ class ThongKeService
                 DB::raw('SUM(ve_xem_phims.tong_tien) as total'),
                 DB::raw('COUNT(ve_xem_phims.id) as count')
             )
-            ->groupBy('payment_method')
+            ->groupBy(DB::raw("COALESCE(ve_xem_phims.loai_ve, 'truc_tuyen')"))
             ->get()
             ->keyBy('payment_method');
 
@@ -422,7 +422,7 @@ class ThongKeService
                 DB::raw('SUM(total) as total'),
                 DB::raw('COUNT(*) as count')
             )
-            ->groupBy('payment_method')
+            ->groupBy(DB::raw("COALESCE(payment_method, 'cash')"))
             ->get()
             ->keyBy('payment_method');
 
