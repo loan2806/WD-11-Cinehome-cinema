@@ -88,12 +88,16 @@ class PhongChieuController extends Controller
      */
     public function show(PhongChieu $phongChieu): View
     {
-        $phongChieu->load(['rapChieuPhim', 'hangGhes.gheNgois.loaiGhe', 'suatChieus.phim']);
+        $phongChieu->load([
+            'rapChieuPhim',
+            'hangGhes.gheNgois.loaiGhe',
+            'suatChieus.phim',
+        ]);
 
         $seatMap = $this->seatGenerator->getSeatMap($phongChieu);
         $soHang = $phongChieu->hangGhes->count();
-        $soCot = $phongChieu->gheNgois->count() > 0 
-            ? $phongChieu->gheNgois->max('cot') 
+        $soCot = $phongChieu->gheNgois->count() > 0
+            ? $phongChieu->gheNgois->max('cot')
             : 0;
 
         return view('admin.phong-chieus.show', compact(
@@ -285,7 +289,12 @@ class PhongChieuController extends Controller
                     ->latest()
                     ->first();
                 if ($pending) {
-                    $service->completeMaintenance($pending, auth()->id());
+                    try {
+                        $service->completeMaintenance($pending, auth()->id());
+                    } catch (\Exception $e) {
+                        \Log::error('Lỗi completeMaintenance trong toggleSeatMaintenance: ' . $e->getMessage());
+                        $service->activateSeat($seat, auth()->id());
+                    }
                 } else {
                     $seat->update(['trang_thai' => 'hoat_dong']);
                 }
@@ -318,6 +327,309 @@ class PhongChieuController extends Controller
     }
 
     /**
+     * Lên lịch bảo trì có thời hạn cho ghế (AJAX).
+     */
+    public function scheduleSeatMaintenance(Request $request, PhongChieu $phongChieu)
+    {
+        // Validate
+        $validated = $request->validate([
+            'ghe_ids' => 'required|array|min:1',
+            'ghe_ids.*' => 'exists:ghe_ngois,id',
+            'thoi_gian_bat_dau' => 'required|date',
+            'thoi_gian_ket_thuc' => 'nullable|date|after:thoi_gian_bat_dau',
+            'ly_do' => 'required|string|max:500',
+        ], [
+            'thoi_gian_bat_dau.required' => 'Vui lòng chọn thời gian bắt đầu.',
+            'thoi_gian_ket_thuc.after' => 'Thời gian kết thúc phải sau thời gian bắt đầu.',
+            'ly_do.required' => 'Vui lòng nhập lý do bảo trì.',
+        ]);
+
+        $gheIds = $validated['ghe_ids'];
+        $thoiGianBatDau = \Carbon\Carbon::parse($validated['thoi_gian_bat_dau']);
+        $thoiGianKetThuc = !empty($validated['thoi_gian_ket_thuc']) 
+            ? \Carbon\Carbon::parse($validated['thoi_gian_ket_thuc']) 
+            : null;
+
+        // Nếu bắt đầu ngay hoặc trong quá khứ → chuyển thành now
+        if ($thoiGianBatDau->isPast()) {
+            $thoiGianBatDau = now();
+        }
+
+        $createdSchedules = [];
+        $updatedSeats = [];
+
+        foreach ($gheIds as $gheId) {
+            // Load ghế
+            $seat = \App\Models\GheNgoi::where('id', $gheId)
+                ->where('phong_chieu_id', $phongChieu->id)
+                ->first();
+
+            if (!$seat) {
+                continue;
+            }
+
+            // Ghế đang bảo trì thì bỏ qua
+            if ($seat->trang_thai === 'bao_tri') {
+                continue;
+            }
+
+            $beforeStatus = $seat->trang_thai;
+            $isStartNow = $thoiGianBatDau->isPast() || $thoiGianBatDau->isCurrentMinute();
+
+            // Tạo lịch bảo trì
+            $lich = \App\Models\LichBaoTriGheNgoi::create([
+                'ghe_ngoi_id' => $seat->id,
+                'phong_chieu_id' => $phongChieu->id,
+                'nguoi_dung_id' => auth()->id(),
+                'thoi_gian_bat_dau' => $thoiGianBatDau,
+                'thoi_gian_ket_thuc' => $thoiGianKetThuc,
+                'ly_do' => $validated['ly_do'],
+                'trang_thai_truoc' => $beforeStatus,
+                'trang_thai_sau' => 'bao_tri',
+                'trang_thai' => $isStartNow ? 'dang_thuc_hien' : 'cho_thuc_hien',
+            ]);
+
+            // Cập nhật trạng thái ghế
+            $newStatus = $isStartNow ? 'bao_tri' : 'sap_bao_tri';
+            \App\Models\GheNgoi::where('id', $seat->id)->update(['trang_thai' => $newStatus]);
+
+            // Load lại seat với loaiGhe để trả về
+            $seat = \App\Models\GheNgoi::with('loaiGhe')->find($seat->id);
+
+            $createdSchedules[] = [
+                'ghe_id' => $seat->id,
+                'ma_ghe' => $seat->ma_ghe,
+                'lich_id' => $lich->id,
+                'thoi_gian_bat_dau' => $lich->thoi_gian_bat_dau->format('d/m/Y H:i'),
+                'thoi_gian_ket_thuc' => $lich->thoi_gian_ket_thuc?->format('d/m/Y H:i'),
+            ];
+
+            $updatedSeats[] = [
+                'id' => $seat->id,
+                'ma_ghe' => $seat->ma_ghe,
+                'loai_ghe' => $seat->loaiGhe->ten_loai ?? 'Thường',
+                'loai_ghe_id' => $seat->loai_ghe_id,
+                'mau_sac' => $seat->loaiGhe->mau_sac ?? '#666666',
+                'phu_thu' => $seat->loaiGhe->phu_thu ?? 0,
+                'trang_thai' => $seat->trang_thai,
+            ];
+        }
+
+        $success = count($createdSchedules) > 0;
+        $message = $success 
+            ? "Đã lên lịch bảo trì cho " . count($createdSchedules) . " ghế." 
+            : "Không thể lên lịch bảo trì.";
+
+        // Ghi nhật ký
+        if ($success) {
+            $maGhes = collect($createdSchedules)->pluck('ma_ghe')->join(', ');
+            $thoiGianKetThucStr = $thoiGianKetThuc 
+                ? " đến {$thoiGianKetThuc->format('d/m/Y H:i')}" 
+                : ' (vô thời hạn)';
+            $this->ghiNhatKy(
+                $request,
+                'Lên lịch bảo trì ghế',
+                'Quản lý ghế',
+                "Phòng {$phongChieu->ten_phong}: Lên lịch bảo trì ghế [{$maGhes}] từ {$thoiGianBatDau->format('d/m/Y H:i')}{$thoiGianKetThucStr} - {$validated['ly_do']}"
+            );
+        }
+
+        return response()->json([
+            'success' => $success,
+            'message' => $message,
+            'schedules' => $createdSchedules,
+            'updated_seats' => $updatedSeats,
+        ]);
+    }
+
+    /**
+     * API: Kiểm tra và mở ghế hết hạn bảo trì (gọi mỗi phút từ JS)
+     */
+    public function checkExpiredMaintenance(Request $request, PhongChieu $phongChieu)
+    {
+        $now = now();
+        $updatedSeats = [];
+
+        // 1. Mở ghế hết hạn bảo trì
+        $lichsHetHan = \App\Models\LichBaoTriGheNgoi::where('phong_chieu_id', $phongChieu->id)
+            ->whereIn('trang_thai', ['dang_thuc_hien', 'cho_thuc_hien'])
+            ->whereNotNull('thoi_gian_ket_thuc')
+            ->where('thoi_gian_ket_thuc', '<=', $now)
+            ->with('gheNgoi')
+            ->get();
+
+        foreach ($lichsHetHan as $lich) {
+            $ghe = $lich->gheNgoi;
+            if (!$ghe) continue;
+
+            // Kiểm tra có vé đang sử dụng không
+            $hasBooking = \App\Models\VeXemPhim::whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung'])
+                ->where('ten_phong', $phongChieu->ten_phong)
+                ->whereNotNull('ma_ghe')
+                ->where('ma_ghe', '!=', '')
+                ->get()
+                ->filter(function ($ve) use ($ghe) {
+                    $seats = array_filter(array_map('trim', explode(',', (string) $ve->ma_ghe)));
+                    return in_array($ghe->ma_ghe, $seats, true);
+                })
+                ->isNotEmpty();
+
+            if ($hasBooking) continue;
+
+            // Mở ghế
+            $ghe->update(['trang_thai' => 'hoat_dong']);
+            $lich->update(['trang_thai' => 'da_hoan_thanh']);
+
+            $ghe->refresh();
+            $ghe->load('loaiGhe');
+
+            $updatedSeats[] = [
+                'id' => $ghe->id,
+                'ma_ghe' => $ghe->ma_ghe,
+                'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
+                'loai_ghe_id' => $ghe->loai_ghe_id,
+                'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#666666',
+                'phu_thu' => $ghe->loaiGhe->phu_thu ?? 0,
+                'trang_thai' => $ghe->trang_thai,
+            ];
+        }
+
+        // 2. Khóa ghế bắt đầu bảo trì
+        $lichsBatDau = \App\Models\LichBaoTriGheNgoi::where('phong_chieu_id', $phongChieu->id)
+            ->where('trang_thai', 'cho_thuc_hien')
+            ->where('thoi_gian_bat_dau', '<=', $now)
+            ->with('gheNgoi')
+            ->get();
+
+        foreach ($lichsBatDau as $lich) {
+            $ghe = $lich->gheNgoi;
+            if (!$ghe || $ghe->trang_thai !== 'hoat_dong') continue;
+
+            $ghe->update(['trang_thai' => 'bao_tri']);
+            $lich->update(['trang_thai' => 'dang_thuc_hien']);
+
+            $ghe->refresh();
+            $ghe->load('loaiGhe');
+
+            $updatedSeats[] = [
+                'id' => $ghe->id,
+                'ma_ghe' => $ghe->ma_ghe,
+                'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
+                'loai_ghe_id' => $ghe->loai_ghe_id,
+                'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#666666',
+                'phu_thu' => $ghe->loaiGhe->phu_thu ?? 0,
+                'trang_thai' => $ghe->trang_thai,
+            ];
+        }
+
+        // Ghi nhật ký cho các ghế được mở/khóa tự động
+        if (!empty($updatedSeats)) {
+            $activatedSeats = array_filter($updatedSeats, fn($s) => $s['trang_thai'] === 'hoat_dong');
+            $maintenanceSeats = array_filter($updatedSeats, fn($s) => $s['trang_thai'] === 'bao_tri');
+
+            if (!empty($activatedSeats)) {
+                $maGhes = collect($activatedSeats)->pluck('ma_ghe')->join(', ');
+                $this->ghiNhatKy(
+                    $request,
+                    'Tự động kích hoạt ghế',
+                    'Quản lý ghế',
+                    "Phòng {$phongChieu->ten_phong}: Tự động kích hoạt ghế hết hạn bảo trì [{$maGhes}]"
+                );
+            }
+
+            if (!empty($maintenanceSeats)) {
+                $maGhes = collect($maintenanceSeats)->pluck('ma_ghe')->join(', ');
+                $this->ghiNhatKy(
+                    $request,
+                    'Tự động khóa ghế',
+                    'Quản lý ghế',
+                    "Phòng {$phongChieu->ten_phong}: Tự động khóa ghế do đến lịch bảo trì [{$maGhes}]"
+                );
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'updated_seats' => $updatedSeats,
+        ]);
+    }
+
+    /**
+     * Kiểm tra ghế có vé xung đột trong khoảng thời gian không
+     */
+    protected function hasConflictInPeriod($seat, $startTime, $endTime)
+    {
+        $phongChieu = $seat->phongChieu;
+        if (!$phongChieu) {
+            return false;
+        }
+
+        $query = \App\Models\VeXemPhim::whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung'])
+            ->where('ten_phong', $phongChieu->ten_phong)
+            ->where('thoi_gian_chieu', '>=', $startTime);
+
+        if ($endTime) {
+            $query->where('thoi_gian_chieu', '<=', $endTime);
+        }
+
+        $ves = $query->get();
+
+        foreach ($ves as $ve) {
+            if (empty($ve->ma_ghe)) continue;
+            $seats = array_filter(array_map('trim', explode(',', (string) $ve->ma_ghe)));
+            if (in_array($seat->ma_ghe, $seats, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Validate seat row rules:
+     * - First 3 rows (closest to screen): ONLY normal seats allowed (no VIP/Couple).
+     * - Last 3 rows: ONLY VIP/Couple allowed (no normal seats).
+     *
+     * Returns null if valid, or array of error messages if invalid.
+     *
+     * @param LoaiGhe $loaiGhe
+     * @param \App\Models\HangGhe $hangGhe
+     * @return array|null
+     */
+    protected function validateSeatRowRules(LoaiGhe $loaiGhe, \App\Models\HangGhe $hangGhe): ?array
+    {
+        $hangGhes = $hangGhe->phongChieu->hangGhes()->orderBy('ten_hang')->get();
+        $totalRows = $hangGhes->count();
+
+        // Get first 3 rows and last 3 rows indices (0-based)
+        $firstThreeIndices = range(0, 2);
+        $lastThreeIndices = range(max(0, $totalRows - 3), $totalRows - 1);
+
+        // Current row index in sorted order
+        $currentIndex = $hangGhes->search(fn($h) => $h->id === $hangGhe->id);
+
+        $isVip = strtolower($loaiGhe->ten_loai) === 'vip';
+        $isCouple = $loaiGhe->la_couple === true;
+        $isThuong = strtolower($loaiGhe->ten_loai) === 'thường'
+            || strtolower($loaiGhe->ten_loai) === 'thuong';
+
+        // First 3 rows: ONLY normal seats allowed (no VIP/Couple)
+        if (in_array($currentIndex, $firstThreeIndices) && ($isVip || $isCouple)) {
+            if ($isVip) {
+                return ['Ghế VIP không được đặt ở 3 hàng sát màn hình.'];
+            }
+            return ['Ghế Couple không được đặt ở 3 hàng sát màn hình.'];
+        }
+
+        // Last 3 rows: ONLY VIP/Couple allowed (no normal seats)
+        if (in_array($currentIndex, $lastThreeIndices) && $isThuong) {
+            return ['Ghế thường không được đặt ở 3 hàng cuối của phòng chiếu.'];
+        }
+
+        return null;
+    }
+
+    /**
      * Update seat type for a single seat (AJAX).
      */
     public function updateSeatType(Request $request, PhongChieu $phongChieu)
@@ -335,6 +647,19 @@ class PhongChieuController extends Controller
         }
 
         $loaiGhe = LoaiGhe::findOrFail($request->loai_ghe_id);
+
+        // Validate row rules for all affected seats
+        $ghes = $phongChieu->gheNgois()->whereIn('id', $gheIds)->with('hangGhe')->get();
+        foreach ($ghes as $ghe) {
+            $errors = $this->validateSeatRowRules($loaiGhe, $ghe->hangGhe);
+            if ($errors !== null) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errors[0],
+                    'errors' => $errors,
+                ], 422);
+            }
+        }
 
         $phongChieu->gheNgois()->whereIn('id', $gheIds)->update(['loai_ghe_id' => $loaiGhe->id]);
 
@@ -371,6 +696,16 @@ class PhongChieuController extends Controller
 
         $hangGhe = $phongChieu->hangGhes()->findOrFail($request->hang_ghe_id);
         $loaiGhe = LoaiGhe::findOrFail($request->loai_ghe_id);
+
+        // Validate row rules
+        $errors = $this->validateSeatRowRules($loaiGhe, $hangGhe);
+        if ($errors !== null) {
+            return response()->json([
+                'success' => false,
+                'message' => $errors[0],
+                'errors' => $errors,
+            ], 422);
+        }
 
         $ghes = $hangGhe->gheNgois()->with('loaiGhe')->get();
 
@@ -414,10 +749,31 @@ class PhongChieuController extends Controller
 
         if ($action === 'update_type') {
             $loaiGhe = LoaiGhe::findOrFail($request->loai_ghe_id);
-            $ghes = $phongChieu->gheNgois()->whereIn('id', $gheIds)->with('loaiGhe')->get();
+            $ghes = $phongChieu->gheNgois()->whereIn('id', $gheIds)->with(['loaiGhe', 'hangGhe'])->get();
+
+            // Validate row rules for all affected seats
+            foreach ($ghes as $g) {
+                $errors = $this->validateSeatRowRules($loaiGhe, $g->hangGhe);
+                if ($errors !== null) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $errors[0],
+                        'errors' => $errors,
+                    ], 422);
+                }
+            }
+
             $phongChieu->gheNgois()
                 ->whereIn('id', $gheIds)
                 ->update(['loai_ghe_id' => $loaiGhe->id]);
+
+            // Ghi nhật ký
+            $this->ghiNhatKy(
+                $request,
+                'Cập nhật loại ghế',
+                'Quản lý ghế',
+                "Phòng {$phongChieu->ten_phong}: Cập nhật " . count($ghes) . " ghế sang loại [{$loaiGhe->ten_loai}]"
+            );
 
             foreach ($ghes as $g) {
                 $updatedSeats[] = [
@@ -438,6 +794,15 @@ class PhongChieuController extends Controller
                 ->whereIn('id', $gheIds)
                 ->update(['trang_thai' => $newStatus]);
 
+            // Ghi nhật ký
+            $maGhes = $ghes->pluck('ma_ghe')->join(', ');
+            $this->ghiNhatKy(
+                $request,
+                $newStatus === 'bao_tri' ? 'Khóa ghế' : 'Mở khóa ghế',
+                'Quản lý ghế',
+                "Phòng {$phongChieu->ten_phong}: " . ($newStatus === 'bao_tri' ? 'Khóa' : 'Mở khóa') . " ghế [{$maGhes}]"
+            );
+
             foreach ($ghes as $g) {
                 $updatedSeats[] = [
                     'id' => $g->id,
@@ -451,9 +816,37 @@ class PhongChieuController extends Controller
         } elseif ($action === 'maintenance' || $action === 'activate') {
             $newStatus = $action === 'maintenance' ? 'bao_tri' : 'hoat_dong';
             $ghes = $phongChieu->gheNgois()->whereIn('id', $gheIds)->with('loaiGhe')->get();
-            $phongChieu->gheNgois()
-                ->whereIn('id', $gheIds)
-                ->update(['trang_thai' => $newStatus]);
+
+            if ($action === 'activate') {
+                // Kích hoạt lại: update trạng thái trực tiếp
+                $phongChieu->gheNgois()
+                    ->whereIn('id', $gheIds)
+                    ->update(['trang_thai' => 'hoat_dong']);
+
+                // Cancel các lịch bảo trì đang chờ (nếu có)
+                \App\Models\LichBaoTriGheNgoi::whereIn('ghe_ngoi_id', $gheIds)
+                    ->whereIn('trang_thai', ['cho_thuc_hien', 'dang_thuc_hien'])
+                    ->update([
+                        'trang_thai' => 'da_huy',
+                        'ghi_chu' => 'Đã kích hoạt lại sớm.'
+                    ]);
+            } else {
+                $phongChieu->gheNgois()
+                    ->whereIn('id', $gheIds)
+                    ->update(['trang_thai' => $newStatus]);
+            }
+
+            // Ghi nhật ký
+            $maGhes = $ghes->pluck('ma_ghe')->join(', ');
+            $this->ghiNhatKy(
+                $request,
+                $action === 'maintenance' ? 'Bảo trì ghế (vô thời hạn)' : 'Kích hoạt ghế',
+                'Quản lý ghế',
+                "Phòng {$phongChieu->ten_phong}: " . ($action === 'maintenance' ? 'Bảo trì vô thời hạn' : 'Kích hoạt') . " ghế [{$maGhes}]"
+            );
+
+            // Reload để lấy dữ liệu mới nhất
+            $ghes = $phongChieu->gheNgois()->whereIn('id', $gheIds)->with('loaiGhe')->get();
 
             foreach ($ghes as $g) {
                 $updatedSeats[] = [
@@ -462,7 +855,7 @@ class PhongChieuController extends Controller
                     'loai_ghe_id' => $g->loai_ghe_id,
                     'mau_sac' => $g->loaiGhe->mau_sac ?? '#666666',
                     'phu_thu' => $g->loaiGhe->phu_thu ?? 0,
-                    'trang_thai' => $newStatus,
+                    'trang_thai' => $g->trang_thai,
                 ];
             }
         } elseif ($action === 'delete') {
@@ -486,6 +879,14 @@ class PhongChieuController extends Controller
             $phongChieu->gheNgois()
                 ->whereIn('id', $gheIds)
                 ->delete();
+
+            // Ghi nhật ký
+            $this->ghiNhatKy(
+                $request,
+                'Xóa ghế',
+                'Quản lý ghế',
+                "Phòng {$phongChieu->ten_phong}: Xóa {$soGheBiXoa} ghế [" . implode(', ', array_slice($maGheList, 0, 10)) . (count($maGheList) > 10 ? ',...' : '') . "]"
+            );
 
             // Với mỗi couple_group_id bị xóa 1 (hoặc vài) ghế, dọn couple_group_id của ghế còn lại
             foreach ($coupleGroupIds as $gid) {
@@ -632,6 +1033,19 @@ class PhongChieuController extends Controller
             'trang_thai.in' => 'Trạng thái không hợp lệ.',
         ]);
 
+        $loaiGhe = LoaiGhe::findOrFail($data['loai_ghe_id']);
+        $hangGhe = HangGhe::findOrFail($data['hang_ghe_id']);
+
+        // Validate row rules
+        $errors = $this->validateSeatRowRules($loaiGhe, $hangGhe);
+        if ($errors !== null) {
+            return response()->json([
+                'success' => false,
+                'message' => $errors[0],
+                'errors' => $errors,
+            ], 422);
+        }
+
         try {
             $ghe = DB::transaction(function () use ($phongChieu, $data) {
                 // Dọn dẹp các bản ghi soft-deleted cùng key trước khi insert
@@ -735,6 +1149,54 @@ class PhongChieuController extends Controller
         $cotBatDau = (int) ($data['cot_bat_dau'] ?? 1);
         $loaiGheId = $data['loai_ghe_id'] ?? $data['loai_ghe_mac_dinh_id'] ?? null;
         $trangThai = $data['trang_thai'] ?? 'hoat_dong';
+
+        // Validate row rules for createRow
+        // Hàng mới sẽ nằm ở vị trí nào trong danh sách hàng được sắp xếp theo ten_hang
+        $existingHangs = $phongChieu->hangGhes()->orderBy('ten_hang')->get();
+        $newTenHang = $data['ten_hang'];
+        $allHangs = $existingHangs->push((object)['id' => 'new', 'ten_hang' => $newTenHang])
+            ->sortBy('ten_hang')->values();
+        $newHangIndex = $allHangs->search(fn($h) => $h->ten_hang === $newTenHang);
+        $totalRows = $allHangs->count();
+
+        // Get first 3 and last 3 row indices (0-based)
+        $firstThreeIndices = range(0, 2);
+        $lastThreeIndices = range(max(0, $totalRows - 3), $totalRows - 1);
+
+        $isFirstThree = in_array($newHangIndex, $firstThreeIndices);
+        $isLastThree = in_array($newHangIndex, $lastThreeIndices);
+
+        if ($loaiGheId) {
+            $loaiGhe = LoaiGhe::find($loaiGheId);
+            if ($loaiGhe) {
+                $isVip = strtolower($loaiGhe->ten_loai) === 'vip';
+                $isCouple = $loaiGhe->la_couple === true;
+                $isThuong = strtolower($loaiGhe->ten_loai) === 'thường'
+                    || strtolower($loaiGhe->ten_loai) === 'thuong';
+
+                // First 3 rows: ONLY normal seats allowed (no VIP/Couple)
+                if ($isFirstThree && ($isVip || $isCouple)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $isVip
+                            ? '3 hàng gần màn chiếu không được đặt ghế VIP.'
+                            : '3 hàng gần màn chiếu không được đặt ghế Couple.',
+                        'errors' => [$isVip
+                            ? '3 hàng gần màn chiếu không được đặt ghế VIP.'
+                            : '3 hàng gần màn chiếu không được đặt ghế Couple.'],
+                    ], 422);
+                }
+
+                // Last 3 rows: ONLY VIP/Couple allowed (no normal seats)
+                if ($isLastThree && $isThuong) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => '3 hàng cuối phòng không được đặt ghế thường. Chỉ được đặt ghế VIP hoặc Couple.',
+                        'errors' => ['3 hàng cuối phòng không được đặt ghế thường. Chỉ được đặt ghế VIP hoặc Couple.'],
+                    ], 422);
+                }
+            }
+        }
 
         // Tính sẵn danh sách (ma_ghe, cot) sẽ được tạo (nếu auto)
         $seatsToCreate = [];
@@ -989,5 +1451,24 @@ class PhongChieuController extends Controller
             'success' => true,
             'message' => "Đã xóa hàng {$hangGhe->ten_hang} và {$deleted} ghế.",
         ]);
+    }
+
+    /**
+     * Ghi nhật ký hoạt động hệ thống cho các thao tác ghế.
+     */
+    protected function ghiNhatKy(\Illuminate\Http\Request $request, string $hanhDong, string $chucNang, string $moTa): void
+    {
+        try {
+            \App\Models\NhatKyHoatDongHeThong::create([
+                'nguoi_dung_id' => auth()->id(),
+                'hanh_dong' => $hanhDong,
+                'chuc_nang' => $chucNang,
+                'mo_ta' => $moTa,
+                'dia_chi_ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+        } catch (\Throwable $e) {
+            // Không chặn luồng chính nếu ghi log lỗi
+        }
     }
 }

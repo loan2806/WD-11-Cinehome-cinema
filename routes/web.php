@@ -313,6 +313,8 @@ Route::middleware(['auth'])
             })->name('admin.csrf-token');
             Route::post('phong-chieus/{phong_chieu}/generate-seats', [AdminPhongChieuController::class, 'generateSeats'])->name('phong-chieus.generate-seats');
             Route::post('phong-chieus/{phong_chieu}/toggle-seat-maintenance', [AdminPhongChieuController::class, 'toggleSeatMaintenance'])->name('phong-chieus.toggle-seat-maintenance');
+            Route::post('phong-chieus/{phong_chieu}/schedule-seat-maintenance', [AdminPhongChieuController::class, 'scheduleSeatMaintenance'])->name('phong-chieus.schedule-seat-maintenance');
+            Route::get('phong-chieus/{phong_chieu}/check-expired-maintenance', [AdminPhongChieuController::class, 'checkExpiredMaintenance'])->name('phong-chieus.check-expired-maintenance');
             Route::post('phong-chieus/{phong_chieu}/update-seat-type', [AdminPhongChieuController::class, 'updateSeatType'])->name('phong-chieus.update-seat-type');
             Route::post('phong-chieus/{phong_chieu}/update-row-seats', [AdminPhongChieuController::class, 'updateRowSeats'])->name('phong-chieus.update-row-seats');
             Route::post('phong-chieus/{phong_chieu}/bulk-update-seats', [AdminPhongChieuController::class, 'bulkUpdateSeats'])->name('phong-chieus.bulk-update-seats');

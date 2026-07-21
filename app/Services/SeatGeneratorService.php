@@ -278,13 +278,13 @@ class SeatGeneratorService
      */
     public function getSeatMap(PhongChieu $phongChieu): array
     {
-        $phongChieu->loadMissing('hangGhes');
-
-        $gheNgois = $phongChieu->gheNgois()
-            ->with(['hangGhe', 'loaiGhe'])
+        $gheNgois = GheNgoi::where('phong_chieu_id', $phongChieu->id)
+            ->with(['hangGhe', 'loaiGhe', 'lichBaoTris'])
             ->orderBy('hang_ghe_id')
             ->orderBy('cot')
             ->get();
+
+        $hangGhes = HangGhe::where('phong_chieu_id', $phongChieu->id)->get();
 
         $grouped = [];
         $maxCol = 0;
@@ -295,7 +295,7 @@ class SeatGeneratorService
         }
 
         $seatMap = [];
-        foreach ($phongChieu->hangGhes as $hangGhe) {
+        foreach ($hangGhes as $hangGhe) {
             $rowLabel = $hangGhe->ten_hang;
             $cols = [];
 
@@ -357,6 +357,30 @@ class SeatGeneratorService
         $mauSac = $ghe->loaiGhe->mau_sac ?? '#666666';
         $trangThai = $ghe->trang_thai ?? 'hoat_dong';
 
+        // Lấy thông tin bảo trì hiện tại từ lichBaoTris đã load
+        $lichId = null;
+        $thoiGianKetThuc = null;
+        $isUnlimitedMaintenance = false;
+
+        if ($ghe) {
+            $now = now();
+            $lichBaoTri = $ghe->lichBaoTris
+                ->whereIn('trang_thai', ['cho_thuc_hien', 'dang_thuc_hien'])
+                ->filter(function ($lich) use ($now) {
+                    return $lich->thoi_gian_bat_dau <= $now;
+                })
+                ->sortByDesc('thoi_gian_bat_dau')
+                ->first();
+
+            if ($lichBaoTri) {
+                $lichId = $lichBaoTri->id;
+                $thoiGianKetThuc = $lichBaoTri->thoi_gian_ket_thuc
+                    ? \Carbon\Carbon::parse($lichBaoTri->thoi_gian_ket_thuc)->format('d/m/Y H:i')
+                    : null;
+                $isUnlimitedMaintenance = !$lichBaoTri->thoi_gian_ket_thuc;
+            }
+        }
+
         return [
             'id' => $ghe->id ?? null,
             'ma_ghe' => $maGhe,
@@ -371,6 +395,10 @@ class SeatGeneratorService
             'couple_group_id' => $coupleGroupId,
             'couple_siblings' => $siblings,
             'couple_position' => $position,
+            // Thông tin bảo trì có thời hạn
+            'lich_id' => $lichId,
+            'thoi_gian_ket_thuc' => $thoiGianKetThuc,
+            'is_unlimited_maintenance' => $isUnlimitedMaintenance,
         ];
     }
 }
