@@ -387,6 +387,9 @@
                                                 $bgColor = $ghe['mau_sac'] ?? '#666666';
                                                 $isMaintenance = $ghe['trang_thai'] === 'bao_tri';
                                                 $isCouple = !empty($ghe['is_couple']) && $ghe['is_couple'] === true;
+                                                $lichId = $ghe['lich_id'] ?? null;
+                                                $thoiGianKetThuc = $ghe['thoi_gian_ket_thuc'] ?? null;
+                                                $isUnlimitedMaintenance = $ghe['is_unlimited_maintenance'] ?? false;
                                             @endphp
                                             @if($isCouple && $ghe['couple_position'] === 'left')
                                                 {{-- Couple LEFT: render 1 block to duy nhất chứa 2 nhãn ghế --}}
@@ -408,6 +411,9 @@
                                                     data-couple-group="{{ $coupleGroupId }}"
                                                     data-couple-siblings='@json($siblings)'
                                                     data-couple-position="left"
+                                                    @if($lichId) data-lich-id="{{ $lichId }}" @endif
+                                                    @if($thoiGianKetThuc) data-thoi-gian-ket-thuc="{{ $thoiGianKetThuc }}" @endif
+                                                    @if($isUnlimitedMaintenance) data-is-unlimited-maintenance="1" @endif
                                                     title="{{ $ghe['ma_ghe'] }} - {{ $ghe['loai_ghe'] ?? 'Couple' }} ({{ number_format($ghe['phu_thu'] ?? 0) }}đ)">
                                                     <span class="seat-couple-left seat-label" style="color: #1a0b04 !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important;">{{ $tenHang }}{{ $ghe['display_number'] }}</span>
                                                     @if($gheRight)
@@ -431,6 +437,9 @@
                                                     data-mau-sac="{{ $ghe['mau_sac'] ?? '#666666' }}"
                                                     data-phu-thu="{{ $ghe['phu_thu'] ?? 0 }}"
                                                     data-trang-thai="{{ $ghe['trang_thai'] }}"
+                                                    @if($lichId) data-lich-id="{{ $lichId }}" @endif
+                                                    @if($thoiGianKetThuc) data-thoi-gian-ket-thuc="{{ $thoiGianKetThuc }}" @endif
+                                                    @if($isUnlimitedMaintenance) data-is-unlimited-maintenance="1" @endif
                                                     title="{{ $ghe['ma_ghe'] }} - {{ $ghe['loai_ghe'] ?? 'Thường' }} ({{ number_format($ghe['phu_thu'] ?? 0) }}đ)">
                                                     <span class="seat-label" style="color: #1a0b04 !important; font-weight: 900 !important; font-size: 14px !important; text-shadow: 0 1px 0 rgba(255,255,255,0.8), 1px 0 0 rgba(255,255,255,0.5), -1px 0 0 rgba(255,255,255,0.5) !important; z-index: 10 !important; position: relative !important; display: inline-block !important;">{{ $tenHang }}{{ $j }}</span>
                                                 </div>
@@ -567,6 +576,15 @@
                 <i class="fa-solid fa-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none"></i>
             </div>
             <p class="mt-2 text-xs text-gray-600">Thay đổi sẽ áp dụng cho <strong class="text-gray-400">tất cả ghế</strong> trong hàng này.</p>
+            <div id="rowTypeRestrictionWarning" class="hidden mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                <div class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-triangle-exclamation mt-0.5 text-sm text-amber-400"></i>
+                    <div class="text-xs text-amber-300 leading-relaxed">
+                        <strong>Hàng ghế gần màn chiếu/cuối phòng không được đổi loại.</strong><br>
+                        <span id="rowRestrictionDetail" class="text-amber-400/80"></span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         {{-- Bảo trì cả hàng --}}
@@ -598,6 +616,98 @@
             </button>
             <button type="button" id="rowChangeModalApply" class="flex-1 rounded-xl bg-[#d99a32] px-4 py-3 text-sm font-bold text-black transition hover:bg-[#e5a847] hover:scale-[1.01]">
                 <i class="fa-solid fa-check mr-1.5"></i>Áp dụng
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- MODAL: BẢO TRÌ GHẾ (VÔ THỜI HẠN / CÓ THỜI HẠN) --}}
+<div id="maintenanceModal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div class="w-full max-w-lg mx-4 rounded-2xl border border-white/10 bg-[#111111] p-6 shadow-2xl">
+        <div class="mb-5 flex items-center gap-3">
+            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/15">
+                <i class="fa-solid fa-wrench text-xl text-orange-400"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white">
+                    Bảo trì ghế <span id="maintenanceModalSeatCount" class="text-orange-400"></span>
+                </h3>
+                <p class="text-xs text-gray-500">Chọn loại bảo trì phù hợp</p>
+            </div>
+        </div>
+
+        {{-- Chọn loại bảo trì --}}
+        <div class="mb-5">
+            <label class="mb-3 block text-xs font-medium uppercase tracking-wider text-gray-500">Loại bảo trì</label>
+            <div class="grid grid-cols-2 gap-3">
+                <label class="maintenance-type-option cursor-pointer">
+                    <input type="radio" name="maintenance_type" value="unlimited" class="peer hidden" checked>
+                    <div class="rounded-xl border-2 border-white/10 bg-white/5 p-4 transition-all peer-checked:border-orange-500 peer-checked:bg-orange-500/10 hover:border-white/20">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-infinity text-orange-400"></i>
+                            <span class="font-bold text-white">Vô thời hạn</span>
+                        </div>
+                        <p class="text-xs text-gray-400">Ghế bị khóa cho đến khi Admin kích hoạt lại thủ công.</p>
+                    </div>
+                </label>
+                <label class="maintenance-type-option cursor-pointer">
+                    <input type="radio" name="maintenance_type" value="scheduled" class="peer hidden">
+                    <div class="rounded-xl border-2 border-white/10 bg-white/5 p-4 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-500/10 hover:border-white/20">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fa-solid fa-calendar-clock text-blue-400"></i>
+                            <span class="font-bold text-white">Có thời hạn</span>
+                        </div>
+                        <p class="text-xs text-gray-400">Ghế tự động kích hoạt khi hết thời gian bảo trì.</p>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        {{-- Form bảo trì có thời hạn --}}
+        <div id="scheduledMaintenanceForm" class="hidden mb-5 space-y-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fa-solid fa-clock text-blue-400"></i>
+                <span class="text-sm font-bold text-blue-300">Thông tin bảo trì có thời hạn</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Thời gian bắt đầu <span class="text-red-400">*</span></label>
+                    <input type="datetime-local" id="maintenanceStartTime" 
+                        class="w-full rounded-xl border border-white/10 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-colors"
+                        min="">
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Thời gian kết thúc <span class="text-blue-400/60">(Tùy chọn)</span></label>
+                    <input type="datetime-local" id="maintenanceEndTime" 
+                        class="w-full rounded-xl border border-white/10 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-colors">
+                </div>
+            </div>
+            <div>
+                <label class="mb-1.5 block text-xs font-medium text-gray-400">Lý do bảo trì <span class="text-red-400">*</span></label>
+                <textarea id="maintenanceReason" rows="2"
+                    class="w-full rounded-xl border border-white/10 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-colors resize-none"
+                    placeholder="Nhập lý do bảo trì (VD: Thay đệm ghế, sửa cơ chế ngả...)"></textarea>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-blue-400/70">
+                <i class="fa-solid fa-info-circle"></i>
+                <span>Khi hết thời gian, ghế sẽ tự động hoạt động trở lại.</span>
+            </div>
+        </div>
+
+        {{-- Lý do bảo trì vô thời hạn --}}
+        <div id="unlimitedMaintenanceReason" class="mb-5">
+            <label class="mb-1.5 block text-xs font-medium text-gray-400">Lý do bảo trì</label>
+            <input type="text" id="maintenanceReasonUnlimited" 
+                class="w-full rounded-xl border border-white/10 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none focus:border-orange-500 transition-colors"
+                placeholder="Nhập lý do bảo trì (tùy chọn)">
+        </div>
+
+        <div class="flex gap-3">
+            <button type="button" id="maintenanceModalCancel" class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+                <i class="fa-solid fa-xmark mr-1.5"></i>Hủy
+            </button>
+            <button type="button" id="maintenanceModalApply" class="flex-1 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600">
+                <i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì
             </button>
         </div>
     </div>
@@ -823,6 +933,15 @@
             <div id="popoverPhuThu" class="text-[13px] font-black text-white"></div>
         </div>
         <div class="seat-info-popover__status" id="popoverStatus"></div>
+        <div class="seat-info-popover__maintenance-info hidden mt-2 pt-2 border-t border-white/10" id="popoverMaintenanceInfo">
+            <div class="flex items-start gap-2 text-gray-400">
+                <i class="fa-solid fa-clock text-[10px] mt-0.5"></i>
+                <div class="text-[10px] leading-relaxed">
+                    <div id="popoverMaintenanceTime" class="font-semibold text-orange-300"></div>
+                    <div id="popoverMaintenanceReason" class="text-gray-500 mt-0.5"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- (Hành động đã được tích hợp trên thanh bulk action) --}}
@@ -830,7 +949,7 @@
 
 @endsection
 
-@push('styles')
+@php /* STYLES */ @endphp
 <style>
     /* ==================== SEAT MAP STYLES ==================== */
 
@@ -1005,7 +1124,7 @@
     .seat-chip--maintenance::before {
         background: rgba(255, 255, 255, 0.3) !important;
     }
-    /* (CSS cũ .seat-chip--couple dòng 785-794 đã xóa - dùng rule mới ở phía dưới) */
+    /* CSS cũ .seat-chip--couple dòng 785-794 đã xóa - dùng rule mới ở phía dưới */
 
     /* Seat Interaction */
     .seat-interactive {
@@ -1029,8 +1148,8 @@
         transition: transform 0.1s ease;
     }
     /* ==== GHẾ ĐANG ĐƯỢC CHỌN ==== */
-    /* (Hiệu ứng được apply bằng inline style qua syncSeatCheckMark() trong JS
-       để đảm bảo không bị CSS rule nào ghi đè. Chỉ giữ @keyframes ở đây.) */
+    /* Hiệu ứng được apply bằng inline style qua syncSeatCheckMark() trong JS
+       để đảm bảo không bị CSS rule nào ghi đè. Chỉ giữ @keyframes ở đây. */
     @keyframes seatPulse {
         0%, 100% {
             box-shadow:
@@ -1272,9 +1391,8 @@
         flex-shrink: 0;
     }
 </style>
-@endpush
+@php /* STYLES END */ @endphp
 
-@push('scripts')
 <script>
 /* Show phong chieu - last updated: {{ date('Y-m-d H:i:s') }} */
 // Global fallback CSRF helper - định nghĩa ngoài DOMContentLoaded để form submit handler (line ~5173) và mọi nơi đều truy cập được
@@ -1289,6 +1407,59 @@ window.getCsrfToken = function() {
     }
     return '';
 };
+
+/**
+ * Hiển thị toast notification đẹp (theo style Toast component của dự án).
+ * Loại: 'error' | 'success' | 'warning' | 'info'
+ */
+window.showToast = function(message, type = 'error') {
+    var variant = {
+        error:   { bg: 'bg-red-500/15', border: 'border-red-500/40', icon: 'fa-circle-exclamation', iconColor: 'text-red-300', text: 'text-red-100' },
+        success: { bg: 'bg-emerald-500/15', border: 'border-emerald-500/40', icon: 'fa-circle-check', iconColor: 'text-emerald-300', text: 'text-emerald-100' },
+        warning: { bg: 'bg-amber-500/15', border: 'border-amber-500/40', icon: 'fa-triangle-exclamation', iconColor: 'text-amber-300', text: 'text-amber-100' },
+        info:    { bg: 'bg-white/10', border: 'border-white/20', icon: 'fa-circle-info', iconColor: 'text-[#d99a32]', text: 'text-white' },
+    };
+    var v = variant[type] || variant.info;
+
+    var toast = document.createElement('div');
+    toast.setAttribute('data-admin-toast', '');
+    toast.className = 'admin-toast';
+    toast.innerHTML =
+        '<div class="flex items-start gap-3 rounded-2xl border ' + v.border + ' ' + v.bg + ' bg-[#101010]/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-xl">' +
+            '<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">' +
+                '<i class="fa-solid ' + v.icon + ' ' + v.iconColor + ' text-lg"></i>' +
+            '</div>' +
+            '<p class="' + v.text + ' min-w-0 flex-1 break-words pt-1 text-sm font-bold leading-snug">' + message + '</p>' +
+            '<button type="button" data-toast-close class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white">' +
+                '<i class="fa-solid fa-xmark text-sm"></i>' +
+            '</button>' +
+        '</div>';
+
+    var container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'fixed top-4 right-4 z-[99999] flex flex-col gap-2 pointer-events-none';
+        document.body.appendChild(container);
+    }
+    container.appendChild(toast);
+
+    // Animate in
+    requestAnimationFrame(function() {
+        toast.style.animation = 'adminToastIn 0.28s ease both';
+    });
+
+    function dismiss() {
+        toast.classList.add('is-hiding');
+        setTimeout(function() {
+            if (toast.parentElement) toast.remove();
+        }, 300);
+    }
+
+    toast.querySelector('[data-toast-close]').addEventListener('click', dismiss);
+    setTimeout(dismiss, 4000);
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     const phongChieuId = {{ $phongChieu->id }};
 
@@ -1378,14 +1549,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // Build className
         let className = 'seat-chip seat-interactive';
         if (trangThai === 'bao_tri') className += ' seat-chip--maintenance';
+        if (trangThai === 'sap_bao_tri') className += ' seat-chip--pending';
         if (isCouple) className += ' seat-chip--couple';
         if (isSelected) className += ' selected';
         seatEl.className = className;
 
         // Reset style + content
-        if (trangThai === 'bao_tri') {
+        if (trangThai === 'bao_tri' || trangThai === 'sap_bao_tri') {
             seatEl.style.backgroundColor = '';
             seatEl.style.color = '#991b1b';
+        } else if (trangThai === 'sap_bao_tri') {
+            seatEl.style.backgroundColor = '#fef3c7';
+            seatEl.style.color = '#92400e';
         } else {
             seatEl.style.backgroundColor = mauSac;
             seatEl.style.color = '#1a0b04';
@@ -1394,7 +1569,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Đảm bảo label span bên trong giữ màu đen
         const labelSpans = seatEl.querySelectorAll('.seat-label, .seat-couple-left, .seat-couple-right');
         labelSpans.forEach(s => {
-            s.style.color = trangThai === 'bao_tri' ? '#991b1b' : '#1a0b04';
+            s.style.color = trangThai === 'bao_tri' ? '#991b1b' : (trangThai === 'sap_bao_tri' ? '#92400e' : '#1a0b04');
         });
     }
 
@@ -1592,10 +1767,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Status badge - đồng nhất với style tối giản của trang
         const statusEl = document.getElementById('popoverStatus');
-        if (trangThai === 'bao_tri') {
+        const maintInfoEl = document.getElementById('popoverMaintenanceInfo');
+        const maintTimeEl = document.getElementById('popoverMaintenanceTime');
+        const maintReasonEl = document.getElementById('popoverMaintenanceReason');
+
+        if (trangThai === 'bao_tri' || trangThai === 'sap_bao_tri') {
             statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-bold text-red-400"><i class="fa-solid fa-wrench text-[10px]"></i> Đang bảo trì</span>';
+
+            // Hiển thị thông tin bảo trì có thời hạn nếu có
+            const lichId = seatEl.dataset.lichId;
+            const thoiGianKetThuc = seatEl.dataset.thoiGianKetThuc || seatEl.dataset.thoiGianKetThucRaw;
+            const isUnlimited = seatEl.dataset.isUnlimitedMaintenance === '1';
+
+            if (lichId && thoiGianKetThuc) {
+                maintInfoEl?.classList.remove('hidden');
+                maintTimeEl.textContent = '⏰ Hết hạn: ' + thoiGianKetThuc;
+                maintReasonEl.textContent = 'Bảo trì có thời hạn';
+            } else if (lichId || isUnlimited) {
+                maintInfoEl?.classList.remove('hidden');
+                maintTimeEl.textContent = '⏸️ Bảo trì vô thời hạn';
+                maintReasonEl.textContent = 'Chờ Admin kích hoạt';
+            } else {
+                maintInfoEl?.classList.add('hidden');
+            }
         } else {
             statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-400"><i class="fa-solid fa-check-circle text-[10px]"></i> Đang hoạt động</span>';
+            maintInfoEl?.classList.add('hidden');
         }
 
         positionPopover(seatEl);
@@ -1642,7 +1839,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const loaiGheId = bulkLoaiGheSelect?.value;
         if (!loaiGheId) {
-            alert('Vui lòng chọn loại ghế để thay đổi.');
+            showToast('Vui lòng chọn loại ghế để thay đổi.', 'warning');
+            return;
+        }
+
+        // Get selected loai ghe text
+        const selectedOption = bulkLoaiGheSelect.options[bulkLoaiGheSelect.selectedIndex];
+        const loaiTen = selectedOption ? selectedOption.textContent.toLowerCase() : '';
+        const isThuongSelected = loaiTen.includes('thường') || loaiTen.includes('thuong') || loaiTen.includes('standard');
+        const isVipSelected = loaiTen.includes('vip');
+        const isCoupleSelected = loaiTen.includes('couple') || loaiTen.includes('đôi');
+
+        // Validate: check selected seats against row restrictions
+        const allRows = Array.from(document.querySelectorAll('.seat-row'));
+        const totalRows = allRows.length;
+        let hasViolation = false;
+        let violationMsg = '';
+
+        for (const gheId of selectedSeats) {
+            const seatEl = findSeatEl(parseInt(gheId));
+            if (!seatEl) continue;
+            const rowEl = seatEl.closest('.seat-row');
+            if (!rowEl) continue;
+            const rowIndex = allRows.indexOf(rowEl);
+            const isTopThree = rowIndex >= 0 && rowIndex < 3;
+            const isBottomThree = rowIndex >= 0 && rowIndex >= totalRows - 3;
+
+            // 3 hàng đầu: không được VIP/Couple
+            if (isTopThree && (isVipSelected || isCoupleSelected)) {
+                hasViolation = true;
+                violationMsg = '3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP hay Couple.';
+                break;
+            }
+            // 3 hàng cuối: không được thường
+            if (isBottomThree && isThuongSelected) {
+                hasViolation = true;
+                violationMsg = '3 hàng cuối phòng chỉ được đặt ghế VIP hoặc Couple. Không thể đặt ghế Thường.';
+                break;
+            }
+        }
+
+        if (hasViolation) {
+            showToast(violationMsg, 'error');
             return;
         }
 
@@ -1673,53 +1911,262 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateBulkToolbar();
                 bulkLoaiGheSelect.value = '';
                 setTimeout(() => location.reload(), 300);
+            } else {
+                showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
-        .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
+        .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
         .finally(() => { setBtnLoading(this, false, '<i class="fa-solid fa-check mr-1.5"></i>Áp dụng'); });
     });
+
+    // --- Modal Bảo trì ---
+    const maintenanceModal = document.getElementById('maintenanceModal');
+    const maintenanceStartTime = document.getElementById('maintenanceStartTime');
+    const maintenanceEndTime = document.getElementById('maintenanceEndTime');
+    const maintenanceReason = document.getElementById('maintenanceReason');
+    const maintenanceReasonUnlimited = document.getElementById('maintenanceReasonUnlimited');
+    const scheduledForm = document.getElementById('scheduledMaintenanceForm');
+    const unlimitedReasonDiv = document.getElementById('unlimitedMaintenanceReason');
+    const seatCountSpan = document.getElementById('maintenanceModalSeatCount');
+
+    // Thiết lập min cho datetime-local
+    if (maintenanceStartTime) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        maintenanceStartTime.min = now.toISOString().slice(0, 16);
+    }
+
+    // Toggle form khi chọn loại bảo trì
+    document.querySelectorAll('input[name="maintenance_type"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'scheduled') {
+                scheduledForm?.classList.remove('hidden');
+                unlimitedReasonDiv?.classList.add('hidden');
+            } else {
+                scheduledForm?.classList.add('hidden');
+                unlimitedReasonDiv?.classList.remove('hidden');
+            }
+        });
+    });
+
+    // Mở modal bảo trì
+    let pendingMaintenanceSeats = [];
 
     btnToggleMaintenance?.addEventListener('click', function() {
         if (selectedSeats.size === 0) return;
         const action = this.dataset.bulkAction || 'maintenance';
-        setBtnLoading(this, true);
 
-        fetch(`/admin/phong-chieus/${phongChieuId}/bulk-update-seats`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': getCsrfToken(),
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                ghe_ids: expandCoupleIds(Array.from(selectedSeats)),
-                action: action
+        // Nếu là kích hoạt (đang bảo trì) → gọi trực tiếp API
+        if (action === 'activate') {
+            setBtnLoading(this, true);
+            fetch(`/admin/phong-chieus/${phongChieuId}/bulk-update-seats`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    ghe_ids: expandCoupleIds(Array.from(selectedSeats)),
+                    action: 'activate'
+                })
             })
-        })
-        .then(async res => ({ status: res.status, ct: res.headers.get('content-type') || '', body: await res.text() }))
-        .then(({ status, ct, body }) => {
-            const data = ct.includes('application/json') ? JSON.parse(body) : { success: false, message: body };
-            if (data.success && data.updated_seats) {
+            .then(response => response.json().then(data => ({ response, data })))
+            .then(({ response, data }) => {
+                if (response.ok && data.success && data.updated_seats) {
+                    data.updated_seats.forEach(item => {
+                        const el = findSeatEl(item.id);
+                        if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
+                    });
+                    selectedSeats.clear();
+                    document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
+                    updateBulkToolbar();
+                    showToast(data.message || 'Đã kích hoạt ghế.', 'success');
+                } else {
+                    showToast(data.message || 'Có lỗi xảy ra', 'error');
+                }
+            })
+            .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
+            .finally(() => { updateBulkMaintenanceBtnLabel(); setBtnLoading(this, false); });
+            return;
+        }
+
+        // Mở modal để chọn loại bảo trì
+        pendingMaintenanceSeats = expandCoupleIds(Array.from(selectedSeats));
+        const soGhe = pendingMaintenanceSeats.length;
+        seatCountSpan.textContent = `${soGhe} ghế`;
+
+        // Reset form
+        document.querySelector('input[name="maintenance_type"][value="unlimited"]').checked = true;
+        scheduledForm?.classList.add('hidden');
+        unlimitedReasonDiv?.classList.remove('hidden');
+        if (maintenanceStartTime) maintenanceStartTime.value = '';
+        if (maintenanceEndTime) maintenanceEndTime.value = '';
+        if (maintenanceReason) maintenanceReason.value = '';
+        if (maintenanceReasonUnlimited) maintenanceReasonUnlimited.value = '';
+
+        maintenanceModal?.classList.remove('hidden');
+    });
+
+    // Đóng modal
+    document.getElementById('maintenanceModalCancel')?.addEventListener('click', function() {
+        maintenanceModal?.classList.add('hidden');
+        pendingMaintenanceSeats = [];
+    });
+
+    maintenanceModal?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+            pendingMaintenanceSeats = [];
+        }
+    });
+
+    // Áp dụng bảo trì
+    document.getElementById('maintenanceModalApply')?.addEventListener('click', async function() {
+        if (pendingMaintenanceSeats.length === 0) return;
+
+        const loaiBaoTri = document.querySelector('input[name="maintenance_type"]:checked')?.value;
+        const btn = this;
+
+        // Validate
+        if (loaiBaoTri === 'scheduled') {
+            if (!maintenanceStartTime?.value) {
+                showToast('Vui lòng chọn thời gian bắt đầu.', 'warning');
+                return;
+            }
+            if (!maintenanceReason?.value.trim()) {
+                showToast('Vui lòng nhập lý do bảo trì.', 'warning');
+                return;
+            }
+        }
+
+        setBtnLoading(btn, true, '');
+
+        if (loaiBaoTri === 'unlimited') {
+            // Bảo trì vô thời hạn - dùng API cũ
+            try {
+                const res = await fetch(`/admin/phong-chieus/${phongChieuId}/bulk-update-seats`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ghe_ids: pendingMaintenanceSeats,
+                        action: 'maintenance',
+                        ly_do: maintenanceReasonUnlimited?.value || null
+                    })
+                });
+                const data = await res.json();
+                if (data.success && data.updated_seats) {
+                    data.updated_seats.forEach(item => {
+                        const el = findSeatEl(item.id);
+                        if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
+                    });
+                    selectedSeats.clear();
+                    document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
+                    updateBulkToolbar();
+                    showToast(data.message || 'Đã chuyển ghế sang bảo trì.', 'success');
+                } else {
+                    showToast(data.message || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Có lỗi xảy ra', 'error');
+            }
+        } else {
+            // Bảo trì có thời hạn - dùng API mới
+            try {
+                const res = await fetch(`/admin/phong-chieus/${phongChieuId}/schedule-seat-maintenance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': getCsrfToken(),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ghe_ids: pendingMaintenanceSeats,
+                        thoi_gian_bat_dau: maintenanceStartTime?.value,
+                        thoi_gian_ket_thuc: maintenanceEndTime?.value || null,
+                        ly_do: maintenanceReason?.value.trim()
+                    })
+                });
+                const data = await res.json();
+                console.log('Schedule maintenance response:', data);
+                if (data.success) {
+                    // Cập nhật DOM
+                    if (data.updated_seats) {
+                        data.updated_seats.forEach(item => {
+                            console.log('Updating seat:', item.id, 'to', item.trang_thai);
+                            const el = findSeatEl(item.id);
+                            if (el) {
+                                el.dataset.trangThai = item.trang_thai;
+                                // Thêm thuộc tính thời gian bảo trì
+                                if (data.schedules) {
+                                    const schedule = data.schedules.find(s => s.ghe_id === item.id);
+                                    if (schedule) {
+                                        el.dataset.lichBaoTri = schedule.lich_id;
+                                        el.dataset.thoiGianKetThuc = schedule.thoi_gian_ket_thuc || '';
+                                    }
+                                }
+                                updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
+                            }
+                        });
+                    }
+                    selectedSeats.clear();
+                    document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
+                    updateBulkToolbar();
+                    showToast(data.message || 'Đã lên lịch bảo trì.', 'success');
+                    if (data.errors?.length > 0) {
+                        console.warn('Một số ghế:', data.errors);
+                    }
+                } else {
+                    showToast(data.message || 'Có lỗi xảy ra', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Có lỗi xảy ra', 'error');
+            }
+        }
+
+        maintenanceModal?.classList.add('hidden');
+        pendingMaintenanceSeats = [];
+        setBtnLoading(btn, false, '<i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì');
+        updateBulkMaintenanceBtnLabel();
+    });
+
+    // Hàm kiểm tra ghế hết hạn bảo trì
+    async function checkExpiredMaintenance() {
+        try {
+            const res = await fetch(`/admin/phong-chieus/${phongChieuId}/check-expired-maintenance`);
+            const data = await res.json();
+            if (data.success && data.updated_seats && data.updated_seats.length > 0) {
                 data.updated_seats.forEach(item => {
                     const el = findSeatEl(item.id);
-                    if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
+                    if (el) {
+                        el.dataset.trangThai = item.trang_thai;
+                        updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
+                    }
                 });
-                selectedSeats.clear();
-                document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
-                updateBulkToolbar();
-            } else {
-                alert('Có lỗi: ' + (data.message || status));
+                console.log('Đã tự động cập nhật', data.updated_seats.length, 'ghế hết hạn bảo trì');
             }
-        })
-        .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
-        .finally(() => { updateBulkMaintenanceBtnLabel(); setBtnLoading(this, false); });
-    });
+        } catch (err) {
+            console.error('Lỗi kiểm tra bảo trì hết hạn:', err);
+        }
+    }
+
+    // Gọi ngay khi load trang
+    checkExpiredMaintenance();
+
+    // Tự động kiểm tra mỗi phút
+    setInterval(checkExpiredMaintenance, 60000);
 
     // --- Bulk Xóa ghế ---
     const btnBulkDeleteSeats = document.getElementById('btnBulkDeleteSeats');
     btnBulkDeleteSeats?.addEventListener('click', function() {
         if (selectedSeats.size === 0) {
-            alert('Vui lòng chọn ít nhất 1 ghế để xóa.');
+            showToast('Vui lòng chọn ít nhất 1 ghế để xóa.', 'warning');
             return;
         }
 
@@ -1758,12 +2205,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedSeats.clear();
                 document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
                 updateBulkToolbar();
-                alert(data.message || `Đã xóa ${soGhe} ghế.`);
+                showToast(data.message || `Đã xóa ${soGhe} ghế.`, 'success');
             } else {
-                alert('Có lỗi: ' + (data.message || status));
+                showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
-        .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
+        .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
         .finally(() => { setBtnLoading(this, false, '<i class="fa-solid fa-trash-can mr-1.5"></i>Xóa ghế'); });
     });
 
@@ -1983,6 +2430,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnEl.className = 'rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300 transition hover:bg-orange-500/25 hover:border-orange-500/60';
             }
 
+            // --- Ràng buộc đổi loại: 3 hàng gần màn chiếu chỉ được ghế Thường, 3 hàng cuối chỉ được VIP/Couple ---
+            const totalRows = allRows.length;
+            const isTopThree = rowIndex < 3;
+            const isBottomThree = rowIndex >= totalRows - 3;
+            const restrictionWarning = document.getElementById('rowTypeRestrictionWarning');
+            const restrictionDetail = document.getElementById('rowRestrictionDetail');
+            const applyBtn = document.getElementById('rowChangeModalApply');
+            const loaiSelect = document.getElementById('rowChangeModalLoaiGhe');
+
+            if (restrictionWarning) restrictionWarning.classList.add('hidden');
+            if (applyBtn) applyBtn.disabled = false;
+
+            if (isTopThree) {
+                if (restrictionWarning) {
+                    restrictionWarning.classList.remove('hidden');
+                    restrictionDetail.textContent = '3 hàng gần màn chiếu chỉ được đặt ghế Thường.';
+                }
+            } else if (isBottomThree) {
+                if (restrictionWarning) {
+                    restrictionWarning.classList.remove('hidden');
+                    restrictionDetail.textContent = '3 hàng cuối phòng chỉ được đặt ghế VIP hoặc Couple.';
+                }
+            }
+
             rowChangeModal.classList.remove('hidden');
         });
     });
@@ -2023,6 +2494,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnEl.className = 'rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300 transition hover:bg-orange-500/25 hover:border-orange-500/60';
             }
 
+            // --- Ràng buộc đổi loại: 3 hàng gần màn chiếu chỉ được ghế Thường, 3 hàng cuối chỉ được VIP/Couple ---
+            const allRows = Array.from(document.querySelectorAll('.seat-row'));
+            const rowIndex = allRows.findIndex(r => r.dataset.hangGheId === hangGheId);
+            const totalRows = allRows.length;
+            const isTopThree = rowIndex >= 0 && rowIndex < 3;
+            const isBottomThree = rowIndex >= 0 && rowIndex >= totalRows - 3;
+            const restrictionWarning = document.getElementById('rowTypeRestrictionWarning');
+            const restrictionDetail = document.getElementById('rowRestrictionDetail');
+            const applyBtn = document.getElementById('rowChangeModalApply');
+
+            if (restrictionWarning) restrictionWarning.classList.add('hidden');
+            if (applyBtn) applyBtn.disabled = false;
+
+            if (isTopThree) {
+                if (restrictionWarning) {
+                    restrictionWarning.classList.remove('hidden');
+                    restrictionDetail.textContent = '3 hàng gần màn chiếu chỉ được đặt ghế Thường.';
+                }
+            } else if (isBottomThree) {
+                if (restrictionWarning) {
+                    restrictionWarning.classList.remove('hidden');
+                    restrictionDetail.textContent = '3 hàng cuối phòng chỉ được đặt ghế VIP hoặc Couple.';
+                }
+            }
+
             rowChangeModal.classList.remove('hidden');
         });
     });
@@ -2033,6 +2529,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('rowChangeModalApply').addEventListener('click', function() {
         const loaiGheId = rowModalLoaiGhe.value;
+        const selectedOption = rowModalLoaiGhe.options[rowModalLoaiGhe.selectedIndex];
+        const loaiTen = selectedOption ? selectedOption.textContent.toLowerCase() : '';
+
+        // --- Validation: 3 hàng gần màn chiếu chỉ được đặt ghế Thường, 3 hàng cuối chỉ được VIP/Couple ---
+        const allRows = Array.from(document.querySelectorAll('.seat-row'));
+        const currentRowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${currentRowHangId}"]`);
+        const rowIndex = currentRowEl ? allRows.indexOf(currentRowEl) : -1;
+        const totalRows = allRows.length;
+
+        if (rowIndex >= 0) {
+            const isTopThree = rowIndex < 3;
+            const isBottomThree = rowIndex >= totalRows - 3;
+            const isThuongSelected = loaiTen.includes('thường') || loaiTen.includes('thuong') || loaiTen.includes('standard');
+            const isVipSelected = loaiTen.includes('vip');
+            const isCoupleSelected = loaiTen.includes('couple') || loaiTen.includes('đôi');
+
+            // 3 hàng gần màn chiếu: CHỈ được ghế Thường, không được VIP/Couple
+            if (isTopThree && (isVipSelected || isCoupleSelected)) {
+                showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP hay Couple.', 'error');
+                setBtnLoading(this, false);
+                return;
+            }
+            // 3 hàng cuối: CHỈ được VIP/Couple, không được ghế Thường
+            if (isBottomThree && isThuongSelected) {
+                showToast('3 hàng cuối phòng chỉ được đặt ghế VIP hoặc Couple. Không thể đặt ghế Thường.', 'error');
+                setBtnLoading(this, false);
+                return;
+            }
+        }
+
         const btn = this;
         setBtnLoading(btn, true);
 
@@ -2052,9 +2578,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
                 });
                 setTimeout(() => location.reload(), 300);
+            } else {
+                showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
-        .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
+        .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
         .finally(() => { setBtnLoading(btn, false, '<i class="fa-solid fa-check mr-1.5"></i>Áp dụng'); rowChangeModal.classList.add('hidden'); });
     });
 
@@ -2110,7 +2638,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('[rowMaintenanceBtn] click | hang=', currentRowHangId);
 
         if (!currentRowHangId) {
-            alert('Vui lòng chọn hàng ghế trước.');
+            showToast('Vui lòng chọn hàng ghế trước.', 'warning');
             return;
         }
 
@@ -2150,14 +2678,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Server trả về HTML (có thể do CSRF/auth/404) → đọc text để debug
                 const text = await res.text();
                 console.error('[rowMaintenanceBtn] Non-JSON response (status ' + res.status + '):', text.substring(0, 500));
-                alert('Server trả về HTML (status ' + res.status + '). Có thể CSRF token sai hoặc session hết hạn. Xem Console.');
+                showToast('Server trả về HTML (status ' + res.status + '). Có thể CSRF token sai hoặc session hết hạn. Xem Console.', 'error');
                 btn.innerHTML = originalHtml;
                 return;
             }
             console.log('[rowMaintenanceBtn] data', data);
 
             if (!data.success) {
-                alert(data.message || 'Có lỗi xảy ra');
+                showToast(data.message || 'Có lỗi xảy ra', 'error');
                 btn.innerHTML = originalHtml;
                 return;
             }
@@ -2201,7 +2729,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (err) {
             console.error('[rowMaintenanceBtn] error', err);
-            alert('Có lỗi xảy ra: ' + (err.message || err));
+            showToast('Có lỗi xảy ra: ' + (err.message || err), 'error');
             btn.innerHTML = originalHtml;
         } finally {
             btn.disabled = false;
@@ -2230,10 +2758,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 location.reload();
             } else {
-                alert(data.message || 'Có lỗi xảy ra');
+                showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
-        .catch(err => { console.error(err); alert('Có lỗi xảy ra'); })
+        .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
         .finally(() => { setBtnLoading(btn, false, '<i class="fa-solid fa-trash-can mr-1.5"></i>Xóa hàng'); });
     });
 });
@@ -2414,6 +2942,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!res.ok || !data.success) {
                 if (data.errors) showAddSeatErrors(data.errors);
                 else showAddSeatErrors({ _global: [data.message || `Lỗi HTTP ${res.status}`] });
+                if (data.message) showToast(data.message, 'error');
                 return;
             }
             closeAddSeatModal();
@@ -2570,6 +3099,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!res.ok || !data.success) {
                 if (data.errors) showAddRowErrors(data.errors);
                 else showAddRowErrors({ _global: [data.message || `Lỗi HTTP ${res.status}`] });
+                if (data.message) showToast(data.message, 'error');
                 return;
             }
             closeAddRowModal();
@@ -2591,6 +3121,4 @@ document.addEventListener('DOMContentLoaded', function() {
             closeAddRowModal();
         }
     });
-})();
 </script>
-@endpush

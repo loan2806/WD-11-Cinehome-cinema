@@ -154,7 +154,7 @@ class SeatMaintenanceService
     public function completeMaintenance(LichBaoTriGheNgoi $lich, ?int $nguoiThucHienId, ?string $ghiChu = null): GheNgoi
     {
         return DB::transaction(function () use ($lich, $nguoiThucHienId, $ghiChu) {
-            $ghe = $lich->gheNgoi()->lockForUpdate()->firstOrFail();
+            $ghe = GheNgoi::where('id', $lich->ghe_ngoi_id)->lockForUpdate()->firstOrFail();
 
             $beforeStatus = $ghe->trang_thai;
 
@@ -176,6 +176,15 @@ class SeatMaintenanceService
 
             return $ghe->fresh();
         });
+    }
+
+    /**
+     * Kích hoạt lại ghế đơn lẻ (không cần lịch bảo trì).
+     */
+    public function activateSeat(GheNgoi $ghe, ?int $nguoiThucHienId = null): GheNgoi
+    {
+        $ghe->update(['trang_thai' => 'hoat_dong']);
+        return $ghe->fresh();
     }
 
     /**

@@ -30,6 +30,13 @@ class GheNgoi extends Model
     public const TRANG_THAI = [
         'hoat_dong' => 'Hoạt động',
         'bao_tri' => 'Bảo trì',
+        'sap_bao_tri' => 'Sắp bảo trì',
+    ];
+
+    public const TRANG_THAI_MAU_SAC = [
+        'hoat_dong' => null, // dùng màu từ loaiGhe
+        'bao_tri' => '#999999',
+        'sap_bao_tri' => '#f59e0b',
     ];
 
     public function phongChieu(): BelongsTo
@@ -54,7 +61,7 @@ class GheNgoi extends Model
 
     public function isUnderMaintenance(): bool
     {
-        return $this->trang_thai === 'bao_tri';
+        return in_array($this->trang_thai, ['bao_tri', 'sap_bao_tri']);
     }
 
     public function scopeByPhongChieu($query, $phongChieuId)
@@ -87,7 +94,7 @@ class GheNgoi extends Model
 
     public function isEffectivelyUnderMaintenance(): bool
     {
-        if ($this->trang_thai === 'bao_tri') {
+        if (in_array($this->trang_thai, ['bao_tri', 'sap_bao_tri'])) {
             return true;
         }
 

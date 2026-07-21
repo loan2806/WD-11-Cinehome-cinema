@@ -408,7 +408,7 @@ class GheNgoiController extends Controller
     protected function ghiNhatKy(Request $request, string $hanhDong, string $chucNang, string $moTa): void
     {
         try {
-            \App\Models\NhatKyHeThong::create([
+            \App\Models\NhatKyHoatDongHeThong::create([
                 'nguoi_dung_id' => auth()->id(),
                 'hanh_dong' => $hanhDong,
                 'chuc_nang' => $chucNang,
