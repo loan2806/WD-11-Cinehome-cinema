@@ -76,20 +76,38 @@
                     <i class="{{ $meta['icon'] }}"></i>
                     {{ $meta['label'] }}
                 </span>
-                <h1>{{ $veXemPhim->ma_ve }}</h1>
-                <p>{{ $veXemPhim->ten_phim }}</p>
 
-                <div class="myticket-code-box">
-                    <span>Mã soát vé</span>
-                    <strong>{{ $veXemPhim->ma_ve }}</strong>
-                </div>
+                @if($veXemPhim->trang_thai === 'cho_thanh_toan')
+                    <h1>Chờ thanh toán</h1>
+                    <p>{{ $veXemPhim->ten_phim }}</p>
 
-                <div class="myticket-detail-actions">
-                    <a href="{{ route('dat_ve.chon_phim') }}" class="mytickets-secondary-link">
-                        <i class="fa-solid fa-plus"></i>
-                        Đặt thêm vé
-                    </a>
-                </div>
+                    <div class="myticket-code-box">
+                        <span>Trạng thái</span>
+                        <strong>Vé đang chờ thanh toán</strong>
+                    </div>
+
+                    <div class="myticket-detail-actions">
+                        <a href="{{ route('dat_ve.checkout', ['suat_chieu_id' => $veXemPhim->suat_chieu_id, 'pending_ticket_id' => $veXemPhim->id]) }}" class="mytickets-secondary-link">
+                            <i class="fa-solid fa-credit-card"></i>
+                            Tiếp tục thanh toán
+                        </a>
+                    </div>
+                @else
+                    <h1>{{ $veXemPhim->ma_ve }}</h1>
+                    <p>{{ $veXemPhim->ten_phim }}</p>
+
+                    <div class="myticket-code-box">
+                        <span>Mã soát vé</span>
+                        <strong>{{ $veXemPhim->ma_ve }}</strong>
+                    </div>
+
+                    <div class="myticket-detail-actions">
+                        <a href="{{ route('dat_ve.chon_phim') }}" class="mytickets-secondary-link">
+                            <i class="fa-solid fa-plus"></i>
+                            Đặt thêm vé
+                        </a>
+                    </div>
+                @endif
             </div>
         </article>
 
@@ -135,6 +153,13 @@
                 <span>Loại vé</span>
                 <strong>{{ $veXemPhim->loai_ve === 'tai_quay' ? 'Tại quầy' : 'Trực tuyến' }}</strong>
             </div>
+            @if($veXemPhim->trang_thai === 'cho_thanh_toan' && $veXemPhim->thoi_gian_het_han)
+                <div>
+                    <i class="fa-solid fa-hourglass-end"></i>
+                    <span>Hết hạn thanh toán</span>
+                    <strong>{{ $veXemPhim->thoi_gian_het_han->format('H:i d/m/Y') }}</strong>
+                </div>
+            @endif
             <div>
                 <i class="fa-solid fa-calendar-plus"></i>
                 <span>Ngày đặt</span>
