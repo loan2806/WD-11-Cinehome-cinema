@@ -8,6 +8,7 @@ use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use App\Services\DatVeXemPhimService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\NguoiDungVoucher;
 use Carbon\Carbon;
 use App\Models\GheNgoi;
@@ -42,7 +43,7 @@ class DatVeController extends Controller
             try {
                 $selectedDate = Carbon::createFromFormat('Y-m-d', request('ngay_chieu'), 'Asia/Ho_Chi_Minh');
             } catch (\Exception $e) {
-                \Log::error('DATE PARSING ERROR', [
+                Log::error('DATE PARSING ERROR', [
                     'message' => $e->getMessage(),
                     'line' => $e->getLine(),
                     'file' => $e->getFile(),
@@ -132,6 +133,83 @@ class DatVeController extends Controller
         session(['reservation_expires_at' => now('Asia/Ho_Chi_Minh')->addMinutes(7)->timestamp]);
         $duLieuChonGhe = $datVeXemPhimService->duLieuChonGhe($suatChieu);
 
+        $selectedSeats = collect(explode(',', request('ghe')))
+            ->map(fn($seat) => strtoupper(trim($seat)))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $pendingTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
+            ->where('suat_chieu_id', $suatChieu->id)
+            ->where('trang_thai', 'cho_thanh_toan')
+            ->first();
+
+        if ($pendingTicket && $pendingTicket->isExpired()) {
+            $pendingTicket->delete();
+            $pendingTicket = null;
+        }
+
+        if ($pendingTicket && $selectedSeats->isEmpty()) {
+            $selectedSeats = collect(explode(',', $pendingTicket->ma_ghe))
+                ->map(fn($seat) => strtoupper(trim($seat)))
+                ->filter()
+                ->unique()
+                ->values();
+        }
+
+        $pendingTicketId = $pendingTicket?->id;
+        $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
+        $seatTotalPrice = 0;
+
+        if ($selectedSeats->isNotEmpty()) {
+            $seatModels = \App\Models\GheNgoi::with('loaiGhe')
+                ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
+                ->whereIn('ma_ghe', $selectedSeats)
+                ->get();
+
+            $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
+                $price = $suatChieu->gia_ve + ($seat->loaiGhe->phu_thu ?? 0);
+                if ($seat->loaiGhe?->la_couple) {
+                    $price = ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0);
+                }
+                return $price;
+            });
+
+            if ($pendingTicket) {
+                $pendingTicket->update([
+                    'ma_ghe' => $selectedSeats->join(', '),
+                    'tong_tien' => $seatTotalPrice,
+                    'seat_total' => $seatTotalPrice,
+                    'food_total' => $pendingTicket->food_total ?? 0,
+                    'food_items' => $pendingTicket->food_items ?? [],
+                    'thoi_gian_het_han' => $pendingTicket->thoi_gian_het_han ?? now()->addMinutes(7),
+                ]);
+            } else {
+                $pendingTicket = VeXemPhim::create([
+                    'nguoi_dung_id' => Auth::id(),
+                    'nhan_vien_id' => null,
+                    'suat_chieu_id' => $suatChieu->id,
+                    'ma_ve' => $this->taoMaVeLocal(),
+                    'ten_phim' => $suatChieu->phim->ten_phim,
+                    'ten_rap' => $suatChieu->rapChieuPhim->ten_rap,
+                    'ten_phong' => $suatChieu->phongChieu->ten_phong ?? 'Phòng 1',
+                    'ma_ghe' => $selectedSeats->join(', '),
+                    'thoi_gian_chieu' => $suatChieu->thoi_gian_chieu,
+                    'tong_tien' => $seatTotalPrice,
+                    'tien_hoan' => 0,
+                    'loai_ve' => 'truc_tuyen',
+                    'trang_thai' => 'cho_thanh_toan',
+                    'thoi_gian_het_han' => now()->addMinutes(7),
+                    'food_items' => [],
+                    'seat_total' => $seatTotalPrice,
+                    'food_total' => 0,
+                ]);
+            }
+
+            $pendingTicketId = $pendingTicket->id;
+            $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
+        }
+
         $duLieuChonGhe['vouchers'] = Auth::check()
             ? NguoiDungVoucher::with('voucher')->where('nguoi_dung_id', Auth::id())->where('da_su_dung', false)
             ->where(function ($query) {
@@ -142,14 +220,58 @@ class DatVeController extends Controller
             })
             ->get() : collect();
 
-        return view('user.dat_ve.chon_ghe', $duLieuChonGhe);
+        return view('user.dat_ve.chon_ghe', array_merge($duLieuChonGhe, [
+            'selectedSeats' => $selectedSeats,
+            'seatTotalPrice' => $seatTotalPrice,
+            'pendingTicketId' => $pendingTicketId,
+            'pendingDeadline' => $pendingDeadline,
+        ]));
     }
 
     public function chonDoAn($suat_chieu_id)
     {
         $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])->findOrFail($suat_chieu_id);
         $identifier = Auth::id() ?? session()->getId();
-        $selectedSeats = collect(explode(',', request('ghe')))->map(fn($seat) => strtoupper(trim($seat)))->filter()->unique()->values();
+        $selectedSeats = collect(explode(',', request('ghe')))
+            ->map(fn($seat) => strtoupper(trim($seat)))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $pendingTicket = Auth::check()
+            ? VeXemPhim::where('nguoi_dung_id', Auth::id())
+                ->where('suat_chieu_id', $suatChieu->id)
+                ->where('trang_thai', 'cho_thanh_toan')
+                ->first()
+            : null;
+
+        if ($pendingTicket && $pendingTicket->isExpired()) {
+            $pendingTicket->delete();
+            $pendingTicket = null;
+        }
+
+        if ($pendingTicket && $selectedSeats->isEmpty()) {
+            $selectedSeats = collect(explode(',', $pendingTicket->ma_ghe))
+                ->map(fn($seat) => strtoupper(trim($seat)))
+                ->filter()
+                ->unique()
+                ->values();
+        }
+
+        $pendingTicketId = $pendingTicket?->id;
+        $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
+        $foodItems = collect(json_decode(request()->query('food_cart', '[]'), true));
+
+        if ($foodItems->isEmpty() && $pendingTicket) {
+            $foodItems = collect($pendingTicket->food_items ?? []);
+        }
+
+        if ($pendingTicket && $foodItems->isNotEmpty()) {
+            $pendingTicket->update([
+                'food_items' => $foodItems->toArray(),
+                'food_total' => $foodItems->sum(fn($item) => ($item['price'] ?? 0) * ($item['qty'] ?? 0)),
+            ]);
+        }
 
         // 🌟 BỔ SUNG: Kiểm tra ghế liền kề
         if (!$this->validateSeatsAdjacent($selectedSeats->toArray(), $suat_chieu_id)) {
@@ -195,6 +317,45 @@ class DatVeController extends Controller
             }
             return $price;
         });
+
+        if ($selectedSeats->isNotEmpty()) {
+            $existingFoodTotal = $pendingTicket?->food_total ?? 0;
+            $existingFoodItems = $pendingTicket?->food_items ?? [];
+
+            if ($pendingTicket) {
+                $pendingTicket->update([
+                    'ma_ghe' => $selectedSeats->join(', '),
+                    'tong_tien' => $seatTotalPrice + $existingFoodTotal,
+                    'seat_total' => $seatTotalPrice,
+                    'food_total' => $existingFoodTotal,
+                    'food_items' => $existingFoodItems,
+                    'thoi_gian_het_han' => $pendingTicket->thoi_gian_het_han ?? now()->addMinutes(7),
+                ]);
+            } else {
+                $pendingTicket = VeXemPhim::create([
+                    'nguoi_dung_id' => Auth::id(),
+                    'nhan_vien_id' => null,
+                    'suat_chieu_id' => $suatChieu->id,
+                    'ma_ve' => $this->taoMaVeLocal(),
+                    'ten_phim' => $suatChieu->phim->ten_phim,
+                    'ten_rap' => $suatChieu->rapChieuPhim->ten_rap,
+                    'ten_phong' => $suatChieu->phongChieu->ten_phong ?? 'Phòng 1',
+                    'ma_ghe' => $selectedSeats->join(', '),
+                    'thoi_gian_chieu' => $suatChieu->thoi_gian_chieu,
+                    'tong_tien' => $seatTotalPrice,
+                    'tien_hoan' => 0,
+                    'loai_ve' => 'truc_tuyen',
+                    'trang_thai' => 'cho_thanh_toan',
+                    'thoi_gian_het_han' => now()->addMinutes(7),
+                    'food_items' => [],
+                    'seat_total' => $seatTotalPrice,
+                    'food_total' => 0,
+                ]);
+            }
+
+            $pendingTicketId = $pendingTicket->id;
+            $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
+        }
 
         $foods = DoAn::active()->with([
             'category',
@@ -267,25 +428,80 @@ class DatVeController extends Controller
             'selectedSeats' => $selectedSeats,
             'menu' => $menu,
             'seatTotalPrice' => $seatTotalPrice,
+            'pendingTicketId' => $pendingTicketId ?? null,
+            'pendingDeadline' => $pendingDeadline ?? null,
+            'initialFoodCart' => $foodItems->values()->all(),
         ]);
     }
 
-    public function checkout($suat_chieu_id)
+    public function checkout(Request $request, $suat_chieu_id)
     {
         $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])->findOrFail($suat_chieu_id);
         $identifier = Auth::id() ?? session()->getId();
-        $selectedSeats = collect(explode(',', request('ghe')))->map(fn($seat) => strtoupper(trim($seat)))->filter()->unique()->values();
+
+        $pendingTicket = null;
+        if ($request->filled('pending_ticket_id')) {
+            $pendingTicket = VeXemPhim::where('id', $request->input('pending_ticket_id'))
+                ->where('nguoi_dung_id', Auth::id())
+                ->where('trang_thai', 'cho_thanh_toan')
+                ->first();
+        }
+
+        if (! $pendingTicket) {
+            $pendingTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
+                ->where('suat_chieu_id', $suatChieu->id)
+                ->where('trang_thai', 'cho_thanh_toan')
+                ->first();
+        }
+
+        if ($pendingTicket && $pendingTicket->isExpired()) {
+            $pendingTicket->delete();
+
+            return redirect()
+                ->route('user.ve_xem_phim.index')
+                ->with('error', 'Phiên thanh toán đã hết hạn. Vui lòng chọn lại ghế và đồ ăn.');
+        }
+
+        if ($pendingTicket) {
+            $selectedSeats = collect(explode(',', $pendingTicket->ma_ghe))
+                ->map(fn($seat) => strtoupper(trim($seat)))
+                ->filter()
+                ->unique()
+                ->values();
+            $foodItems = collect($pendingTicket->food_items ?? []);
+            $pendingTicketId = $pendingTicket->id;
+            $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
+
+            if ($request->filled('food_cart')) {
+                $parsedFood = collect(json_decode($request->query('food_cart', '[]'), true));
+                if ($parsedFood->isNotEmpty()) {
+                    $foodItems = $parsedFood;
+                    $pendingTicket->update([
+                        'food_items' => $foodItems->toArray(),
+                        'food_total' => $foodItems->sum(fn($item) => ($item['price'] ?? 0) * ($item['qty'] ?? 0)),
+                    ]);
+                }
+            }
+        } else {
+            $selectedSeats = collect(explode(',', $request->query('ghe')))
+                ->map(fn($seat) => strtoupper(trim($seat)))
+                ->filter()
+                ->unique()
+                ->values();
+            $foodItems = collect(json_decode($request->query('food_cart', '[]'), true));
+            $pendingTicketId = null;
+            $pendingDeadline = null;
+        }
 
         // 🌟 BỔ SUNG: Kiểm tra ghế liền kề
         if (!$this->validateSeatsAdjacent($selectedSeats->toArray(), $suat_chieu_id)) {
-            // 🔥 ĐÃ SỬA: Giải phóng (Xóa) khóa Cache của các ghế này ngay lập tức
             foreach ($selectedSeats as $seat) {
                 Cache::forget("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
             }
 
             $message = 'Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!';
 
-            if (request()->ajax() || request()->wantsJson()) {
+            if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => $message
@@ -314,11 +530,54 @@ class DatVeController extends Controller
             return $price;
         });
 
-        $foodItems = collect(json_decode(request('food_cart', '[]'), true));
         $foodTotal = $foodItems->sum(fn($item) => ($item['price'] ?? 0) * ($item['qty'] ?? 0));
         $grandTotal = $seatTotalPrice + $foodTotal;
 
-        return view('user.dat_ve.checkout', compact('suatChieu', 'selectedSeats', 'seatTotal', 'seatTotalPrice', 'foodItems', 'foodTotal', 'grandTotal'));
+        if ($pendingTicket) {
+            $pendingTicket->update([
+                'ma_ghe' => $selectedSeats->join(', '),
+                'tong_tien' => $grandTotal,
+                'seat_total' => $seatTotalPrice,
+                'food_total' => $foodTotal,
+                'food_items' => $foodItems->toArray(),
+                'thoi_gian_het_han' => $pendingTicket->thoi_gian_het_han ?? now()->addMinutes(7),
+            ]);
+        } else {
+            $pendingTicket = VeXemPhim::create([
+                'nguoi_dung_id' => Auth::id(),
+                'nhan_vien_id' => null,
+                'suat_chieu_id' => $suatChieu->id,
+                'ma_ve' => $this->taoMaVeLocal(),
+                'ten_phim' => $suatChieu->phim->ten_phim,
+                'ten_rap' => $suatChieu->rapChieuPhim->ten_rap,
+                'ten_phong' => $suatChieu->phongChieu->ten_phong ?? 'Phòng 1',
+                'ma_ghe' => $selectedSeats->join(', '),
+                'thoi_gian_chieu' => $suatChieu->thoi_gian_chieu,
+                'tong_tien' => $grandTotal,
+                'tien_hoan' => 0,
+                'loai_ve' => 'truc_tuyen',
+                'trang_thai' => 'cho_thanh_toan',
+                'thoi_gian_het_han' => now()->addMinutes(7),
+                'food_items' => $foodItems->toArray(),
+                'seat_total' => $seatTotalPrice,
+                'food_total' => $foodTotal,
+            ]);
+
+            $pendingTicketId = $pendingTicket->id;
+            $pendingDeadline = $pendingTicket->thoi_gian_het_han?->valueOf();
+        }
+
+        return view('user.dat_ve.checkout', compact(
+            'suatChieu',
+            'selectedSeats',
+            'seatTotal',
+            'seatTotalPrice',
+            'foodItems',
+            'foodTotal',
+            'grandTotal',
+            'pendingTicketId',
+            'pendingDeadline'
+        ));
     }
 
 
@@ -400,6 +659,25 @@ class DatVeController extends Controller
             ->filter()
             ->unique()
             ->values();
+
+        $pendingTicketId = $request->input('pending_ticket_id');
+        $pendingTicket = null;
+
+        if (! empty($pendingTicketId)) {
+            $pendingTicket = VeXemPhim::where('id', $pendingTicketId)
+                ->where('nguoi_dung_id', Auth::id())
+                ->where('trang_thai', 'cho_thanh_toan')
+                ->first();
+
+            if ($pendingTicket && $pendingTicket->isExpired()) {
+                $pendingTicket->delete();
+
+                return back()->with(
+                    'error',
+                    'Phiên thanh toán đã hết hạn. Vui lòng chọn lại ghế và đồ ăn.'
+                );
+            }
+        }
 
         $identifier = Auth::id() ?? session()->getId();
 
@@ -546,6 +824,7 @@ class DatVeController extends Controller
             'danh_sach_ghe' => $selectedSeats->toArray(),
             'food_items' => $foodItems->toArray(),
             'source' => 'user',
+            'pending_ticket_id' => $pendingTicket?->id,
         ];
 
         Cache::put(
@@ -652,7 +931,7 @@ class DatVeController extends Controller
                 $this->xoaKhoaVoucherTam($duLieuTam);
                 Cache::forget("pending_ve:{$maVe}");
 
-                \Log::error('PAYOS CREATE LINK ERROR', [
+                Log::error('PAYOS CREATE LINK ERROR', [
                     'message' => $exception->getMessage(),
                     'file' => $exception->getFile(),
                     'line' => $exception->getLine(),
@@ -671,7 +950,7 @@ class DatVeController extends Controller
             $this->xoaKhoaVoucherTam($duLieuTam);
             Cache::forget("pending_ve:{$maVe}");
 
-            \Log::error('BOOKING CREATE ERROR', [
+            Log::error('BOOKING CREATE ERROR', [
                 'message' => $exception->getMessage(),
                 'file' => $exception->getFile(),
                 'line' => $exception->getLine(),
@@ -743,7 +1022,7 @@ class DatVeController extends Controller
             try {
                 $ve = $this->taoVeTuDuLieuTam($bookingData);
             } catch (\Throwable $exception) {
-                \Log::error('PAYOS CALLBACK BOOKING ERROR', [
+                Log::error('PAYOS CALLBACK BOOKING ERROR', [
                     'message' => $exception->getMessage(),
                     'file' => $exception->getFile(),
                     'line' => $exception->getLine(),
@@ -830,7 +1109,7 @@ class DatVeController extends Controller
         try {
             $ve = $this->taoVeTuDuLieuTam($bookingData);
         } catch (\Throwable $exception) {
-            \Log::error('VNPAY CALLBACK BOOKING ERROR', [
+            Log::error('VNPAY CALLBACK BOOKING ERROR', [
                 'message' => $exception->getMessage(),
                 'file' => $exception->getFile(),
                 'line' => $exception->getLine(),
@@ -885,7 +1164,7 @@ class DatVeController extends Controller
         try {
             $ve = $this->taoVeTuDuLieuTam($bookingData);
         } catch (\Throwable $exception) {
-            \Log::error('CONFIRM VIETQR BOOKING ERROR', [
+            Log::error('CONFIRM VIETQR BOOKING ERROR', [
                 'message' => $exception->getMessage(),
                 'file' => $exception->getFile(),
                 'line' => $exception->getLine(),
@@ -1057,6 +1336,37 @@ class DatVeController extends Controller
 
             if ($existingTicket) {
                 return $existingTicket;
+            }
+
+            if (! empty($bookingData['pending_ticket_id'])) {
+                $pendingTicket = VeXemPhim::query()
+                    ->lockForUpdate()
+                    ->find($bookingData['pending_ticket_id']);
+
+                if (
+                    $pendingTicket
+                    && $pendingTicket->trang_thai === 'cho_thanh_toan'
+                ) {
+                    if ($pendingTicket->isExpired()) {
+                        $pendingTicket->delete();
+
+                        throw new \RuntimeException(
+                            'Phiên thanh toán đã hết hạn.'
+                        );
+                    }
+
+                    $pendingTicket->update([
+                        'ma_ghe' => $bookingData['ma_ghe'],
+                        'thoi_gian_chieu' => $bookingData['thoi_gian_chieu'],
+                        'tong_tien' => $bookingData['tong_tien'],
+                        'tien_hoan' => $bookingData['tien_hoan'] ?? 0,
+                        'loai_ve' => $bookingData['loai_ve'] ?? 'truc_tuyen',
+                        'trang_thai' => 'da_thanh_toan',
+                        'food_items' => $bookingData['food_items'] ?? [],
+                    ]);
+
+                    return $pendingTicket;
+                }
             }
 
             $selectedSeats = collect(

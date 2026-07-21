@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 
 class VeXemPhim extends Model
 {
@@ -28,6 +29,7 @@ class VeXemPhim extends Model
         'tien_hoan',
         'loai_ve',
         'trang_thai',
+        'thoi_gian_het_han',
         'food_items',
         'payment_method',
         'received_amount',
@@ -38,6 +40,7 @@ class VeXemPhim extends Model
 
     protected $casts = [
         'thoi_gian_chieu' => 'datetime',
+        'thoi_gian_het_han' => 'datetime',
         'tong_tien' => 'decimal:2',
         'tien_hoan' => 'decimal:2',
         'food_items' => 'array',
@@ -50,6 +53,17 @@ class VeXemPhim extends Model
     public function canCancel(): bool
     {
         return false;
+    }
+
+    public function isPendingPayment(): bool
+    {
+        return $this->trang_thai === 'cho_thanh_toan';
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->thoi_gian_het_han
+            && now()->greaterThan($this->thoi_gian_het_han);
     }
 
     public function nguoiDung(): BelongsTo
@@ -79,20 +93,16 @@ class VeXemPhim extends Model
             've_xem_phim_do_an',
             've_xem_phim_id',
             'food_id'
-        )
-            ->withPivot('so_luong')
-            ->withTimestamps();
+        )->withPivot('so_luong')
+         ->withTimestamps();
     }
 
-    /**
-     * Ưu tiên dữ liệu JSON trong DB; chỉ dùng cache cho vé cũ.
-     */
     public function getFoodsListAttribute(): array
     {
         $items = $this->food_items;
 
         if (!is_array($items) || empty($items)) {
-            $items = \Illuminate\Support\Facades\Cache::get(
+            $items = Cache::get(
                 "ve_foods:{$this->id}",
                 []
             );
@@ -102,17 +112,18 @@ class VeXemPhim extends Model
             ->map(function ($item) {
                 return [
                     'id' => $item['id'] ?? null,
-                    'ten_mon' =>
-                    $item['name']
+                    'ten_mon' => $item['name']
                         ?? $item['ten_mon']
                         ?? 'Đồ ăn',
-                    'so_luong' => (int) (
+
+                    'so_luong' => (int)(
                         $item['qty']
                         ?? $item['quantity']
                         ?? $item['so_luong']
                         ?? 1
                     ),
-                    'don_gia' => (float) (
+
+                    'don_gia' => (float)(
                         $item['price']
                         ?? $item['don_gia']
                         ?? 0

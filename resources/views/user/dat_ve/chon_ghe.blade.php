@@ -321,6 +321,11 @@
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
 
+                <button type="button" id="btnResetSeats" class="booking-seat-secondary-link" disabled>
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Chọn lại ghế
+                </button>
+
                 <a href="{{ route('home') }}" class="booking-seat-secondary-link">
                     <i class="fa-solid fa-house"></i>
                     Về trang chủ
@@ -334,11 +339,15 @@
     <script>
         const csrf = "{{ csrf_token() }}";
         const showtimeId = "{{ $suatChieu->id }}";
+        const pendingTicketId = "{{ $pendingTicketId ?? '' }}";
+        const pendingDeadline = "{{ $pendingDeadline ?? '' }}";
+        const initialSelectedSeats = @json($selectedSeats->values()->all());
 
         document.addEventListener("DOMContentLoaded", function() {
             const maxSeatCount = 8;
             const seatButtons = Array.from(document.querySelectorAll(".seat-button"));
             const btnFood = document.getElementById("btnFood");
+            const btnResetSeats = document.getElementById("btnResetSeats");
             const seatLabels = document.getElementById("seatLabels");
             const seatCountEl = document.getElementById("seatCount");
             const totalPriceEl = document.getElementById("totalPrice");
@@ -354,6 +363,8 @@
             const seatParam = params.get("ghe");
             if (seatParam) {
                 selectedSeats = seatParam.split(",").map(normalizeSeat).filter(Boolean);
+            } else if (Array.isArray(initialSelectedSeats) && initialSelectedSeats.length > 0) {
+                selectedSeats = initialSelectedSeats.map(normalizeSeat).filter(Boolean);
             }
 
             function normalizeSeat(seat) {
@@ -453,17 +464,18 @@
                 if (!countdownEl) return;
 
                 let deadline = Number(localStorage.getItem(storageKey));
+                const serverDeadline = Number(pendingDeadline) || null;
+                const validStoredDeadline = deadline && deadline > Date.now() ? deadline : null;
+                const validServerDeadline = serverDeadline && serverDeadline > Date.now() ? serverDeadline : null;
 
-                if (selectedSeats.length > 0) {
-                    if (!deadline || deadline <= Date.now()) {
-                        deadline = Date.now() + (7 * 60 * 1000);
-                        localStorage.setItem(storageKey, deadline);
-                    }
-
-                    if (!countdownTimerInterval) {
-                        updateCountdown(deadline);
-                        countdownTimerInterval = setInterval(() => updateCountdown(deadline), 1000);
-                    }
+                if (validStoredDeadline && validServerDeadline) {
+                    deadline = Math.min(validStoredDeadline, validServerDeadline);
+                } else if (validServerDeadline) {
+                    deadline = validServerDeadline;
+                } else if (validStoredDeadline) {
+                    deadline = validStoredDeadline;
+                } else if (selectedSeats.length > 0) {
+                    deadline = Date.now() + (7 * 60 * 1000);
                 } else {
                     if (countdownTimerInterval) {
                         clearInterval(countdownTimerInterval);
@@ -473,6 +485,14 @@
                     localStorage.removeItem(storageKey);
                     countdownEl.innerText = "07:00";
                     countdownEl.classList.remove("animate-pulse");
+                    return;
+                }
+
+                localStorage.setItem(storageKey, deadline);
+
+                if (!countdownTimerInterval) {
+                    updateCountdown(deadline);
+                    countdownTimerInterval = setInterval(() => updateCountdown(deadline), 1000);
                 }
             }
 
@@ -634,6 +654,11 @@
                     const hasSeat = selectedSeats.length > 0;
                     btnFood.disabled = !hasSeat;
                     btnFood.classList.toggle("is-enabled", hasSeat);
+
+                    if (btnResetSeats) {
+                        btnResetSeats.disabled = !hasSeat;
+                        btnResetSeats.classList.toggle("is-disabled", !hasSeat);
+                    }
                 }
 
                 checkTimerState();
@@ -711,31 +736,32 @@
                     e.preventDefault();
                     if (selectedSeats.length === 0) return;
 
-                    // 🌟 BỔ SUNG: Chặn đứng hành động chuyển trang và ném thông báo nếu ghế không liền kề
-                    if (!validateSeatsAdjacentJS(selectedSeats)) {
-                        showSeatErrorJS("Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!");
-                        return;
-                    }
+                        if (!validateSeatsAdjacentJS(selectedSeats)) {
+                            showSeatErrorJS("Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!");
+                            return;
+                        }
 
-                    const seats = encodeURIComponent(selectedSeats.join(","));
-                    window.location.href = `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seats}`;
-                });
-            }
+                        const seats = encodeURIComponent(selectedSeats.join(","));
+                        let url = `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seats}`;
+                        if (pendingTicketId) {
+                            url += `&pending_ticket_id=${encodeURIComponent(pendingTicketId)}`;
+                        }
 
-            document.addEventListener("visibilitychange", function() {
-                if (!document.hidden) {
-                    loadLockedSeats();
+                        window.location.href = url;
+                    });
                 }
-            });
 
-            window.addEventListener("beforeunload", function() {
-                if (selectedSeats.length === 0) return;
-
-                const formData = new FormData();
-                formData.append("_token", csrf);
-                navigator.sendBeacon(`/dat-ve/seat-locks/${showtimeId}/release-all`, formData);
-            });
-
+                if (btnResetSeats) {
+                    btnResetSeats.addEventListener("click", async function() {
+                        if (selectedSeats.length === 0) return;
+                        await releaseAllSeats();
+                        clearSeatErrorJS();
+                        if (countdownEl) {
+                            countdownEl.innerText = "07:00";
+                        }
+                        alert('Đã hủy chọn ghế cũ. Vui lòng chọn ghế mới.');
+                    });
+                }
             updateUI();
             loadLockedSeats();
             setInterval(loadLockedSeats, 3000);

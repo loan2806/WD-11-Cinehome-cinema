@@ -177,9 +177,12 @@
 
                             <form id="paymentForm" action="{{ route('dat_ve.xu_ly_thanh_toan', $suatChieu->id) }}" method="POST">
                                 @csrf
-                                <input type="hidden" name="ghe" value="{{ request('ghe') }}">
-                                <input type="hidden" name="food_cart" value="{{ request('food_cart') }}">
+                                <input type="hidden" name="ghe" value="{{ $selectedSeats->implode(', ') }}">
+                                <input type="hidden" name="food_cart" value="{{ json_encode($foodItems->toArray(), JSON_UNESCAPED_UNICODE) }}">
                                 <input type="hidden" id="submitVoucherCode" name="voucher_code" value="">
+                                @if(!empty($pendingTicketId))
+                                    <input type="hidden" name="pending_ticket_id" value="{{ $pendingTicketId }}">
+                                @endif
 
                                 <div class="space-y-3">
                                     {{-- LỰA CHỌN 1: CỔNG VNPAY --}}
@@ -217,7 +220,17 @@
                                 </button>
                             </form>
 
-                            <a href="{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe={{ request('ghe') }}"
+                            @php
+                                $backUrl = route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) . '?ghe=' . urlencode(request('ghe'));
+                                if (request('food_cart')) {
+                                    $backUrl .= '&food_cart=' . urlencode(request('food_cart'));
+                                }
+                                if (! empty($pendingTicketId)) {
+                                    $backUrl .= '&pending_ticket_id=' . urlencode($pendingTicketId);
+                                }
+                            @endphp
+
+                            <a href="{{ $backUrl }}"
                                 class="mt-3 flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/5 py-4 font-semibold text-gray-300 transition hover:border-white/40 hover:bg-white/10 hover:text-white">
                                 ← Quay lại chọn đồ ăn
                             </a>
@@ -238,7 +251,7 @@
 
 @section('scripts')
 <script>
-    const baseTotal = Number(@json((float) $grandTotal));
+    const baseTotal = Number("{{ (float) $grandTotal }}");
     let appliedVoucher = null;
     let voucherRequestRunning = false;
 
@@ -308,12 +321,12 @@
         }
 
         try {
-            const response = await fetch(@json(route('dat_ve.ap_dung_voucher')), {
+            const response = await fetch("{{ route('dat_ve.ap_dung_voucher') }}", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-CSRF-TOKEN': @json(csrf_token()),
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
                 },
                 body: JSON.stringify({
                     voucher_code: code,
@@ -432,11 +445,14 @@
             return;
         }
 
-        const storageKey = 'booking_deadline_{{ $suatChieu->id }}';
+        const storageKey = "booking_deadline_{{ $suatChieu->id }}";
+        const pendingDeadlineValue = "{{ $pendingDeadline ?? '' }}";
+        const pendingDeadline = pendingDeadlineValue ? Number(pendingDeadlineValue) : null;
 
         function getStoredDeadline() {
             try {
-                return Number(localStorage.getItem(storageKey)) || null;
+                const value = Number(localStorage.getItem(storageKey));
+                return Number.isFinite(value) ? value : null;
             } catch (error) {
                 return null;
             }
@@ -458,12 +474,22 @@
             }
         }
 
-        let deadline = getStoredDeadline();
+        const storedDeadline = getStoredDeadline();
+        const validPendingDeadline = pendingDeadline && pendingDeadline > Date.now() ? pendingDeadline : null;
+        const validStoredDeadline = storedDeadline && storedDeadline > Date.now() ? storedDeadline : null;
+        let deadline = null;
 
-        if (!deadline || deadline <= Date.now()) {
+        if (validPendingDeadline && validStoredDeadline) {
+            deadline = Math.min(validPendingDeadline, validStoredDeadline);
+        } else if (validPendingDeadline) {
+            deadline = validPendingDeadline;
+        } else if (validStoredDeadline) {
+            deadline = validStoredDeadline;
+        } else {
             deadline = Date.now() + 7 * 60 * 1000;
-            setStoredDeadline(deadline);
         }
+
+        setStoredDeadline(deadline);
 
         function updateCountdown() {
             const remaining = deadline - Date.now();
@@ -472,7 +498,7 @@
                 clearStoredDeadline();
                 countdownEl.innerText = '00:00';
                 countdownEl.classList.add('animate-pulse');
-                window.location.href = @json(route('home'));
+                window.location.href = "{{ route('home') }}";
                 return;
             }
 

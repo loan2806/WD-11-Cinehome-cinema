@@ -85,17 +85,13 @@
                 link.addEventListener('click', clearBookingData);
             });
 
-            // 4. Chỉ reset khi THOÁT HẲN booking (không phải back trong flow)
-            window.addEventListener('beforeunload', function() {
-                if (!isBookingPage()) {
-                    clearBookingData();
-                }
-            });
-
-            // 5. Nếu đang ở HOME thì auto clear luôn
+            // 4. Nếu đang ở HOME thì auto clear luôn
             if (isHomePage()) {
                 clearBookingData();
             }
+
+            // NOTE: Bỏ xử lý beforeunload để không xóa bộ đếm thanh toán khi người dùng
+            // rời khỏi checkout sang trang khác và quay lại thanh toán tiếp.
 
         });
     </script>
