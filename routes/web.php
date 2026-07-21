@@ -58,6 +58,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schedule;
 use Kreait\Laravel\Firebase\Facades\Firebase;
 
+
 /*
 |--------------------------------------------------------------------------
 | GIAO DIỆN CÔNG CỘNG - FRONTEND WEBSITE
@@ -164,6 +165,8 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
         Route::delete('/seat-locks/{suat_chieu}/{seat}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'release'])
             ->name('seat_locks.release');
         Route::post('/seat-locks/{suat_chieu}/release-all', [\App\Http\Controllers\DatVe\SeatLockController::class, 'releaseAll']);
+        Route::post('/ap-dung-voucher', [DatVeController::class, 'apDungVoucher'])
+            ->name('ap_dung_voucher');
     });
 });
 

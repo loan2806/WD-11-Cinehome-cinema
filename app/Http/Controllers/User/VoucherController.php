@@ -9,6 +9,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class VoucherController extends Controller
 {
@@ -32,10 +34,10 @@ class VoucherController extends Controller
 
         $availablePoints = (int) ($thanhVien?->diem_hien_tai ?? 0);
         $affordableCount = $vouchers
-            ->filter(fn ($voucher) => $availablePoints >= $voucher->diem_can_doi)
+            ->filter(fn($voucher) => $availablePoints >= $voucher->diem_can_doi)
             ->count();
         $nextVoucher = $vouchers
-            ->filter(fn ($voucher) => $availablePoints < $voucher->diem_can_doi)
+            ->filter(fn($voucher) => $availablePoints < $voucher->diem_can_doi)
             ->sortBy('diem_can_doi')
             ->first();
         $pointsNeededForNext = $nextVoucher
@@ -113,6 +115,7 @@ class VoucherController extends Controller
      */
     public function myVoucher(Request $request)
     {
+        $this->capVoucherSinhNhat();
         $allowedStatuses = ['kha_dung', 'da_su_dung', 'het_han'];
         $activeStatus = in_array($request->query('trang_thai'), $allowedStatuses, true)
             ? $request->query('trang_thai')
@@ -154,7 +157,7 @@ class VoucherController extends Controller
                             ->orWhere('ngay_het_han', '>=', now());
                     });
             })
-            ->when($activeStatus === 'da_su_dung', fn ($query) => $query->where('da_su_dung', true))
+            ->when($activeStatus === 'da_su_dung', fn($query) => $query->where('da_su_dung', true))
             ->when($activeStatus === 'het_han', function ($query) {
                 $query->where('da_su_dung', false)
                     ->whereNotNull('ngay_het_han')
@@ -212,5 +215,81 @@ class VoucherController extends Controller
         session()->forget('voucher_tam');
 
         return response()->json(['success' => true]);
+    }
+
+    private function capVoucherSinhNhat(): void
+    {
+        $nguoiDung = Auth::user();
+
+        if (
+            !$nguoiDung
+            || !$nguoiDung->ngay_sinh
+            || !$nguoiDung->trang_thai_hoat_dong
+        ) {
+            return;
+        }
+
+        $ngaySinh = Carbon::parse($nguoiDung->ngay_sinh);
+
+        if (
+            $ngaySinh->day !== now()->day
+            || $ngaySinh->month !== now()->month
+        ) {
+            return;
+        }
+
+        $voucherSinhNhat = Voucher::query()
+            ->where('loai_voucher', 'sinh_nhat')
+            ->where('trang_thai', true)
+            ->whereDate('ngay_het_han', '>=', today())
+            ->first();
+
+        if (!$voucherSinhNhat) {
+            return;
+        }
+
+        $daNhanTrongNam = NguoiDungVoucher::query()
+            ->where('nguoi_dung_id', $nguoiDung->id)
+            ->where('nam_ap_dung', now()->year)
+            ->whereHas('voucher', function ($query) {
+                $query->where('loai_voucher', 'sinh_nhat');
+            })
+            ->exists();
+
+        if ($daNhanTrongNam) {
+            return;
+        }
+
+        DB::transaction(function () use ($nguoiDung, $voucherSinhNhat) {
+            do {
+                $maVoucherCaNhan = Str::upper(
+                    $voucherSinhNhat->ma_voucher . '-' . Str::random(8)
+                );
+            } while (
+                NguoiDungVoucher::where(
+                    'ma_voucher_ca_nhan',
+                    $maVoucherCaNhan
+                )->exists()
+            );
+
+            $hanSuDung = now()->copy()->addDays(7)->endOfDay();
+            $hanVoucherMau = Carbon::parse(
+                $voucherSinhNhat->ngay_het_han
+            )->endOfDay();
+
+            NguoiDungVoucher::create([
+                'nguoi_dung_id' => $nguoiDung->id,
+                'voucher_id' => $voucherSinhNhat->id,
+                'ma_voucher_ca_nhan' => $maVoucherCaNhan,
+                'da_su_dung' => false,
+                'ngay_nhan' => now(),
+                'ngay_su_dung' => null,
+                'loai_cap_phat' => 'sinh_nhat',
+                'nam_ap_dung' => now()->year,
+                'ngay_het_han' => $hanSuDung->lt($hanVoucherMau)
+                    ? $hanSuDung
+                    : $hanVoucherMau,
+            ]);
+        });
     }
 }

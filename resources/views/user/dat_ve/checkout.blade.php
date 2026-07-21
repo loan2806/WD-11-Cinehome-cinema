@@ -152,7 +152,7 @@
                                 <input type="text" id="voucherCode" placeholder="Nhập mã voucher..."
                                     class="flex-1 rounded-2xl border border-white/10 bg-[#1d1d1d] px-4 py-3 text-white outline-none focus:border-yellow-400">
 
-                                <button type="button" onclick="applyVoucher()"
+                                <button type="button" id="applyVoucherButton" onclick="applyVoucher()"
                                     class="rounded-2xl bg-yellow-400 px-5 font-black text-black hover:bg-yellow-300">
                                     Áp dụng
                                 </button>
@@ -238,80 +238,224 @@
 
 @section('scripts')
 <script>
+    const baseTotal = Number(@json((float) $grandTotal));
     let appliedVoucher = null;
-    let baseTotal = {{ $grandTotal }};
+    let voucherRequestRunning = false;
 
-    function applyVoucher() {
-        const code = document.getElementById('voucherCode').value.trim();
+    const formatVnd = (value) =>
+        new Intl.NumberFormat('vi-VN').format(Math.max(0, Number(value) || 0)) + 'đ';
+
+    function resetVoucher(message = '') {
+        appliedVoucher = null;
+
         const result = document.getElementById('voucherResult');
         const totalEl = document.getElementById('grandTotal');
+        const submitVoucherInput = document.getElementById('submitVoucherCode');
 
-        if (!code) {
-            alert('Nhập mã voucher');
+        if (submitVoucherInput) {
+            submitVoucherInput.value = '';
+        }
+
+        if (totalEl) {
+            totalEl.innerText = formatVnd(baseTotal);
+        }
+
+        if (result) {
+            if (message) {
+                result.classList.remove('hidden');
+                result.classList.remove(
+                    'border-yellow-400/30',
+                    'bg-yellow-400/10',
+                    'text-yellow-300'
+                );
+                result.classList.add(
+                    'border-red-400/30',
+                    'bg-red-400/10',
+                    'text-red-300'
+                );
+                result.textContent = message;
+            } else {
+                result.classList.add('hidden');
+                result.textContent = '';
+            }
+        }
+    }
+
+    async function applyVoucher() {
+        if (voucherRequestRunning) {
             return;
         }
 
-        appliedVoucher = {
-            code: code,
-            discount: 20000
-        };
-
+        const codeInput = document.getElementById('voucherCode');
+        const result = document.getElementById('voucherResult');
+        const totalEl = document.getElementById('grandTotal');
         const submitVoucherInput = document.getElementById('submitVoucherCode');
-        if (submitVoucherInput) {
-            submitVoucherInput.value = code;
+        const applyButton = document.getElementById('applyVoucherButton');
+
+        const code = (codeInput?.value || '').trim().toUpperCase();
+
+        if (!code) {
+            resetVoucher('Vui lòng nhập mã voucher.');
+            codeInput?.focus();
+            return;
         }
 
-        result.classList.remove('hidden');
-        result.innerHTML = `✔ Đã áp dụng: <b>${code}</b> (-${appliedVoucher.discount.toLocaleString('vi-VN')}đ)`;
+        voucherRequestRunning = true;
 
-        const final = Math.max(0, baseTotal - appliedVoucher.discount);
-        totalEl.innerText = final.toLocaleString('vi-VN') + 'đ';
+        if (applyButton) {
+            applyButton.disabled = true;
+            applyButton.textContent = 'Đang kiểm tra...';
+        }
+
+        try {
+            const response = await fetch(@json(route('dat_ve.ap_dung_voucher')), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': @json(csrf_token()),
+                },
+                body: JSON.stringify({
+                    voucher_code: code,
+                    subtotal: baseTotal,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                resetVoucher(
+                    data.message ||
+                    data.errors?.voucher_code?.[0] ||
+                    'Voucher không hợp lệ.'
+                );
+                return;
+            }
+
+            appliedVoucher = {
+                code: data.voucher_code,
+                discount: Number(data.discount),
+                finalTotal: Number(data.final_total),
+            };
+
+            codeInput.value = appliedVoucher.code;
+            submitVoucherInput.value = appliedVoucher.code;
+
+            result.classList.remove('hidden');
+            result.classList.remove(
+                'border-red-400/30',
+                'bg-red-400/10',
+                'text-red-300'
+            );
+            result.classList.add(
+                'border-yellow-400/30',
+                'bg-yellow-400/10',
+                'text-yellow-300'
+            );
+            result.innerHTML =
+                `✔ Đã áp dụng: <b>${appliedVoucher.code}</b> ` +
+                `(-${formatVnd(appliedVoucher.discount)})`;
+
+            totalEl.innerText = formatVnd(appliedVoucher.finalTotal);
+        } catch (error) {
+            console.error(error);
+            resetVoucher('Không thể kiểm tra voucher. Vui lòng thử lại.');
+        } finally {
+            voucherRequestRunning = false;
+
+            if (applyButton) {
+                applyButton.disabled = false;
+                applyButton.textContent = 'Áp dụng';
+            }
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        const codeInput = document.getElementById('voucherCode');
+        const paymentForm = document.getElementById('paymentForm');
 
-        // ==========================================
-        // EFFECT LOGIC: Xử lý đổi màu viền động khi click chọn ví
-        // ==========================================
+        codeInput?.addEventListener('input', function () {
+            if (
+                appliedVoucher &&
+                this.value.trim().toUpperCase() !== appliedVoucher.code
+            ) {
+                resetVoucher();
+            }
+        });
+
+        codeInput?.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                applyVoucher();
+            }
+        });
+
+        paymentForm?.addEventListener('submit', function (event) {
+            const typedCode = (codeInput?.value || '').trim().toUpperCase();
+
+            if (typedCode && (!appliedVoucher || appliedVoucher.code !== typedCode)) {
+                event.preventDefault();
+                resetVoucher('Bạn phải bấm “Áp dụng” và xác thực voucher trước khi thanh toán.');
+                codeInput?.focus();
+            }
+        });
+
         const paymentLabels = document.querySelectorAll('.payment-method-label');
+
         paymentLabels.forEach(label => {
             const radio = label.querySelector('input[type="radio"]');
-            
-            radio.addEventListener('change', function() {
-                // Reset toàn bộ các label về trạng thái mặc định viền tối
-                paymentLabels.forEach(l => {
-                    l.classList.remove('border-yellow-400', 'bg-yellow-400/10');
-                    l.classList.add('border-white/10', 'bg-zinc-900/30');
-                    l.querySelector('span').classList.remove('text-gray-100');
-                    l.querySelector('span').classList.add('text-gray-200');
+
+            radio.addEventListener('change', function () {
+                paymentLabels.forEach(item => {
+                    item.classList.remove('border-yellow-400', 'bg-yellow-400/10');
+                    item.classList.add('border-white/10', 'bg-zinc-900/30');
+
+                    const text = item.querySelector('span');
+                    text?.classList.remove('text-gray-100');
+                    text?.classList.add('text-gray-200');
                 });
 
-                // Kích hoạt màu vàng gold sáng rực rỡ cho tùy chọn vừa click
                 if (this.checked) {
                     label.classList.add('border-yellow-400', 'bg-yellow-400/10');
                     label.classList.remove('border-white/10', 'bg-zinc-900/30');
-                    label.querySelector('span').classList.add('text-gray-100');
-                    label.querySelector('span').classList.remove('text-gray-200');
+
+                    const text = label.querySelector('span');
+                    text?.classList.add('text-gray-100');
+                    text?.classList.remove('text-gray-200');
                 }
             });
         });
 
-        // COUNTDOWN TIMER LOGIC
         const countdownEl = document.getElementById('countdown');
-        if (!countdownEl) return;
+
+        if (!countdownEl) {
+            return;
+        }
 
         const storageKey = 'booking_deadline_{{ $suatChieu->id }}';
 
         function getStoredDeadline() {
-            try { return Number(localStorage.getItem(storageKey)) || null; } catch (e) { return null; }
+            try {
+                return Number(localStorage.getItem(storageKey)) || null;
+            } catch (error) {
+                return null;
+            }
         }
 
         function setStoredDeadline(deadline) {
-            try { return localStorage.setItem(storageKey, String(deadline)); } catch (e) {}
+            try {
+                localStorage.setItem(storageKey, String(deadline));
+            } catch (error) {
+                console.error(error);
+            }
         }
 
         function clearStoredDeadline() {
-            try { return localStorage.removeItem(storageKey); } catch (e) {}
+            try {
+                localStorage.removeItem(storageKey);
+            } catch (error) {
+                console.error(error);
+            }
         }
 
         let deadline = getStoredDeadline();
@@ -328,14 +472,17 @@
                 clearStoredDeadline();
                 countdownEl.innerText = '00:00';
                 countdownEl.classList.add('animate-pulse');
-                window.location.href = "{{ route('home') }}";
+                window.location.href = @json(route('home'));
                 return;
             }
 
             const minutes = Math.floor(remaining / 60000);
             const seconds = Math.floor((remaining % 60000) / 1000);
 
-            countdownEl.innerText = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            countdownEl.innerText =
+                String(minutes).padStart(2, '0') +
+                ':' +
+                String(seconds).padStart(2, '0');
 
             if (remaining <= 60000) {
                 countdownEl.classList.add('animate-pulse');
