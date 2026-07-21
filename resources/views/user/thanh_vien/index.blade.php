@@ -4,14 +4,14 @@
 
 @section('content')
 @php
-    $user = Auth::user();
-    $rankLabel = $currentRank['label'] ?? $thanhVien->ten_hang;
-    $nextRankLabel = match ($currentRankKey) {
-        'member' => 'Silver',
-        'silver' => 'Gold',
-        'gold' => 'Platinum',
-        default => null,
-    };
+$user = Auth::user();
+$rankLabel = $currentRank['label'] ?? $thanhVien->ten_hang;
+$nextRankLabel = match ($currentRankKey) {
+'member' => 'Silver',
+'silver' => 'Gold',
+'gold' => 'Platinum',
+default => null,
+};
 @endphp
 
 <section class="member-page">
@@ -86,9 +86,9 @@
                         <span>{{ $rankLabel }}</span>
                         <strong>
                             @if($nextRankLabel)
-                                Còn {{ number_format($pointsToNextRank) }} điểm lên {{ $nextRankLabel }}
+                            Còn {{ number_format($pointsToNextRank) }} điểm lên {{ $nextRankLabel }}
                             @else
-                                Bạn đang ở hạng cao nhất
+                            Bạn đang ở hạng cao nhất
                             @endif
                         </strong>
                     </div>
@@ -131,14 +131,14 @@
 
             <div class="member-rank-grid">
                 @foreach($rankConfig as $rankKey => $rank)
-                    <article class="member-rank-card {{ $rankKey === $currentRankKey ? 'is-active' : '' }}">
-                        <span>
-                            <i class="{{ $rank['icon'] }}"></i>
-                        </span>
-                        <h3>{{ $rank['label'] }}</h3>
-                        <strong>{{ $rank['range'] }}</strong>
-                        <p>{{ $rank['benefit'] }}</p>
-                    </article>
+                <article class="member-rank-card {{ $rankKey === $currentRankKey ? 'is-active' : '' }}">
+                    <span>
+                        <i class="{{ $rank['icon'] }}"></i>
+                    </span>
+                    <h3>{{ $rank['label'] }}</h3>
+                    <strong>{{ $rank['range'] }}</strong>
+                    <p>{{ $rank['benefit'] }}</p>
+                </article>
                 @endforeach
             </div>
         </section>
@@ -162,14 +162,57 @@
 
                 <div class="member-referral-stats">
                     <article>
-                        <span>Người đã giới thiệu</span>
+                        <span>Đã giới thiệu</span>
                         <strong>{{ number_format($nguoiDaGioiThieu->count()) }}</strong>
                     </article>
+
                     <article>
                         <span>Điểm thưởng</span>
                         <strong>+{{ number_format($pointSummary['referral_points'] ?? 0) }}</strong>
                     </article>
                 </div>
+
+                <hr style="margin:20px 0;border:none;border-top:1px solid #ececec;">
+
+                <div class="member-section-head" style="margin-bottom:12px">
+                    <span>Thông tin liên kết</span>
+                    <h2>Người đã giới thiệu bạn</h2>
+                </div>
+
+                @if($thanhVien->nguoiGioiThieu)
+
+                <div class="member-referral-info">
+
+                    <div style="font-size:18px;font-weight:600">
+                        {{ $thanhVien->nguoiGioiThieu->nguoiDung->ho_ten ?? 'Không xác định' }}
+                    </div>
+
+                    <div style="margin-top:8px;color:#666">
+                        Mã giới thiệu:
+                        <strong>
+                            {{ $thanhVien->nguoiGioiThieu->ma_gioi_thieu }}
+                        </strong>
+                    </div>
+
+                    <div style="margin-top:10px;color:#16a34a;font-weight:600">
+                        <i class="fa-solid fa-circle-check"></i>
+                        Đã liên kết
+                    </div>
+
+                </div>
+
+                @else
+
+                <div class="member-referral-info">
+
+                    <div style="color:#888">
+                        <i class="fa-solid fa-user-slash"></i>
+                        Bạn chưa liên kết mã giới thiệu.
+                    </div>
+
+                </div>
+
+                @endif
             </section>
 
             <section class="member-tips-card">
@@ -209,86 +252,86 @@
 
             <div class="member-history-list">
                 @forelse($lichSuDiem as $item)
-                    @php
-                        $isEarn = $item->loai_giao_dich === 'cong_diem';
-                    @endphp
+                @php
+                $isEarn = $item->loai_giao_dich === 'cong_diem';
+                @endphp
 
-                    <article class="member-history-item {{ $isEarn ? 'is-earned' : 'is-spent' }}">
-                        <div class="member-history-icon">
-                            <i class="fa-solid {{ $isEarn ? 'fa-plus' : 'fa-minus' }}"></i>
-                        </div>
-
-                        <div class="member-history-copy">
-                            <span>{{ $item->created_at?->format('H:i - d/m/Y') }}</span>
-                            <h3>{{ $isEarn ? 'Cộng điểm' : 'Trừ điểm' }}</h3>
-                            <p>{{ $item->noi_dung }}</p>
-                        </div>
-
-                        <strong>
-                            {{ $isEarn ? '+' : '-' }}{{ number_format($item->so_diem) }}
-                        </strong>
-                    </article>
-                @empty
-                    <div class="member-empty-history">
-                        <span>
-                            <i class="fa-solid fa-receipt"></i>
-                        </span>
-                        <h3>Chưa có lịch sử điểm</h3>
-                        <p>Đặt vé hoặc đổi voucher để các giao dịch điểm xuất hiện tại đây.</p>
-                        <a href="{{ route('dat_ve.chon_phim') }}" class="member-primary-link">
-                            <i class="fa-solid fa-ticket"></i>
-                            Đặt vé ngay
-                        </a>
+                <article class="member-history-item {{ $isEarn ? 'is-earned' : 'is-spent' }}">
+                    <div class="member-history-icon">
+                        <i class="fa-solid {{ $isEarn ? 'fa-plus' : 'fa-minus' }}"></i>
                     </div>
+
+                    <div class="member-history-copy">
+                        <span>{{ $item->created_at?->format('H:i - d/m/Y') }}</span>
+                        <h3>{{ $isEarn ? 'Cộng điểm' : 'Trừ điểm' }}</h3>
+                        <p>{{ $item->noi_dung }}</p>
+                    </div>
+
+                    <strong>
+                        {{ $isEarn ? '+' : '-' }}{{ number_format($item->so_diem) }}
+                    </strong>
+                </article>
+                @empty
+                <div class="member-empty-history">
+                    <span>
+                        <i class="fa-solid fa-receipt"></i>
+                    </span>
+                    <h3>Chưa có lịch sử điểm</h3>
+                    <p>Đặt vé hoặc đổi voucher để các giao dịch điểm xuất hiện tại đây.</p>
+                    <a href="{{ route('dat_ve.chon_phim') }}" class="member-primary-link">
+                        <i class="fa-solid fa-ticket"></i>
+                        Đặt vé ngay
+                    </a>
+                </div>
                 @endforelse
             </div>
 
             @if($lichSuDiem->hasPages())
-                <div class="member-pagination">
-                    <div class="member-page-summary">
-                        Hiển thị
-                        <strong>{{ $lichSuDiem->firstItem() }}</strong>
-                        -
-                        <strong>{{ $lichSuDiem->lastItem() }}</strong>
-                        trong
-                        <strong>{{ $lichSuDiem->total() }}</strong>
-                        giao dịch
-                    </div>
-
-                    <nav class="member-page-controls" aria-label="Phân trang lịch sử điểm">
-                        @if($lichSuDiem->onFirstPage())
-                            <span class="member-page-link is-disabled">
-                                <i class="fa-solid fa-chevron-left"></i>
-                                Trước
-                            </span>
-                        @else
-                            <a href="{{ $lichSuDiem->previousPageUrl() }}" class="member-page-link">
-                                <i class="fa-solid fa-chevron-left"></i>
-                                Trước
-                            </a>
-                        @endif
-
-                        @foreach($lichSuDiem->getUrlRange(max(1, $lichSuDiem->currentPage() - 2), min($lichSuDiem->lastPage(), $lichSuDiem->currentPage() + 2)) as $page => $url)
-                            @if($page === $lichSuDiem->currentPage())
-                                <span class="member-page-link is-current">{{ $page }}</span>
-                            @else
-                                <a href="{{ $url }}" class="member-page-link">{{ $page }}</a>
-                            @endif
-                        @endforeach
-
-                        @if($lichSuDiem->hasMorePages())
-                            <a href="{{ $lichSuDiem->nextPageUrl() }}" class="member-page-link">
-                                Sau
-                                <i class="fa-solid fa-chevron-right"></i>
-                            </a>
-                        @else
-                            <span class="member-page-link is-disabled">
-                                Sau
-                                <i class="fa-solid fa-chevron-right"></i>
-                            </span>
-                        @endif
-                    </nav>
+            <div class="member-pagination">
+                <div class="member-page-summary">
+                    Hiển thị
+                    <strong>{{ $lichSuDiem->firstItem() }}</strong>
+                    -
+                    <strong>{{ $lichSuDiem->lastItem() }}</strong>
+                    trong
+                    <strong>{{ $lichSuDiem->total() }}</strong>
+                    giao dịch
                 </div>
+
+                <nav class="member-page-controls" aria-label="Phân trang lịch sử điểm">
+                    @if($lichSuDiem->onFirstPage())
+                    <span class="member-page-link is-disabled">
+                        <i class="fa-solid fa-chevron-left"></i>
+                        Trước
+                    </span>
+                    @else
+                    <a href="{{ $lichSuDiem->previousPageUrl() }}" class="member-page-link">
+                        <i class="fa-solid fa-chevron-left"></i>
+                        Trước
+                    </a>
+                    @endif
+
+                    @foreach($lichSuDiem->getUrlRange(max(1, $lichSuDiem->currentPage() - 2), min($lichSuDiem->lastPage(), $lichSuDiem->currentPage() + 2)) as $page => $url)
+                    @if($page === $lichSuDiem->currentPage())
+                    <span class="member-page-link is-current">{{ $page }}</span>
+                    @else
+                    <a href="{{ $url }}" class="member-page-link">{{ $page }}</a>
+                    @endif
+                    @endforeach
+
+                    @if($lichSuDiem->hasMorePages())
+                    <a href="{{ $lichSuDiem->nextPageUrl() }}" class="member-page-link">
+                        Sau
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                    @else
+                    <span class="member-page-link is-disabled">
+                        Sau
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </span>
+                    @endif
+                </nav>
+            </div>
             @endif
         </section>
     </div>

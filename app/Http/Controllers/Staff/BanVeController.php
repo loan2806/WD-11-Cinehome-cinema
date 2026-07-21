@@ -125,35 +125,167 @@ class BanVeController extends Controller
             return $giaVe + $phuThu;
         });
 
-        $menu = DoAn::with([
-            'variants',
-            'category'
-        ])
-            ->where('is_active', true)
-            ->get()
-            ->groupBy(
-                fn($food) => $food->category->name ?? 'Khác'
-            )
-            ->map(function ($foods, $category) {
+        $foods = DoAn::active()
+    ->with([
+        'category',
 
-                return [
-                    'category' => $category,
-                    'foods' => $foods->map(function ($food) {
+        'variants' => function ($query) {
+            $query
+                ->where('is_active', true)
+                ->orderBy('price');
+        },
+
+        'comboItems.variant.doAn',
+    ])
+    ->orderBy('sort_order')
+    ->orderBy('name')
+    ->get();
+
+$menu = $foods
+    ->groupBy(function (DoAn $food) {
+        return trim(
+            $food->category?->name ?? 'Khác'
+        );
+    })
+    ->map(function ($foods, $category) {
+        $menuItems = $foods
+            ->flatMap(function (DoAn $food) {
+                /*
+                |--------------------------------------------------------------------------
+                | Combo
+                |--------------------------------------------------------------------------
+                */
+                if ($food->isCombo()) {
+                    $comboItems = $food->comboItems
+                        ->map(function ($comboItem) {
+                            $variant = $comboItem->variant;
+
+                            return [
+                                'variant_id' =>
+                                    $comboItem->food_variant_id
+                                    ?? $variant?->id,
+
+                                'name' =>
+                                    $variant?->doAn?->name
+                                    ?? 'Thành phần',
+
+                                'variant' =>
+                                    $variant?->value,
+
+                                'price' => (float) (
+                                    $variant?->price ?? 0
+                                ),
+
+                                'quantity' => max(
+                                    (int) (
+                                        $comboItem->quantity ?? 1
+                                    ),
+                                    1
+                                ),
+
+                                'stock' => (int) (
+                                    $variant?->stock_quantity ?? 0
+                                ),
+                            ];
+                        })
+                        ->values();
+
+                    $price = $comboItems->sum(
+                        fn($item) =>
+                        $item['price']
+                            * $item['quantity']
+                    );
+
+                    $available = $comboItems
+                        ->map(function ($item) {
+                            if ($item['quantity'] <= 0) {
+                                return 0;
+                            }
+
+                            return intdiv(
+                                $item['stock'],
+                                $item['quantity']
+                            );
+                        })
+                        ->min() ?? 0;
+
+                    return [[
+                        'cart_key' => 'combo-' . $food->id,
+                        'type' => 'combo',
+                        'id' => $food->id,
+                        'food_id' => $food->id,
+                        'variant_id' => null,
+
+                        'name' => $food->name,
+                        'description' => $food->description,
+                        'image' => $food->image,
+
+                        'price' => (int) round($price),
+                        'available' => (int) $available,
+
+                        'combo_items' =>
+                        $comboItems->toArray(),
+                    ]];
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Món thường: mỗi biến thể là một lựa chọn riêng
+                |--------------------------------------------------------------------------
+                */
+                return $food->variants
+                    ->map(function ($variant) use ($food) {
+                        $variantName = trim(
+                            (string) $variant->value
+                        );
 
                         return [
-                            'id' => $food->id,
-                            'name' => $food->name,
+                            'cart_key' =>
+                                'variant-' . $variant->id,
+
+                            'type' => 'variant',
+
+                            /*
+                             * id dùng để nhận diện biến thể.
+                             */
+                            'id' => $variant->id,
+                            'food_id' => $food->id,
+                            'variant_id' => $variant->id,
+
+                            'name' => $food->name
+                                . (
+                                    $variantName !== ''
+                                    ? ' - ' . $variantName
+                                    : ''
+                                ),
+
+                            'description' =>
+                                $food->description,
+
                             'image' => $food->image,
-                            'price' => (int)$food->price,
-                            'available' => (int)$food->stock_quantity
+
+                            'price' => (int) round(
+                                $variant->price
+                            ),
+
+                            'available' => (int) (
+                                $variant->stock_quantity ?? 0
+                            ),
                         ];
                     })
-                        ->values()
-                        ->toArray()
-                ];
+                    ->values()
+                    ->all();
             })
             ->values()
             ->toArray();
+
+        return [
+            'category' => $category,
+            'foods' => $menuItems,
+        ];
+    })
+    ->values()
+    ->toArray();
 
         return view('staff.ban-ve.chon-do-an', [
             'suatChieu' => $suatChieu,
@@ -501,84 +633,190 @@ class BanVeController extends Controller
                     ->values();
 
                 $verifiedFoodItems = collect();
-                $foodTotal = 0;
+$foodTotal = 0;
 
-                foreach (
-                    $requestedFoodItems
-                    as $foodData
-                ) {
-                    $foodId = (int) (
-                        $foodData['id'] ?? 0
-                    );
+foreach ($requestedFoodItems as $foodData) {
+    $type = (string) (
+        $foodData['type'] ?? ''
+    );
 
-                    $quantity = (int) (
-                        $foodData['qty']
-                        ?? $foodData['quantity']
-                        ?? 0
-                    );
+    $quantity = (int) (
+        $foodData['qty']
+        ?? $foodData['quantity']
+        ?? 0
+    );
 
-                    if (
-                        $foodId <= 0
-                        || $quantity <= 0
-                    ) {
-                        continue;
-                    }
+    if ($quantity <= 0) {
+        continue;
+    }
 
-                    $food = DoAn::lockForUpdate()
-                        ->find($foodId);
+    /*
+    |--------------------------------------------------------------------------
+    | Combo
+    |--------------------------------------------------------------------------
+    */
+    if ($type === 'combo') {
+        $foodId = (int) (
+            $foodData['food_id']
+            ?? $foodData['id']
+            ?? 0
+        );
 
-                    if (!$food) {
-                        throw new \RuntimeException(
-                            'Một món ăn không tồn tại.'
-                        );
-                    }
+        $food = DoAn::with([
+            'category',
+            'comboItems.variant.doAn',
+        ])
+            ->lockForUpdate()
+            ->find($foodId);
 
-                    if (
-                        isset($food->is_active)
-                        && !$food->is_active
-                    ) {
-                        throw new \RuntimeException(
-                            'Món '
-                                . $food->name
-                                . ' đã ngừng bán.'
-                        );
-                    }
+        if (!$food || !$food->isCombo()) {
+            throw new \RuntimeException(
+                'Combo không tồn tại.'
+            );
+        }
 
-                    $stockQuantity = (int) (
-                        $food->stock_quantity ?? 0
-                    );
+        if (!$food->is_active) {
+            throw new \RuntimeException(
+                'Combo ' . $food->name . ' đã ngừng bán.'
+            );
+        }
 
-                    if (
-                        $stockQuantity
-                        < $quantity
-                    ) {
-                        throw new \RuntimeException(
-                            'Món '
-                                . $food->name
-                                . ' chỉ còn '
-                                . $stockQuantity
-                                . ' sản phẩm.'
-                        );
-                    }
+        if ($food->comboItems->isEmpty()) {
+            throw new \RuntimeException(
+                'Combo ' . $food->name
+                    . ' chưa có thành phần.'
+            );
+        }
 
-                    /*
-                 * Không dùng giá frontend gửi lên.
-                 */
-                    $unitPrice = (float) (
-                        $food->price ?? 0
-                    );
+        $unitPrice = 0;
+        $available = null;
 
-                    $foodTotal +=
-                        $unitPrice * $quantity;
+        foreach ($food->comboItems as $comboItem) {
+            $variant = $comboItem->variant;
 
-                    $verifiedFoodItems->push([
-                        'id' => $food->id,
-                        'name' => $food->name,
-                        'image' => $food->image,
-                        'price' => $unitPrice,
-                        'qty' => $quantity,
-                    ]);
-                }
+            $quantityPerCombo = max(
+                (int) ($comboItem->quantity ?? 1),
+                1
+            );
+
+            if (!$variant || !$variant->is_active) {
+                throw new \RuntimeException(
+                    'Combo ' . $food->name
+                        . ' có thành phần không hợp lệ.'
+                );
+            }
+
+            $unitPrice +=
+                (float) $variant->price
+                * $quantityPerCombo;
+
+            $variantAvailable = intdiv(
+                (int) $variant->stock_quantity,
+                $quantityPerCombo
+            );
+
+            $available = $available === null
+                ? $variantAvailable
+                : min($available, $variantAvailable);
+        }
+
+        if (($available ?? 0) < $quantity) {
+            throw new \RuntimeException(
+                'Combo ' . $food->name
+                    . ' chỉ còn '
+                    . ($available ?? 0)
+                    . ' phần.'
+            );
+        }
+
+        $foodTotal += $unitPrice * $quantity;
+
+        $verifiedFoodItems->push([
+            'type' => 'combo',
+            'id' => $food->id,
+            'food_id' => $food->id,
+            'variant_id' => null,
+
+            'name' => $food->name,
+            'price' => $unitPrice,
+            'qty' => $quantity,
+        ]);
+
+        continue;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Biến thể món ăn
+    |--------------------------------------------------------------------------
+    */
+    $variantId = (int) (
+        $foodData['variant_id']
+        ?? $foodData['id']
+        ?? 0
+    );
+
+    $variant = BienTheDoAn::with('doAn')
+        ->lockForUpdate()
+        ->find($variantId);
+
+    if (!$variant || !$variant->doAn) {
+        throw new \RuntimeException(
+            'Biến thể đồ ăn không tồn tại.'
+        );
+    }
+
+    if (
+        !$variant->is_active
+        || !$variant->doAn->is_active
+    ) {
+        throw new \RuntimeException(
+            'Món '
+                . $variant->doAn->name
+                . ' đã ngừng bán.'
+        );
+    }
+
+    if (
+        (int) $variant->stock_quantity
+        < $quantity
+    ) {
+        throw new \RuntimeException(
+            'Món '
+                . $variant->doAn->name
+                . ' - '
+                . $variant->value
+                . ' chỉ còn '
+                . (int) $variant->stock_quantity
+                . ' sản phẩm.'
+        );
+    }
+
+    $unitPrice = (float) $variant->price;
+
+    $foodTotal += $unitPrice * $quantity;
+
+    $variantLabel = trim(
+        (string) $variant->value
+    );
+
+    $verifiedFoodItems->push([
+        'type' => 'variant',
+        'id' => $variant->id,
+        'food_id' => $variant->food_id,
+        'variant_id' => $variant->id,
+
+        'name' => $variant->doAn->name
+            . (
+                $variantLabel !== ''
+                ? ' - ' . $variantLabel
+                : ''
+            ),
+
+        'price' => $unitPrice,
+        'qty' => $quantity,
+    ]);
+}
 
                 $tongTien = (int) round(
                     $seatTotal + $foodTotal
@@ -836,123 +1074,229 @@ class BanVeController extends Controller
             |--------------------------------------------------------------------------
             */
 
-                foreach ($verifiedFoodItems as $foodItem) {
-                    $food = DoAn::with([
-                        'category',
-                        'variants',
-                        'comboItems.variant',
-                    ])
-                        ->lockForUpdate()
-                        ->find($foodItem['id']);
+                /*
+|--------------------------------------------------------------------------
+| Trừ kho sau khi vé đã lưu
+|--------------------------------------------------------------------------
+*/
 
-                    if (!$food) {
-                        throw new \RuntimeException(
-                            'Không tìm thấy món ' . $foodItem['name'] . '.'
-                        );
-                    }
+foreach ($verifiedFoodItems as $foodItem) {
+    /*
+     * Số lượng khách mua.
+     */
+    $quantity = (int) (
+        $foodItem['qty'] ?? 0
+    );
 
-                    $soldQuantity = (int) $foodItem['qty'];
+    /*
+     * Nếu số lượng không hợp lệ thì bỏ qua.
+     */
+    if ($quantity <= 0) {
+        continue;
+    }
 
-                    /*
+    /*
     |--------------------------------------------------------------------------
-    | Trừ kho combo
+    | Trường hợp 1: Sản phẩm là combo
     |--------------------------------------------------------------------------
     |
-    | Mỗi combo gồm nhiều biến thể. Khi bán combo phải trừ tồn kho
-    | của từng biến thể thành phần.
+    | Combo không có kho riêng.
+    | Khi bán combo, hệ thống phải trừ tồn kho của từng biến thể
+    | nằm bên trong combo.
+    |
+    | Ví dụ:
+    | Combo A gồm:
+    | - 1 bắp size L
+    | - 2 nước size M
+    |
+    | Khách mua 3 combo thì phải trừ:
+    | - 3 bắp size L
+    | - 6 nước size M
     |
     */
-                    if ($food->isCombo()) {
-                        if ($food->comboItems->isEmpty()) {
-                            throw new \RuntimeException(
-                                'Combo ' . $food->name . ' chưa có thành phần.'
-                            );
-                        }
 
-                        foreach ($food->comboItems as $comboItem) {
-                            $variantId = $comboItem->variant_id
-                                ?? $comboItem->food_variant_id
-                                ?? $comboItem->variant?->id;
+    if (
+        ($foodItem['type'] ?? null)
+        === 'combo'
+    ) {
+        /*
+         * Lấy lại combo từ database.
+         */
+        $food = DoAn::with([
+            'comboItems.variant',
+        ])
+            ->lockForUpdate()
+            ->find($foodItem['food_id']);
 
-                            $quantityPerCombo = max(
-                                (int) ($comboItem->quantity ?? 1),
-                                1
-                            );
+        /*
+         * Kiểm tra combo tồn tại.
+         */
+        if (!$food || !$food->isCombo()) {
+            throw new \RuntimeException(
+                'Không tìm thấy combo '
+                    . ($foodItem['name'] ?? '')
+                    . '.'
+            );
+        }
 
-                            $quantityToDeduct =
-                                $quantityPerCombo * $soldQuantity;
+        /*
+         * Kiểm tra combo có thành phần hay không.
+         */
+        if ($food->comboItems->isEmpty()) {
+            throw new \RuntimeException(
+                'Combo '
+                    . $food->name
+                    . ' chưa có thành phần.'
+            );
+        }
 
-                            if (!$variantId) {
-                                throw new \RuntimeException(
-                                    'Một thành phần của combo '
-                                        . $food->name
-                                        . ' không có biến thể hợp lệ.'
-                                );
-                            }
+        /*
+         * Lặp qua từng thành phần trong combo.
+         */
+        foreach ($food->comboItems as $comboItem) {
+            /*
+             * Lấy ID biến thể của thành phần.
+             *
+             * Tùy cấu trúc bảng của bạn có thể là:
+             * - food_variant_id
+             * - variant_id
+             */
+            $variantId =
+                $comboItem->food_variant_id
+                ?? $comboItem->variant_id
+                ?? $comboItem->variant?->id;
 
-                            $updatedRows = BienTheDoAn::where(
-                                'id',
-                                $variantId
-                            )
-                                ->where(
-                                    'stock_quantity',
-                                    '>=',
-                                    $quantityToDeduct
-                                )
-                                ->decrement(
-                                    'stock_quantity',
-                                    $quantityToDeduct
-                                );
+            /*
+             * Kiểm tra có ID biến thể hợp lệ không.
+             */
+            if (!$variantId) {
+                throw new \RuntimeException(
+                    'Một thành phần của combo '
+                        . $food->name
+                        . ' không có biến thể hợp lệ.'
+                );
+            }
 
-                            if ($updatedRows === 0) {
-                                throw new \RuntimeException(
-                                    'Không đủ tồn kho thành phần của combo '
-                                        . $food->name
-                                        . '.'
-                                );
-                            }
-                        }
+            /*
+             * Số lượng biến thể cần cho 1 combo.
+             *
+             * Ví dụ:
+             * combo có 2 nước thì quantityPerCombo = 2.
+             */
+            $quantityPerCombo = max(
+                (int) (
+                    $comboItem->quantity ?? 1
+                ),
+                1
+            );
 
-                        continue;
-                    }
+            /*
+             * Tổng số lượng cần trừ kho.
+             *
+             * Ví dụ:
+             * 2 nước/combo x 3 combo = trừ 6 nước.
+             */
+            $quantityToDeduct =
+                $quantityPerCombo * $quantity;
 
-                    /*
+            /*
+             * Trừ kho có điều kiện.
+             *
+             * Chỉ trừ khi tồn kho vẫn đủ.
+             */
+            $updatedRows = BienTheDoAn::where(
+                'id',
+                $variantId
+            )
+                ->where(
+                    'stock_quantity',
+                    '>=',
+                    $quantityToDeduct
+                )
+                ->decrement(
+                    'stock_quantity',
+                    $quantityToDeduct
+                );
+
+            /*
+             * Nếu không có dòng nào được cập nhật,
+             * nghĩa là kho không đủ hoặc biến thể không tồn tại.
+             */
+            if ($updatedRows === 0) {
+                throw new \RuntimeException(
+                    'Không đủ tồn kho thành phần của combo '
+                        . $food->name
+                        . '.'
+                );
+            }
+        }
+
+        /*
+         * Combo đã xử lý xong.
+         * Bỏ qua phần trừ kho biến thể món đơn bên dưới.
+         */
+        continue;
+    }
+
+    /*
     |--------------------------------------------------------------------------
-    | Trừ kho món đơn
+    | Trường hợp 2: Sản phẩm là biến thể món đơn
     |--------------------------------------------------------------------------
+    |
+    | Ví dụ:
+    | - Coca size M
+    | - Coca size L
+    | - Bắp phô mai size L
+    |
+    | Phải trừ đúng biến thể được chọn,
+    | không trừ chung theo food_id.
     */
-                    $variant = $food->saleVariant();
 
-                    if (!$variant) {
-                        throw new \RuntimeException(
-                            'Món '
-                                . $food->name
-                                . ' chưa có biến thể đang bán.'
-                        );
-                    }
+    $variantId = (int) (
+        $foodItem['variant_id']
+        ?? $foodItem['id']
+        ?? 0
+    );
 
-                    $updatedRows = BienTheDoAn::where(
-                        'id',
-                        $variant->id
-                    )
-                        ->where(
-                            'stock_quantity',
-                            '>=',
-                            $soldQuantity
-                        )
-                        ->decrement(
-                            'stock_quantity',
-                            $soldQuantity
-                        );
+    /*
+     * Không có ID biến thể thì báo lỗi.
+     */
+    if ($variantId <= 0) {
+        throw new \RuntimeException(
+            'Không xác định được biến thể của món '
+                . ($foodItem['name'] ?? '')
+                . '.'
+        );
+    }
 
-                    if ($updatedRows === 0) {
-                        throw new \RuntimeException(
-                            'Món '
-                                . $food->name
-                                . ' không còn đủ tồn kho.'
-                        );
-                    }
-                }
+    /*
+     * Trừ đúng tồn kho của biến thể.
+     */
+    $updatedRows = BienTheDoAn::where(
+        'id',
+        $variantId
+    )
+        ->where(
+            'stock_quantity',
+            '>=',
+            $quantity
+        )
+        ->decrement(
+            'stock_quantity',
+            $quantity
+        );
+
+    /*
+     * Nếu không trừ được thì báo lỗi.
+     */
+    if ($updatedRows === 0) {
+        throw new \RuntimeException(
+            'Món '
+                . ($foodItem['name'] ?? '')
+                . ' không còn đủ tồn kho.'
+        );
+    }
+}
 
                 /*
             |--------------------------------------------------------------------------
@@ -988,15 +1332,15 @@ class BanVeController extends Controller
                 $result['change_amount'];
 
             session()->flash(
-                'clear_food_cart_key',
-                $request->input(
-                    'clear_cart_key',
-                    'staff_food_cart_'
-                        . auth()->id()
-                        . '_'
-                        . $suatChieu->id
-                )
-            );
+    'clear_food_cart_key',
+    $request->input(
+        'clear_cart_key',
+        'staff_food_cart_v2_'
+            . auth()->id()
+            . '_'
+            . $suatChieu->id
+    )
+);
 
             return redirect()
                 ->route('staff.ban-ve.success', ['id' => $ve->id])
@@ -1171,16 +1515,27 @@ class BanVeController extends Controller
             );
 
             Cache::forget(
-                "staff_payos_mapping:{$orderCode}"
-            );
+    "staff_payos_mapping:{$orderCode}"
+);
 
-            return redirect()
-                ->route('staff.ban-ve.success', ['id' => $ve->id])
-                ->with(
-                    'success',
-                    'Thanh toán VietQR thành công. Mã vé: '
-                        . $ve->ma_ve
-                );
+session()->flash(
+    'clear_food_cart_key',
+    $pendingData['clear_cart_key']
+        ?? (
+            'staff_food_cart_v2_'
+            . ($pendingData['nhan_vien_id'] ?? auth()->id())
+            . '_'
+            . $pendingData['suat_chieu_id']
+        )
+);
+
+return redirect()
+    ->route('staff.ban-ve.success', ['id' => $ve->id])
+    ->with(
+        'success',
+        'Thanh toán VietQR thành công. Mã vé: '
+            . $ve->ma_ve
+    );
         } catch (\Throwable $e) {
             report($e);
 
@@ -1208,11 +1563,32 @@ class BanVeController extends Controller
      * Mẫu vé khổ 80 mm.
      */
     public function printTicket(int $id)
-    {
-        $ve = $this->findPrintableTicket($id);
+{
+    $ve = $this->findPrintableTicket($id);
 
-        return view('staff.ban-ve.print-ticket', compact('ve'));
-    }
+    $seatCodes = $ve->gheVes
+        ->pluck('ma_ghe')
+        ->map(fn($seatCode) => strtoupper(trim((string) $seatCode)))
+        ->filter()
+        ->values();
+
+    $seatDetails = GheNgoi::query()
+        ->with('loaiGhe')
+        ->where(
+            'phong_chieu_id',
+            $ve->suatChieu->phong_chieu_id
+        )
+        ->whereIn('ma_ghe', $seatCodes->all())
+        ->get()
+        ->keyBy(function ($seat) {
+            return strtoupper(trim((string) $seat->ma_ghe));
+        });
+
+    return view(
+        'staff.ban-ve.print-ticket',
+        compact('ve', 'seatDetails')
+    );
+}
 
     /**
      * Mẫu hóa đơn khổ 80 mm.
