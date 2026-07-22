@@ -53,7 +53,7 @@ return new class extends Migration
             $table->enum('trang_thai', [
                 'da_thanh_toan',
                 'da_huy',
-                'da_su_dung',
+                'da_in',
                 'het_han' // 🌟 BỔ SUNG TRẠNG THÁI NÀY ĐỂ TRÁNH LỖI TRUNCATED!
             ])->default('da_thanh_toan');
 
