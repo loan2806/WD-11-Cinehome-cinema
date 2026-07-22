@@ -5,6 +5,79 @@
 @section('page-subtitle', 'Quét mã QR hoặc nhập mã vé để kiểm tra trước khi xác nhận khách vào phòng chiếu')
 
 @section('content')
+
+<style>
+/* =========================================================
+   🌟 CSS CHUYÊN DỤNG CHO MÁY IN NHIỆT K80 (PRINT MEDIA ONLY)
+   ========================================================= */
+@media print {
+    html, body {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body > *:not(#printTicketSection) {
+        display: none !important;
+    }
+
+    #printTicketSection {
+        display: block !important;
+        visibility: visible !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    #printTicketSection * {
+        visibility: visible !important;
+    }
+
+    .single-ticket-print {
+        display: block !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        width: 80mm !important;
+        margin: 0 auto !important;
+        padding: 10px 0 !important;
+        box-sizing: border-box !important;
+        text-align: center !important;
+        font-family: Arial, sans-serif !important;
+    }
+
+    #printTicketSection table {
+        display: table !important;
+        width: 100% !important;
+        margin: 0 auto !important;
+        border-collapse: collapse !important;
+    }
+    #printTicketSection tr {
+        display: table-row !important;
+    }
+    #printTicketSection td {
+        display: table-cell !important;
+        text-align: center !important;
+        color: #000000 !important;
+    }
+
+    @page {
+        size: auto;
+        margin: 0mm;
+    }
+}
+
+/* Thêm màu badge cho trạng thái 'Đã in' trong giao diện Admin */
+.scan-status-pill.status-da_in {
+    background: #0284c7;
+    color: #ffffff;
+}
+</style>
+
 @php
     $ticket = session('ticket');
     $foods = [];
@@ -17,15 +90,17 @@
         }
     }
 
+    // 🌟 ĐÃ CẬP NHẬT: Đổi 'da_su_dung' -> 'da_in' (Giữ da_su_dung làm fallback)
     $statusLabel = [
         'da_thanh_toan' => 'Đã thanh toán',
-        'da_su_dung' => 'Đã sử dụng',
-        'da_huy' => 'Đã hủy',
+        'da_in'         => 'Đã in',
+        'da_su_dung'    => 'Đã in',
+        'da_huy'        => 'Đã hủy',
     ];
 
     $typeLabel = [
         'truc_tuyen' => 'Trực tuyến',
-        'tai_quay' => 'Tại quầy',
+        'tai_quay'   => 'Tại quầy',
     ];
 @endphp
 
@@ -44,37 +119,13 @@
         </div>
     @endif
 
-    <section class="admin-qr-hero">
-        <div class="admin-qr-hero-copy">
-            <span class="admin-eyebrow">
-                <i class="fa-solid fa-qrcode"></i>
-                Cổng kiểm vé
-            </span>
-            <h2>Quét QR nhanh, kiểm tra vé chính xác</h2>
-            <p>
-                Dùng camera để đọc mã trên vé điện tử hoặc nhập mã vé thủ công. Vé hợp lệ sẽ hiện nút xác nhận cho khách vào phòng chiếu.
-            </p>
-            <div class="admin-qr-steps">
-                <span><b>01</b> Bật camera</span>
-                <span><b>02</b> Đưa QR vào khung</span>
-                <span><b>03</b> Xác nhận vào rạp</span>
-            </div>
-        </div>
-
-        <div class="admin-qr-hero-card">
-            <span>Trạng thái quầy</span>
-            <strong>Sẵn sàng soát vé</strong>
-            <p>Ưu tiên camera sau trên điện thoại hoặc webcam có ánh sáng tốt để quét nhanh hơn.</p>
-        </div>
-    </section>
-
     <div class="admin-qr-layout">
         <section class="admin-qr-panel admin-qr-camera-panel">
             <div class="admin-qr-panel-head">
                 <div>
                     <span class="admin-eyebrow">Camera</span>
                     <h3>Khung quét QR</h3>
-                    <p>Đặt mã QR nằm gọn trong khung sáng. Hệ thống chỉ kiểm tra vé trước, chưa tự đánh dấu đã sử dụng.</p>
+                    <p>Đặt mã QR nằm gọn trong khung sáng. Hệ thống chỉ kiểm tra vé trước, chưa tự đánh dấu đã in.</p>
                 </div>
                 <span class="admin-qr-panel-icon"><i class="fa-solid fa-camera"></i></span>
             </div>
@@ -204,12 +255,13 @@
                                 $printTicketData = [
                                     'ma_ve' => $ticket->ma_ve,
                                     'ten_phim' => $ticket->ten_phim,
+                                    'gioi_han_tuoi' => $ticket->gioi_han_tuoi ?? $ticket->phim->gioi_han_tuoi ?? 'P',
                                     'ten_rap' => $ticket->ten_rap,
                                     'ten_phong' => $ticket->ten_phong ?? 'Chưa có',
                                     'ma_ghe' => $ticket->ma_ghe ?? 'Chưa có',
                                     'thoi_gian_chieu' => $ticket->thoi_gian_chieu ? $ticket->thoi_gian_chieu->format('d/m/Y H:i') : 'Chưa có',
                                     'tong_tien' => number_format((float) $ticket->tong_tien, 0, ',', '.') . 'đ',
-                                    'loai_ve_label' => $typeLabel[$ticket->loai_ve] ?? 'Không rõ',
+                                    'loai_ve_label' => $typeLabel[$ticket->loai_ve] ?? 'TRỰC TUYẾN',
                                     'foods' => $foods,
                                 ];
                             @endphp
@@ -248,7 +300,7 @@
         </div>
         <div class="admin-checkin-modal-body">
             <p>Yêu cầu in vé đã được gửi tới trình duyệt.</p>
-            <p class="admin-checkin-modal-highlight">Bạn đã in vé cứng và sẵn sàng cho khách vào rạp chưa?</p>
+            <p class="admin-checkin-modal-highlight">Bạn đã in vé cứng thành công và sẵn sàng cho khách vào rạp chưa?</p>
         </div>
         <div class="admin-checkin-modal-footer">
             <button type="button" id="modalBtnCancel" class="admin-checkin-modal-btn is-secondary">
@@ -257,7 +309,7 @@
             </button>
             <button type="button" id="modalBtnConfirm" class="admin-checkin-modal-btn is-primary">
                 <i class="fa-solid fa-check"></i>
-                Đã in & Cho khách vào
+                Đã in vé & Đánh dấu Đã In
             </button>
         </div>
     </div>
@@ -298,22 +350,15 @@
         let html5QrcodeLoader = null;
 
         function ensureHtml5Qrcode() {
-            if (window.Html5Qrcode) {
-                return Promise.resolve();
-            }
-
-            if (html5QrcodeLoader) {
-                return html5QrcodeLoader;
-            }
+            if (window.Html5Qrcode) return Promise.resolve();
+            if (html5QrcodeLoader) return html5QrcodeLoader;
 
             html5QrcodeLoader = new Promise(function (resolve, reject) {
                 const script = document.createElement('script');
                 script.src = html5QrcodeSrc;
                 script.async = true;
-                script.onload = function () {
-                    resolve();
-                };
-                script.onerror = function () {
+                script.onload = () => resolve();
+                script.onerror = () => {
                     html5QrcodeLoader = null;
                     reject(new Error('Không tải được thư viện quét QR.'));
                 };
@@ -325,32 +370,16 @@
 
         function exitPrintMode() {
             document.body.classList.remove('is-printing-ticket');
-
             if (printCleanupTimer) {
                 clearTimeout(printCleanupTimer);
                 printCleanupTimer = null;
             }
         }
 
-        function enterPrintMode() {
-            document.body.classList.add('is-printing-ticket');
-
-            if (printCleanupTimer) {
-                clearTimeout(printCleanupTimer);
-            }
-
-            printCleanupTimer = setTimeout(function () {
-                exitPrintMode();
-            }, 5000);
-        }
-
         function setStatus(message, type = '') {
             statusText.textContent = message;
             statusBox.classList.remove('success', 'error');
-
-            if (type) {
-                statusBox.classList.add(type);
-            }
+            if (type) statusBox.classList.add(type);
         }
 
         function setScannerButtons(isActive) {
@@ -361,11 +390,7 @@
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, function (char) {
                 return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;',
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
                 }[char];
             });
         }
@@ -389,11 +414,7 @@
             let rawFoods = ticket.foods_list || ticket.foods || ticket.food || ticket.do_an || ticket.danh_sach_do_an || [];
 
             if (typeof rawFoods === 'string') {
-                try {
-                    rawFoods = JSON.parse(rawFoods);
-                } catch (error) {
-                    rawFoods = [];
-                }
+                try { rawFoods = JSON.parse(rawFoods); } catch (error) { rawFoods = []; }
             }
 
             const foodHtml = Array.isArray(rawFoods) && rawFoods.length > 0 ? `
@@ -407,7 +428,6 @@
                             ${rawFoods.map(function (food) {
                                 const tenMon = food.ten_mon || food.name || 'Đồ ăn';
                                 const soLuong = food.so_luong || food.quantity || food.qty || 1;
-
                                 return `
                                     <tr>
                                         <td class="food-name">${escapeHtml(tenMon)}</td>
@@ -438,6 +458,14 @@
                 </button>
             ` : '';
 
+            // 🌟 ĐÃ CẬP NHẬT TRẠNG THÁI HIỂN THỊ "ĐÃ IN"
+            const statusTextMap = {
+                'da_thanh_toan': 'Đã thanh toán',
+                'da_in': 'Đã in',
+                'da_su_dung': 'Đã in',
+                'da_huy': 'Đã hủy'
+            };
+
             resultBox.innerHTML = `
                 <div class="ticket-result">
                     <div class="ticket-result-top">
@@ -446,7 +474,7 @@
                             <strong>${escapeHtml(ticket.ma_ve)}</strong>
                         </div>
                         <em class="scan-status-pill status-${escapeHtml(ticket.trang_thai)}">
-                            ${escapeHtml(ticket.trang_thai_label)}
+                            ${escapeHtml(ticket.trang_thai_label || statusTextMap[ticket.trang_thai] || 'Đã in')}
                         </em>
                     </div>
                     <div class="ticket-result-grid">
@@ -476,16 +504,11 @@
             });
 
             let data = {};
-
             try {
                 data = await response.json();
             } catch (error) {
-                data = {
-                    success: false,
-                    message: 'Máy chủ không trả về dữ liệu hợp lệ.',
-                };
+                data = { success: false, message: 'Máy chủ không trả về dữ liệu hợp lệ.' };
             }
-
             return { response, data };
         }
 
@@ -513,28 +536,24 @@
                 }
 
                 if (response.ok && data.success) {
-                    setStatus(data.message || 'Vé hợp lệ. Chưa đánh dấu sử dụng.', 'success');
+                    setStatus(data.message || 'Vé hợp lệ. Chưa in.', 'success');
                 } else {
                     setStatus(data.message || Object.values(data.errors || {})[0]?.[0] || 'Vé không hợp lệ.', 'error');
                 }
             } catch (error) {
                 setStatus('Không thể kết nối máy chủ. Vui lòng thử lại.', 'error');
             } finally {
-                setTimeout(function () {
-                    requestBusy = false;
-                }, 700);
+                setTimeout(() => { requestBusy = false; }, 700);
             }
         }
 
         async function confirmTicket(rawValue) {
             const value = String(rawValue || '').trim();
 
-            if (!value || requestBusy) {
-                return;
-            }
+            if (!value || requestBusy) return;
 
             requestBusy = true;
-            setStatus('Đang cập nhật trạng thái vé...');
+            setStatus('Đang cập nhật trạng thái vé thành Đã In...');
 
             try {
                 const { response, data } = await postTicket(confirmUrl, value);
@@ -545,7 +564,7 @@
                 }
 
                 if (response.ok && data.success) {
-                    setStatus(data.message || 'Đã in và soát vé thành công!', 'success');
+                    setStatus(data.message || 'Đã in và cập nhật trạng thái "Đã in" thành công!', 'success');
                 } else {
                     setStatus(data.message || Object.values(data.errors || {})[0]?.[0] || 'Có lỗi khi cập nhật trạng thái vé.', 'error');
                 }
@@ -553,80 +572,211 @@
                 setStatus('Đã xảy ra lỗi hệ thống khi cập nhật.', 'error');
             } finally {
                 pendingTicketCode = '';
-                setTimeout(function () {
-                    requestBusy = false;
-                }, 700);
+                setTimeout(() => { requestBusy = false; }, 700);
             }
         }
 
-        function handlePrintAndConfirm(ticket) {
-            const printSection = document.getElementById('printTicketSection');
-            let rawFoods = ticket.foods_list || ticket.foods || ticket.food || ticket.do_an || ticket.danh_sach_do_an || [];
+        function getSeatTypeName(seatCode, maxRowIndex = 8) {
+            const match = String(seatCode || '').trim().match(/^([A-Z]+)/i);
+            if (!match) return '2D Ghế Thường';
 
-            if (typeof rawFoods === 'string') {
-                try {
-                    rawFoods = JSON.parse(rawFoods);
-                } catch (error) {
-                    rawFoods = [];
-                }
+            const rowStr = match[1].toUpperCase();
+            const rowIndex = rowStr.charCodeAt(0) - 64;
+
+            if (rowIndex <= 3) {
+                return '2D Ghế Thường';
+            } else if (rowIndex >= maxRowIndex) {
+                return '2D Ghế Couple';
+            } else {
+                return '2D Ghế VIP';
+            }
+        }
+
+        /**
+         * 🌟 LOGIC CHUYỂN ĐỔI GIỚI HẠN TUỔI THÀNH CÂU THÔNG BÁO CHUẨN RẠP
+         */
+        function getAgeRatingNotice(rating) {
+            if (!rating) return '** Phim dành cho khán giả đúng độ tuổi theo quy định **';
+            
+            const r = String(rating).trim().toUpperCase();
+
+            if (r === 'P') {
+                return '** Phim dán nhãn [P]: Phim dành cho mọi lứa tuổi **';
+            } else if (r === 'K') {
+                return '** Phim dán nhãn [K]: Khán giả dưới 13 tuổi xem cùng người giám hộ **';
+            } else if (r.includes('13')) {
+                return '** Phim dán nhãn [T13]: Phim dành cho khán giả từ đủ 13 tuổi trở lên **';
+            } else if (r.includes('16')) {
+                return '** Phim dán nhãn [T16]: Phim dành cho khán giả từ đủ 16 tuổi trở lên **';
+            } else if (r.includes('18')) {
+                return '** Phim dán nhãn [T18]: Phim dành cho khán giả từ đủ 18 tuổi trở lên **';
+            } else if (r.includes('19')) {
+                return '** Phim dán nhãn [T19]: Phim dành cho khán giả từ đủ 19 tuổi trở lên **';
             }
 
-            const foodHtml = Array.isArray(rawFoods) && rawFoods.length > 0 ? `
-                <div class="print-foods">
-                    <div class="print-foods-title">ĐỒ ĂN / COMBO KÈM THEO</div>
-                    <table>
-                        ${rawFoods.map(function (food) {
-                            const tenMon = food.ten_mon || food.name || 'Đồ ăn';
-                            const soLuong = food.so_luong || food.quantity || food.qty || 1;
+            return `** Phim dán nhãn [${r}]: Khán giả lưu ý tuân thủ đúng quy định độ tuổi **`;
+        }
 
-                            return `
+        async function handlePrintAndConfirmAsync(ticket, buttonEl) {
+            if (requestBusy) return;
+            requestBusy = true;
+
+            const originalBtnHtml = buttonEl ? buttonEl.innerHTML : '';
+            if (buttonEl) {
+                buttonEl.disabled = true;
+                buttonEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang chuẩn bị mẫu in...';
+            }
+            setStatus('Đang khởi tạo dữ liệu bản in bất đồng bộ...');
+
+            if (scanning) {
+                await stopScanner();
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            let printSection = document.getElementById('printTicketSection');
+            if (!printSection) {
+                printSection = document.createElement('div');
+                printSection.id = 'printTicketSection';
+                document.body.appendChild(printSection);
+            } else if (printSection.parentNode !== document.body) {
+                document.body.appendChild(printSection);
+            }
+
+            const seatsList = String(ticket.ma_ghe || '')
+                .split(',')
+                .map(s => s.trim())
+                .filter(Boolean);
+
+            if (seatsList.length === 0) seatsList.push('Chưa xếp ghế');
+
+            let maxRowIndexFromTicket = 8;
+            if (ticket.ma_ghe) {
+                const allSeats = String(ticket.ma_ghe).split(',').map(s => s.trim());
+                allSeats.forEach(s => {
+                    const m = s.match(/^([A-Z]+)/i);
+                    if (m) {
+                        const idx = m[1].toUpperCase().charCodeAt(0) - 64;
+                        if (idx > maxRowIndexFromTicket) maxRowIndexFromTicket = idx;
+                    }
+                });
+            }
+
+            let rawFoods = ticket.foods_list || ticket.foods || ticket.food || ticket.do_an || ticket.danh_sach_do_an || [];
+            if (typeof rawFoods === 'string') {
+                try { rawFoods = JSON.parse(rawFoods); } catch(e) { rawFoods = []; }
+            }
+
+            const totalAmount = parseFloat(String(ticket.tong_tien).replace(/[^0-9]/g, '')) || 0;
+            const pricePerTicket = Math.round(totalAmount / seatsList.length);
+            const formattedPricePerTicket = 'VND ' + new Intl.NumberFormat('vi-VN').format(pricePerTicket);
+
+            // 🌟 LẤY CÂU THÔNG BÁO ĐỘ TUỔI DYNAMIC
+            const ageRatingText = getAgeRatingNotice(ticket.gioi_han_tuoi || ticket.do_tuoi || 'P');
+
+            let fullPrintHtml = '';
+
+            seatsList.forEach((seatCode, index) => {
+                let foodHtml = '';
+                if (index === 0 && Array.isArray(rawFoods) && rawFoods.length > 0) {
+                    foodHtml = `
+                        <div style="border-top: 1px dashed #000; margin-top: 8px; padding-top: 6px; text-align: center;">
+                            <div style="font-size: 11px; font-weight: bold; margin-bottom: 4px; text-align: center;">🍿 ĐỒ ĂN & COMBO KÈM THEO:</div>
+                            <table style="width: 100%; font-size: 11px; margin: 0 auto; text-align: center;">
+                                ${rawFoods.map(f => {
+                                    const tenMon = f.ten_mon || f.name || 'Đồ ăn';
+                                    const soLuong = f.so_luong || f.quantity || f.qty || 1;
+                                    return `
+                                        <tr>
+                                            <td style="padding: 2px 0; text-align: center;">${escapeHtml(tenMon)}</td>
+                                            <td style="text-align: center; font-weight: bold;">x${escapeHtml(soLuong)}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </table>
+                        </div>
+                    `;
+                }
+
+                const seatTypeName = getSeatTypeName(seatCode, maxRowIndexFromTicket);
+
+                fullPrintHtml += `
+                    <div class="single-ticket-print" style="font-family: Arial, sans-serif; color: #000; width: 100%; max-width: 280px; margin: 0 auto; padding: 10px 0; background: #fff; text-align: center;">
+                        
+                        <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 6px;">
+                            <div style="font-size: 15px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">RẠP CHIẾU PHIM CINEHOME</div>
+                            <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; margin-top: 2px;">CINEHOME ${escapeHtml(ticket.ten_rap || 'CINEMA').toUpperCase()}</div>
+                            <div style="font-size: 9px; color: #333; margin-top: 2px;">Tầng 4, TTTM CineHome - Hotline: 1900 xxxx</div>
+                        </div>
+
+                        <div style="text-align: center; margin-bottom: 6px;">
+                            <div style="font-size: 14px; font-weight: 900; text-transform: uppercase;">VÉ XEM PHIM</div>
+                            <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; margin-top: 1px;">${escapeHtml(ticket.loai_ve_label || 'TRỰC TUYẾN')}</div>
+                            <div style="font-size: 9px; border-bottom: 1px solid #000; padding-bottom: 4px; margin-top: 3px;">
+                                Ký hiệu: N/A &nbsp;|&nbsp; Mã vé: <strong>${escapeHtml(ticket.ma_ve)}</strong> (${index + 1}/${seatsList.length})
+                            </div>
+                        </div>
+
+                        <div style="text-align: center; margin-bottom: 6px; border-bottom: 1px dashed #000; padding-bottom: 6px;">
+                            <div style="font-size: 12px; font-weight: bold;">${escapeHtml(ticket.thoi_gian_chieu)}</div>
+                            <div style="font-size: 15px; font-weight: 900; text-transform: uppercase; margin: 3px 0; line-height: 1.2;">
+                                ${escapeHtml(ticket.ten_phim)}
+                            </div>
+                            <div style="font-size: 12px; font-weight: bold;">
+                                ${seatTypeName}
+                            </div>
+                        </div>
+
+                        <div style="border: 1px solid #000; padding: 6px; border-radius: 4px; margin: 0 auto 6px auto; width: 90%; text-align: center;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: center; margin: 0 auto;">
                                 <tr>
-                                    <td>${escapeHtml(tenMon)}</td>
-                                    <td class="print-food-qty">x${escapeHtml(soLuong)}</td>
+                                    <td style="width: 50%; vertical-align: middle; text-align: center;">
+                                        <span style="font-size: 10px; display: block; color: #444;">Ghế / Seat:</span>
+                                        <strong style="font-size: 22px; font-weight: 900; display: block; line-height: 1.1;">${escapeHtml(seatCode)}</strong>
+                                    </td>
+                                    <td style="width: 50%; vertical-align: middle; text-align: center; border-left: 1px dashed #888; padding-left: 4px;">
+                                        <span style="font-size: 10px; display: block; color: #444;">Phòng / Cinema:</span>
+                                        <strong style="font-size: 13px; font-weight: bold; display: block;">${escapeHtml(ticket.ten_phong)}</strong>
+                                        <span style="font-size: 11px; font-weight: bold; margin-top: 2px; display: block;">${formattedPricePerTicket}</span>
+                                    </td>
                                 </tr>
-                            `;
-                        }).join('')}
-                    </table>
-                </div>
-            ` : '';
+                            </table>
+                        </div>
 
-            printSection.innerHTML = `
-                <div class="print-header">
-                    <div class="print-brand">CINEHOME CINEMA</div>
-                    <div>VÉ XEM PHIM KIÊM PHIẾU ĐỒ ĂN</div>
-                    <div class="print-code">Mã vé: ${escapeHtml(ticket.ma_ve)}</div>
-                </div>
+                        <!-- 🌟 CẢNH BÁO ĐỘ TUỔI DYNAMIC MỚI -->
+                        <div style="font-size: 9px; text-align: center; font-style: italic; margin-bottom: 6px; font-weight: bold;">
+                            ${ageRatingText}
+                        </div>
 
-                <div class="print-movie-title">${escapeHtml(ticket.ten_phim || 'Chưa có tên phim')}</div>
+                        ${foodHtml}
 
-                <table class="print-info-table">
-                    <tr><td class="label">Rạp:</td><td class="value">${escapeHtml(ticket.ten_rap || 'Chưa có')}</td></tr>
-                    <tr><td class="label">Phòng chiếu:</td><td class="value">${escapeHtml(ticket.ten_phong || 'Chưa có')}</td></tr>
-                    <tr><td class="label">Suất chiếu:</td><td class="value">${escapeHtml(ticket.thoi_gian_chieu || 'Chưa có')}</td></tr>
-                    <tr><td class="label">Kênh đặt:</td><td class="value">${escapeHtml(ticket.loai_ve_label || 'Không rõ')}</td></tr>
-                </table>
+                        <div style="border-top: 1px dashed #000; padding-top: 6px; text-align: center; margin-top: 6px;">
+                            <div style="font-size: 11px; font-weight: bold;">Xin chân thành Cảm ơn quý khách!</div>
+                            <div style="font-size: 9px; margin-top: 2px;">Chúc bạn xem phim vui vẻ tại CineHome</div>
+                            <div style="font-size: 8px; color: #555; margin-top: 4px;">Thời gian in: ${new Date().toLocaleString('vi-VN')}</div>
+                        </div>
 
-                <div class="print-seat">
-                    GHẾ: ${escapeHtml(ticket.ma_ghe || 'Chưa có')}
-                </div>
+                    </div>
+                `;
+            });
 
-                ${foodHtml}
+            printSection.innerHTML = fullPrintHtml;
 
-                <div class="print-total">Tổng tiền: ${escapeHtml(ticket.tong_tien || '0đ')}</div>
+            await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 100)));
 
-                <div class="print-footer">
-                    <p>Cảm ơn quý khách đã đồng hành cùng CineHome!</p>
-                    <div>Thời gian in: ${new Date().toLocaleString('vi-VN')}</div>
-                </div>
-            `;
-
-            pendingTicketCode = ticket.ma_ve;
-            enterPrintMode();
             window.print();
 
-            setTimeout(function () {
+            pendingTicketCode = ticket.ma_ve;
+
+            if (buttonEl) {
+                buttonEl.disabled = false;
+                buttonEl.innerHTML = originalBtnHtml;
+            }
+            requestBusy = false;
+
+            setTimeout(function() {
                 modal.classList.add('is-active');
-            }, 500);
+            }, 300);
         }
 
         modalBtnConfirm.addEventListener('click', function () {
@@ -650,24 +800,18 @@
         });
 
         window.addEventListener('focus', function () {
-            if (!modal.classList.contains('is-active')) {
-                exitPrintMode();
-            }
+            if (!modal.classList.contains('is-active')) exitPrintMode();
         });
 
         document.addEventListener('visibilitychange', function () {
-            if (!document.hidden && !modal.classList.contains('is-active')) {
-                exitPrintMode();
-            }
+            if (!document.hidden && !modal.classList.contains('is-active')) exitPrintMode();
         });
 
         function handleDecodedQr(value) {
             value = String(value || '').trim();
             const now = Date.now();
 
-            if (!value || requestBusy || (value === lastValue && now - lastScanAt <= 3500)) {
-                return;
-            }
+            if (!value || requestBusy || (value === lastValue && now - lastScanAt <= 3500)) return;
 
             lastValue = value;
             lastScanAt = now;
@@ -675,17 +819,12 @@
         }
 
         async function scanFrame() {
-            if (!scanning || !detector || !video.srcObject) {
-                return;
-            }
+            if (!scanning || !detector || !video.srcObject) return;
 
             if (!requestBusy && video.readyState >= 2) {
                 try {
                     const barcodes = await detector.detect(video);
-
-                    if (barcodes.length > 0) {
-                        handleDecodedQr(barcodes[0].rawValue);
-                    }
+                    if (barcodes.length > 0) handleDecodedQr(barcodes[0].rawValue);
                 } catch (error) {}
             }
 
@@ -693,18 +832,11 @@
         }
 
         async function startScanner() {
-            if (scanning) {
-                return;
-            }
-
+            if (scanning) return;
             if ('BarcodeDetector' in window) {
                 await startNativeScanner();
-
-                if (activeScanner === 'native') {
-                    return;
-                }
+                if (activeScanner === 'native') return;
             }
-
             await startFallbackScanner();
         }
 
@@ -717,11 +849,7 @@
             try {
                 detector = detector || new BarcodeDetector({ formats: ['qr_code'] });
                 stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: { ideal: 'environment' },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                    },
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
                     audio: false,
                 });
 
@@ -750,7 +878,6 @@
 
             try {
                 html5QrCode = html5QrCode || new Html5Qrcode('html5QrReader');
-
                 scanning = true;
                 activeScanner = 'fallback';
                 cameraBox.classList.add('is-live', 'is-fallback');
@@ -761,15 +888,13 @@
                     { facingMode: 'environment' },
                     {
                         fps: 10,
-                        qrbox: function (viewfinderWidth, viewfinderHeight) {
-                            const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.68);
+                        qrbox: (w, h) => {
+                            const size = Math.floor(Math.min(w, h) * 0.68);
                             return { width: size, height: size };
                         },
                     },
-                    function (decodedText) {
-                        handleDecodedQr(decodedText);
-                    },
-                    function () {}
+                    (decodedText) => handleDecodedQr(decodedText),
+                    () => {}
                 );
 
                 setStatus('Camera đã bật. Đưa QR vào khung để kiểm tra vé.');
@@ -784,20 +909,16 @@
 
         async function stopScanner() {
             scanning = false;
-
             if (activeScanner === 'fallback' && html5QrCode) {
                 try {
                     await html5QrCode.stop();
                     html5QrCode.clear();
                 } catch (error) {}
-
                 html5QrCode = null;
             }
 
             if (stream) {
-                stream.getTracks().forEach(function (track) {
-                    track.stop();
-                });
+                stream.getTracks().forEach(track => track.stop());
             }
 
             stream = null;
@@ -813,20 +934,14 @@
         stopBtn.addEventListener('click', stopScanner);
 
         form.addEventListener('submit', function (event) {
-            if (!window.fetch) {
-                return;
-            }
-
+            if (!window.fetch) return;
             event.preventDefault();
             inspectTicket(input.value);
         });
 
         resultBox.addEventListener('click', function (event) {
             const button = event.target.closest('[data-ticket-data]');
-
-            if (!button) {
-                return;
-            }
+            if (!button) return;
 
             event.preventDefault();
 
@@ -836,7 +951,8 @@
             }
 
             try {
-                handlePrintAndConfirm(JSON.parse(button.getAttribute('data-ticket-data')));
+                const ticketData = JSON.parse(button.getAttribute('data-ticket-data'));
+                handlePrintAndConfirmAsync(ticketData, button);
             } catch (error) {
                 setStatus('Không thể tải dữ liệu in vé. Vui lòng kiểm tra lại vé.', 'error');
             }

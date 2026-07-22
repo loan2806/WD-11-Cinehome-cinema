@@ -19,6 +19,8 @@ use App\Models\DanhMucDoAn;
 use App\Models\BienTheDoAn;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\VeXemPhimDaDatMail;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use PayOS\PayOS;
@@ -273,16 +275,13 @@ class DatVeController extends Controller
             ]);
         }
 
-        // 🌟 BỔ SUNG: Kiểm tra ghế liền kề
         if (!$this->validateSeatsAdjacent($selectedSeats->toArray(), $suat_chieu_id)) {
-            // 🔥 ĐÃ SỬA: Giải phóng (Xóa) khóa Cache của các ghế này ngay lập tức để người dùng có thể chọn lại
             foreach ($selectedSeats as $seat) {
                 Cache::forget("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
             }
 
             $message = 'Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!';
 
-            // 🔥 ĐÃ SỬA: Hỗ trợ xử lý thông minh nếu UI của bạn gửi qua AJAX
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -290,7 +289,6 @@ class DatVeController extends Controller
                 ], 422);
             }
 
-            // 🔥 ĐÃ SỬA: Chuyển hướng back() an toàn giữ nguyên cấu trúc URL
             return redirect()->back()
                 ->withInput()
                 ->with('error', $message);
@@ -493,7 +491,6 @@ class DatVeController extends Controller
             $pendingDeadline = null;
         }
 
-        // 🌟 BỔ SUNG: Kiểm tra ghế liền kề
         if (!$this->validateSeatsAdjacent($selectedSeats->toArray(), $suat_chieu_id)) {
             foreach ($selectedSeats as $seat) {
                 Cache::forget("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
@@ -580,12 +577,6 @@ class DatVeController extends Controller
         ));
     }
 
-
-    /**
-     * Kiểm tra voucher cá nhân bằng AJAX tại trang checkout.
-     * Đây chỉ là bước kiểm tra để hiển thị. Khi thanh toán,
-     * xuLyThanhToan() vẫn kiểm tra lại toàn bộ voucher phía server.
-     */
     public function apDungVoucher(Request $request)
     {
         $data = $request->validate([
@@ -980,6 +971,9 @@ class DatVeController extends Controller
         Cache::forget("pending_ve:{$maVe}");
 
         $this->congDiemThanhVienLocal($ve);
+        
+        // 🌟 TỰ ĐỘNG GỬI GMAIL XÁC NHẬN
+        $this->guiEmailXacNhanLocal($ve);
 
         return redirect()
             ->route('dat_ve.thanh_toan_thanh_cong', $ve->id);
@@ -1061,6 +1055,9 @@ class DatVeController extends Controller
 
             if (($bookingData['source'] ?? 'user') !== 'staff') {
                 $this->congDiemThanhVienLocal($ve);
+                
+                // 🌟 TỰ ĐỘNG GỬI GMAIL XÁC NHẬN
+                $this->guiEmailXacNhanLocal($ve);
             }
 
             if (($bookingData['source'] ?? 'user') === 'staff') {
@@ -1146,6 +1143,9 @@ class DatVeController extends Controller
         Cache::forget("pending_ve:{$maVe}");
 
         $this->congDiemThanhVienLocal($ve);
+        
+        // 🌟 TỰ ĐỘNG GỬI GMAIL XÁC NHẬN
+        $this->guiEmailXacNhanLocal($ve);
 
         return redirect()
             ->route('dat_ve.thanh_toan_thanh_cong', $ve->id);
@@ -1200,6 +1200,9 @@ class DatVeController extends Controller
         Cache::forget("pending_ve:{$ma_ve}");
 
         $this->congDiemThanhVienLocal($ve);
+        
+        // 🌟 TỰ ĐỘNG GỬI GMAIL XÁC NHẬN
+        $this->guiEmailXacNhanLocal($ve);
 
         return redirect()
             ->route('dat_ve.thanh_toan_thanh_cong', $ve->id);
@@ -1317,15 +1320,6 @@ class DatVeController extends Controller
         ");
     }
 
-
-
-
-    /**
-     * Tạo vé sau khi cổng thanh toán xác nhận thành công.
-     *
-     * Việc kiểm tra ghế, khóa voucher, tạo vé và đánh dấu voucher đã dùng
-     * được thực hiện trong cùng một transaction để tránh dùng trùng voucher.
-     */
     private function taoVeTuDuLieuTam(array $bookingData): VeXemPhim
     {
         return DB::transaction(function () use ($bookingData) {
@@ -1437,10 +1431,6 @@ class DatVeController extends Controller
                 }
             }
 
-            /*
-             * Giữ nguyên cơ chế trừ kho hiện tại.
-             * Các item không có id hoặc qty hợp lệ sẽ được bỏ qua.
-             */
             foreach (($bookingData['food_items'] ?? []) as $foodItem) {
                 $foodId = $foodItem['id'] ?? null;
                 $quantity = (int) ($foodItem['qty'] ?? 0);
@@ -1499,9 +1489,6 @@ class DatVeController extends Controller
         });
     }
 
-    /**
-     * Giải phóng khóa tạm của voucher khi giao dịch kết thúc hoặc bị hủy.
-     */
     private function xoaKhoaVoucherTam(array $bookingData): void
     {
         $voucherCaNhanId = (int) (
@@ -1544,6 +1531,33 @@ class DatVeController extends Controller
             $thanhVien->increment('tong_diem_tich_luy', $diemCong);
         }
     }
+
+    /**
+     * 🌟 HÀM TỰ ĐỘNG GỬI GMAIL XÁC NHẬN VÉ CHO KHÁCH HÀNG
+     */
+    private function guiEmailXacNhanLocal(VeXemPhim $veXemPhim): void
+    {
+        try {
+            if (!$veXemPhim->relationLoaded('nguoiDung')) {
+                $veXemPhim->load('nguoiDung');
+            }
+
+            $email = $veXemPhim->nguoiDung->email ?? null;
+
+            if ($email) {
+                $foodItems = Cache::get("ve_foods:{$veXemPhim->id}", []);
+                Mail::to($email)->send(new VeXemPhimDaDatMail($veXemPhim, $foodItems));
+            }
+        } catch (\Throwable $exception) {
+            \Log::error(' LỖI GỬI VÉ QUA EMAIL', [
+                've_id' => $veXemPhim->id,
+                'message' => $exception->getMessage(),
+                'line' => $exception->getLine(),
+                'file' => $exception->getFile(),
+            ]);
+        }
+    }
+
     private function validateSeatsAdjacent(array $seats, $suatChieuId): bool
     {
         if (count($seats) <= 1) {
@@ -1560,7 +1574,6 @@ class DatVeController extends Controller
                     'num' => (int) $matches[2]
                 ];
             } else {
-                // Hỗ trợ xử lý ghế đôi ghép chuỗi
                 if (str_contains($seat, '-')) {
                     $subSeats = explode('-', $seat);
                     foreach ($subSeats as $sub) {
@@ -1589,10 +1602,8 @@ class DatVeController extends Controller
             return true;
         }
 
-        // 1. Lấy thông tin suất chiếu và rạp
         $suatChieu = \App\Models\SuatChieu::findOrFail($suatChieuId);
 
-        // 2. Lấy danh sách toàn bộ ghế ĐÃ ĐẶT thành công của suất chiếu này
         $bookedTickets = \App\Models\VeXemPhim::where('suat_chieu_id', $suatChieuId)
             ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat'])
             ->pluck('ma_ghe');
@@ -1604,7 +1615,6 @@ class DatVeController extends Controller
             }
         }
 
-        // 3. Lấy danh sách ghế đang BẢO TRÌ hoặc KHÔNG HOẠT ĐỘNG
         $inactiveSeats = \App\Models\GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
             ->where('trang_thai', '!=', 'hoat_dong')
             ->pluck('ma_ghe');
@@ -1612,29 +1622,22 @@ class DatVeController extends Controller
             $unavailableSeats[strtoupper(trim($code))] = true;
         }
 
-        // Nhóm các ghế khách hàng đang chọn theo hàng (Row)
         $groupedByRow = collect($parsedSeats)->groupBy('row');
 
         foreach ($groupedByRow as $row => $seatsInRow) {
-            // Sắp xếp số thứ tự ghế tăng dần trong hàng
             $nums = $seatsInRow->pluck('num')->unique()->sort()->values();
 
             for ($i = 0; $i < $nums->count() - 1; $i++) {
                 $start = $nums[$i];
                 $end = $nums[$i + 1];
 
-                // Nếu có khoảng trống vật lý (ví dụ C4 và C8 có khoảng cách > 1)
                 if ($end - $start > 1) {
-                    // Quét từng số ghế nằm giữa khoảng trống này
                     for ($middleNum = $start + 1; $middleNum < $end; $middleNum++) {
                         $middleSeatCode = $row . $middleNum;
 
-                        // Kiểm tra xem ghế ở giữa này có đang khả dụng (trống) hay không?
                         $isBookedOrInactive = isset($unavailableSeats[$middleSeatCode]);
                         $isLockedInCache = \Illuminate\Support\Facades\Cache::has("seat_lock:suat:{$suatChieuId}:seat:{$middleSeatCode}");
 
-                        // Nếu ghế ở giữa này KHÔNG bị đặt, KHÔNG bị khóa, KHÔNG bảo trì
-                        // Nghĩa là nó hoàn toàn TRỐNG mà khách lại chọn nhảy cóc qua nó -> Báo lỗi!
                         if (!$isBookedOrInactive && !$isLockedInCache && !in_array($middleSeatCode, $seats)) {
                             return false;
                         }
