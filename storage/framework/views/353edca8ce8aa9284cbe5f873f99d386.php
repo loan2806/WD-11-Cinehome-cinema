@@ -1,9 +1,7 @@
-@extends('layouts.admin')
+<?php $__env->startSection('title', 'Thanh toán tại quầy'); ?>
+<?php $__env->startSection('page-title', 'Thanh toán tại quầy'); ?>
 
-@section('title', 'Thanh toán tại quầy')
-@section('page-title', 'Thanh toán tại quầy')
-
-@php
+<?php
 $currentUser = auth()->user();
 
 $staffName = 'Nhân viên';
@@ -27,14 +25,14 @@ $posterPath = asset('storage/movies/' . $suatChieu->phim->poster);
 
 $staffId = auth()->id();
 $previousUrl = url()->previous();
-@endphp
+?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 
 <div class="booking-checkout-page min-h-screen bg-[#080808] pt-24 pb-12 text-white" lang="vi" spellcheck="false">
     <div class="booking-checkout-container mx-auto max-w-7xl px-4 lg:px-6">
 
-        {{-- ================= HEADER ================= --}}
+        
         <div class="mb-8">
             <p class="text-xs uppercase tracking-[0.45em] text-yellow-400">
                 Staff Checkout
@@ -49,40 +47,42 @@ $previousUrl = url()->previous();
             </p>
         </div>
 
-        {{-- ================= THÔNG BÁO ================= --}}
-        @if (session('success'))
+        
+        <?php if(session('success')): ?>
         <div class="mb-6 rounded-2xl border border-green-500/30 bg-green-500/10 p-4 text-green-300">
-            {{ session('success') }}
-        </div>
-        @endif
+            <?php echo e(session('success')); ?>
 
-        @if (session('error'))
+        </div>
+        <?php endif; ?>
+
+        <?php if(session('error')): ?>
         <div class="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
-            {{ session('error') }}
-        </div>
-        @endif
+            <?php echo e(session('error')); ?>
 
-        @if ($errors->any())
+        </div>
+        <?php endif; ?>
+
+        <?php if($errors->any()): ?>
         <div class="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-300">
             <ul class="space-y-1">
-                @foreach ($errors->all() as $error)
-                <li>• {{ $error }}</li>
-                @endforeach
+                <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <li>• <?php echo e($error); ?></li>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </ul>
         </div>
-        @endif
+        <?php endif; ?>
 
-        {{-- ================= CHECKOUT BOX ================= --}}
+        
         <div class="overflow-hidden rounded-3xl border border-white/10 bg-[#141414] shadow-2xl">
 
 
-            {{-- ================= MAIN LAYOUT ================= --}}
+            
             <div class="mt-6 grid lg:grid-cols-[380px_1fr]">
 
-                {{-- ================= LEFT SIDE ================= --}}
+                
                 <div class="border-white/10 p-8 lg:border-r">
 
-                    {{-- NHÂN VIÊN --}}
+                    
                     <div class="pb-6">
 
                         <div class="mb-4 flex items-center gap-4">
@@ -103,13 +103,13 @@ $previousUrl = url()->previous();
 
                         </div>
 
-                        <input type="text" readonly value="{{ $staffName }}" class="mb-3 w-full rounded-xl border border-white/10 bg-[#1d1d1d] px-4 py-3 text-white outline-none">
+                        <input type="text" readonly value="<?php echo e($staffName); ?>" class="mb-3 w-full rounded-xl border border-white/10 bg-[#1d1d1d] px-4 py-3 text-white outline-none">
 
-                        <input type="text" readonly value="{{ $staffEmail }}" class="w-full rounded-xl border border-white/10 bg-[#1d1d1d] px-4 py-3 text-white outline-none">
+                        <input type="text" readonly value="<?php echo e($staffEmail); ?>" class="w-full rounded-xl border border-white/10 bg-[#1d1d1d] px-4 py-3 text-white outline-none">
 
                     </div>
 
-                    {{-- THÔNG TIN PHIM --}}
+                    
                     <div class="mt-6 border-t border-white/10 pt-6">
 
                         <h2 class="mb-3 text-lg font-black text-yellow-400">
@@ -118,13 +118,13 @@ $previousUrl = url()->previous();
 
                         <div class="overflow-hidden rounded-xl border border-white/10 bg-black/20">
 
-                            @if ($posterPath !== '')
-                            <img src="{{ $posterPath }}" alt="{{ $suatChieu->phim->ten_phim }}" class="w-full object-cover">
-                            @else
+                            <?php if($posterPath !== ''): ?>
+                            <img src="<?php echo e($posterPath); ?>" alt="<?php echo e($suatChieu->phim->ten_phim); ?>" class="w-full object-cover">
+                            <?php else: ?>
                             <div class="flex aspect-[2/3] items-center justify-center text-gray-500">
                                 Không có poster
                             </div>
-                            @endif
+                            <?php endif; ?>
 
                         </div>
 
@@ -135,7 +135,8 @@ $previousUrl = url()->previous();
                                     Rạp chiếu:
                                 </strong>
 
-                                {{ $suatChieu->rapChieuPhim->ten_rap }}
+                                <?php echo e($suatChieu->rapChieuPhim->ten_rap); ?>
+
                             </div>
 
                             <div>
@@ -143,7 +144,8 @@ $previousUrl = url()->previous();
                                     Phòng chiếu:
                                 </strong>
 
-                                {{ $suatChieu->phongChieu->ten_phong }}
+                                <?php echo e($suatChieu->phongChieu->ten_phong); ?>
+
                             </div>
 
                             <div>
@@ -151,7 +153,8 @@ $previousUrl = url()->previous();
                                     Tên phim:
                                 </strong>
 
-                                {{ $suatChieu->phim->ten_phim }}
+                                <?php echo e($suatChieu->phim->ten_phim); ?>
+
                             </div>
 
                             <div>
@@ -159,7 +162,8 @@ $previousUrl = url()->previous();
                                     Suất chiếu:
                                 </strong>
 
-                                {{ $suatChieu->thoi_gian_chieu->format('d/m/Y H:i') }}
+                                <?php echo e($suatChieu->thoi_gian_chieu->format('d/m/Y H:i')); ?>
+
                             </div>
 
                         </div>
@@ -168,17 +172,17 @@ $previousUrl = url()->previous();
 
                 </div>
 
-                {{-- ================= RIGHT SIDE ================= --}}
+                
                 <div class="p-8">
 
-                    {{-- ================= DANH SÁCH ĐẶT ================= --}}
+                    
                     <div class="border-b border-white/10 pb-6">
 
                         <h2 class="mb-4 text-2xl font-black text-yellow-400">
                             Danh sách đặt
                         </h2>
 
-                        {{-- DANH SÁCH GHẾ --}}
+                        
                         <div class="border-b border-white/10 py-6">
 
                             <div class="flex items-start justify-between gap-4">
@@ -189,22 +193,23 @@ $previousUrl = url()->previous();
 
                                 <div class="flex flex-wrap justify-end gap-2">
 
-                                    @foreach ($seats as $seat)
+                                    <?php $__currentLoopData = $seats; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $seat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <span class="rounded-lg border border-yellow-400/20 bg-yellow-400/10 px-3 py-1 font-semibold text-yellow-400">
-                                        {{ $seat }}
+                                        <?php echo e($seat); ?>
+
                                     </span>
-                                    @endforeach
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
                                 </div>
 
                             </div>
 
-                            {{-- DANH SÁCH ĐỒ ĂN --}}
+                            
                             <div class="mt-6 space-y-4">
 
-                                @forelse ($foodItems as $item)
+                                <?php $__empty_1 = true; $__currentLoopData = $foodItems; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
 
-                                @php
+                                <?php
                                 $foodImagePath = '';
 
                                 if (!empty($item['image'])) {
@@ -222,24 +227,25 @@ $previousUrl = url()->previous();
                                 $foodQuantity = (int) ($item['qty'] ?? 0);
                                 $foodPrice = (int) ($item['price'] ?? 0);
                                 $foodLineTotal = $foodPrice * $foodQuantity;
-                                @endphp
+                                ?>
 
                                 <div class="flex items-center justify-between gap-4">
 
                                     <div class="flex min-w-0 items-center gap-3">
 
-                                        @if ($foodImagePath !== '')
-                                        <img src="{{ asset('storage/' . $foodImagePath) }}" alt="{{ $foodName }}" class="h-16 w-16 rounded-lg bg-white/5 object-contain">
-                                        @endif
+                                        <?php if($foodImagePath !== ''): ?>
+                                        <img src="<?php echo e(asset('storage/' . $foodImagePath)); ?>" alt="<?php echo e($foodName); ?>" class="h-16 w-16 rounded-lg bg-white/5 object-contain">
+                                        <?php endif; ?>
 
                                         <div class="min-w-0">
 
                                             <p class="truncate font-semibold text-gray-200">
-                                                {{ $foodName }}
+                                                <?php echo e($foodName); ?>
+
                                             </p>
 
                                             <p class="mt-1 text-sm text-gray-500">
-                                                {{ number_format($foodPrice, 0, ',', '.') }}đ
+                                                <?php echo e(number_format($foodPrice, 0, ',', '.')); ?>đ
                                             </p>
 
                                         </div>
@@ -249,25 +255,26 @@ $previousUrl = url()->previous();
                                     <div class="text-right">
 
                                         <p class="font-semibold">
-                                            x{{ $foodQuantity }}
+                                            x<?php echo e($foodQuantity); ?>
+
                                         </p>
 
                                         <p class="mt-1 text-sm text-yellow-400">
-                                            {{ number_format($foodLineTotal, 0, ',', '.') }}đ
+                                            <?php echo e(number_format($foodLineTotal, 0, ',', '.')); ?>đ
                                         </p>
 
                                     </div>
 
                                 </div>
 
-                                @empty
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
 
                                 <div class="flex justify-between text-gray-400">
                                     <span>Đồ ăn</span>
                                     <span>Không có</span>
                                 </div>
 
-                                @endforelse
+                                <?php endif; ?>
 
                             </div>
 
@@ -275,7 +282,7 @@ $previousUrl = url()->previous();
 
                     </div>
 
-                    {{-- ================= TỔNG TIỀN ================= --}}
+                    
                     <div class="border-b border-white/10 py-6">
 
                         <div class="flex justify-between">
@@ -285,7 +292,7 @@ $previousUrl = url()->previous();
                             </span>
 
                             <span class="font-semibold">
-                                {{ number_format($seatTotal, 0, ',', '.') }}đ
+                                <?php echo e(number_format($seatTotal, 0, ',', '.')); ?>đ
                             </span>
 
                         </div>
@@ -297,7 +304,7 @@ $previousUrl = url()->previous();
                             </span>
 
                             <span class="font-semibold">
-                                {{ number_format($foodTotal, 0, ',', '.') }}đ
+                                <?php echo e(number_format($foodTotal, 0, ',', '.')); ?>đ
                             </span>
 
                         </div>
@@ -309,33 +316,33 @@ $previousUrl = url()->previous();
                             </span>
 
                             <span id="grandTotal">
-                                {{ number_format($total, 0, ',', '.') }}đ
+                                <?php echo e(number_format($total, 0, ',', '.')); ?>đ
                             </span>
 
                         </div>
 
                     </div>
 
-                    {{-- ================= THANH TOÁN ================= --}}
+                    
                     <div class="pt-6">
 
                         <h2 class="mb-4 text-xl font-black text-yellow-400">
                             Chọn phương thức thanh toán
                         </h2>
 
-                        <form id="paymentForm" action="{{ route('staff.ban-ve.store', $suatChieu->id) }}" method="POST">
-                            @csrf
+                        <form id="paymentForm" action="<?php echo e(route('staff.ban-ve.store', $suatChieu->id)); ?>" method="POST">
+                            <?php echo csrf_field(); ?>
 
-                            <input type="hidden" name="seats" value="{{ $seats->implode(',') }}">
+                            <input type="hidden" name="seats" value="<?php echo e($seats->implode(',')); ?>">
 
-                            <input type="hidden" name="food_cart" value="{{ json_encode($foodItems->values()->all()) }}">
+                            <input type="hidden" name="food_cart" value="<?php echo e(json_encode($foodItems->values()->all())); ?>">
 
-                            <input type="hidden" name="clear_cart_key" value="staff_food_cart_{{ $staffId }}_{{ $suatChieu->id }}">
+                            <input type="hidden" name="clear_cart_key" value="staff_food_cart_<?php echo e($staffId); ?>_<?php echo e($suatChieu->id); ?>">
 
-                            {{-- PHƯƠNG THỨC THANH TOÁN --}}
+                            
                             <div class="space-y-3">
 
-                                {{-- TIỀN MẶT --}}
+                                
                                 <label class="payment-method-label flex cursor-pointer items-center justify-between rounded-2xl border border-yellow-400 bg-yellow-400/10 p-4 transition duration-200">
 
                                     <div class="flex items-center gap-3">
@@ -362,7 +369,7 @@ $previousUrl = url()->previous();
 
                                 </label>
 
-                                {{-- VIETQR --}}
+                                
                                 <label class="payment-method-label flex cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-zinc-900/30 p-4 transition duration-200 hover:border-white/20">
 
                                     <div class="flex items-center gap-3">
@@ -385,7 +392,7 @@ $previousUrl = url()->previous();
 
                                     <div class="flex items-center justify-center rounded-lg bg-white px-2 py-1 shadow-sm">
 
-                                        <img src="{{ asset('assets/images/logo-vietqr.png') }}" class="h-6 w-16 object-contain" alt="VietQR Logo">
+                                        <img src="<?php echo e(asset('assets/images/logo-vietqr.png')); ?>" class="h-6 w-16 object-contain" alt="VietQR Logo">
 
                                     </div>
 
@@ -393,7 +400,7 @@ $previousUrl = url()->previous();
 
                             </div>
 
-                            {{-- ================= TIỀN MẶT ================= --}}
+                            
                             <div id="cashPaymentSection" class="mt-5 rounded-2xl border border-white/10 bg-black/20 p-5">
                                 <label for="receivedAmount" class="mb-2 block text-sm font-bold text-gray-200">
                                     Số tiền khách đưa
@@ -401,7 +408,7 @@ $previousUrl = url()->previous();
 
                                 <div class="relative">
 
-                                    <input id="receivedAmount" type="number" name="received_amount" min="0" step="1000" value="{{ old('received_amount') }}" placeholder="Nhập số tiền khách đưa" autocomplete="off" class="w-full rounded-2xl border border-white/10 bg-[#1d1d1d] px-4 py-3 pr-12 text-white outline-none transition focus:border-yellow-400">
+                                    <input id="receivedAmount" type="number" name="received_amount" min="0" step="1000" value="<?php echo e(old('received_amount')); ?>" placeholder="Nhập số tiền khách đưa" autocomplete="off" class="w-full rounded-2xl border border-white/10 bg-[#1d1d1d] px-4 py-3 pr-12 text-white outline-none transition focus:border-yellow-400">
 
                                     <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
                                         đ
@@ -409,28 +416,28 @@ $previousUrl = url()->previous();
 
                                 </div>
 
-                                {{-- NÚT NHẬP NHANH --}}
+                                
                                 <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
 
-                                    <button type="button" data-cash-value="{{ $total }}" class="cash-exact-button rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-yellow-400/50 hover:bg-yellow-400/10">
+                                    <button type="button" data-cash-value="<?php echo e($total); ?>" class="cash-exact-button rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-yellow-400/50 hover:bg-yellow-400/10">
                                         Đúng tiền
                                     </button>
 
                                     <button type="button" data-cash-round="100000" class="cash-round-button rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-yellow-400/50 hover:bg-yellow-400/10">
-                                        Làm Tròn 100.000đ
+                                        Bội 100.000đ
                                     </button>
 
                                     <button type="button" data-cash-round="200000" class="cash-round-button rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-yellow-400/50 hover:bg-yellow-400/10">
-                                        Làm Tròn 200.000đ
+                                        Bội 200.000đ
                                     </button>
 
                                     <button type="button" data-cash-round="500000" class="cash-round-button rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-yellow-400/50 hover:bg-yellow-400/10">
-                                        Làm Tròn 500.000đ
+                                        Bội 500.000đ
                                     </button>
 
                                 </div>
 
-                                {{-- TIỀN THỪA --}}
+                                
                                 <div class="mt-5 flex items-center justify-between rounded-xl border border-white/10 bg-zinc-900 p-4">
 
                                     <div>
@@ -453,7 +460,7 @@ $previousUrl = url()->previous();
 
                             </div>
 
-                            {{-- ================= VIETQR ================= --}}
+                            
                             <div id="vietQrPaymentSection" class="mt-5 hidden rounded-2xl border border-white/10 bg-black/20 p-5">
                                 <div class="flex items-start gap-4">
 
@@ -482,7 +489,7 @@ $previousUrl = url()->previous();
                                     </span>
 
                                     <strong class="text-yellow-400">
-                                        {{ number_format($total, 0, ',', '.') }}đ
+                                        <?php echo e(number_format($total, 0, ',', '.')); ?>đ
                                     </strong>
 
                                 </div>
@@ -493,7 +500,7 @@ $previousUrl = url()->previous();
 
                             </div>
 
-                            {{-- ================= SUBMIT ================= --}}
+                            
                             <button id="submitPaymentButton" type="submit" disabled class="mt-6 w-full cursor-not-allowed rounded-2xl bg-gray-700 py-4 font-black text-gray-400 transition duration-200">
                                 <span id="submitPaymentText">
                                     NHẬP SỐ TIỀN KHÁCH ĐƯA
@@ -502,8 +509,8 @@ $previousUrl = url()->previous();
 
                         </form>
 
-                        {{-- ================= QUAY LẠI ================= --}}
-                        <a href="{{ $previousUrl }}" class="mt-3 flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/5 py-4 font-semibold text-gray-300 transition hover:border-white/40 hover:bg-white/10 hover:text-white">
+                        
+                        <a href="<?php echo e($previousUrl); ?>" class="mt-3 flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/5 py-4 font-semibold text-gray-300 transition hover:border-white/40 hover:bg-white/10 hover:text-white">
                             ← Quay lại
                         </a>
 
@@ -520,7 +527,7 @@ $previousUrl = url()->previous();
 
 <script>
 (function () {
-    const totalAmount = @json((int) $total);
+    const totalAmount = <?php echo json_encode((int) $total, 15, 512) ?>;
 
     const paymentForm = document.getElementById('paymentForm');
     const paymentRadios = document.querySelectorAll(
@@ -879,4 +886,5 @@ $previousUrl = url()->previous();
 })();
 </script>
 
-@endsection
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH E:\laragon\www\Cinema\WD-11-Cinehome-cinema\resources\views/staff/ban-ve/checkout.blade.php ENDPATH**/ ?>
