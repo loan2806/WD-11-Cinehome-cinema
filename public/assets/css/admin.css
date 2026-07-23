@@ -11523,19 +11523,41 @@ body {
 }
 
 .ticket-status-select {
+    --ticket-status-bg: rgba(148, 163, 184, 0.1);
+    --ticket-status-border: rgba(148, 163, 184, 0.18);
+    --ticket-status-color: #cbd5e1;
+    appearance: none;
+    -webkit-appearance: none;
     min-width: 142px;
     height: 38px;
     border-radius: 999px;
-    padding: 0 12px;
-    border: 1px solid transparent;
+    padding: 0 34px 0 14px;
+    border: 1px solid var(--ticket-status-border);
     outline: none;
+    background-color: var(--ticket-status-bg);
+    background-image:
+        linear-gradient(45deg, transparent 50%, currentColor 50%),
+        linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+        calc(100% - 18px) 50%,
+        calc(100% - 13px) 50%;
+    background-repeat: no-repeat;
+    background-size: 5px 5px, 5px 5px;
+    color: var(--ticket-status-color);
+    color-scheme: dark;
     font-size: 12px;
     font-weight: 950;
+    line-height: 1;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    white-space: nowrap;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.ticket-status-select:hover {
+.ticket-status-select:hover,
+.ticket-status-select:focus {
+    background-color: var(--ticket-status-bg);
+    color: var(--ticket-status-color);
     transform: translateY(-1px);
     box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
 }
@@ -11546,21 +11568,21 @@ body {
 }
 
 .ticket-status-select.status-da_thanh_toan {
-    color: #8ef1c5;
-    background: rgba(16, 185, 129, 0.12);
-    border-color: rgba(52, 211, 153, 0.24);
+    --ticket-status-bg: rgba(16, 185, 129, 0.12);
+    --ticket-status-border: rgba(52, 211, 153, 0.24);
+    --ticket-status-color: #8ef1c5;
 }
 
 .ticket-status-select.status-da_su_dung {
-    color: #cbd5e1;
-    background: rgba(148, 163, 184, 0.1);
-    border-color: rgba(148, 163, 184, 0.18);
+    --ticket-status-bg: rgba(148, 163, 184, 0.1);
+    --ticket-status-border: rgba(148, 163, 184, 0.18);
+    --ticket-status-color: #cbd5e1;
 }
 
 .ticket-status-select.status-da_huy {
-    color: #ff9aa4;
-    background: rgba(255, 47, 69, 0.1);
-    border-color: rgba(255, 47, 69, 0.22);
+    --ticket-status-bg: rgba(255, 47, 69, 0.1);
+    --ticket-status-border: rgba(255, 47, 69, 0.22);
+    --ticket-status-color: #ff9aa4;
 }
 
 .ticket-actions form,
