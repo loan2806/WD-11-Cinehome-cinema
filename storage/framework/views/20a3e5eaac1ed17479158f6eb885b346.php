@@ -17,6 +17,12 @@
     ?>
 
     <div class="booking-food-page" lang="vi" spellcheck="false">
+        <?php if(session('error')): ?>
+            <div class="booking-seat-alert" style="background: rgba(239, 68, 68, 0.15) !important; border: 1px solid #ef4444 !important; color: #f87171 !important; padding: 16px !important; border-radius: 12px !important; margin: 15px 0 !important; display: flex !important; align-items: center !important; gap: 12px !important; font-weight: 600 !important; font-size: 14px !important; position: relative !important; z-index: 99 !important;">
+                <i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important;"></i>
+                <span><?php echo e(session('error')); ?></span>
+            </div>
+        <?php endif; ?>
         <section class="booking-food-hero">
             <div class="booking-flow-hero-copy">
                 <span class="booking-eyebrow">
@@ -280,7 +286,7 @@
                         <i class="fa-solid fa-arrow-right"></i>
                     </a>
 
-                    <a href="<?php echo e(route('dat_ve.chon_ghe', ['movie' => $suatChieu->id])); ?>?ghe=<?php echo e(request()->query('ghe')); ?>"
+                    <a href="<?php echo e(route('dat_ve.chon_ghe', ['movie' => $suatChieu->id])); ?>?ghe=<?php echo e(urlencode(request()->query('ghe') ?: $selectedSeats->implode(','))); ?><?php if(! empty($pendingTicketId)): ?>&pending_ticket_id=<?php echo e(urlencode($pendingTicketId)); ?><?php endif; ?>"
                         class="booking-cart-back">
                         <i class="fa-solid fa-arrow-left"></i>
                         Quay lại chọn ghế
@@ -294,6 +300,10 @@
 <?php $__env->startSection('scripts'); ?>
 <script>
     const storageKey = 'booking_deadline_<?php echo e($suatChieu->id); ?>';
+    const pendingTicketId = "<?php echo e($pendingTicketId ?? ''); ?>";
+    const pendingDeadline = "<?php echo e($pendingDeadline ?? ''); ?>";
+    const initialSelectedSeats = JSON.parse('<?php echo json_encode($selectedSeats->values()->all(), 15, 512) ?>');
+    const initialFoodCart = <?php echo json_encode($initialFoodCart ?? [], 15, 512) ?>;
     const baseSeatPrice = parseInt("<?php echo e($seatTotalPrice); ?>") || 0;
     const fallbackFoodImage = "<?php echo e(asset('assets/images/LOGO copy.png')); ?>";
 
@@ -438,11 +448,21 @@
         if (!countdownEl || !countdownBar) return;
 
         let deadline = Number(localStorage.getItem(storageKey));
+        const serverDeadline = Number(pendingDeadline) || null;
+        const validStoredDeadline = deadline && deadline > Date.now() ? deadline : null;
+        const validServerDeadline = serverDeadline && serverDeadline > Date.now() ? serverDeadline : null;
 
-        if (!deadline) {
+        if (validStoredDeadline && validServerDeadline) {
+            deadline = Math.min(validStoredDeadline, validServerDeadline);
+        } else if (validServerDeadline) {
+            deadline = validServerDeadline;
+        } else if (validStoredDeadline) {
+            deadline = validStoredDeadline;
+        } else {
             deadline = Date.now() + 7 * 60 * 1000;
-            localStorage.setItem(storageKey, deadline);
         }
+
+        localStorage.setItem(storageKey, deadline);
 
         const update = () => {
             const remaining = deadline - Date.now();
@@ -610,7 +630,10 @@
     document.addEventListener('DOMContentLoaded', function() {
         const checkoutBtn = document.getElementById('btnCheckout');
 
-        cart = JSON.parse(localStorage.getItem('food_cart') || '{}');
+        cart = Array.isArray(initialFoodCart) && initialFoodCart.length > 0
+            ? Object.fromEntries(initialFoodCart.map(item => [item.key, item]))
+            : JSON.parse(localStorage.getItem('food_cart') || '{}');
+
         renderCart();
         startCountdown();
 
@@ -633,6 +656,9 @@
                 let url = baseUrl + (baseUrl.includes('?') ? '&' : '?') + 'food_cart=' + cartData;
                 if (seatParam) {
                     url += '&ghe=' + encodeURIComponent(seatParam);
+                }
+                if (pendingTicketId) {
+                    url += '&pending_ticket_id=' + encodeURIComponent(pendingTicketId);
                 }
 
                 window.location.href = url;
