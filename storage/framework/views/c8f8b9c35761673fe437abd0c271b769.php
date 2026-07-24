@@ -176,9 +176,12 @@
 
                             <form id="paymentForm" action="<?php echo e(route('dat_ve.xu_ly_thanh_toan', $suatChieu->id)); ?>" method="POST">
                                 <?php echo csrf_field(); ?>
-                                <input type="hidden" name="ghe" value="<?php echo e(request('ghe')); ?>">
-                                <input type="hidden" name="food_cart" value="<?php echo e(request('food_cart')); ?>">
+                                <input type="hidden" name="ghe" value="<?php echo e($selectedSeats->implode(', ')); ?>">
+                                <input type="hidden" name="food_cart" value="<?php echo e(json_encode($foodItems->toArray(), JSON_UNESCAPED_UNICODE)); ?>">
                                 <input type="hidden" id="submitVoucherCode" name="voucher_code" value="">
+                                <?php if(!empty($pendingTicketId)): ?>
+                                    <input type="hidden" name="pending_ticket_id" value="<?php echo e($pendingTicketId); ?>">
+                                <?php endif; ?>
 
                                 <div class="space-y-3">
                                     
@@ -216,7 +219,17 @@
                                 </button>
                             </form>
 
-                            <a href="<?php echo e(route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id])); ?>?ghe=<?php echo e(request('ghe')); ?>"
+                            <?php
+                                $backUrl = route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) . '?ghe=' . urlencode(request('ghe'));
+                                if (request('food_cart')) {
+                                    $backUrl .= '&food_cart=' . urlencode(request('food_cart'));
+                                }
+                                if (! empty($pendingTicketId)) {
+                                    $backUrl .= '&pending_ticket_id=' . urlencode($pendingTicketId);
+                                }
+                            ?>
+
+                            <a href="<?php echo e($backUrl); ?>"
                                 class="mt-3 flex w-full items-center justify-center rounded-2xl border border-white/20 bg-white/5 py-4 font-semibold text-gray-300 transition hover:border-white/40 hover:bg-white/10 hover:text-white">
                                 ← Quay lại chọn đồ ăn
                             </a>
@@ -237,7 +250,7 @@
 
 <?php $__env->startSection('scripts'); ?>
 <script>
-    const baseTotal = Number(<?php echo json_encode((float) $grandTotal, 15, 512) ?>);
+    const baseTotal = Number("<?php echo e((float) $grandTotal); ?>");
     let appliedVoucher = null;
     let voucherRequestRunning = false;
 
@@ -307,12 +320,12 @@
         }
 
         try {
-            const response = await fetch(<?php echo json_encode(route('dat_ve.ap_dung_voucher'), 15, 512) ?>, {
+            const response = await fetch("<?php echo e(route('dat_ve.ap_dung_voucher')); ?>", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-CSRF-TOKEN': <?php echo json_encode(csrf_token(), 15, 512) ?>,
+                    'X-CSRF-TOKEN': "<?php echo e(csrf_token()); ?>",
                 },
                 body: JSON.stringify({
                     voucher_code: code,
@@ -431,11 +444,14 @@
             return;
         }
 
-        const storageKey = 'booking_deadline_<?php echo e($suatChieu->id); ?>';
+        const storageKey = "booking_deadline_<?php echo e($suatChieu->id); ?>";
+        const pendingDeadlineValue = "<?php echo e($pendingDeadline ?? ''); ?>";
+        const pendingDeadline = pendingDeadlineValue ? Number(pendingDeadlineValue) : null;
 
         function getStoredDeadline() {
             try {
-                return Number(localStorage.getItem(storageKey)) || null;
+                const value = Number(localStorage.getItem(storageKey));
+                return Number.isFinite(value) ? value : null;
             } catch (error) {
                 return null;
             }
@@ -457,12 +473,22 @@
             }
         }
 
-        let deadline = getStoredDeadline();
+        const storedDeadline = getStoredDeadline();
+        const validPendingDeadline = pendingDeadline && pendingDeadline > Date.now() ? pendingDeadline : null;
+        const validStoredDeadline = storedDeadline && storedDeadline > Date.now() ? storedDeadline : null;
+        let deadline = null;
 
-        if (!deadline || deadline <= Date.now()) {
+        if (validPendingDeadline && validStoredDeadline) {
+            deadline = Math.min(validPendingDeadline, validStoredDeadline);
+        } else if (validPendingDeadline) {
+            deadline = validPendingDeadline;
+        } else if (validStoredDeadline) {
+            deadline = validStoredDeadline;
+        } else {
             deadline = Date.now() + 7 * 60 * 1000;
-            setStoredDeadline(deadline);
         }
+
+        setStoredDeadline(deadline);
 
         function updateCountdown() {
             const remaining = deadline - Date.now();
@@ -471,7 +497,7 @@
                 clearStoredDeadline();
                 countdownEl.innerText = '00:00';
                 countdownEl.classList.add('animate-pulse');
-                window.location.href = <?php echo json_encode(route('home'), 15, 512) ?>;
+                window.location.href = "<?php echo e(route('home')); ?>";
                 return;
             }
 

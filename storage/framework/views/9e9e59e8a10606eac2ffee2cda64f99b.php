@@ -3,6 +3,12 @@
 <?php $__env->startSection('content'); ?>
 <?php
     $statusMeta = [
+        'cho_thanh_toan' => [
+            'label' => 'Chờ thanh toán',
+            'icon' => 'fa-solid fa-clock',
+            'class' => 'is-pending',
+            'description' => 'Vé đã chọn đang chờ thanh toán',
+        ],
         'da_thanh_toan' => [
             'label' => 'Đã thanh toán',
             'icon' => 'fa-solid fa-circle-check',
@@ -21,7 +27,6 @@
             'class' => 'is-cancelled',
             'description' => 'Vé không còn hiệu lực',
         ],
-        // 🌟 BỔ SUNG: Cấu hình hiển thị trạng thái "Hết hạn"
         'het_han' => [
             'label' => 'Hết hạn',
             'icon' => 'fa-solid fa-clock-rotate-left',
@@ -32,9 +37,10 @@
 
     $filterItems = [
         ['status' => null, 'label' => 'Tất cả', 'count' => $ticketStats['total'] ?? $veXemPhims->total()],
+        ['status' => 'cho_thanh_toan', 'label' => 'Chờ thanh toán', 'count' => $ticketStats['pending'] ?? 0],
         ['status' => 'da_thanh_toan', 'label' => 'Đã thanh toán', 'count' => $ticketStats['paid'] ?? 0],
         ['status' => 'da_su_dung', 'label' => 'Đã sử dụng', 'count' => $ticketStats['used'] ?? 0],
-        ['status' => 'het_han', 'label' => 'Hết hạn', 'count' => $ticketStats['expired'] ?? 0], // 🌟 Thêm thẻ lọc hết hạn
+        ['status' => 'het_han', 'label' => 'Hết hạn', 'count' => $ticketStats['expired'] ?? 0],
         ['status' => 'da_huy', 'label' => 'Đã hủy', 'count' => $ticketStats['cancelled'] ?? 0],
     ];
 ?>
@@ -170,8 +176,13 @@
                     <article class="myticket-card <?php echo e($meta['class']); ?>">
                         <div class="myticket-code">
                             <span>Mã vé</span>
-                            <strong><?php echo e($veXemPhim->ma_ve); ?></strong>
-                            <small><?php echo e($veXemPhim->created_at?->format('d/m/Y H:i')); ?></small>
+                            <?php if($veXemPhim->trang_thai === 'cho_thanh_toan'): ?>
+                                <strong>Đang chờ thanh toán</strong>
+                                <small>Vui lòng hoàn tất thanh toán để nhận mã vé.</small>
+                            <?php else: ?>
+                                <strong><?php echo e($veXemPhim->ma_ve); ?></strong>
+                                <small><?php echo e($veXemPhim->created_at?->format('d/m/Y H:i')); ?></small>
+                            <?php endif; ?>
                         </div>
 
                         <div class="myticket-movie">
@@ -235,10 +246,17 @@
                         </div>
 
                         <div class="myticket-actions">
-                            <a href="<?php echo e(route('user.ve_xem_phim.show', $veXemPhim)); ?>" class="myticket-detail-btn">
-                                <i class="fa-solid fa-qrcode"></i>
-                                Chi tiết
-                            </a>
+                            <?php if($veXemPhim->trang_thai === 'cho_thanh_toan'): ?>
+                                <a href="<?php echo e(route('dat_ve.checkout', ['suat_chieu_id' => $veXemPhim->suat_chieu_id, 'pending_ticket_id' => $veXemPhim->id])); ?>" class="myticket-detail-btn">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                    Thanh toán
+                                </a>
+                            <?php else: ?>
+                                <a href="<?php echo e(route('user.ve_xem_phim.show', $veXemPhim)); ?>" class="myticket-detail-btn">
+                                    <i class="fa-solid fa-qrcode"></i>
+                                    Chi tiết
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </article>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

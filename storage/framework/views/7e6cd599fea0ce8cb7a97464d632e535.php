@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>In vé <?php echo e($ve->ma_ve); ?></title>
+    <title>In vé và hóa đơn <?php echo e($ve->ma_ve); ?></title>
 
     <style>
         * {
@@ -20,12 +21,19 @@
             font-family: Arial, Helvetica, sans-serif;
         }
 
-        .ticket {
+        .print-page {
             width: 80mm;
-            min-height: 125mm;
             margin: 0 auto 20px;
             padding: 11px;
             background: #ffffff;
+        }
+
+        .ticket {
+            min-height: 125mm;
+        }
+
+        .invoice {
+            min-height: 100mm;
         }
 
         .center {
@@ -42,7 +50,7 @@
             font-size: 12px;
         }
 
-        .ticket-title {
+        .document-title {
             margin-top: 10px;
             font-size: 17px;
             font-weight: 900;
@@ -51,6 +59,11 @@
         .divider {
             margin: 10px 0;
             border-top: 1px dashed #111111;
+        }
+
+        .double-divider {
+            margin: 10px 0;
+            border-top: 2px solid #111111;
         }
 
         .movie-name {
@@ -71,8 +84,12 @@
             font-size: 13px;
         }
 
+        .row>span:first-child {
+            flex-shrink: 0;
+        }
+
         .row strong {
-            max-width: 62%;
+            max-width: 65%;
             text-align: right;
             overflow-wrap: anywhere;
         }
@@ -84,17 +101,39 @@
             text-align: center;
         }
 
-        .seat-box span {
+        .seat-box .seat-label {
             display: block;
             font-size: 11px;
             font-weight: 700;
         }
 
-        .seat-box strong {
+        .seat-box .seat-code {
             display: block;
             margin-top: 2px;
             font-size: 31px;
             font-weight: 900;
+        }
+
+        .seat-meta {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .seat-type {
+            padding: 3px 7px;
+            border: 1px solid #111111;
+            border-radius: 12px;
+        }
+
+        .seat-price {
+            padding: 3px 7px;
+            background: #111111;
+            color: #ffffff;
+            border-radius: 12px;
         }
 
         .qr-box {
@@ -128,7 +167,57 @@
             text-align: center;
         }
 
+        .invoice-code {
+            margin-top: 5px;
+            font-family: monospace;
+            font-size: 11px;
+        }
+
+        .section-title {
+            margin: 10px 0 5px;
+            font-size: 13px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .invoice-item {
+            padding: 5px 0;
+            border-bottom: 1px dotted #777777;
+            font-size: 12px;
+        }
+
+        .invoice-item:last-child {
+            border-bottom: 0;
+        }
+
+        .item-name {
+            font-weight: 700;
+        }
+
+        .item-detail {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 2px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 5px 0;
+            font-size: 13px;
+        }
+
+        .grand-total {
+            padding: 9px 0;
+            font-size: 17px;
+            font-weight: 900;
+        }
+
         .page-break {
+            display: block;
+            height: 0;
             break-after: page;
             page-break-after: always;
         }
@@ -165,10 +254,13 @@
                 background: #ffffff;
             }
 
-            .ticket {
+            .print-page {
                 width: 80mm;
-                min-height: 125mm;
                 margin: 0;
+            }
+
+            .ticket {
+                min-height: 125mm;
             }
 
             .actions {
@@ -191,124 +283,504 @@
     $seatTickets = $ve->gheVes
     ->sortBy('ma_ghe')
     ->values();
-    ?>
 
-    <?php $__empty_1 = true; $__currentLoopData = $seatTickets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $seatTicket): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-    <section class="ticket">
-        <div class="center">
-            <div class="brand">
-                CineHome
-            </div>
+    $foods = collect(
+    $ve->foods_list
+    ?? $ve->food_items
+    ?? []
+    );
 
-            <div class="cinema">
-                <?php echo e($ve->ten_rap); ?>
+    $foodTotal = (float) ($ve->food_total ?? 0);
 
-            </div>
+    if ($foodTotal <= 0) { $foodTotal=$foods->sum(function ($food) {
+        $price = (float) (
+        $food['don_gia']
+        ?? $food['price']
+        ?? 0
+        );
 
-            <div class="ticket-title">
-                VÉ XEM PHIM
-            </div>
-        </div>
+        $quantity = (int) (
+        $food['so_luong']
+        ?? $food['qty']
+        ?? $food['quantity']
+        ?? 1
+        );
 
-        <div class="divider"></div>
-
-        <div class="movie-name">
-            <?php echo e($ve->ten_phim); ?>
-
-        </div>
-
-        <div class="row">
-            <span>Ngày chiếu</span>
-
-            <strong>
-                <?php echo e(optional($ve->thoi_gian_chieu)->format('d/m/Y')); ?>
-
-            </strong>
-        </div>
-
-        <div class="row">
-            <span>Giờ chiếu</span>
-
-            <strong>
-                <?php echo e(optional($ve->thoi_gian_chieu)->format('H:i')); ?>
-
-            </strong>
-        </div>
-
-        <div class="row">
-            <span>Phòng</span>
-
-            <strong>
-                <?php echo e($ve->ten_phong); ?>
-
-            </strong>
-        </div>
-
-        <div class="seat-box">
-            <span>GHẾ</span>
-
-            <strong>
-                <?php echo e($seatTicket->ma_ghe); ?>
-
-            </strong>
-        </div>
-
-        <div class="qr-box">
-            <?php echo QrCode::format('svg')
-            ->size(190)
-            ->margin(1)
-            ->errorCorrection('M')
-            ->generate($seatTicket->ma_qr); ?>
-
-
-            <div class="qr-label">
-                QUÉT MÃ KHI VÀO PHÒNG CHIẾU
-            </div>
-
-            <div class="ticket-code">
-                <?php echo e($ve->ma_ve); ?>
-
-                /
-                <?php echo e($seatTicket->ma_ghe); ?>
-
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="note">
-            Mỗi QR chỉ được sử dụng một lần.<br>
-            Vui lòng có mặt trước giờ chiếu ít nhất 10 phút.
-        </div>
-    </section>
-
-    <?php if(!$loop->last): ?>
-    <div class="page-break"></div>
-    <?php endif; ?>
-    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-    <section class="ticket">
-        <div class="center">
-            Không tìm thấy dữ liệu ghế để in.
-        </div>
-    </section>
-    <?php endif; ?>
-
-    <div class="actions">
-        <button type="button" onclick="window.print()">
-            In tất cả vé
-        </button>
-
-        <a href="<?php echo e(route('staff.ban-ve.success', ['id' => $ve->id])); ?>">
-            Quay lại
-        </a>
-    </div>
-
-    <script>
-        window.addEventListener('load', function() {
-            window.print();
+        return $price * $quantity;
         });
+        }
 
-    </script>
+        $seatTotal = (float) ($ve->seat_total ?? 0);
+
+        if ($seatTotal <= 0) { $seatTotal=max( (float) $ve->tong_tien - $foodTotal,
+            0
+            );
+            }
+
+            $staffName = $ve->nhanVien->ho_ten
+            ?? $ve->nhanVien->ten
+            ?? 'Nhân viên';
+
+            $baseTicketPrice = (float) (
+            $ve->suatChieu->gia_ve ?? 0
+            );
+            ?>
+
+            <?php $__empty_1 = true; $__currentLoopData = $seatTickets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $seatTicket): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+            <?php
+            $normalizedSeatCode = strtoupper(
+            trim((string) $seatTicket->ma_ghe)
+            );
+
+            $seat = $seatDetails->get($normalizedSeatCode);
+
+            $seatType = $seat?->loaiGhe;
+
+            $seatTypeName = $seatType?->ten_loai
+            ?? $seatType?->ten_loai_ghe
+            ?? $seatType?->name
+            ?? null;
+
+            $seatSurcharge = (float) (
+            $seatType?->phu_thu ?? 0
+            );
+
+            $isCoupleSeat = (bool) (
+            $seatType?->la_couple ?? false
+            );
+
+            if (!$seatTypeName) {
+            if ($isCoupleSeat) {
+            $seatTypeName = 'Ghế đôi';
+            } elseif ($seatSurcharge > 0) {
+            $seatTypeName = 'Ghế VIP';
+            } else {
+            $seatTypeName = 'Ghế thường';
+            }
+            }
+
+            $seatPrice = $isCoupleSeat
+            ? ($baseTicketPrice * 2) + $seatSurcharge
+            : $baseTicketPrice + $seatSurcharge;
+            ?>
+
+            <section class="print-page ticket">
+                <div class="center">
+                    <div class="brand">
+                        CineHome
+                    </div>
+
+                    <div class="cinema">
+                        <?php echo e($ve->ten_rap); ?>
+
+                    </div>
+
+                    <div class="document-title">
+                        VÉ XEM PHIM
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="movie-name">
+                    <?php echo e($ve->ten_phim); ?>
+
+                </div>
+
+                <div class="row">
+                    <span>Ngày chiếu</span>
+
+                    <strong>
+                        <?php echo e(optional($ve->thoi_gian_chieu)->format('d/m/Y')); ?>
+
+                    </strong>
+                </div>
+
+                <div class="row">
+                    <span>Giờ chiếu</span>
+
+                    <strong>
+                        <?php echo e(optional($ve->thoi_gian_chieu)->format('H:i')); ?>
+
+                    </strong>
+                </div>
+
+                <div class="row">
+                    <span>Phòng</span>
+
+                    <strong>
+                        <?php echo e($ve->ten_phong); ?>
+
+                    </strong>
+                </div>
+
+                <div class="seat-box">
+                    <span class="seat-label">
+                        GHẾ
+                    </span>
+
+                    <strong class="seat-code">
+                        <?php echo e($seatTicket->ma_ghe); ?>
+
+                    </strong>
+
+                    <div class="seat-meta">
+                        <span class="seat-type">
+                            <?php echo e($seatTypeName); ?>
+
+                        </span>
+
+                        <span class="seat-price">
+                            <?php echo e(number_format($seatPrice, 0, ',', '.')); ?>đ
+                        </span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <span>Loại ghế</span>
+
+                    <strong>
+                        <?php echo e($seatTypeName); ?>
+
+                    </strong>
+                </div>
+
+                <div class="row">
+                    <span>Giá ghế</span>
+
+                    <strong>
+                        <?php echo e(number_format($seatPrice, 0, ',', '.')); ?>đ
+                    </strong>
+                </div>
+
+                <div class="qr-box">
+                    <?php echo QrCode::format('svg')
+                    ->size(190)
+                    ->margin(1)
+                    ->errorCorrection('M')
+                    ->generate($seatTicket->ma_qr); ?>
+
+
+                    <div class="qr-label">
+                        QUÉT MÃ KHI VÀO PHÒNG CHIẾU
+                    </div>
+
+                    <div class="ticket-code">
+                        <?php echo e($ve->ma_ve); ?>
+
+                        /
+                        <?php echo e($seatTicket->ma_ghe); ?>
+
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="note">
+                    Mỗi QR chỉ được sử dụng một lần.<br>
+                    Vui lòng có mặt trước giờ chiếu ít nhất 10 phút.
+                </div>
+            </section>
+
+            <div class="page-break"></div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+            <section class="print-page ticket">
+                <div class="center">
+                    Không tìm thấy dữ liệu ghế để in.
+                </div>
+            </section>
+
+            <div class="page-break"></div>
+            <?php endif; ?>
+
+            <section class="print-page invoice">
+                <div class="center">
+                    <div class="brand">
+                        CineHome
+                    </div>
+
+                    <div class="cinema">
+                        <?php echo e($ve->ten_rap); ?>
+
+                    </div>
+
+                    <div class="document-title">
+                        HÓA ĐƠN THANH TOÁN
+                    </div>
+
+                    <div class="invoice-code">
+                        <?php echo e($ve->ma_ve); ?>
+
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="row">
+                    <span>Thời gian bán</span>
+
+                    <strong>
+                        <?php echo e(optional($ve->created_at)->format('d/m/Y H:i')); ?>
+
+                    </strong>
+                </div>
+
+                <div class="row">
+                    <span>Nhân viên</span>
+
+                    <strong>
+                        <?php echo e($staffName); ?>
+
+                    </strong>
+                </div>
+
+                <div class="row">
+                    <span>Phim</span>
+
+                    <strong>
+                        <?php echo e($ve->ten_phim); ?>
+
+                    </strong>
+                </div>
+
+                <div class="row">
+                    <span>Suất chiếu</span>
+
+                    <strong>
+                        <?php echo e(optional($ve->thoi_gian_chieu)->format('d/m/Y H:i')); ?>
+
+                    </strong>
+                </div>
+
+                <div class="row">
+                    <span>Phòng</span>
+
+                    <strong>
+                        <?php echo e($ve->ten_phong); ?>
+
+                    </strong>
+                </div>
+
+                <div class="row">
+                    <span>Ghế</span>
+
+                    <strong>
+                        <?php echo e(str_replace(',', ', ', $ve->ma_ghe)); ?>
+
+                    </strong>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-title">
+                    Chi tiết vé
+                </div>
+
+                <?php $__currentLoopData = $seatTickets; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $seatTicket): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php
+                $normalizedSeatCode = strtoupper(
+                trim((string) $seatTicket->ma_ghe)
+                );
+
+                $seat = $seatDetails->get($normalizedSeatCode);
+
+                $seatType = $seat?->loaiGhe;
+
+                $seatTypeName = $seatType?->ten_loai
+                ?? $seatType?->ten_loai_ghe
+                ?? $seatType?->name
+                ?? null;
+
+                $seatSurcharge = (float) (
+                $seatType?->phu_thu ?? 0
+                );
+
+                $isCoupleSeat = (bool) (
+                $seatType?->la_couple ?? false
+                );
+
+                if (!$seatTypeName) {
+                if ($isCoupleSeat) {
+                $seatTypeName = 'Ghế đôi';
+                } elseif ($seatSurcharge > 0) {
+                $seatTypeName = 'Ghế VIP';
+                } else {
+                $seatTypeName = 'Ghế thường';
+                }
+                }
+
+                $seatPrice = $isCoupleSeat
+                ? ($baseTicketPrice * 2) + $seatSurcharge
+                : $baseTicketPrice + $seatSurcharge;
+                ?>
+
+                <div class="invoice-item">
+                    <div class="item-name">
+                        Ghế <?php echo e($seatTicket->ma_ghe); ?>
+
+                        — <?php echo e($seatTypeName); ?>
+
+                    </div>
+
+                    <div class="item-detail">
+                        <span>1 vé</span>
+
+                        <strong>
+                            <?php echo e(number_format($seatPrice, 0, ',', '.')); ?>đ
+                        </strong>
+                    </div>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
+                <?php if($foods->isNotEmpty()): ?>
+                <div class="section-title">
+                    Đồ ăn & combo
+                </div>
+
+                <?php $__currentLoopData = $foods; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $food): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <?php
+                $foodName = $food['ten_mon']
+                ?? $food['name']
+                ?? 'Đồ ăn';
+
+                $foodPrice = (float) (
+                $food['don_gia']
+                ?? $food['price']
+                ?? 0
+                );
+
+                $foodQuantity = (int) (
+                $food['so_luong']
+                ?? $food['qty']
+                ?? $food['quantity']
+                ?? 1
+                );
+                ?>
+
+                <div class="invoice-item">
+                    <div class="item-name">
+                        <?php echo e($foodName); ?>
+
+                    </div>
+
+                    <div class="item-detail">
+                        <span>
+                            <?php echo e($foodQuantity); ?>
+
+                            x
+                            <?php echo e(number_format($foodPrice, 0, ',', '.')); ?>đ
+                        </span>
+
+                        <strong>
+                            <?php echo e(number_format(
+                                    $foodPrice * $foodQuantity,
+                                    0,
+                                    ',',
+                                    '.'
+                                )); ?>đ
+                        </strong>
+                    </div>
+                </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                <?php endif; ?>
+
+                <div class="divider"></div>
+
+                <div class="total-row">
+                    <span>Tiền vé</span>
+
+                    <strong>
+                        <?php echo e(number_format($seatTotal, 0, ',', '.')); ?>đ
+                    </strong>
+                </div>
+
+                <div class="total-row">
+                    <span>Tiền đồ ăn</span>
+
+                    <strong>
+                        <?php echo e(number_format($foodTotal, 0, ',', '.')); ?>đ
+                    </strong>
+                </div>
+
+                <div class="total-row">
+                    <span>Phương thức</span>
+
+                    <strong>
+                        <?php echo e($ve->payment_method === 'vietqr'
+                        ? 'VietQR'
+                        : 'Tiền mặt'); ?>
+
+                    </strong>
+                </div>
+
+                <?php if($ve->payment_method !== 'vietqr'): ?>
+                <div class="total-row">
+                    <span>Khách đưa</span>
+
+                    <strong>
+                        <?php echo e(number_format(
+                            (float) $ve->received_amount,
+                            0,
+                            ',',
+                            '.'
+                        )); ?>đ
+                    </strong>
+                </div>
+
+                <div class="total-row">
+                    <span>Tiền thừa</span>
+
+                    <strong>
+                        <?php echo e(number_format(
+                            (float) $ve->change_amount,
+                            0,
+                            ',',
+                            '.'
+                        )); ?>đ
+                    </strong>
+                </div>
+                <?php endif; ?>
+
+                <div class="double-divider"></div>
+
+                <div class="total-row grand-total">
+                    <span>TỔNG CỘNG</span>
+
+                    <strong>
+                        <?php echo e(number_format(
+                        (float) $ve->tong_tien,
+                        0,
+                        ',',
+                        '.'
+                    )); ?>đ
+                    </strong>
+                </div>
+
+                <div class="double-divider"></div>
+
+                <div class="note">
+                    Cảm ơn quý khách đã sử dụng dịch vụ CineHome.<br>
+                    Vui lòng giữ hóa đơn để được hỗ trợ khi cần thiết.
+                </div>
+            </section>
+
+            <div class="actions">
+                <button type="button" onclick="window.print()">
+                    In vé & hóa đơn
+                </button>
+
+                <a href="<?php echo e(route('staff.ban-ve.success', ['id' => $ve->id])); ?>">
+                    Quay lại
+                </a>
+            </div>
+
+            <script>
+                window.addEventListener('load', function() {
+                    window.print();
+                });
+
+            </script>
 </body>
+
 </html>
 <?php /**PATH C:\Users\ADMIN\Desktop\DuAnTotNghiep_CineHome\WD-11-Cinehome-cinema\resources\views/staff/ban-ve/print-ticket.blade.php ENDPATH**/ ?>
