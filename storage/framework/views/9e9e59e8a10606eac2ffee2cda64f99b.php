@@ -177,7 +177,7 @@
                         <div class="myticket-code">
                             <span>Mã vé</span>
                             <?php if($veXemPhim->trang_thai === 'cho_thanh_toan'): ?>
-                                <strong>Đang chờ thanh toán</strong>
+                                <strong>Chờ thanh toán</strong>
                                 <small>Vui lòng hoàn tất thanh toán để nhận mã vé.</small>
                             <?php else: ?>
                                 <strong><?php echo e($veXemPhim->ma_ve); ?></strong>
@@ -242,22 +242,25 @@
 
                                 </strong>
                                 <small><?php echo e($meta['description']); ?></small>
+                                <?php if($veXemPhim->trang_thai === 'cho_thanh_toan'): ?>
+                                    <div class="myticket-status-action">
+                                        <a href="<?php echo e(route('dat_ve.checkout', ['suat_chieu_id' => $veXemPhim->suat_chieu_id, 'pending_ticket_id' => $veXemPhim->id])); ?>" class="myticket-detail-btn">
+                                            <i class="fa-solid fa-credit-card"></i>
+                                            Thanh toán
+                                        </a>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
 
-                        <div class="myticket-actions">
-                            <?php if($veXemPhim->trang_thai === 'cho_thanh_toan'): ?>
-                                <a href="<?php echo e(route('dat_ve.checkout', ['suat_chieu_id' => $veXemPhim->suat_chieu_id, 'pending_ticket_id' => $veXemPhim->id])); ?>" class="myticket-detail-btn">
-                                    <i class="fa-solid fa-credit-card"></i>
-                                    Thanh toán
-                                </a>
-                            <?php else: ?>
+                        <?php if($veXemPhim->trang_thai !== 'cho_thanh_toan'): ?>
+                            <div class="myticket-actions">
                                 <a href="<?php echo e(route('user.ve_xem_phim.show', $veXemPhim)); ?>" class="myticket-detail-btn">
                                     <i class="fa-solid fa-qrcode"></i>
                                     Chi tiết
                                 </a>
-                            <?php endif; ?>
-                        </div>
+                            </div>
+                        <?php endif; ?>
                     </article>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <div class="mytickets-empty">
@@ -325,4 +328,5 @@
     </div>
 </section>
 <?php $__env->stopSection(); ?>
+
 <?php echo $__env->make('layouts.user', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\ADMIN\Desktop\DuAnTotNghiep_CineHome\WD-11-Cinehome-cinema\resources\views/user/ve_xem_phim/index.blade.php ENDPATH**/ ?>

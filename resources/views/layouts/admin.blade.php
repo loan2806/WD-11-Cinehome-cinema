@@ -26,7 +26,6 @@
             transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* 💡 ĐÃ SỬA: Dùng dấu > để bảo vệ, chỉ mở đúng menu con trực tiếp, không làm ảnh hưởng menu khác */
         .sidebar-dropdown-box.open>.sidebar-dropdown-content {
             max-height: 1000px;
             transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -36,12 +35,10 @@
             transition: transform 0.25s ease;
         }
 
-        /* 💡 ĐÃ SỬA: Chỉ xoay mũi tên của chính danh mục được nhấn chọn */
         .sidebar-dropdown-box.open>button .fa-chevron-down {
             transform: rotate(180deg);
         }
 
-        /* Line clamp for notification content */
         .line-clamp-2 {
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -49,20 +46,18 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
     </style>
 </head>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Thay đổi Selector ID cho phù hợp với cấu trúc trong file layouts/admin.blade.php của bạn
         const adminBtn = document.getElementById('adminDropdownBtn') || document.querySelector('.admin-profile-btn');
         const adminMenu = document.getElementById('adminDropdownMenu') || document.querySelector('.admin-profile-menu');
 
         if (adminBtn && adminMenu) {
             adminBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
-                adminMenu.classList.toggle('hidden'); // Nếu admin dùng class khác như 'show' thì sửa toggle tương ứng
+                adminMenu.classList.toggle('hidden');
             });
 
             document.addEventListener('click', function(e) {
@@ -72,7 +67,6 @@
             });
         }
     });
-
 </script>
 
 <script>
@@ -129,7 +123,6 @@
             }
         });
     });
-
 </script>
 
 <body class="overflow-x-hidden bg-[#080808] text-white">
@@ -174,29 +167,27 @@
                 </div>
             </div>
 
-            {{-- MENU --}}
+            {{-- MENU SIDEBAR ĐỘNG --}}
             <div class="mt-5 space-y-4 px-3 pb-8">
 
-                {{-- DASHBOARD --}}
+                {{-- 1. DASHBOARD --}}
+                @if(coQuyen('tong_quan.xem'))
                 <div>
-                    <p class="mb-2 px-3 text-[11px] font-black uppercase tracking-widest text-[#d7a767]/50">Tổng quan hệ
-                        thống</p>
+                    <p class="mb-2 px-3 text-[11px] font-black uppercase tracking-widest text-[#d7a767]/50">Tổng quan hệ thống</p>
                     <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'bg-[#d99a32] text-[#2b1208]' : 'text-gray-300 hover:bg-white/5' }} flex items-center gap-3.5 rounded-xl px-4 py-3 text-[16px] font-bold no-underline transition duration-200">
                         <i class="fa-solid fa-chart-line w-5 text-center text-xl {{ request()->routeIs('admin.dashboard') ? 'text-[#2b1208]' : 'text-[#d99a32]' }}"></i>
                         Dashboard Tổng
                     </a>
                 </div>
+                @endif
 
-                
-
-                {{-- NHÓM DROPDOWN 1: QUẢN LÝ NỘI DUNG --}}
-                    @if (auth()->user()->can('quan_ly_phim_suat_chieu'))
+                {{-- 2. QUẢN LÝ NỘI DUNG PHIM --}}
+                @if(coBatKyQuyenNao(['phim.xem', 'suat_chieu.xem', 'the_loai.xem', 'quoc_gia.xem']))
                     @php
-                    $isNoidungActive =
-                    request()->routeIs('admin.phims.*') ||
-                    request()->routeIs('admin.suat-chieus.*') ||
-                    request()->routeIs('admin.the-loais.*') ||
-                    request()->routeIs('admin.quoc-gias.*');
+                        $isNoidungActive = request()->routeIs('admin.phims.*') ||
+                            request()->routeIs('admin.suat-chieus.*') ||
+                            request()->routeIs('admin.the-loais.*') ||
+                            request()->routeIs('admin.quoc-gias.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isNoidungActive ? 'open' : '' }}">
                         <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
@@ -207,23 +198,37 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="{{ route('admin.phims.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Danh
-                                sách phim</a>
-                            <a href="{{ route('admin.suat-chieus.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.suat-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Lịch
-                                suất chiếu</a>
-                            <a href="{{ route('admin.the-loais.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.the-loais.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thể
-                                loại phim</a>
-                            <a href="{{ route('admin.quoc-gias.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.quoc-gias.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Quốc
-                                gia sản xuất</a>
+                            @if(coQuyen('phim.xem'))
+                            <a href="{{ route('admin.phims.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Danh sách phim
+                            </a>
+                            @endif
+
+                            @if(coQuyen('suat_chieu.xem'))
+                            <a href="{{ route('admin.suat-chieus.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.suat-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Lịch suất chiếu
+                            </a>
+                            @endif
+
+                            @if(coQuyen('the_loai.xem'))
+                            <a href="{{ route('admin.the-loais.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.the-loais.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Thể loại phim
+                            </a>
+                            @endif
+
+                            @if(coQuyen('quoc_gia.xem'))
+                            <a href="{{ route('admin.quoc-gias.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.quoc-gias.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Quốc gia sản xuất
+                            </a>
+                            @endif
                         </div>
                     </div>
-                    @endif
+                @endif
 
-                    {{-- NHÓM DROPDOWN 2: PHÒNG CHIẾU VÀ SƠ ĐỒ GHẾ --}}
-                    @if (auth()->user()->can('quan_ly_phong_ghe'))
+                {{-- 3. CƠ SỞ VẬT CHẤT PHÒNG --}}
+                @if(coBatKyQuyenNao(['phong_chieu.xem', 'loai_ghe.xem']))
                     @php
-                    $isPhongGheActive =
-                    request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*');
+                        $isPhongGheActive = request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isPhongGheActive ? 'open' : '' }}">
                         <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
@@ -234,23 +239,29 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="{{ route('admin.phong-chieus.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phong-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Quản
-                                lý phòng chiếu</a>
-                            <a href="{{ route('admin.loai-ghes.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.loai-ghes.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Danh
-                                mục loại ghế</a>
+                            @if(coQuyen('phong_chieu.xem'))
+                            <a href="{{ route('admin.phong-chieus.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phong-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Quản lý phòng chiếu
+                            </a>
+                            @endif
+
+                            @if(coQuyen('loai_ghe.xem'))
+                            <a href="{{ route('admin.loai-ghes.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.loai-ghes.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Danh mục loại ghế
+                            </a>
+                            @endif
                         </div>
                     </div>
-                    @endif
+                @endif
 
-                    {{-- NHÓM DROPDOWN 3: VÉ, HÓA ĐƠN & DỊCH VỤ QUẦY --}}
-                    @if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') ||
-                    auth()->user()->can('soat_ve_vao_cua') || auth()->user()->can('quan_ly_khach_hang'))
+                {{-- 4. NGHIỆP VỤ QUẦY VÉ --}}
+                @if(coBatKyQuyenNao(['kho_ve.xem', 'quay_ve.ban_ve', 'soat_ve.quet_qr', 'do_an.hoa_don', 'do_an.cau_hinh', 'khuyen_mai.xem']))
                     @php
-                    $isGiaoDichActive = request()->routeIs('admin.food-invoices.*')
-                    || request()->routeIs('admin.foods.*')
-                    || request()->routeIs('admin.vouchers.*')
-                    || request()->routeIs('admin.ve-xem-phims.*')
-                    || request()->routeIs('admin.soat-ve.*');
+                        $isGiaoDichActive = request()->routeIs('admin.food-invoices.*')
+                            || request()->routeIs('admin.foods.*')
+                            || request()->routeIs('admin.vouchers.*')
+                            || request()->routeIs('admin.ve-xem-phims.*')
+                            || request()->routeIs('admin.soat-ve.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isGiaoDichActive ? 'open' : '' }}">
                         <button type="button" class="sidebar-dropdown-btn flex w-full items-center justify-between rounded-xl border-0 bg-transparent px-4 py-3 text-left text-[16px] font-bold leading-none text-gray-200 outline-none transition duration-200 hover:bg-white/5">
@@ -261,46 +272,49 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            @can('ban_ve_tai_quay')
+                            @if(coQuyen('kho_ve.xem'))
                             <a href="{{ route('admin.ve-xem-phims.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.ve-xem-phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                 Quản lý kho dữ liệu vé
                             </a>
+                            @endif
 
-                            <a href="{{ route('staff.ban-ve.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5
-                                {{ request()->routeIs('staff.ban-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
+                            @if(coQuyen('quay_ve.ban_ve'))
+                            <a href="{{ route('staff.ban-ve.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('staff.ban-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                 Bán vé trực tiếp rạp
                             </a>
-                            @endcan
-                            @can('soat_ve_vao_cua')
-                            <a href="{{ route('admin.soat-ve.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.soat-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Soát
-                                vé QR</a>
-                            @endcan
-                            @can('quan_ly_do_an_combo')
+                            @endif
+
+                            @if(coQuyen('soat_ve.quet_qr'))
+                            <a href="{{ route('admin.soat-ve.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.soat-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Soát vé QR
+                            </a>
+                            @endif
+
+                            @if(coQuyen('do_an.hoa_don'))
                             <a href="{{ route('admin.food-invoices.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.food-invoices.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                 Hóa đơn đồ ăn & Combo
                             </a>
-                            @endcan
-                            @can('quan_ly_do_an_combo')
+                            @endif
+
+                            @if(coQuyen('do_an.cau_hinh'))
                             <a href="{{ route('admin.foods.index') }}" class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.foods.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
                                 + Cấu hình Menu & Kho hàng
                             </a>
-                            @endcan
-                            @can('quan_ly_khach_hang')
+                            @endif
+
+                            @if(coQuyen('khuyen_mai.xem'))
                             <a href="{{ route('admin.vouchers.index') }}" class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.vouchers.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
                                 + Khuyến mãi & Voucher
                             </a>
-                            @endcan
+                            @endif
                         </div>
                     </div>
-                    @endif
+                @endif
 
-                    {{-- NHÓM DROPDOWN 4: QUẢN LÝ TÀI KHOẢN & NHÂN LỰC --}}
-                    @if (auth()->user()->can('quan_ly_khach_hang') ||
-                        auth()->user()->can('quan_ly_nhan_vien') ||
-                        auth()->user()->can('phan_quyen_he_thong'))
+                {{-- 5. QUẢN LÝ TÀI KHOẢN & NHÂN LỰC --}}
+                @if(coBatKyQuyenNao(['nhan_vien.xem', 'phan_quyen.ma_tran', 'khach_hang.xem', 'thanh_vien.xem']))
                     @php
-                        $isTaiKhoanActive =
-                            request()->routeIs('admin.nhanviens.*') ||
+                        $isTaiKhoanActive = request()->routeIs('admin.nhanviens.*') ||
                             request()->routeIs('admin.phan-quyen.*') ||
                             request()->routeIs('admin.khach-hang.*') ||
                             request()->routeIs('admin.thanh-vien.*') ||
@@ -316,44 +330,37 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            @can('quan_ly_nhan_vien')
+                            @if(coQuyen('nhan_vien.xem'))
                             <a href="{{ route('admin.nhanviens.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.nhanviens.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                 Danh sách nhân viên
                             </a>
-                            <a href="{{ route('admin.cham-congs.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.cham-congs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
-                                Quản lý chấm công
-                            </a>
-                            <a href="{{ route('admin.bang-luongs.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.bang-luongs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
-                                Thống kê lương
-                            </a>
-                            @endcan
-                            @can('phan_quyen_he_thong')
+                            @endif
+
+                            @if(coQuyen('phan_quyen.ma_tran'))
                             <a href="{{ route('admin.phan-quyen.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phan-quyen.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                 Ma trận phân quyền
                             </a>
-                            @endcan
-                            @can('quan_ly_khach_hang')
-                                <a href="{{ route('admin.khach-hang.index') }}"
-                                    class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.khach-hang.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
-                                    Tài khoản khách hàng
-                                </a>
-                                <a href="{{ route('admin.thanh-vien.index') }}"
-                                    class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thanh-vien.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
-                                    <i class="fa-solid fa-crown mr-2"></i>
-                                    Thẻ thành viên & Điểm
-                                </a>
-                            @endcan
+                            @endif
+
+                            @if(coQuyen('khach_hang.xem'))
+                            <a href="{{ route('admin.khach-hang.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.khach-hang.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
+                                Tài khoản khách hàng
+                            </a>
+                            @endif
+
+                            @if(coQuyen('thanh_vien.xem'))
+                            <a href="{{ route('admin.thanh-vien.index') }}" class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thanh-vien.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]' }}">
+                                <i class="fa-solid fa-crown mr-2"></i> Thẻ thành viên & Điểm
+                            </a>
+                            @endif
                         </div>
                     </div>
                 @endif
 
-
-                    {{-- NHÓM DROPDOWN 5: BÁO CÁO & THỐNG KÊ --}}
-                    @if (auth()->user()->can('thong_ke_doanh_thu'))
+                {{-- 6. BÁO CÁO & THỐNG KÊ --}}
+                @if(coBatKyQuyenNao(['bao_cao.doanh_thu', 'nhat_ky.he_thong']))
                     @php
-                    $isBaoCaoActive =
-                    request()->routeIs('admin.thong-ke.*') ||
-                    request()->routeIs('admin.activity-logs.*');
+                        $isBaoCaoActive = request()->routeIs('admin.thong-ke.*') || request()->routeIs('admin.activity-logs.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isBaoCaoActive ? 'open' : '' }}">
                         <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
@@ -364,20 +371,27 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="{{ route('admin.thong-ke.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-ke.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thống
-                                kê doanh thu</a>
-                            <a href="{{ route('admin.activity-logs.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.activity-logs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Nhật
-                                ký vết hệ thống</a>
+                            @if(coQuyen('bao_cao.doanh_thu'))
+                            <a href="{{ route('admin.thong-ke.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-ke.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Thống kê doanh thu
+                            </a>
+                            @endif
+
+                            @if(coQuyen('nhat_ky.he_thong'))
+                            <a href="{{ route('admin.activity-logs.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.activity-logs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Nhật ký vết hệ thống
+                            </a>
+                            @endif
                         </div>
                     </div>
-                    @endif
+                @endif
 
-                    {{-- NHÓM DROPDOWN 6: THIẾT LẬP HỆ THỐNG --}}
-                    @if (auth()->user()->can('quan_ly_cau_hinh_he_thong'))
+                {{-- 7. THIẾT LẬP HỆ THỐNG --}}
+                @if(coBatKyQuyenNao(['thong_bao.gui', 'cai_dat.he_thong']))
                     @php
-                    $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
-                    || request()->routeIs('admin.movie-reviews.*')
-                    || request()->routeIs('admin.system-settings.*');
+                        $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
+                            || request()->routeIs('admin.movie-reviews.*')
+                            || request()->routeIs('admin.system-settings.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isSystemActive ? 'open' : '' }}">
                         <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
@@ -388,24 +402,30 @@
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
                         <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="{{ route('admin.thong-bao-push.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Thông
-                                báo đẩy</a>
+                            @if(coQuyen('thong_bao.gui'))
+                            <a href="{{ route('admin.thong-bao-push.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Thông báo đẩy
+                            </a>
+                            @endif
 
-                            <a href="{{ route('admin.system-settings.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.system-settings.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">Cấu
-                                hình tham số gốc</a>
+                            @if(coQuyen('cai_dat.he_thong'))
+                            <a href="{{ route('admin.system-settings.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.system-settings.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Cấu hình tham số gốc
+                            </a>
+                            @endif
                         </div>
                     </div>
-                    @endif
+                @endif
 
-                    {{-- VỀ TRANG CHỦ --}}
-                    <div class="border-t border-white/10 pt-3">
-                        <a href="{{ route('home') }}" class="flex items-center gap-3.5 rounded-xl px-4 py-3 text-[16px] font-bold text-gray-300 no-underline transition duration-200 hover:bg-white/5 hover:text-white">
-                            <i class="fa-solid fa-house w-5 text-center text-xl text-[#d99a32]"></i>
-                            <span>Xem trang chủ ngoài</span>
-                        </a>
-                    </div>
-
+                {{-- VỀ TRANG CHỦ --}}
+                <div class="border-t border-white/10 pt-3">
+                    <a href="{{ route('home') }}" class="flex items-center gap-3.5 rounded-xl px-4 py-3 text-[16px] font-bold text-gray-300 no-underline transition duration-200 hover:bg-white/5 hover:text-white">
+                        <i class="fa-solid fa-house w-5 text-center text-xl text-[#d99a32]"></i>
+                        <span>Xem trang chủ ngoài</span>
+                    </a>
                 </div>
+
+            </div>
         </aside>
 
         {{-- MAIN CONTENT --}}
@@ -441,10 +461,12 @@
                     <div class="flex items-center gap-3">
                         @php
                             $notificationCount = $notificationCount ?? 0;
-                            $adminRoleLabel = match (Auth::user()->vai_tro) {
-                                'quan_ly_he_thong' => 'Quản lý hệ thống',
-                                'nhan_vien' => 'Nhân viên',
-                                default => 'Quản trị viên',
+                            $userRole = Auth::user()->vai_tro ?? Auth::user()->role;
+                            $adminRoleLabel = match ($userRole) {
+                                'super_admin', 'admin', 'quan_ly_he_thong' => 'Quản trị viên (Super-admin)',
+                                'quan_ly_rap' => 'Quản lý rạp',
+                                'nhan_vien' => 'Nhân viên quầy',
+                                default => 'Người dùng',
                             };
                         @endphp
 
@@ -469,7 +491,7 @@
                                 </div>
 
                                 <div class="admin-notify-list">
-                                    @forelse($adminNotifications as $item)
+                                    @forelse($adminNotifications ?? [] as $item)
                                     <article class="admin-notify-item {{ $item->da_doc ? '' : 'is-unread' }}">
                                         <span class="admin-notify-icon">
                                             <i class="fa-solid fa-bell"></i>
@@ -537,8 +559,7 @@
                                     <form method="POST" action="{{ route('logout') }}" class="m-0">
                                         @csrf
                                         <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/15 border-0 bg-transparent text-left">
-                                            <i class="fa-solid fa-right-from-bracket w-4 text-xs text-center"></i> Đăng
-                                            xuất Hệ thống
+                                            <i class="fa-solid fa-right-from-bracket w-4 text-xs text-center"></i> Đăng xuất Hệ thống
                                         </button>
                                     </form>
                                 </div>
@@ -569,23 +590,49 @@
                 if (btn) {
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
-                        e
-                            .stopPropagation(); // 💡 CHỐNG NỔI BỌT: Không cho lan sự kiện sang các thẻ cha/con xung quanh
+                        e.stopPropagation();
 
                         box.classList.toggle('open');
                     });
                 }
             });
         });
-
     </script>
     @if(session('clear_food_cart_key'))
     <script>
         localStorage.removeItem(
             "{{ session('clear_food_cart_key') }}"
         );
-
     </script>
     @endif
+    {{-- SCRIPT TỰ ĐỘNG ĐẨY VỀ DASHBOARD KHI BỊ TƯỚC QUYỀN TRỰC TIẾP --}}
+    @hasSection('module-permission')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const requiredPerm = "@yield('module-permission')";
+            if (!requiredPerm) return;
+
+            // Kiểm tra ngầm mỗi 5000ms (5 giây)
+            setInterval(function() {
+                fetch(`{{ route('admin.kiem-tra-quyen-ngam') }}?quyen=${requiredPerm}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.co_quyen === false) {
+                        // Tự động chuyển hướng ngay lập tức khi phát hiện mất quyền
+                        window.location.href = "{{ route('admin.dashboard') }}";
+                    }
+                })
+                .catch(err => console.error("Lỗi kiểm tra quyền ngầm:", err));
+            }, 5000);
+        });
+    </script>
+    @endif
+</body>
+</html>
 </body>
 </html>
