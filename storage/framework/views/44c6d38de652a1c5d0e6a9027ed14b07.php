@@ -97,7 +97,7 @@ $baseSeatPrice = (float) $seatTotal;
                             <div class="food-card bg-zinc-900 border border-white/10 rounded-2xl p-4 flex flex-col justify-between hover:border-yellow-400 transition" data-search-term="<?php echo e(mb_strtolower($food['name'])); ?>">
                                 <div class="h-28 bg-black rounded-xl flex items-center justify-center overflow-hidden mb-3 relative border border-white/5">
                                     <?php if(!empty($food['image'])): ?>
-                                    <img src="<?php echo e(asset('storage/' . $food['image'])); ?>" class="h-full object-contain hover:scale-110 transition duration-300" alt="<?php echo e($food['name']); ?>">
+                                    <img src="<?php echo e(asset('storage/foods/' . $food['image'])); ?>" class="h-full object-contain hover:scale-110 transition duration-300" alt="<?php echo e($food['name']); ?>">
                                     <?php else: ?>
                                     <span class="text-xs text-gray-600">
                                         No Image

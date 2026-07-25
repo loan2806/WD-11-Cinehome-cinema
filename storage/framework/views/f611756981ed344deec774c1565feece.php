@@ -108,7 +108,7 @@
                 event.preventDefault();
                 event.stopPropagation();
 
-                adminMenu?.classList.add('hidden');
+                adminMenu ? .classList.add('hidden');
                 notifyBox.classList.toggle('hidden');
             });
 
@@ -125,7 +125,7 @@
 
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
-                notifyBox?.classList.add('hidden');
+                notifyBox ? .classList.add('hidden');
             }
         });
     });
@@ -263,225 +263,223 @@
                     </a>
                 </div>
 
-                
+
 
                 
-                    <?php if(auth()->user()->can('quan_ly_phim_suat_chieu')): ?>
-                    <?php
-                    $isNoidungActive =
-                    request()->routeIs('admin.phims.*') ||
-                    request()->routeIs('admin.suat-chieus.*') ||
-                    request()->routeIs('admin.the-loais.*') ||
-                    request()->routeIs('admin.quoc-gias.*');
-                    ?>
-                    <div class="sidebar-dropdown-box <?php echo e($isNoidungActive ? 'open' : ''); ?>">
-                        <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
-                            <span class="flex items-center gap-3.5">
-                                <i class="fa-solid fa-film w-5 text-center text-xl text-[#d99a32]"></i>
-                                <span>Quản lý nội dung phim</span>
-                            </span>
-                            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
-                        </button>
-                        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="<?php echo e(route('admin.phims.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Danh
-                                sách phim</a>
-                            <a href="<?php echo e(route('admin.suat-chieus.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.suat-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Lịch
-                                suất chiếu</a>
-                            <a href="<?php echo e(route('admin.the-loais.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.the-loais.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Thể
-                                loại phim</a>
-                            <a href="<?php echo e(route('admin.quoc-gias.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.quoc-gias.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Quốc
-                                gia sản xuất</a>
-                        </div>
+                <?php if(auth()->user()->can('quan_ly_phim_suat_chieu')): ?>
+                <?php
+                $isNoidungActive =
+                request()->routeIs('admin.phims.*') ||
+                request()->routeIs('admin.suat-chieus.*') ||
+                request()->routeIs('admin.the-loais.*') ||
+                request()->routeIs('admin.quoc-gias.*');
+                ?>
+                <div class="sidebar-dropdown-box <?php echo e($isNoidungActive ? 'open' : ''); ?>">
+                    <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
+                        <span class="flex items-center gap-3.5">
+                            <i class="fa-solid fa-film w-5 text-center text-xl text-[#d99a32]"></i>
+                            <span>Quản lý nội dung phim</span>
+                        </span>
+                        <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
+                    </button>
+                    <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
+                        <a href="<?php echo e(route('admin.phims.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Danh
+                            sách phim</a>
+                        <a href="<?php echo e(route('admin.suat-chieus.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.suat-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Lịch
+                            suất chiếu</a>
+                        <a href="<?php echo e(route('admin.the-loais.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.the-loais.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Thể
+                            loại phim</a>
+                        <a href="<?php echo e(route('admin.quoc-gias.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.quoc-gias.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Quốc
+                            gia sản xuất</a>
                     </div>
-                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
 
-                    
-                    <?php if(auth()->user()->can('quan_ly_phong_ghe')): ?>
-                    <?php
-                    $isPhongGheActive =
-                    request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*');
-                    ?>
-                    <div class="sidebar-dropdown-box <?php echo e($isPhongGheActive ? 'open' : ''); ?>">
-                        <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
-                            <span class="flex items-center gap-3.5">
-                                <i class="fa-solid fa-door-open w-5 text-center text-xl text-[#d99a32]"></i>
-                                <span>Cơ sở vật chất phòng</span>
-                            </span>
-                            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
-                        </button>
-                        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="<?php echo e(route('admin.phong-chieus.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.phong-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Quản
-                                lý phòng chiếu</a>
-                            <a href="<?php echo e(route('admin.loai-ghes.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.loai-ghes.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Danh
-                                mục loại ghế</a>
-                        </div>
+                
+                <?php if(auth()->user()->can('quan_ly_phong_ghe')): ?>
+                <?php
+                $isPhongGheActive =
+                request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*');
+                ?>
+                <div class="sidebar-dropdown-box <?php echo e($isPhongGheActive ? 'open' : ''); ?>">
+                    <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
+                        <span class="flex items-center gap-3.5">
+                            <i class="fa-solid fa-door-open w-5 text-center text-xl text-[#d99a32]"></i>
+                            <span>Cơ sở vật chất phòng</span>
+                        </span>
+                        <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
+                    </button>
+                    <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
+                        <a href="<?php echo e(route('admin.phong-chieus.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.phong-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Quản
+                            lý phòng chiếu</a>
+                        <a href="<?php echo e(route('admin.loai-ghes.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.loai-ghes.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Danh
+                            mục loại ghế</a>
                     </div>
-                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
 
-                    
-                    <?php if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') ||
-                    auth()->user()->can('soat_ve_vao_cua') || auth()->user()->can('quan_ly_khach_hang')): ?>
-                    <?php
-                    $isGiaoDichActive = request()->routeIs('admin.food-invoices.*')
-                    || request()->routeIs('admin.foods.*')
-                    || request()->routeIs('admin.vouchers.*')
-                    || request()->routeIs('admin.ve-xem-phims.*')
-                    || request()->routeIs('admin.soat-ve.*');
-                    ?>
-                    <div class="sidebar-dropdown-box <?php echo e($isGiaoDichActive ? 'open' : ''); ?>">
-                        <button type="button" class="sidebar-dropdown-btn flex w-full items-center justify-between rounded-xl border-0 bg-transparent px-4 py-3 text-left text-[16px] font-bold leading-none text-gray-200 outline-none transition duration-200 hover:bg-white/5">
-                            <span class="flex items-center gap-3.5">
-                                <i class="fa-solid fa-ticket w-5 text-center text-xl text-[#d99a32]"></i>
-                                <span>Nghiệp vụ quầy vé</span>
-                            </span>
-                            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
-                        </button>
-                        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('ban_ve_tai_quay')): ?>
-                            <a href="<?php echo e(route('admin.ve-xem-phims.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.ve-xem-phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
-                                Quản lý kho dữ liệu vé
-                            </a>
+                
+                <?php if(auth()->user()->can('ban_ve_tai_quay') || auth()->user()->can('quan_ly_do_an_combo') ||
+                auth()->user()->can('soat_ve_vao_cua') || auth()->user()->can('quan_ly_khach_hang')): ?>
+                <?php
+                $isGiaoDichActive = request()->routeIs('admin.food-invoices.*')
+                || request()->routeIs('admin.foods.*')
+                || request()->routeIs('admin.vouchers.*')
+                || request()->routeIs('admin.ve-xem-phims.*')
+                || request()->routeIs('admin.soat-ve.*');
+                ?>
+                <div class="sidebar-dropdown-box <?php echo e($isGiaoDichActive ? 'open' : ''); ?>">
+                    <button type="button" class="sidebar-dropdown-btn flex w-full items-center justify-between rounded-xl border-0 bg-transparent px-4 py-3 text-left text-[16px] font-bold leading-none text-gray-200 outline-none transition duration-200 hover:bg-white/5">
+                        <span class="flex items-center gap-3.5">
+                            <i class="fa-solid fa-ticket w-5 text-center text-xl text-[#d99a32]"></i>
+                            <span>Nghiệp vụ quầy vé</span>
+                        </span>
+                        <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
+                    </button>
+                    <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('ban_ve_tai_quay')): ?>
+                        <a href="<?php echo e(route('admin.ve-xem-phims.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.ve-xem-phims.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
+                            Quản lý kho dữ liệu vé
+                        </a>
 
-                            <a href="<?php echo e(route('staff.ban-ve.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5
+                        <a href="<?php echo e(route('staff.ban-ve.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5
                                 <?php echo e(request()->routeIs('staff.ban-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
-                                Bán vé trực tiếp rạp
-                            </a>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('soat_ve_vao_cua')): ?>
-                            <a href="<?php echo e(route('admin.soat-ve.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.soat-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Soát
-                                vé QR</a>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_do_an_combo')): ?>
-                            <a href="<?php echo e(route('admin.food-invoices.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.food-invoices.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
-                                Hóa đơn đồ ăn & Combo
-                            </a>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_do_an_combo')): ?>
-                            <a href="<?php echo e(route('admin.foods.index')); ?>" class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.foods.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]'); ?>">
-                                + Cấu hình Menu & Kho hàng
-                            </a>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_khach_hang')): ?>
-                            <a href="<?php echo e(route('admin.vouchers.index')); ?>" class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.vouchers.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]'); ?>">
-                                + Khuyến mãi & Voucher
-                            </a>
-                            <?php endif; ?>
-                        </div>
+                            Bán vé trực tiếp rạp
+                        </a>
+                        <?php endif; ?>
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('soat_ve_vao_cua')): ?>
+                        <a href="<?php echo e(route('admin.soat-ve.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.soat-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Soát
+                            vé QR</a>
+                        <?php endif; ?>
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_do_an_combo')): ?>
+                        <a href="<?php echo e(route('admin.food-invoices.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.food-invoices.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
+                            Hóa đơn đồ ăn & Combo
+                        </a>
+                        <?php endif; ?>
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_do_an_combo')): ?>
+                        <a href="<?php echo e(route('admin.foods.index')); ?>" class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.foods.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]'); ?>">
+                            + Cấu hình Menu & Kho hàng
+                        </a>
+                        <?php endif; ?>
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_khach_hang')): ?>
+                        <a href="<?php echo e(route('admin.vouchers.index')); ?>" class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.vouchers.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]'); ?>">
+                            + Khuyến mãi & Voucher
+                        </a>
+                        <?php endif; ?>
                     </div>
-                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
 
-                    
-                    <?php if(auth()->user()->can('quan_ly_khach_hang') ||
-                        auth()->user()->can('quan_ly_nhan_vien') ||
-                        auth()->user()->can('phan_quyen_he_thong')): ?>
-                    <?php
-                        $isTaiKhoanActive =
-                            request()->routeIs('admin.nhanviens.*') ||
-                            request()->routeIs('admin.phan-quyen.*') ||
-                            request()->routeIs('admin.khach-hang.*') ||
-                            request()->routeIs('admin.thanh-vien.*') ||
-                            request()->routeIs('admin.cham-congs.*') ||
-                            request()->routeIs('admin.bang-luongs.*');
-                    ?>
-                    <div class="sidebar-dropdown-box <?php echo e($isTaiKhoanActive ? 'open' : ''); ?>">
-                        <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
-                            <span class="flex items-center gap-3.5">
-                                <i class="fa-solid fa-user-gear w-5 text-center text-xl text-[#d99a32]"></i>
-                                <span>Tài khoản & Nhân lực</span>
-                            </span>
-                            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
-                        </button>
-                        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_nhan_vien')): ?>
-                            <a href="<?php echo e(route('admin.nhanviens.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.nhanviens.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
-                                Danh sách nhân viên
-                            </a>
-                            <a href="<?php echo e(route('admin.cham-congs.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.cham-congs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
-                                Quản lý chấm công
-                            </a>
-                            <a href="<?php echo e(route('admin.bang-luongs.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.bang-luongs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
-                                Thống kê lương
-                            </a>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('phan_quyen_he_thong')): ?>
-                            <a href="<?php echo e(route('admin.phan-quyen.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.phan-quyen.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
-                                Ma trận phân quyền
-                            </a>
-                            <?php endif; ?>
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_khach_hang')): ?>
-                                <a href="<?php echo e(route('admin.khach-hang.index')); ?>"
-                                    class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.khach-hang.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
-                                    Tài khoản khách hàng
-                                </a>
-                                <a href="<?php echo e(route('admin.thanh-vien.index')); ?>"
-                                    class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.thanh-vien.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]'); ?>">
-                                    <i class="fa-solid fa-crown mr-2"></i>
-                                    Thẻ thành viên & Điểm
-                                </a>
-                            <?php endif; ?>
-                        </div>
+                
+                <?php if(auth()->user()->can('quan_ly_khach_hang') ||
+                auth()->user()->can('quan_ly_nhan_vien') ||
+                auth()->user()->can('phan_quyen_he_thong')): ?>
+                <?php
+                $isTaiKhoanActive =
+                request()->routeIs('admin.nhanviens.*') ||
+                request()->routeIs('admin.phan-quyen.*') ||
+                request()->routeIs('admin.khach-hang.*') ||
+                request()->routeIs('admin.thanh-vien.*') ||
+                request()->routeIs('admin.cham-congs.*') ||
+                request()->routeIs('admin.bang-luongs.*');
+                ?>
+                <div class="sidebar-dropdown-box <?php echo e($isTaiKhoanActive ? 'open' : ''); ?>">
+                    <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
+                        <span class="flex items-center gap-3.5">
+                            <i class="fa-solid fa-user-gear w-5 text-center text-xl text-[#d99a32]"></i>
+                            <span>Tài khoản & Nhân lực</span>
+                        </span>
+                        <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
+                    </button>
+                    <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_nhan_vien')): ?>
+                        <a href="<?php echo e(route('admin.nhanviens.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.nhanviens.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
+                            Danh sách nhân viên
+                        </a>
+                        <a href="<?php echo e(route('admin.cham-congs.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.cham-congs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
+                            Quản lý chấm công
+                        </a>
+                        <a href="<?php echo e(route('admin.bang-luongs.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.bang-luongs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
+                            Thống kê lương
+                        </a>
+                        <?php endif; ?>
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('phan_quyen_he_thong')): ?>
+                        <a href="<?php echo e(route('admin.phan-quyen.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.phan-quyen.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
+                            Ma trận phân quyền
+                        </a>
+                        <?php endif; ?>
+                        <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('quan_ly_khach_hang')): ?>
+                        <a href="<?php echo e(route('admin.khach-hang.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.khach-hang.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?>">
+                            Tài khoản khách hàng
+                        </a>
+                        <a href="<?php echo e(route('admin.thanh-vien.index')); ?>" class="block py-2.5 pl-3 text-[14px] font-medium no-underline transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.thanh-vien.*') ? 'text-[#d99a32]' : 'text-gray-500 hover:text-[#d99a32]'); ?>">
+                            <i class="fa-solid fa-crown mr-2"></i>
+                            Thẻ thành viên & Điểm
+                        </a>
+                        <?php endif; ?>
                     </div>
+                </div>
                 <?php endif; ?>
 
 
-                    
-                    <?php if(auth()->user()->can('thong_ke_doanh_thu')): ?>
-                    <?php
-                    $isBaoCaoActive =
-                    request()->routeIs('admin.thong-ke.*') ||
-                    request()->routeIs('admin.activity-logs.*');
-                    ?>
-                    <div class="sidebar-dropdown-box <?php echo e($isBaoCaoActive ? 'open' : ''); ?>">
-                        <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
-                            <span class="flex items-center gap-3.5">
-                                <i class="fa-solid fa-chart-pie w-5 text-center text-xl text-[#d99a32]"></i>
-                                <span>Báo cáo vận hành</span>
-                            </span>
-                            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
-                        </button>
-                        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="<?php echo e(route('admin.thong-ke.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.thong-ke.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Thống
-                                kê doanh thu</a>
-                            <a href="<?php echo e(route('admin.activity-logs.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.activity-logs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Nhật
-                                ký vết hệ thống</a>
-                        </div>
+                
+                <?php if(auth()->user()->can('thong_ke_doanh_thu')): ?>
+                <?php
+                $isBaoCaoActive =
+                request()->routeIs('admin.thong-ke.*') ||
+                request()->routeIs('admin.activity-logs.*');
+                ?>
+                <div class="sidebar-dropdown-box <?php echo e($isBaoCaoActive ? 'open' : ''); ?>">
+                    <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
+                        <span class="flex items-center gap-3.5">
+                            <i class="fa-solid fa-chart-pie w-5 text-center text-xl text-[#d99a32]"></i>
+                            <span>Báo cáo vận hành</span>
+                        </span>
+                        <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
+                    </button>
+                    <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
+                        <a href="<?php echo e(route('admin.thong-ke.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.thong-ke.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Thống
+                            kê doanh thu</a>
+                        <a href="<?php echo e(route('admin.activity-logs.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.activity-logs.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Nhật
+                            ký vết hệ thống</a>
                     </div>
-                    <?php endif; ?>
-
-                    
-                    <?php if(auth()->user()->can('quan_ly_cau_hinh_he_thong')): ?>
-                    <?php
-                    $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
-                    || request()->routeIs('admin.movie-reviews.*')
-                    || request()->routeIs('admin.system-settings.*');
-                    ?>
-                    <div class="sidebar-dropdown-box <?php echo e($isSystemActive ? 'open' : ''); ?>">
-                        <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
-                            <span class="flex items-center gap-3.5">
-                                <i class="fa-solid fa-gear w-5 text-center text-xl text-[#d99a32]"></i>
-                                <span>Cài đặt tham số gốc</span>
-                            </span>
-                            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
-                        </button>
-                        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            <a href="<?php echo e(route('admin.thong-bao-push.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Thông
-                                báo đẩy</a>
-
-                            <a href="<?php echo e(route('admin.system-settings.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.system-settings.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Cấu
-                                hình tham số gốc</a>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-
-                    
-                    <div class="border-t border-white/10 pt-3">
-                        <a href="<?php echo e(route('home')); ?>" class="flex items-center gap-3.5 rounded-xl px-4 py-3 text-[16px] font-bold text-gray-300 no-underline transition duration-200 hover:bg-white/5 hover:text-white">
-                            <i class="fa-solid fa-house w-5 text-center text-xl text-[#d99a32]"></i>
-                            <span>Xem trang chủ ngoài</span>
-                        </a>
-                    </div>
-
                 </div>
+                <?php endif; ?>
+
+                
+                <?php if(auth()->user()->can('quan_ly_cau_hinh_he_thong')): ?>
+                <?php
+                $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
+                || request()->routeIs('admin.movie-reviews.*')
+                || request()->routeIs('admin.system-settings.*');
+                ?>
+                <div class="sidebar-dropdown-box <?php echo e($isSystemActive ? 'open' : ''); ?>">
+                    <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
+                        <span class="flex items-center gap-3.5">
+                            <i class="fa-solid fa-gear w-5 text-center text-xl text-[#d99a32]"></i>
+                            <span>Cài đặt tham số gốc</span>
+                        </span>
+                        <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
+                    </button>
+                    <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
+                        <a href="<?php echo e(route('admin.thong-bao-push.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Thông
+                            báo đẩy</a>
+
+                        <a href="<?php echo e(route('admin.system-settings.index')); ?>" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 <?php echo e(request()->routeIs('admin.system-settings.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white'); ?> no-underline">Cấu
+                            hình tham số gốc</a>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                
+                <div class="border-t border-white/10 pt-3">
+                    <a href="<?php echo e(route('home')); ?>" class="flex items-center gap-3.5 rounded-xl px-4 py-3 text-[16px] font-bold text-gray-300 no-underline transition duration-200 hover:bg-white/5 hover:text-white">
+                        <i class="fa-solid fa-house w-5 text-center text-xl text-[#d99a32]"></i>
+                        <span>Xem trang chủ ngoài</span>
+                    </a>
+                </div>
+
+            </div>
         </aside>
 
         
@@ -516,12 +514,12 @@
                     
                     <div class="flex items-center gap-3">
                         <?php
-                            $notificationCount = $notificationCount ?? 0;
-                            $adminRoleLabel = match (Auth::user()->vai_tro) {
-                                'quan_ly_he_thong' => 'Quản lý hệ thống',
-                                'nhan_vien' => 'Nhân viên',
-                                default => 'Quản trị viên',
-                            };
+                        $notificationCount = $notificationCount ?? 0;
+                        $adminRoleLabel = match (Auth::user()->vai_tro) {
+                        'quan_ly_he_thong' => 'Quản lý hệ thống',
+                        'nhan_vien' => 'Nhân viên',
+                        default => 'Quản trị viên',
+                        };
                         ?>
 
                         <div class="relative">
@@ -610,9 +608,17 @@
                                     </div>
                                 </div>
                                 <div class="p-1.5 border-b border-white/10">
+
                                     <a href="<?php echo e(route('profile.edit')); ?>" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
-                                        <i class="fa-solid fa-user-gear w-4 text-xs text-center"></i> Hồ sơ cá nhân
+                                        <i class="fa-solid fa-user-gear w-4 text-xs text-center"></i>
+                                        Hồ sơ cá nhân
                                     </a>
+
+                                    <a href="<?php echo e(route('admin.ve-xem-phims.index')); ?>" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
+                                        <i class="fa-solid fa-ticket w-4 text-xs text-center"></i>
+                                        Quản lý vé
+                                    </a>
+
                                 </div>
                                 <div class="p-1.5 bg-[#1a1a1a]/30">
                                     <form method="POST" action="<?php echo e(route('logout')); ?>" class="m-0">
