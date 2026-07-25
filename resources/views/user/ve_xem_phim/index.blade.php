@@ -175,7 +175,7 @@
                         <div class="myticket-code">
                             <span>Mã vé</span>
                             @if($veXemPhim->trang_thai === 'cho_thanh_toan')
-                                <strong>Đang chờ thanh toán</strong>
+                                <strong>Chờ thanh toán</strong>
                                 <small>Vui lòng hoàn tất thanh toán để nhận mã vé.</small>
                             @else
                                 <strong>{{ $veXemPhim->ma_ve }}</strong>
@@ -237,22 +237,25 @@
                                     {{ $meta['label'] }}
                                 </strong>
                                 <small>{{ $meta['description'] }}</small>
+                                @if($veXemPhim->trang_thai === 'cho_thanh_toan')
+                                    <div class="myticket-status-action">
+                                        <a href="{{ route('dat_ve.checkout', ['suat_chieu_id' => $veXemPhim->suat_chieu_id, 'pending_ticket_id' => $veXemPhim->id]) }}" class="myticket-detail-btn">
+                                            <i class="fa-solid fa-credit-card"></i>
+                                            Thanh toán
+                                        </a>
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
-                        <div class="myticket-actions">
-                            @if($veXemPhim->trang_thai === 'cho_thanh_toan')
-                                <a href="{{ route('dat_ve.checkout', ['suat_chieu_id' => $veXemPhim->suat_chieu_id, 'pending_ticket_id' => $veXemPhim->id]) }}" class="myticket-detail-btn">
-                                    <i class="fa-solid fa-credit-card"></i>
-                                    Thanh toán
-                                </a>
-                            @else
+                        @if($veXemPhim->trang_thai !== 'cho_thanh_toan')
+                            <div class="myticket-actions">
                                 <a href="{{ route('user.ve_xem_phim.show', $veXemPhim) }}" class="myticket-detail-btn">
                                     <i class="fa-solid fa-qrcode"></i>
                                     Chi tiết
                                 </a>
-                            @endif
-                        </div>
+                            </div>
+                        @endif
                     </article>
                 @empty
                     <div class="mytickets-empty">

@@ -9446,7 +9446,7 @@ body.profile-body {
 }
 
 .mytickets-shell {
-    width: min(1180px, 100%);
+    width: min(1240px, 100%);
     margin: 0 auto;
 }
 
@@ -9815,15 +9815,30 @@ body.profile-body {
 .myticket-card {
     position: relative;
     display: grid;
-    grid-template-columns: 164px minmax(180px, 1fr) minmax(360px, 1.45fr) auto;
-    gap: 18px;
-    align-items: center;
+    grid-template-columns: minmax(190px, 0.42fr) minmax(320px, 1fr) auto;
+    gap: 14px 18px;
+    align-items: stretch;
     padding: 18px;
     border-radius: 20px;
     background:
         linear-gradient(90deg, rgba(255, 255, 255, 0.055), transparent 52%),
         rgba(255, 255, 255, 0.045);
     animation: profileFadeUp 0.42s var(--cinema-ease) both;
+}
+
+.myticket-card.is-pending {
+    grid-template-columns: minmax(190px, 0.46fr) minmax(320px, 1fr);
+}
+
+.myticket-code,
+.myticket-movie,
+.myticket-actions {
+    min-width: 0;
+}
+
+.myticket-code,
+.myticket-movie {
+    align-self: center;
 }
 
 .myticket-card::before {
@@ -9867,7 +9882,14 @@ body.profile-body {
     font-family: Consolas, "Courier New", monospace;
     font-size: 16px;
     font-weight: 950;
-    overflow-wrap: anywhere;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.myticket-card.is-pending .myticket-code strong {
+    font-family: inherit;
+    font-size: 15px;
 }
 
 .myticket-code small,
@@ -9882,9 +9904,13 @@ body.profile-body {
 .myticket-movie h3 {
     margin: 0;
     color: #ffffff;
+    display: -webkit-box;
     font-size: 18px;
     font-weight: 950;
     line-height: 1.25;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .myticket-movie p {
@@ -9905,7 +9931,9 @@ body.profile-body {
 
 .myticket-info-grid {
     display: grid;
-    grid-template-columns: 1.1fr 1fr 1fr 1.25fr;
+    grid-column: 1 / 3;
+    grid-row: 2;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
     gap: 10px;
 }
 
@@ -9915,6 +9943,10 @@ body.profile-body {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 14px;
     background: rgba(255, 255, 255, 0.045);
+}
+
+.myticket-info-grid span {
+    white-space: nowrap;
 }
 
 .myticket-info-grid strong {
@@ -9944,6 +9976,16 @@ body.profile-body {
     display: inline-flex !important;
     align-items: center;
     gap: 7px;
+    white-space: nowrap;
+}
+
+.myticket-status-action {
+    margin-top: 10px;
+}
+
+.myticket-status-action .myticket-detail-btn {
+    width: 100%;
+    justify-content: center;
 }
 
 .myticket-card.is-paid .myticket-status,
@@ -9966,7 +10008,18 @@ body.profile-body {
 }
 
 .myticket-actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-self: center;
     justify-content: flex-end;
+}
+
+.myticket-card.is-pending .myticket-info-grid {
+    grid-column: 1 / -1;
+}
+
+.myticket-card.is-pending .myticket-actions {
+    display: none;
 }
 
 .myticket-actions form,
@@ -10274,6 +10327,7 @@ body.profile-body {
     .myticket-info-grid,
     .myticket-actions {
         grid-column: 1 / -1;
+        grid-row: auto;
     }
 
     .myticket-actions {
@@ -10337,6 +10391,21 @@ body.profile-body {
     .myticket-card {
         gap: 14px;
         padding: 16px;
+    }
+
+    .myticket-card.is-pending {
+        grid-template-columns: 1fr;
+    }
+
+    .myticket-info-grid,
+    .myticket-actions {
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    .myticket-card.is-pending .myticket-info-grid {
+        grid-column: auto;
+        grid-row: auto;
     }
 
     .myticket-info-grid > div {

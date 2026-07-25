@@ -4,63 +4,51 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Cache;
 
 class PhanQuyenController extends Controller
 {
     /**
-     * Hiển thị danh sách các vai trò và bảng ma trận tích chọn quyền động
+     * Hiển thị Ma trận phân quyền
      */
-    public function index(Request $request)
+    public function maTran()
     {
-        // Lấy tất cả vai trò kèm theo danh sách quyền hiện tại của chúng
-        $roles = Role::with('permissions')->get();
-        $editableRoles = $roles->reject(fn ($role) => $role->name === 'Quản trị viên')->values();
-        
-        // Lấy toàn bộ danh sách các quyền hạn được định nghĩa trong hệ thống
-        $permissions = Permission::all();
-
-        // Kiểm tra xem Admin có đang bấm chọn xem một vai trò cụ thể nào không
-        $selectedRole = null;
-        if ($request->has('role_id')) {
-            $selectedRole = Role::find($request->role_id);
+        // 🌟 BẢO VỆ TỨC THÌ: Nếu quyền xem Ma trận bị tước, lập tức chặn lại
+        if (!coQuyen('phan_quyen.ma_tran')) {
+            return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền truy cập Ma trận phân quyền!');
         }
 
-        // Nếu không lựa chọn vai trò cụ thể, mặc định hiển thị vai trò đầu tiên trong danh sách
-        if (!$selectedRole || $selectedRole->name === 'Quản trị viên') {
-            $selectedRole = $editableRoles->first();
-        }
+        $danhSachVaiTro = config('phan_quyen.vai_tro');
+        $maTranQuyen = Cache::get('ma_tran_phan_quyen_he_thong', []);
 
-        $summary = [
-            'roles' => $editableRoles->count(),
-            'permissions' => $permissions->count(),
-            'assigned' => $editableRoles->sum(fn ($role) => $role->permissions->count()),
-            'selected' => $selectedRole?->permissions->count() ?? 0,
-        ];
-
-        return view('admin.phan-quyen.index', compact('roles', 'permissions', 'selectedRole', 'summary'));
+        return view('admin.phan_quyen.ma_tran', compact('danhSachVaiTro', 'maTranQuyen'));
     }
 
     /**
-     * Xử lý lưu và cập nhật ma trận tích chọn quyền động của Vai trò
-     * Đã tích hợp lệnh xóa bộ nhớ đệm tối cao chống leak quyền
+     * Cập nhật Ma trận phân quyền
      */
-    public function updateMatrix(Request $request, $id)
+    public function capNhat(Request $request)
     {
-        // Tìm vai trò cần cập nhật quyền hạn
-        $role = Role::findOrFail($id);
-        
-        // Nhận danh sách mảng các quyền được người dùng tích chọn từ form
-        $activePermissions = $request->input('permissions', []);
+        // 🌟 BẢO VỆ TỨC THÌ: Kiểm tra ngay tại thời điểm bấm gửi Form
+        if (!coQuyen('phan_quyen.ma_tran')) {
+            return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn vừa bị thu hồi quyền thao tác trên Ma trận phân quyền!');
+        }
 
-        // Đồng bộ hóa danh sách quyền mới cho vai trò
-        $role->syncPermissions($activePermissions);
+        $danhSachQuyenGuiLen = $request->input('danh_sach_quyen', []);
 
-        // BIỆN PHÁP BẢO MẬT: Ép buộc Spatie xóa sạch bộ nhớ đệm cũ để kích hoạt quyền mới ngay lập tức
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        // Mặc định ép Quản Trị Viên (Super-admin) sở hữu 100% tất cả các quyền
+        $tatCaMaQuyen = [];
+        foreach (config('phan_quyen.nhom_quyen') as $nhom) {
+            foreach ($nhom['danh_sach_quyen'] as $maQuyen => $tenQuyen) {
+                $tatCaMaQuyen[] = $maQuyen;
+            }
+        }
+        $danhSachQuyenGuiLen['super_admin'] = $tatCaMaQuyen;
 
-        return redirect()->route('admin.phan-quyen.index', ['role_id' => $role->id])
-                         ->with('success', 'Cập nhật ma trận phân quyền động cho vai trò thành công!');
+        // 🌟 Xóa cache cũ và ghi đè cache mới vĩnh viễn để cập nhật phân quyền tức thì
+        Cache::forget('ma_tran_phan_quyen_he_thong');
+        Cache::forever('ma_tran_phan_quyen_he_thong', $danhSachQuyenGuiLen);
+
+        return back()->with('success', 'Đã cập nhật và áp dụng ngay lập tức ma trận phân quyền hệ thống!');
     }
 }
