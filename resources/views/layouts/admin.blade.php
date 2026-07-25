@@ -102,7 +102,7 @@
                 event.preventDefault();
                 event.stopPropagation();
 
-                adminMenu?.classList.add('hidden');
+                adminMenu ? .classList.add('hidden');
                 notifyBox.classList.toggle('hidden');
             });
 
@@ -119,7 +119,7 @@
 
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
-                notifyBox?.classList.add('hidden');
+                notifyBox ? .classList.add('hidden');
             }
         });
     });
@@ -355,6 +355,7 @@
                             @endif
                         </div>
                     </div>
+                </div>
                 @endif
 
                 {{-- 6. BÁO CÁO & THỐNG KÊ --}}
@@ -551,9 +552,17 @@
                                     </div>
                                 </div>
                                 <div class="p-1.5 border-b border-white/10">
+
                                     <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
-                                        <i class="fa-solid fa-user-gear w-4 text-xs text-center"></i> Hồ sơ cá nhân
+                                        <i class="fa-solid fa-user-gear w-4 text-xs text-center"></i>
+                                        Hồ sơ cá nhân
                                     </a>
+
+                                    <a href="{{ route('admin.ve-xem-phims.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
+                                        <i class="fa-solid fa-ticket w-4 text-xs text-center"></i>
+                                        Quản lý vé
+                                    </a>
+
                                 </div>
                                 <div class="p-1.5 bg-[#1a1a1a]/30">
                                     <form method="POST" action="{{ route('logout') }}" class="m-0">
@@ -632,7 +641,5 @@
         });
     </script>
     @endif
-</body>
-</html>
 </body>
 </html>

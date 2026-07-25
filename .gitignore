@@ -23,3 +23,5 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /storage/firebase/firebase-adminsdk.json
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
