@@ -166,13 +166,23 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
         Route::get('/thanh-toan-thanh-cong/{ve}', [DatVeController::class, 'thanhToanThanhCong'])
             ->name('thanh_toan_thanh_cong');
 
+        // 🌟 ROUTE HỦY VÉ PENDING DÀNH CHO KHÁCH HÀNG
+        Route::post('/huy-ve-pending/{id}', [DatVeController::class, 'huyVePending'])
+            ->name('huy_ve_pending');
+
+        // 🌟 CẤU HÌNH API LOCK GHẾ - ĐÃ SỬA LẠI THỨ TỰ CHUẨN
         Route::get('/seat-locks/{suat_chieu}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'index'])
             ->name('seat_locks.index');
+        
+        // Dòng này bắt buộc phải đứng TRƯỚC {seat} để không bị nuốt URL
+        Route::post('/seat-locks/{suat_chieu}/release-all', [\App\Http\Controllers\DatVe\SeatLockController::class, 'releaseAll'])
+            ->name('seat_locks.release_all');
+
         Route::post('/seat-locks/{suat_chieu}/{seat}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'reserve'])
             ->name('seat_locks.reserve');
         Route::delete('/seat-locks/{suat_chieu}/{seat}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'release'])
             ->name('seat_locks.release');
-        Route::post('/seat-locks/{suat_chieu}/release-all', [\App\Http\Controllers\DatVe\SeatLockController::class, 'releaseAll']);
+
         Route::post('/ap-dung-voucher', [DatVeController::class, 'apDungVoucher'])
             ->name('ap_dung_voucher');
     });

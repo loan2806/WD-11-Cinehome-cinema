@@ -141,7 +141,6 @@
                     </div>
                 </div>
 
-                {{-- 🌟 ĐÃ SỬA: Bổ sung inline CSS cực đẹp và chắc chắn hiển thị cho thông báo lỗi từ Server --}}
                 @if (session('error'))
                     <div class="booking-seat-alert" style="background: rgba(239, 68, 68, 0.15) !important; border: 1px solid #ef4444 !important; color: #f87171 !important; padding: 16px !important; border-radius: 12px !important; margin: 15px 0 !important; display: flex !important; align-items: center !important; gap: 12px !important; font-weight: 600 !important; font-size: 14px !important; position: relative !important; z-index: 99 !important;">
                         <i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important;"></i>
@@ -358,6 +357,7 @@
             let countdownTimerInterval = null;
             let selectedSeats = [];
             let lockedSeats = new Set();
+            let isProceedingToFood = false; // Flag kiểm tra người dùng có đang chuyển tiếp sang bước chọn đồ ăn không
 
             const params = new URLSearchParams(window.location.search);
             const seatParam = params.get("ghe");
@@ -439,6 +439,43 @@
                 updateUI();
             }
 
+            // 🌟 GIẢI PHÁP TRIỆT ĐỂ: Tự động gửi request nhả ghế ngầm khi thoát / chuyển trang
+            function releaseAllSeatsBeacon() {
+                if (isProceedingToFood || selectedSeats.length === 0) return;
+
+                const url = `/dat-ve/seat-locks/${showtimeId}/release-all`;
+                const formData = new FormData();
+                formData.append("_token", csrf);
+
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(url, formData);
+                } else {
+                    fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRF-TOKEN": csrf,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({}),
+                        keepalive: true
+                    });
+                }
+                localStorage.removeItem(storageKey);
+            }
+
+            // 1. Nhả ghế khi người dùng Tắt Tab, Reload, hoặc rời trang
+            window.addEventListener("pagehide", releaseAllSeatsBeacon);
+
+            // 2. Nhả ghế khi người dùng bấm vào bất kỳ Link chuyển trang nào (Trang chủ, Đặt vé, Đổi suất chiếu...)
+            document.addEventListener("click", function(e) {
+                const link = e.target.closest("a");
+                if (link && link.href) {
+                    if (!link.href.includes("chon-do-an") && !isProceedingToFood) {
+                        releaseAllSeatsBeacon();
+                    }
+                }
+            });
+
             function updateCountdown(deadline) {
                 const remain = deadline - Date.now();
 
@@ -496,92 +533,85 @@
                 }
             }
 
-            // 🌟 BỔ SUNG: Hàm Javascript kiểm tra tính liền kề cực chuẩn của ghế ngay tại Client
             function validateSeatsAdjacentJS(seats) {
-    if (seats.length <= 1) {
-        return true;
-    }
-
-    const parsedSeats = [];
-    const seatRegex = /^([A-Z]+)([0-9]+)$/;
-
-    for (const seat of seats) {
-        const upperSeat = String(seat || "").toUpperCase().trim();
-        const match = upperSeat.match(seatRegex);
-        if (match) {
-            parsedSeats.push({
-                row: match[1],
-                num: parseInt(match[2], 10)
-            });
-        } else {
-            if (upperSeat.includes('-') || upperSeat.includes('|')) {
-                const subSeats = upperSeat.split(/[-|]/);
-                for (const sub of subSeats) {
-                    const subMatch = sub.trim().match(seatRegex);
-                    if (subMatch) {
-                        parsedSeats.push({
-                            row: subMatch[1],
-                            num: parseInt(subMatch[2], 10)
-                        });
-                    }
+                if (seats.length <= 1) {
+                    return true;
                 }
-            }
-        }
-    }
 
-    if (parsedSeats.length === 0) {
-        return true;
-    }
+                const parsedSeats = [];
+                const seatRegex = /^([A-Z]+)([0-9]+)$/;
 
-    // Nhóm theo hàng (Row)
-    const grouped = {};
-    for (const s of parsedSeats) {
-        if (!grouped[s.row]) {
-            grouped[s.row] = [];
-        }
-        grouped[s.row].push(s.num);
-    }
-
-    // Kiểm tra từng hàng
-    for (const row in grouped) {
-        const nums = [...new Set(grouped[row])].sort((a, b) => a - b);
-        
-        for (let i = 0; i < nums.length - 1; i++) {
-            const start = nums[i];
-            const end = nums[i + 1];
-            
-            if (end - start > 1) {
-                // Kiểm tra xem có bất kỳ ghế TRỐNG (Available) nào xen giữa không
-                for (let middleNum = start + 1; middleNum < end; middleNum++) {
-                    const middleSeatCode = `${row}${middleNum}`;
-                    
-                    // Tìm button tương ứng của ghế ở giữa này trong giao diện DOM
-                    const middleBtn = seatButtons.find(btn => {
-                        const codes = getSeatsFromButton(btn);
-                        return codes.includes(middleSeatCode);
-                    });
-                    
-                    if (middleBtn) {
-                        const isBooked = middleBtn.classList.contains('booked');
-                        const isLocked = middleBtn.classList.contains('locked');
-                        const isMaintenance = middleBtn.classList.contains('maintenance');
-                        const isStaticDisabled = middleBtn.dataset.staticDisabled === "1";
-                        const isSelectedByMe = selectedSeats.includes(middleSeatCode);
-                        
-                        // Nếu tồn tại ghế ở giữa hoàn toàn trống (chưa bị ai mua, mình cũng không chọn)
-                        if (!isBooked && !isLocked && !isMaintenance && !isStaticDisabled && !isSelectedByMe) {
-                            return false; // Thực sự có ghế trống khả dụng chen giữa -> Báo lỗi!
+                for (const seat of seats) {
+                    const upperSeat = String(seat || "").toUpperCase().trim();
+                    const match = upperSeat.match(seatRegex);
+                    if (match) {
+                        parsedSeats.push({
+                            row: match[1],
+                            num: parseInt(match[2], 10)
+                        });
+                    } else {
+                        if (upperSeat.includes('-') || upperSeat.includes('|')) {
+                            const subSeats = upperSeat.split(/[-|]/);
+                            for (const sub of subSeats) {
+                                const subMatch = sub.trim().match(seatRegex);
+                                if (subMatch) {
+                                    parsedSeats.push({
+                                        row: subMatch[1],
+                                        num: parseInt(subMatch[2], 10)
+                                    });
+                                }
+                            }
                         }
                     }
                 }
+
+                if (parsedSeats.length === 0) {
+                    return true;
+                }
+
+                const grouped = {};
+                for (const s of parsedSeats) {
+                    if (!grouped[s.row]) {
+                        grouped[s.row] = [];
+                    }
+                    grouped[s.row].push(s.num);
+                }
+
+                for (const row in grouped) {
+                    const nums = [...new Set(grouped[row])].sort((a, b) => a - b);
+                    
+                    for (let i = 0; i < nums.length - 1; i++) {
+                        const start = nums[i];
+                        const end = nums[i + 1];
+                        
+                        if (end - start > 1) {
+                            for (let middleNum = start + 1; middleNum < end; middleNum++) {
+                                const middleSeatCode = `${row}${middleNum}`;
+                                
+                                const middleBtn = seatButtons.find(btn => {
+                                    const codes = getSeatsFromButton(btn);
+                                    return codes.includes(middleSeatCode);
+                                });
+                                
+                                if (middleBtn) {
+                                    const isBooked = middleBtn.classList.contains('booked');
+                                    const isLocked = middleBtn.classList.contains('locked');
+                                    const isMaintenance = middleBtn.classList.contains('maintenance');
+                                    const isStaticDisabled = middleBtn.dataset.staticDisabled === "1";
+                                    const isSelectedByMe = selectedSeats.includes(middleSeatCode);
+                                    
+                                    if (!isBooked && !isLocked && !isMaintenance && !isStaticDisabled && !isSelectedByMe) {
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return true;
             }
-        }
-    }
 
-    return true; // Hợp lệ!
-}
-
-            // 🌟 BỔ SUNG: Hàm tự động hiển thị alert cực đẹp ngay trên giao diện
             function showSeatErrorJS(message) {
                 let alertEl = document.querySelector(".booking-seat-alert");
                 if (!alertEl) {
@@ -601,7 +631,6 @@
                 alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
 
-            // 🌟 BỔ SUNG: Hàm tự động ẩn alert đi khi người dùng chọn lại ghế hợp lệ
             function clearSeatErrorJS() {
                 const alertEl = document.querySelector(".booking-seat-alert");
                 if (alertEl) {
@@ -613,7 +642,6 @@
                 selectedSeats = Array.from(new Set(selectedSeats.map(normalizeSeat).filter(Boolean)));
                 syncButtonStates();
 
-                // 🌟 Tự động xóa thông báo lỗi nếu tổ hợp ghế hiện tại đã hợp lệ
                 if (validateSeatsAdjacentJS(selectedSeats)) {
                     clearSeatErrorJS();
                 }
@@ -736,32 +764,35 @@
                     e.preventDefault();
                     if (selectedSeats.length === 0) return;
 
-                        if (!validateSeatsAdjacentJS(selectedSeats)) {
-                            showSeatErrorJS("Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!");
-                            return;
-                        }
+                    if (!validateSeatsAdjacentJS(selectedSeats)) {
+                        showSeatErrorJS("Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!");
+                        return;
+                    }
 
-                        const seats = encodeURIComponent(selectedSeats.join(","));
-                        let url = `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seats}`;
-                        if (pendingTicketId) {
-                            url += `&pending_ticket_id=${encodeURIComponent(pendingTicketId)}`;
-                        }
+                    isProceedingToFood = true; // Bật cờ không giải phóng ghế khi chuyển hướng tiếp
 
-                        window.location.href = url;
-                    });
-                }
+                    const seats = encodeURIComponent(selectedSeats.join(","));
+                    let url = `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seats}`;
+                    if (pendingTicketId) {
+                        url += `&pending_ticket_id=${encodeURIComponent(pendingTicketId)}`;
+                    }
 
-                if (btnResetSeats) {
-                    btnResetSeats.addEventListener("click", async function() {
-                        if (selectedSeats.length === 0) return;
-                        await releaseAllSeats();
-                        clearSeatErrorJS();
-                        if (countdownEl) {
-                            countdownEl.innerText = "07:00";
-                        }
-                        alert('Đã hủy chọn ghế cũ. Vui lòng chọn ghế mới.');
-                    });
-                }
+                    window.location.href = url;
+                });
+            }
+
+            if (btnResetSeats) {
+                btnResetSeats.addEventListener("click", async function() {
+                    if (selectedSeats.length === 0) return;
+                    await releaseAllSeats();
+                    clearSeatErrorJS();
+                    if (countdownEl) {
+                        countdownEl.innerText = "07:00";
+                    }
+                    alert('Đã hủy chọn ghế cũ. Vui lòng chọn ghế mới.');
+                });
+            }
+
             updateUI();
             loadLockedSeats();
             setInterval(loadLockedSeats, 3000);
