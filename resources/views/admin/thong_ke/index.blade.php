@@ -458,6 +458,11 @@
 
     {{-- Filter --}}
     <form method="GET">
+        {{-- Hidden inputs để giữ lại filter khi dropdown submit --}}
+        <input type="hidden" name="from" value="{{ $from ? Carbon\Carbon::parse($from)->toDateString() : '' }}">
+        <input type="hidden" name="to" value="{{ $to ? Carbon\Carbon::parse($to)->toDateString() : '' }}">
+        <input type="hidden" name="period_type" id="periodTypeInput" value="{{ $periodType ?? 'day' }}">
+
         <div class="filter-bar">
             {{-- Period Tabs --}}
             <div class="filter-group">
@@ -467,7 +472,6 @@
                     <button type="button" class="period-tab {{ ($periodType ?? 'day') == 'quarter' ? 'active' : '' }}" onclick="setPeriod('quarter')">Quý</button>
                     <button type="button" class="period-tab {{ ($periodType ?? 'day') == 'year' ? 'active' : '' }}" onclick="setPeriod('year')">Năm</button>
                 </div>
-                <input type="hidden" name="period_type" id="periodTypeInput" value="{{ $periodType ?? 'day' }}">
             </div>
 
             {{-- Date Range --}}
@@ -822,6 +826,8 @@ function setPeriod(period) {
     document.querySelectorAll('.period-tab').forEach(btn => btn.classList.remove('active'));
     document.querySelector(`.period-tab[onclick="setPeriod('${period}')"]`).classList.add('active');
     document.getElementById('periodTypeInput').value = period;
+    // Auto submit form when period changes
+    document.querySelector('.filter-bar form').submit();
 }
 
 // Chart data

@@ -194,6 +194,23 @@ class PhongChieuController extends Controller
      */
     public function generateSeats(Request $request, PhongChieu $phongChieu)
     {
+        // Handle reset all seats request
+        if ($request->has('reset_all') && $request->reset_all == '1') {
+            try {
+                // Xóa tất cả ghế hiện tại
+                $phongChieu->gheNgois()->delete();
+                $phongChieu->hangGhes()->delete();
+
+                return redirect()
+                    ->route('admin.phong-chieus.show', $phongChieu)
+                    ->with('success', 'Đã xóa toàn bộ ghế trong phòng!');
+            } catch (\Exception $e) {
+                return redirect()
+                    ->route('admin.phong-chieus.show', $phongChieu)
+                    ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+            }
+        }
+
         $request->validate([
             'so_hang' => 'required|integer|min:1|max:20',
             'so_cot' => 'required|integer|min:1|max:20',
@@ -201,6 +218,18 @@ class PhongChieuController extends Controller
             'loai_ghe_vip_id' => 'nullable|exists:loai_ghes,id',
             'loai_ghe_couple_id' => 'nullable|exists:loai_ghes,id',
         ]);
+
+        // Kiểm tra phòng đã đầy ghế chưa
+        $currentSeats = $phongChieu->gheNgois;
+        $currentRows = $currentSeats->pluck('hangGhe.ten_hang')->unique()->count();
+        $currentCols = $currentSeats->max('vi_tri_cot') ?? 0;
+        $totalCapacity = $currentRows * $currentCols;
+
+        if ($currentSeats->count() >= $totalCapacity && $totalCapacity > 0) {
+            return redirect()
+                ->route('admin.phong-chieus.show', $phongChieu)
+                ->with('error', 'Phòng đã đầy ghế! Vui lòng reset phòng trước khi tạo ghế mới.');
+        }
 
         try {
             $ketQua = $this->seatGenerator->generateSeats(
@@ -357,20 +386,83 @@ class PhongChieuController extends Controller
 
         $createdSchedules = [];
         $updatedSeats = [];
+        $errors = [];
+
+        // BƯỚC 1: Kiểm tra vé đã bán cho từng ghế
+        $gheBanDuoc = \App\Models\GheNgoi::whereIn('id', $gheIds)
+            ->where('phong_chieu_id', $phongChieu->id)
+            ->get()
+            ->keyBy('id');
 
         foreach ($gheIds as $gheId) {
-            // Load ghế
-            $seat = \App\Models\GheNgoi::where('id', $gheId)
-                ->where('phong_chieu_id', $phongChieu->id)
-                ->first();
+            $seat = $gheBanDuoc->get($gheId);
+            if (!$seat) continue;
 
-            if (!$seat) {
+            // Kiểm tra vé đã bán (chưa hủy, chưa hết hạn)
+            $veDaBan = \App\Models\VeXemPhim::where('suat_chieu_id', '>', 0)
+                ->whereNotIn('trang_thai', ['da_huy', 'het_han'])
+                ->where('thoi_gian_het_han', '>', now())
+                ->whereHas('gheVes', function ($q) use ($seat) {
+                    $q->where('ma_ghe', $seat->ma_ghe);
+                })
+                ->exists();
+
+            if ($veDaBan) {
+                $errors[] = "Ghế {$seat->ma_ghe} đã có khách đặt vé, không thể bảo trì.";
                 continue;
             }
 
             // Ghế đang bảo trì thì bỏ qua
             if ($seat->trang_thai === 'bao_tri') {
                 continue;
+            }
+
+            // BƯỚC 2: Kiểm tra lịch bảo trì trùng lặp
+            $lichTrungLap = \App\Models\LichBaoTriGheNgoi::where('ghe_ngoi_id', $seat->id)
+                ->whereIn('trang_thai', ['cho_thuc_hien', 'dang_thuc_hien'])
+                ->where(function ($q) use ($thoiGianBatDau, $thoiGianKetThuc) {
+                    // Trùng nếu: bắt đầu trong khoảng hoặc kết thúc trong khoảng hoặc bao trùm
+                    if ($thoiGianKetThuc) {
+                        $q->where(function ($q2) use ($thoiGianBatDau, $thoiGianKetThuc) {
+                            $q2->whereBetween('thoi_gian_bat_dau', [$thoiGianBatDau, $thoiGianKetThuc])
+                               ->orWhereBetween('thoi_gian_ket_thuc', [$thoiGianBatDau, $thoiGianKetThuc])
+                               ->orWhere(function ($q3) use ($thoiGianBatDau, $thoiGianKetThuc) {
+                                   $q3->where('thoi_gian_bat_dau', '<=', $thoiGianBatDau)
+                                      ->where(function ($q4) use ($thoiGianKetThuc) {
+                                          $q4->whereNull('thoi_gian_ket_thuc')
+                                             ->orWhere('thoi_gian_ket_thuc', '>=', $thoiGianKetThuc);
+                                      });
+                               });
+                        });
+                    } else {
+                        // Không thời hạn: bất kỳ lịch nào chưa kết thúc đều trùng
+                        $q->where(function ($q2) use ($thoiGianBatDau) {
+                            $q2->where('thoi_gian_bat_dau', '<=', $thoiGianBatDau)
+                               ->where(function ($q3) {
+                                   $q3->whereNull('thoi_gian_ket_thuc')
+                                      ->orWhere('thoi_gian_ket_thuc', '>=', now());
+                               });
+                        });
+                    }
+                })
+                ->exists();
+
+            if ($lichTrungLap) {
+                $errors[] = "Ghế {$seat->ma_ghe} đã có lịch bảo trì trùng lặp trong khoảng thời gian này.";
+                continue;
+            }
+
+            // BƯỚC 3: Nếu có thời hạn, kiểm tra suất chiếu trong ngày
+            if ($thoiGianKetThuc) {
+                $suatChieuTrung = \App\Models\SuatChieu::where('phong_chieu_id', $phongChieu->id)
+                    ->where('thoi_gian_chieu', '<', $thoiGianKetThuc)
+                    ->whereRaw("DATE_ADD(thoi_gian_chieu, INTERVAL thoi_luong MINUTE) > '" . $thoiGianBatDau->format('Y-m-d H:i:s') . "'")
+                    ->exists();
+
+                if ($suatChieuTrung) {
+                    $errors[] = "Ghế {$seat->ma_ghe}: Có suất chiếu trong khoảng thời gian bảo trì. Vui lòng chọn giờ khác.";
+                    continue;
+                }
             }
 
             $beforeStatus = $seat->trang_thai;
@@ -390,8 +482,7 @@ class PhongChieuController extends Controller
             ]);
 
             // Cập nhật trạng thái ghế
-            $newStatus = $isStartNow ? 'bao_tri' : 'sap_bao_tri';
-            \App\Models\GheNgoi::where('id', $seat->id)->update(['trang_thai' => $newStatus]);
+            \App\Models\GheNgoi::where('id', $seat->id)->update(['trang_thai' => $isStartNow ? 'bao_tri' : 'sap_bao_tri']);
 
             // Load lại seat với loaiGhe để trả về
             $seat = \App\Models\GheNgoi::with('loaiGhe')->find($seat->id);
@@ -415,6 +506,15 @@ class PhongChieuController extends Controller
             ];
         }
 
+        // Nếu có lỗi, trả về lỗi
+        if (!empty($errors) && empty($createdSchedules)) {
+            return response()->json([
+                'success' => false,
+                'message' => implode(' ', $errors),
+                'errors' => $errors,
+            ], 422);
+        }
+
         $success = count($createdSchedules) > 0;
         $message = $success 
             ? "Đã lên lịch bảo trì cho " . count($createdSchedules) . " ghế." 
@@ -436,9 +536,10 @@ class PhongChieuController extends Controller
 
         return response()->json([
             'success' => $success,
-            'message' => $message,
+            'message' => $message . (!empty($errors) ? ' (' . implode('; ', $errors) . ')' : ''),
             'schedules' => $createdSchedules,
             'updated_seats' => $updatedSeats,
+            'errors' => $errors,
         ]);
     }
 
@@ -588,9 +689,8 @@ class PhongChieuController extends Controller
     /**
      * Validate seat row rules:
      * - First 3 rows (closest to screen): ONLY normal seats allowed (no VIP/Couple).
-     * - Last 3 rows: ONLY VIP/Couple allowed (no normal seats).
-     *
-     * Returns null if valid, or array of error messages if invalid.
+     * - Middle rows (row 4 onwards, not last 2): ONLY VIP allowed (no normal/Couple).
+     * - Last 2 rows: ONLY couple seats allowed (no VIP/no normal).
      *
      * @param LoaiGhe $loaiGhe
      * @param \App\Models\HangGhe $hangGhe
@@ -601,29 +701,51 @@ class PhongChieuController extends Controller
         $hangGhes = $hangGhe->phongChieu->hangGhes()->orderBy('ten_hang')->get();
         $totalRows = $hangGhes->count();
 
-        // Get first 3 rows and last 3 rows indices (0-based)
-        $firstThreeIndices = range(0, 2);
-        $lastThreeIndices = range(max(0, $totalRows - 3), $totalRows - 1);
-
-        // Current row index in sorted order
+        // Current row index in sorted order (0-based)
         $currentIndex = $hangGhes->search(fn($h) => $h->id === $hangGhe->id);
-
-        $isVip = strtolower($loaiGhe->ten_loai) === 'vip';
+        
+        // Xác định loại ghế theo properties
         $isCouple = $loaiGhe->la_couple === true;
-        $isThuong = strtolower($loaiGhe->ten_loai) === 'thường'
-            || strtolower($loaiGhe->ten_loai) === 'thuong';
+        
+        // Kiểm tra VIP theo tên
+        $isVip = stripos($loaiGhe->ten_loai, 'vip') !== false;
+        
+        // Kiểm tra Thường: không phải VIP và không phải Couple
+        $isThuong = !$isVip && !$isCouple;
+        
+        // Xác định vị trí hàng
+        $isFirstThreeRows = $currentIndex <= 2;  // Hàng 1, 2, 3
+        $isLastTwoRows = $currentIndex >= $totalRows - 2;  // 2 hàng cuối
+        $isMiddleRow = !$isFirstThreeRows && !$isLastTwoRows;  // Hàng 4 trở đi
 
         // First 3 rows: ONLY normal seats allowed (no VIP/Couple)
-        if (in_array($currentIndex, $firstThreeIndices) && ($isVip || $isCouple)) {
-            if ($isVip) {
-                return ['Ghế VIP không được đặt ở 3 hàng sát màn hình.'];
+        if ($isFirstThreeRows) {
+            if ($isCouple) {
+                return ['3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế Couple.'];
             }
-            return ['Ghế Couple không được đặt ở 3 hàng sát màn hình.'];
+            if ($isVip) {
+                return ['3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP.'];
+            }
+        }
+        
+        // Middle rows (row 4 onwards, not last 2): ONLY VIP allowed
+        if ($isMiddleRow) {
+            if ($isCouple) {
+                return ['Hàng ghế này chỉ được đặt ghế VIP. Không thể đặt ghế Couple.'];
+            }
+            if ($isThuong) {
+                return ['Hàng ghế này chỉ được đặt ghế VIP. Không thể đặt ghế Thường.'];
+            }
         }
 
-        // Last 3 rows: ONLY VIP/Couple allowed (no normal seats)
-        if (in_array($currentIndex, $lastThreeIndices) && $isThuong) {
-            return ['Ghế thường không được đặt ở 3 hàng cuối của phòng chiếu.'];
+        // Last 2 rows: ONLY couple seats allowed (no VIP/no normal)
+        if ($isLastTwoRows) {
+            if ($isThuong) {
+                return ['2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế Thường.'];
+            }
+            if ($isVip) {
+                return ['2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế VIP.'];
+            }
         }
 
         return null;

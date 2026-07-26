@@ -13,6 +13,14 @@ use App\Http\Controllers\Admin\ChamCongController;
 use App\Http\Controllers\Admin\BangLuongController;
 use App\Http\Controllers\Admin\NhatKyHoatDongHeThongController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+
+// Handle CORS preflight requests
+Route::options('{any}', function () {
+    return response('', 200)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-CSRF-TOKEN, X-Requested-With');
+})->where('any', '.*');
 use App\Http\Controllers\Admin\PhanQuyenController;
 use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\PhongChieuController as AdminPhongChieuController;
@@ -279,8 +287,8 @@ Route::middleware(['auth'])
             Route::post('phong-chieus/{phong_chieu}/bulk-update-seats', [AdminPhongChieuController::class, 'bulkUpdateSeats'])->name('phong-chieus.bulk-update-seats');
             Route::post('phong-chieus/{phong_chieu}/delete-row-seats', [AdminPhongChieuController::class, 'deleteRowSeats'])->name('phong-chieus.delete-row-seats');
             Route::post('phong-chieus/{phong_chieu}/toggle-row-maintenance', [AdminPhongChieuController::class, 'toggleRowMaintenance'])->name('phong-chieus.toggle-row-maintenance');
-            Route::post('phong-chieus/{phong_chieu}/create-seat', [AdminPhongChieuController::class, 'createSeat'])->name('phong-chieus.create-seat');
-            Route::post('phong-chieus/{phong_chieu}/create-row', [AdminPhongChieuController::class, 'createRow'])->name('phong-chieus.create-row');
+            Route::post('phong-chieus/{phong_chieu}/create-seat', [PhongChieuController::class, 'createSeat'])->name('phong-chieus.create-seat');
+            Route::post('phong-chieus/{phong_chieu}/create-row', [PhongChieuController::class, 'createRow'])->name('phong-chieus.create-row');
         });
 
         Route::middleware(['quyen:loai_ghe.xem'])->group(function () {
