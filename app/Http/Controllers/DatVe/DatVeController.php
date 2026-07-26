@@ -111,7 +111,6 @@ class DatVeController extends Controller
 
     public function chonGhe($id)
     {
-        // 1. Tìm suất chiếu theo ID Suất chiếu hoặc Slug/ID Phim
         $suatChieu = SuatChieu::with([
             'phim',
             'rapChieuPhim',
@@ -138,7 +137,6 @@ class DatVeController extends Controller
             return redirect()->route('dat_ve.chon_phim')->with('error', 'Không tìm thấy suất chiếu phù hợp.');
         }
 
-        // 2. Kiểm tra và dọn dẹp đơn hàng chờ (pending) nếu hết hạn 7 phút
         $pendingTicket = null;
         if (Auth::check()) {
             $pendingTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
@@ -155,7 +153,6 @@ class DatVeController extends Controller
         $pendingTicketId = $pendingTicket?->id;
         $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
 
-        // 3. Lấy danh sách ghế đã được đặt/bán
         $bookedTickets = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
             ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat'])
             ->pluck('ma_ghe');
@@ -170,7 +167,6 @@ class DatVeController extends Controller
             }
         }
 
-        // 4. Nhóm danh sách ghế phòng chiếu theo Hàng (Row)
         $gheNgois = $suatChieu->phongChieu->gheNgois ?? collect();
 
         $gheTheoHang = [];
@@ -203,7 +199,6 @@ class DatVeController extends Controller
             ];
         }
 
-        // 5. Lấy danh sách ghế đang chọn sẵn (từ vé chờ hoặc query parameter)
         $selectedSeats = collect();
         if ($pendingTicket) {
             $selectedSeats = collect(explode(',', (string)$pendingTicket->ma_ghe))
@@ -240,7 +235,6 @@ class DatVeController extends Controller
             ->unique()
             ->values();
 
-        // 🌟 KHÓA CHẶN 3: KIỂM TRA ĐƠN HÀNG CHỜ KHÁC
         if (Auth::check()) {
             $otherPending = VeXemPhim::where('nguoi_dung_id', Auth::id())
                 ->where('trang_thai', 'cho_thanh_toan')
@@ -316,7 +310,6 @@ class DatVeController extends Controller
             $foodItems = collect($pendingTicket->food_items ?? []);
         }
 
-        // 🌟 BƯỚC 1: SANG CHỌN ĐỒ ĂN MỚI CHÍNH THỨC TẠO VÉ "CHO_THANH_TOAN" (THỜI GIAN 7 PHÚT)
         if ($selectedSeats->isNotEmpty()) {
             if ($pendingTicket) {
                 $pendingTicket->update([
@@ -877,25 +870,26 @@ class DatVeController extends Controller
     public function vnpayCallback(Request $request)
     {
         /*
-         * 🌟 BƯỚC 2: BẤM HỦY THANH TOÁN TRÊN PAYOS (VIETQR)
+         * 🌟 BẤM HỦY THÀNH CÔNG/HỦY BỎ TRÊN PAYOS (VIETQR)
          */
         if ($request->filled('orderCode')) {
             $orderCode = $request->input('orderCode');
             $status = strtoupper((string) $request->input('status', ''));
-            $isCancel = $request->boolean('cancel') || $status === 'CANCELLED';
+            $code = (string) $request->input('code', '');
+            $isCancel = $request->boolean('cancel') || $status === 'CANCELLED' || $code === '24';
             $maVe = Cache::get("payos_mapping:{$orderCode}");
 
             if ($maVe) {
                 $bookingData = Cache::get("pending_ve:{$maVe}");
 
-                if ($isCancel || $status !== 'PAID') {
+                if ($isCancel || ($status !== 'PAID' && $code !== '00')) {
                     if ($bookingData) {
                         $this->xuaLyHuyGiaoDich($bookingData, $maVe);
                     }
                     Cache::forget("payos_mapping:{$orderCode}");
 
                     return redirect()->route('user.ve_xem_phim.index')
-                        ->with('error', 'Thanh toán VietQR đã bị hủy. Vé của bạn đã được cập nhật trạng thái Đã Hủy.');
+                        ->with('error', 'Thanh toán VietQR đã bị hủy hoặc thất bại.');
                 }
 
                 // THÀNH CÔNG (PAID)
@@ -925,7 +919,7 @@ class DatVeController extends Controller
         }
 
         /*
-         * 🌟 BƯỚC 2: BẤM HỦY THANH TOÁN TRÊN VNPAY
+         * 🌟 BẤM HỦY HOẶC THÀNH CÔNG TRÊN VNPAY
          */
         $maVe = $request->input('vnp_TxnRef');
         $responseCode = $request->input('vnp_ResponseCode');
@@ -936,7 +930,7 @@ class DatVeController extends Controller
                 $this->xuaLyHuyGiaoDich($bookingData, $maVe);
 
                 return redirect()->route('user.ve_xem_phim.index')
-                    ->with('error', 'Giao dịch VNPAY đã bị hủy hoặc thất bại. Trạng thái vé đã cập nhật thành Đã Hủy.');
+                    ->with('error', 'Giao dịch VNPAY đã bị hủy hoặc thất bại.');
             }
 
             try {
@@ -963,9 +957,6 @@ class DatVeController extends Controller
         return redirect()->route('user.ve_xem_phim.index');
     }
 
-    /**
-     * 🌟 HÀM NÚT "HỦY ĐƠN" TRỰC TIẾP TẠI TRANG "VÉ CỦA TÔI"
-     */
     public function huyVePending($id)
     {
         $ve = VeXemPhim::where('id', $id)
@@ -1052,6 +1043,12 @@ class DatVeController extends Controller
     public function thanhToanThanhCong($ve_id)
     {
         $ve = VeXemPhim::findOrFail($ve_id);
+
+        // 🌟 KHÓA CHẶN NGUYÊNHIỂM: Nếu vé chưa được đổi sang "da_thanh_toan" thì không hiển thị màn hình này
+        if ($ve->trang_thai === 'cho_thanh_toan') {
+            return redirect()->route('user.ve_xem_phim.index')
+                ->with('error', 'Đơn hàng của bạn chưa hoàn tất thanh toán.');
+        }
 
         $thoiGianChieu = Carbon::parse($ve->thoi_gian_chieu);
         $ngayChieu = $thoiGianChieu->format('d/m/Y');
@@ -1161,30 +1158,76 @@ class DatVeController extends Controller
         ");
     }
 
+    /**
+     * 🌟 HÀM TẠO HOẶC CẬP NHẬT VÉ TỪ DỮ LIỆU TẠM (ĐÃ SỬA DỨT ĐIỂM LỖI CHỜ THANH TOÁN)
+     */
     private function taoVeTuDuLieuTam(array $bookingData): VeXemPhim
     {
         return DB::transaction(function () use ($bookingData) {
+            $voucherCaNhan = null;
+            $voucherCaNhanId = (int) ($bookingData['voucher_ca_nhan_id'] ?? 0);
+
+            if ($voucherCaNhanId > 0) {
+                $voucherCaNhan = NguoiDungVoucher::query()
+                    ->with('voucher')
+                    ->whereKey($voucherCaNhanId)
+                    ->where('nguoi_dung_id', $bookingData['nguoi_dung_id'] ?? null)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (
+                    !$voucherCaNhan || $voucherCaNhan->da_su_dung
+                    || ($voucherCaNhan->ngay_het_han && $voucherCaNhan->ngay_het_han->lt(now()))
+                    || !$voucherCaNhan->voucher || !$voucherCaNhan->voucher->trang_thai
+                    || ($voucherCaNhan->voucher->ngay_het_han && $voucherCaNhan->voucher->ngay_het_han->lt(today()))
+                ) {
+                    throw new \RuntimeException('Voucher đã được sử dụng hoặc không hợp lệ.');
+                }
+            }
+
+            // 1. Tìm vé theo ma_ve hoặc pending_ticket_id
             $existingTicket = VeXemPhim::query()
                 ->where('ma_ve', $bookingData['ma_ve'])
                 ->lockForUpdate()
                 ->first();
 
-            if ($existingTicket) {
-                return $existingTicket;
-            }
-
-            if (!empty($bookingData['pending_ticket_id'])) {
-                $pendingTicket = VeXemPhim::query()
+            if (!$existingTicket && !empty($bookingData['pending_ticket_id'])) {
+                $existingTicket = VeXemPhim::query()
                     ->lockForUpdate()
                     ->find($bookingData['pending_ticket_id']);
+            }
 
-                if ($pendingTicket && $pendingTicket->trang_thai === 'cho_thanh_toan') {
-                    if ($pendingTicket->isExpired()) {
-                        $this->giaiPhongVePending($pendingTicket);
+            // 2. Nếu đã có bản ghi vé trong CSDL
+            if ($existingTicket) {
+                // Nếu vé đã được thanh toán rồi -> Trả về luôn
+                if ($existingTicket->trang_thai === 'da_thanh_toan') {
+                    return $existingTicket;
+                }
+
+                // Nếu vé đang ở trạng thái 'cho_thanh_toan' -> CẬP NHẬT THÀNH 'da_thanh_toan'!
+                if ($existingTicket->trang_thai === 'cho_thanh_toan') {
+                    if ($existingTicket->isExpired()) {
+                        $this->giaiPhongVePending($existingTicket);
                         throw new \RuntimeException('Phiên thanh toán đã hết hạn (7 phút).');
                     }
 
-                    $pendingTicket->update([
+                    // Trừ số lượng tồn kho đồ ăn
+                    foreach (($bookingData['food_items'] ?? []) as $foodItem) {
+                        $foodId = $foodItem['id'] ?? null;
+                        $quantity = (int) ($foodItem['qty'] ?? 0);
+                        if (!$foodId || $quantity <= 0) continue;
+
+                        $food = DoAn::query()->lockForUpdate()->find($foodId);
+                        if ($food && isset($food->stock_quantity)) {
+                            if ((int)$food->stock_quantity < $quantity) {
+                                throw new \RuntimeException('Đồ ăn ' . $food->name . ' không còn đủ số lượng.');
+                            }
+                            $food->decrement('stock_quantity', $quantity);
+                        }
+                    }
+
+                    // Cập nhật trạng thái và thông tin vé
+                    $existingTicket->update([
                         'ma_ghe' => $bookingData['ma_ghe'],
                         'thoi_gian_chieu' => $bookingData['thoi_gian_chieu'],
                         'tong_tien' => $bookingData['tong_tien'],
@@ -1192,12 +1235,18 @@ class DatVeController extends Controller
                         'loai_ve' => $bookingData['loai_ve'] ?? 'truc_tuyen',
                         'trang_thai' => 'da_thanh_toan',
                         'food_items' => $bookingData['food_items'] ?? [],
+                        'voucher_id' => $voucherCaNhan?->id,
                     ]);
 
-                    return $pendingTicket;
+                    if ($voucherCaNhan) {
+                        $voucherCaNhan->update(['da_su_dung' => true, 'ngay_su_dung' => now()]);
+                    }
+
+                    return $existingTicket;
                 }
             }
 
+            // 3. Nếu chưa có vé pending -> Tạo vé mới trực tiếp với trạng thái 'da_thanh_toan'
             $selectedSeats = collect($bookingData['danh_sach_ghe'] ?? [])
                 ->map(fn($seat) => strtoupper(trim($seat)))
                 ->filter()
@@ -1218,27 +1267,6 @@ class DatVeController extends Controller
 
             if ($blockedSeats->isNotEmpty()) {
                 throw new \RuntimeException('Ghế đã được bán trong thời gian thanh toán: ' . $blockedSeats->implode(', '));
-            }
-
-            $voucherCaNhan = null;
-            $voucherCaNhanId = (int) ($bookingData['voucher_ca_nhan_id'] ?? 0);
-
-            if ($voucherCaNhanId > 0) {
-                $voucherCaNhan = NguoiDungVoucher::query()
-                    ->with('voucher')
-                    ->whereKey($voucherCaNhanId)
-                    ->where('nguoi_dung_id', $bookingData['nguoi_dung_id'] ?? null)
-                    ->lockForUpdate()
-                    ->first();
-
-                if (
-                    !$voucherCaNhan || $voucherCaNhan->da_su_dung
-                    || ($voucherCaNhan->ngay_het_han && $voucherCaNhan->ngay_het_han->lt(now()))
-                    || !$voucherCaNhan->voucher || !$voucherCaNhan->voucher->trang_thai
-                    || ($voucherCaNhan->voucher->ngay_het_han && $voucherCaNhan->voucher->ngay_het_han->lt(today()))
-                ) {
-                    throw new \RuntimeException('Voucher đã được sử dụng hoặc không hợp lệ.');
-                }
             }
 
             foreach (($bookingData['food_items'] ?? []) as $foodItem) {
