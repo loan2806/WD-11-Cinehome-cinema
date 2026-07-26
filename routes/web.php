@@ -13,14 +13,6 @@ use App\Http\Controllers\Admin\ChamCongController;
 use App\Http\Controllers\Admin\BangLuongController;
 use App\Http\Controllers\Admin\NhatKyHoatDongHeThongController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
-
-// Handle CORS preflight requests
-Route::options('{any}', function () {
-    return response('', 200)
-        ->header('Access-Control-Allow-Origin', '*')
-        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
-        ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-CSRF-TOKEN, X-Requested-With');
-})->where('any', '.*');
 use App\Http\Controllers\Admin\PhanQuyenController;
 use App\Http\Controllers\Admin\PhimsController as AdminMovieController;
 use App\Http\Controllers\Admin\PhongChieuController as AdminPhongChieuController;
@@ -66,6 +58,17 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schedule;
 use Kreait\Laravel\Firebase\Facades\Firebase;
 
+/*
+|--------------------------------------------------------------------------
+| XỬ LÝ CORS PREFLIGHT REQUESTS
+|--------------------------------------------------------------------------
+*/
+Route::options('{any}', function () {
+    return response('', 200)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, X-CSRF-TOKEN, X-Requested-With');
+})->where('any', '.*');
 
 /*
 |--------------------------------------------------------------------------
@@ -90,8 +93,9 @@ Route::get('/dashboard', function () {
         return redirect()->route('manager.dashboard');
     }
 
+    // 🌟 ĐÃ SỬA: Chuyển nhân viên sang đúng trang Staff Dashboard
     if ($user->hasRole('Nhân viên') || $user->vai_tro === 'nhan_vien') {
-        return redirect()->route('admin.dashboard');
+        return redirect()->route('staff.dashboard');
     }
 
     return redirect()->route('home');
@@ -166,15 +170,14 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
         Route::get('/thanh-toan-thanh-cong/{ve}', [DatVeController::class, 'thanhToanThanhCong'])
             ->name('thanh_toan_thanh_cong');
 
-        // 🌟 ROUTE HỦY VÉ PENDING DÀNH CHO KHÁCH HÀNG
+        // ROUTE HỦY VÉ PENDING DÀNH CHO KHÁCH HÀNG
         Route::post('/huy-ve-pending/{id}', [DatVeController::class, 'huyVePending'])
             ->name('huy_ve_pending');
 
-        // 🌟 CẤU HÌNH API LOCK GHẾ - ĐÃ SỬA LẠI THỨ TỰ CHUẨN
+        // 🌟 CẤU HÌNH API LOCK GHẾ (Đã đảm bảo release-all đứng trước {seat})
         Route::get('/seat-locks/{suat_chieu}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'index'])
             ->name('seat_locks.index');
         
-        // Dòng này bắt buộc phải đứng TRƯỚC {seat} để không bị nuốt URL
         Route::post('/seat-locks/{suat_chieu}/release-all', [\App\Http\Controllers\DatVe\SeatLockController::class, 'releaseAll'])
             ->name('seat_locks.release_all');
 
@@ -287,8 +290,8 @@ Route::middleware(['auth'])
             Route::post('phong-chieus/{phong_chieu}/bulk-update-seats', [AdminPhongChieuController::class, 'bulkUpdateSeats'])->name('phong-chieus.bulk-update-seats');
             Route::post('phong-chieus/{phong_chieu}/delete-row-seats', [AdminPhongChieuController::class, 'deleteRowSeats'])->name('phong-chieus.delete-row-seats');
             Route::post('phong-chieus/{phong_chieu}/toggle-row-maintenance', [AdminPhongChieuController::class, 'toggleRowMaintenance'])->name('phong-chieus.toggle-row-maintenance');
-            Route::post('phong-chieus/{phong_chieu}/create-seat', [PhongChieuController::class, 'createSeat'])->name('phong-chieus.create-seat');
-            Route::post('phong-chieus/{phong_chieu}/create-row', [PhongChieuController::class, 'createRow'])->name('phong-chieus.create-row');
+            Route::post('phong-chieus/{phong_chieu}/create-seat', [AdminPhongChieuController::class, 'createSeat'])->name('phong-chieus.create-seat');
+            Route::post('phong-chieus/{phong_chieu}/create-row', [AdminPhongChieuController::class, 'createRow'])->name('phong-chieus.create-row');
         });
 
         Route::middleware(['quyen:loai_ghe.xem'])->group(function () {

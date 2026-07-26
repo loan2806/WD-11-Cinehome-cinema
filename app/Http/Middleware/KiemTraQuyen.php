@@ -21,7 +21,22 @@ class KiemTraQuyen
                 ], 403);
             }
 
-            return redirect()->route('admin.dashboard')
+            $user = $request->user();
+
+            // 🌟 Nếu là Nhân viên không có quyền Admin -> Điều hướng về đúng trang Staff
+            if ($user && ($user->hasRole('Nhân viên') || $user->vai_tro === 'nhan_vien')) {
+                return redirect()->route('staff.dashboard')
+                    ->with('error', 'Tài khoản nhân viên không có quyền truy cập trang quản trị Admin!');
+            }
+
+            // 🌟 Nếu chuyển hướng từ một trang hợp lệ khác -> Quay lại trang trước
+            if (url()->previous() && url()->previous() !== $request->fullUrl()) {
+                return redirect()->back()
+                    ->with('error', 'Tài khoản của bạn không có quyền truy cập chức năng này!');
+            }
+
+            // 🌟 Mặc định chuyển về Trang chủ (Tránh gửi về admin.dashboard gây lặp vô tận)
+            return redirect()->route('home')
                 ->with('error', 'Tài khoản của bạn không có quyền truy cập chức năng này!');
         }
 
