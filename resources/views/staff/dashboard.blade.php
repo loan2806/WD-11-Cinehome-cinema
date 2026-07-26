@@ -1,5 +1,8 @@
 @extends('layouts.admin')
 
+{{-- Khai báo mã quyền bắt buộc của trang này --}}
+@section('module-permission', 'nhan_vien.xem')
+
 @section('title', 'Dashboard Staff - CineHome')
 @section('page-title', 'Dashboard Staff')
 

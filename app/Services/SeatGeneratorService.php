@@ -147,12 +147,28 @@ class SeatGeneratorService
         $cauHinh = [];
         for ($i = 0; $i < $soHang; $i++) {
             $tenHang = $this->rowLabels[$i] ?? chr(65 + $i);
-            $isLast = $i === $soHang - 1;
+            
+            // Xác định loại ghế theo vị trí hàng:
+            // - 3 hàng đầu (gần màn): Thường
+            // - 2 hàng cuối (xa màn): Couple
+            // - Hàng giữa: VIP
+            $loaiGheId = $loaiGheThuongId; // Mặc định thường
+            $laHangCouple = false;
+            
+            if ($i >= $soHang - 2 && $loaiGheCoupleId) {
+                // 2 hàng cuối: Couple
+                $loaiGheId = $loaiGheCoupleId;
+                $laHangCouple = true;
+            } elseif ($i >= 3 && $loaiGheVipId) {
+                // Hàng 4 trở đi (không tính 2 hàng cuối): VIP
+                $loaiGheId = $loaiGheVipId;
+            }
+            
             $cauHinh[] = [
                 'ten_hang' => $tenHang,
-                'la_hang_couple' => $isLast && $loaiGheCoupleId,
-                'loai_ghe_id' => $isLast ? ($loaiGheCoupleId ?? $loaiGheThuongId) : ($loaiGheVipId ?? $loaiGheThuongId),
-                'so_ghe' => $isCotForCoupleRow = $isLast && $loaiGheCoupleId
+                'la_hang_couple' => $laHangCouple,
+                'loai_ghe_id' => $loaiGheId,
+                'so_ghe' => $laHangCouple
                     ? max(2, (int) floor($soCot / 2)) * 2
                     : $soCot,
             ];
