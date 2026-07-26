@@ -129,6 +129,59 @@ class SeatMaintenanceService
      */
     public function scheduleMaintenance(GheNgoi $ghe, \DateTimeInterface $thoiGianBatDau, ?\DateTimeInterface $thoiGianKetThuc, ?int $nguoiThucHienId, ?string $lyDo = null): LichBaoTriGheNgoi
     {
+        $thoiGianBatDau = \Carbon\Carbon::instance($thoiGianBatDau);
+        $thoiGianKetThuc = $thoiGianKetThuc ? \Carbon\Carbon::instance($thoiGianKetThuc) : null;
+
+        // 1. Kiểm tra vé đã bán
+        $conflicts = $this->getFutureConflicts($ghe);
+        if (!empty($conflicts)) {
+            throw new \Exception('Ghế đã có vé bán trong tương lai, không thể bảo trì.');
+        }
+
+        // 2. Kiểm tra lịch trùng lặp
+        $existingSchedule = LichBaoTriGheNgoi::where('ghe_ngoi_id', $ghe->id)
+            ->whereIn('trang_thai', ['cho_thuc_hien', 'dang_thuc_hien'])
+            ->where(function ($q) use ($thoiGianBatDau, $thoiGianKetThuc) {
+                if ($thoiGianKetThuc) {
+                    $q->where(function ($q2) use ($thoiGianBatDau, $thoiGianKetThuc) {
+                        $q2->whereBetween('thoi_gian_bat_dau', [$thoiGianBatDau, $thoiGianKetThuc])
+                           ->orWhereBetween('thoi_gian_ket_thuc', [$thoiGianBatDau, $thoiGianKetThuc])
+                           ->orWhere(function ($q3) use ($thoiGianBatDau, $thoiGianKetThuc) {
+                               $q3->where('thoi_gian_bat_dau', '<=', $thoiGianBatDau)
+                                  ->where(function ($q4) use ($thoiGianKetThuc) {
+                                      $q4->whereNull('thoi_gian_ket_thuc')
+                                         ->orWhere('thoi_gian_ket_thuc', '>=', $thoiGianKetThuc);
+                                  });
+                           });
+                    });
+                } else {
+                    $q->where(function ($q2) use ($thoiGianBatDau) {
+                        $q2->where('thoi_gian_bat_dau', '<=', $thoiGianBatDau)
+                           ->where(function ($q3) {
+                               $q3->whereNull('thoi_gian_ket_thuc')
+                                  ->orWhere('thoi_gian_ket_thuc', '>=', now());
+                           });
+                    });
+                }
+            })
+            ->exists();
+
+        if ($existingSchedule) {
+            throw new \Exception('Ghế đã có lịch bảo trì trùng lặp.');
+        }
+
+        // 3. Kiểm tra suất chiếu trong ngày (nếu có thời hạn)
+        if ($thoiGianKetThuc) {
+            $suatChieuTrung = SuatChieu::where('phong_chieu_id', $ghe->phong_chieu_id)
+                ->where('thoi_gian_chieu', '<', $thoiGianKetThuc)
+                ->whereRaw("DATE_ADD(thoi_gian_chieu, INTERVAL thoi_luong MINUTE) > '" . $thoiGianBatDau->format('Y-m-d H:i:s') . "'")
+                ->exists();
+
+            if ($suatChieuTrung) {
+                throw new \Exception('Có suất chiếu trong khoảng thời gian bảo trì.');
+            }
+        }
+
         $beforeStatus = $ghe->trang_thai;
 
         return DB::transaction(function () use ($ghe, $thoiGianBatDau, $thoiGianKetThuc, $nguoiThucHienId, $lyDo, $beforeStatus) {

@@ -1,6 +1,4 @@
-@extends('layouts.admin')
-
-@push('styles')
+<?php $__env->startPush('styles'); ?>
 <style>
 .stats-page { padding: 0; }
 
@@ -444,11 +442,11 @@
     .filter-bar { gap: 8px; }
 }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="stats-page">
-    {{-- Header --}}
+    
     <div class="page-header">
         <div>
             <h2><i class="fas fa-chart-line me-2" style="color: var(--gold-main);"></i>Thống kê doanh thu</h2>
@@ -456,83 +454,83 @@
         </div>
     </div>
 
-    {{-- Filter --}}
+    
     <form method="GET">
-        {{-- Hidden inputs để giữ lại filter khi dropdown submit --}}
-        <input type="hidden" name="from" value="{{ $from ? Carbon\Carbon::parse($from)->toDateString() : '' }}">
-        <input type="hidden" name="to" value="{{ $to ? Carbon\Carbon::parse($to)->toDateString() : '' }}">
-        <input type="hidden" name="period_type" id="periodTypeInput" value="{{ $periodType ?? 'day' }}">
+        
+        <input type="hidden" name="from" value="<?php echo e($from ? Carbon\Carbon::parse($from)->toDateString() : ''); ?>">
+        <input type="hidden" name="to" value="<?php echo e($to ? Carbon\Carbon::parse($to)->toDateString() : ''); ?>">
+        <input type="hidden" name="period_type" id="periodTypeInput" value="<?php echo e($periodType ?? 'day'); ?>">
 
         <div class="filter-bar">
-            {{-- Period Tabs --}}
+            
             <div class="filter-group">
                 <div class="period-tabs">
-                    <button type="button" class="period-tab {{ ($periodType ?? 'day') == 'day' ? 'active' : '' }}" onclick="setPeriod('day')">Ngày</button>
-                    <button type="button" class="period-tab {{ ($periodType ?? 'day') == 'month' ? 'active' : '' }}" onclick="setPeriod('month')">Tháng</button>
-                    <button type="button" class="period-tab {{ ($periodType ?? 'day') == 'quarter' ? 'active' : '' }}" onclick="setPeriod('quarter')">Quý</button>
-                    <button type="button" class="period-tab {{ ($periodType ?? 'day') == 'year' ? 'active' : '' }}" onclick="setPeriod('year')">Năm</button>
+                    <button type="button" class="period-tab <?php echo e(($periodType ?? 'day') == 'day' ? 'active' : ''); ?>" onclick="setPeriod('day')">Ngày</button>
+                    <button type="button" class="period-tab <?php echo e(($periodType ?? 'day') == 'month' ? 'active' : ''); ?>" onclick="setPeriod('month')">Tháng</button>
+                    <button type="button" class="period-tab <?php echo e(($periodType ?? 'day') == 'quarter' ? 'active' : ''); ?>" onclick="setPeriod('quarter')">Quý</button>
+                    <button type="button" class="period-tab <?php echo e(($periodType ?? 'day') == 'year' ? 'active' : ''); ?>" onclick="setPeriod('year')">Năm</button>
                 </div>
             </div>
 
-            {{-- Date Range --}}
+            
             <div class="filter-group">
                 <label><i class="fas fa-calendar-alt"></i></label>
-                <input class="filter-input" type="date" name="from" value="{{ $from ? Carbon\Carbon::parse($from)->toDateString() : '' }}" title="Từ ngày">
+                <input class="filter-input" type="date" name="from" value="<?php echo e($from ? Carbon\Carbon::parse($from)->toDateString() : ''); ?>" title="Từ ngày">
                 <span class="filter-sep"><i class="fas fa-arrow-right"></i></span>
-                <input class="filter-input" type="date" name="to" value="{{ $to ? Carbon\Carbon::parse($to)->toDateString() : '' }}" title="Đến ngày">
+                <input class="filter-input" type="date" name="to" value="<?php echo e($to ? Carbon\Carbon::parse($to)->toDateString() : ''); ?>" title="Đến ngày">
             </div>
 
-            {{-- Movie Filter --}}
+            
             <div class="filter-group">
                 <label><i class="fas fa-film"></i></label>
                 <div class="custom-select" data-name="phim_id">
                     <div class="custom-select-trigger" onclick="toggleSelect(this)">
-                        <span>{{ ($phimId ?? '') ? ($movies[$phimId] ?? 'Tất cả phim') : 'Tất cả phim' }}</span>
+                        <span><?php echo e(($phimId ?? '') ? ($movies[$phimId] ?? 'Tất cả phim') : 'Tất cả phim'); ?></span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="custom-select-dropdown">
-                        <div class="custom-select-option {{ ($phimId ?? '') == '' ? 'selected' : '' }}" data-value="" onclick="selectOption(this)">Tất cả phim</div>
-                        @foreach($movies ?? [] as $id => $name)
-                            <div class="custom-select-option {{ ($phimId ?? '') == $id ? 'selected' : '' }}" data-value="{{ $id }}" onclick="selectOption(this)">{{ $name }}</div>
-                        @endforeach
+                        <div class="custom-select-option <?php echo e(($phimId ?? '') == '' ? 'selected' : ''); ?>" data-value="" onclick="selectOption(this)">Tất cả phim</div>
+                        <?php $__currentLoopData = $movies ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $id => $name): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="custom-select-option <?php echo e(($phimId ?? '') == $id ? 'selected' : ''); ?>" data-value="<?php echo e($id); ?>" onclick="selectOption(this)"><?php echo e($name); ?></div>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
-                    <input type="hidden" name="phim_id" value="{{ $phimId ?? '' }}">
+                    <input type="hidden" name="phim_id" value="<?php echo e($phimId ?? ''); ?>">
                 </div>
             </div>
 
-            {{-- Room Filter --}}
+            
             <div class="filter-group">
                 <label><i class="fas fa-door-open"></i></label>
                 <div class="custom-select" data-name="phong_chieu_id">
                     <div class="custom-select-trigger" onclick="toggleSelect(this)">
-                        <span>{{ ($phongChieuId ?? '') ? ($rooms[$phongChieuId] ?? 'Tất cả phòng') : 'Tất cả phòng' }}</span>
+                        <span><?php echo e(($phongChieuId ?? '') ? ($rooms[$phongChieuId] ?? 'Tất cả phòng') : 'Tất cả phòng'); ?></span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="custom-select-dropdown">
-                        <div class="custom-select-option {{ ($phongChieuId ?? '') == '' ? 'selected' : '' }}" data-value="" onclick="selectOption(this)">Tất cả phòng</div>
-                        @foreach($rooms ?? [] as $id => $name)
-                            <div class="custom-select-option {{ ($phongChieuId ?? '') == $id ? 'selected' : '' }}" data-value="{{ $id }}" onclick="selectOption(this)">{{ $name }}</div>
-                        @endforeach
+                        <div class="custom-select-option <?php echo e(($phongChieuId ?? '') == '' ? 'selected' : ''); ?>" data-value="" onclick="selectOption(this)">Tất cả phòng</div>
+                        <?php $__currentLoopData = $rooms ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $id => $name): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <div class="custom-select-option <?php echo e(($phongChieuId ?? '') == $id ? 'selected' : ''); ?>" data-value="<?php echo e($id); ?>" onclick="selectOption(this)"><?php echo e($name); ?></div>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
-                    <input type="hidden" name="phong_chieu_id" value="{{ $phongChieuId ?? '' }}">
+                    <input type="hidden" name="phong_chieu_id" value="<?php echo e($phongChieuId ?? ''); ?>">
                 </div>
             </div>
 
-            {{-- Actions --}}
+            
             <div class="filter-actions">
                 <button type="submit" class="btn-admin"><i class="fas fa-search me-1"></i>Lọc</button>
-                <a href="{{ route('admin.thong-ke.export-excel', request()->query()) }}" class="btn-admin-outline"><i class="fas fa-download me-1"></i>Xuất Excel</a>
+                <a href="<?php echo e(route('admin.thong-ke.export-excel', request()->query())); ?>" class="btn-admin-outline"><i class="fas fa-download me-1"></i>Xuất Excel</a>
             </div>
         </div>
     </form>
 
-    {{-- KPI Cards --}}
+    
     <div class="kpi-grid">
         <div class="kpi-card">
             <div class="kpi-icon" style="background: rgba(247, 184, 75, 0.12);">
                 <i class="fas fa-coins" style="color: #f7b84b;"></i>
             </div>
-            <div class="kpi-value">{{ number_format((float)($kpi['total_revenue'] ?? 0), 0, ',', '.') }}đ</div>
+            <div class="kpi-value"><?php echo e(number_format((float)($kpi['total_revenue'] ?? 0), 0, ',', '.')); ?>đ</div>
             <div class="kpi-label">Tổng doanh thu</div>
         </div>
 
@@ -540,7 +538,7 @@
             <div class="kpi-icon" style="background: rgba(34, 197, 94, 0.12);">
                 <i class="fas fa-ticket" style="color: #22c55e;"></i>
             </div>
-            <div class="kpi-value">{{ number_format((float)($kpi['ticket_revenue'] ?? 0), 0, ',', '.') }}đ</div>
+            <div class="kpi-value"><?php echo e(number_format((float)($kpi['ticket_revenue'] ?? 0), 0, ',', '.')); ?>đ</div>
             <div class="kpi-label">Doanh thu vé</div>
         </div>
 
@@ -548,7 +546,7 @@
             <div class="kpi-icon" style="background: rgba(59, 130, 246, 0.12);">
                 <i class="fas fa-burger" style="color: #3b82f6;"></i>
             </div>
-            <div class="kpi-value">{{ number_format((float)($kpi['food_revenue'] ?? 0), 0, ',', '.') }}đ</div>
+            <div class="kpi-value"><?php echo e(number_format((float)($kpi['food_revenue'] ?? 0), 0, ',', '.')); ?>đ</div>
             <div class="kpi-label">Doanh thu combo</div>
         </div>
 
@@ -556,7 +554,7 @@
             <div class="kpi-icon" style="background: rgba(168, 85, 247, 0.12);">
                 <i class="fas fa-users" style="color: #a855f7;"></i>
             </div>
-            <div class="kpi-value">{{ number_format((int)($kpi['tickets_sold'] ?? 0)) }}</div>
+            <div class="kpi-value"><?php echo e(number_format((int)($kpi['tickets_sold'] ?? 0))); ?></div>
             <div class="kpi-label">Vé đã bán</div>
         </div>
 
@@ -564,7 +562,7 @@
             <div class="kpi-icon" style="background: rgba(236, 72, 153, 0.12);">
                 <i class="fas fa-receipt" style="color: #ec4899;"></i>
             </div>
-            <div class="kpi-value">{{ number_format((int)($kpi['total_invoices'] ?? 0)) }}</div>
+            <div class="kpi-value"><?php echo e(number_format((int)($kpi['total_invoices'] ?? 0))); ?></div>
             <div class="kpi-label">Tổng hóa đơn</div>
         </div>
 
@@ -572,7 +570,7 @@
             <div class="kpi-icon" style="background: rgba(14, 165, 233, 0.12);">
                 <i class="fas fa-film" style="color: #0ea5e9;"></i>
             </div>
-            <div class="kpi-value">{{ number_format((int)($kpi['total_showtimes'] ?? 0)) }}</div>
+            <div class="kpi-value"><?php echo e(number_format((int)($kpi['total_showtimes'] ?? 0))); ?></div>
             <div class="kpi-label">Suất chiếu</div>
         </div>
 
@@ -580,7 +578,7 @@
             <div class="kpi-icon" style="background: rgba(249, 115, 22, 0.12);">
                 <i class="fas fa-ticket-simple" style="color: #f97316;"></i>
             </div>
-            <div class="kpi-value">{{ number_format((int)($kpi['vouchers_used'] ?? 0)) }}</div>
+            <div class="kpi-value"><?php echo e(number_format((int)($kpi['vouchers_used'] ?? 0))); ?></div>
             <div class="kpi-label">Voucher sử dụng</div>
         </div>
 
@@ -588,14 +586,14 @@
             <div class="kpi-icon" style="background: rgba(234, 179, 8, 0.12);">
                 <i class="fas fa-chair" style="color: #eab308;"></i>
             </div>
-            <div class="kpi-value">{{ number_format((float)($kpi['seat_occupancy_rate'] ?? 0), 1) }}%</div>
+            <div class="kpi-value"><?php echo e(number_format((float)($kpi['seat_occupancy_rate'] ?? 0), 1)); ?>%</div>
             <div class="kpi-label">Tỷ lệ lấp đầy</div>
         </div>
     </div>
 
-    {{-- Main Charts --}}
+    
     <div class="main-grid">
-        {{-- Line Chart --}}
+        
         <div class="panel">
             <div class="panel-header">
                 <h3><i class="fas fa-chart-area"></i>Doanh thu theo thời gian</h3>
@@ -608,7 +606,7 @@
             </div>
         </div>
 
-        {{-- Pie Chart + Stats --}}
+        
         <div class="panel">
             <div class="panel-header">
                 <h3><i class="fas fa-chart-pie"></i>Cơ cấu doanh thu</h3>
@@ -619,15 +617,15 @@
                 </div>
                 <div class="mini-stats">
                     <div class="mini-stat">
-                        <div class="val">{{ $kpi['total_revenue'] > 0 ? round($kpi['ticket_revenue'] / $kpi['total_revenue'] * 100) : 0 }}%</div>
+                        <div class="val"><?php echo e($kpi['total_revenue'] > 0 ? round($kpi['ticket_revenue'] / $kpi['total_revenue'] * 100) : 0); ?>%</div>
                         <div class="lbl">Vé</div>
                     </div>
                     <div class="mini-stat">
-                        <div class="val">{{ $kpi['total_revenue'] > 0 ? round($kpi['food_revenue'] / $kpi['total_revenue'] * 100) : 0 }}%</div>
+                        <div class="val"><?php echo e($kpi['total_revenue'] > 0 ? round($kpi['food_revenue'] / $kpi['total_revenue'] * 100) : 0); ?>%</div>
                         <div class="lbl">Combo</div>
                     </div>
                     <div class="mini-stat">
-                        <div class="val">{{ number_format((float)($kpi['average_ticket_price'] ?? 0), 0, ',', '.') }}đ</div>
+                        <div class="val"><?php echo e(number_format((float)($kpi['average_ticket_price'] ?? 0), 0, ',', '.')); ?>đ</div>
                         <div class="lbl">Giá TB</div>
                     </div>
                 </div>
@@ -635,118 +633,118 @@
         </div>
     </div>
 
-    {{-- Top Lists Row --}}
+    
     <div class="main-grid">
-        {{-- Top Films --}}
+        
         <div class="panel">
             <div class="panel-header">
                 <h3><i class="fas fa-trophy"></i>Top phim doanh thu cao</h3>
                 <span class="badge">Top 5</span>
             </div>
             <div class="panel-body" style="padding: 12px 16px;">
-                @if(!empty($topFilms) && count($topFilms) > 0)
+                <?php if(!empty($topFilms) && count($topFilms) > 0): ?>
                 <ul class="top-list">
-                    @foreach($topFilms as $i => $film)
+                    <?php $__currentLoopData = $topFilms; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $film): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <li>
-                        <span class="rank-badge {{ $i == 0 ? 'gold' : ($i == 1 ? 'silver' : '') }}">{{ $i + 1 }}</span>
+                        <span class="rank-badge <?php echo e($i == 0 ? 'gold' : ($i == 1 ? 'silver' : '')); ?>"><?php echo e($i + 1); ?></span>
                         <div class="top-info">
-                            <strong>{{ $film['ten_phim'] ?? $film['movie'] ?? 'N/A' }}</strong>
-                            <small>{{ number_format((int)($film['tickets_sold'] ?? 0)) }} vé</small>
+                            <strong><?php echo e($film['ten_phim'] ?? $film['movie'] ?? 'N/A'); ?></strong>
+                            <small><?php echo e(number_format((int)($film['tickets_sold'] ?? 0))); ?> vé</small>
                         </div>
                         <div class="top-amount">
-                            <strong>{{ number_format((float)($film['total_revenue'] ?? 0), 0, ',', '.') }}đ</strong>
+                            <strong><?php echo e(number_format((float)($film['total_revenue'] ?? 0), 0, ',', '.')); ?>đ</strong>
                         </div>
                     </li>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </ul>
-                @else
+                <?php else: ?>
                 <p style="text-align: center; color: var(--gray-text); padding: 30px;">Chưa có dữ liệu</p>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
 
-        {{-- Revenue by Room --}}
+        
         <div class="panel">
             <div class="panel-header">
                 <h3><i class="fas fa-door-open"></i>Doanh thu theo phòng</h3>
             </div>
             <div class="panel-body">
-                @if(!empty($revenueByRoom) && count($revenueByRoom) > 0)
-                    @php $maxRoom = max(array_column($revenueByRoom, 'total_revenue')); @endphp
-                    @foreach($revenueByRoom as $room)
+                <?php if(!empty($revenueByRoom) && count($revenueByRoom) > 0): ?>
+                    <?php $maxRoom = max(array_column($revenueByRoom, 'total_revenue')); ?>
+                    <?php $__currentLoopData = $revenueByRoom; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $room): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <div class="bar-stat">
                         <div class="bar-stat-label">
-                            <span>{{ $room['ten_phong'] ?? 'N/A' }}</span>
-                            <span>{{ number_format((float)($room['total_revenue'] ?? 0), 0, ',', '.') }}đ</span>
+                            <span><?php echo e($room['ten_phong'] ?? 'N/A'); ?></span>
+                            <span><?php echo e(number_format((float)($room['total_revenue'] ?? 0), 0, ',', '.')); ?>đ</span>
                         </div>
                         <div class="bar-track">
-                            <div class="bar-fill" style="width: {{ $maxRoom > 0 ? (($room['total_revenue'] ?? 0) / $maxRoom * 100) : 0 }}%"></div>
+                            <div class="bar-fill" style="width: <?php echo e($maxRoom > 0 ? (($room['total_revenue'] ?? 0) / $maxRoom * 100) : 0); ?>%"></div>
                         </div>
                     </div>
-                    @endforeach
-                @else
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                <?php else: ?>
                 <p style="text-align: center; color: var(--gray-text); padding: 30px;">Chưa có dữ liệu</p>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    {{-- More Stats --}}
+    
     <div class="main-grid">
-        {{-- Revenue by Seat Type --}}
+        
         <div class="panel">
             <div class="panel-header">
                 <h3><i class="fas fa-chair"></i>Doanh thu theo loại ghế</h3>
             </div>
             <div class="panel-body">
-                @if(!empty($revenueBySeatType) && count($revenueBySeatType) > 0)
-                    @php $maxSeat = max(array_column($revenueBySeatType, 'total_revenue')); @endphp
-                    @foreach($revenueBySeatType as $seat)
+                <?php if(!empty($revenueBySeatType) && count($revenueBySeatType) > 0): ?>
+                    <?php $maxSeat = max(array_column($revenueBySeatType, 'total_revenue')); ?>
+                    <?php $__currentLoopData = $revenueBySeatType; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $seat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <div class="bar-stat">
                         <div class="bar-stat-label">
-                            <span>{{ $seat['ten_loai'] ?? 'N/A' }}</span>
-                            <span>{{ number_format((float)($seat['total_revenue'] ?? 0), 0, ',', '.') }}đ</span>
+                            <span><?php echo e($seat['ten_loai'] ?? 'N/A'); ?></span>
+                            <span><?php echo e(number_format((float)($seat['total_revenue'] ?? 0), 0, ',', '.')); ?>đ</span>
                         </div>
                         <div class="bar-track">
-                            <div class="bar-fill" style="width: {{ $maxSeat > 0 ? (($seat['total_revenue'] ?? 0) / $maxSeat * 100) : 0 }}%"></div>
+                            <div class="bar-fill" style="width: <?php echo e($maxSeat > 0 ? (($seat['total_revenue'] ?? 0) / $maxSeat * 100) : 0); ?>%"></div>
                         </div>
                     </div>
-                    @endforeach
-                @else
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                <?php else: ?>
                 <p style="text-align: center; color: var(--gray-text); padding: 30px;">Chưa có dữ liệu</p>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
 
-        {{-- Payment Methods --}}
+        
         <div class="panel">
             <div class="panel-header">
                 <h3><i class="fas fa-credit-card"></i>Phương thức thanh toán</h3>
             </div>
             <div class="panel-body">
-                @if(!empty($paymentMethods) && count($paymentMethods) > 0)
+                <?php if(!empty($paymentMethods) && count($paymentMethods) > 0): ?>
                 <div class="pay-list">
-                    @foreach($paymentMethods as $method)
+                    <?php $__currentLoopData = $paymentMethods; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $method): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <div class="pay-item">
                         <div class="icon"><i class="fas fa-wallet"></i></div>
                         <div class="info">
-                            <strong>{{ $method['label'] ?? 'N/A' }}</strong>
-                            <small>{{ number_format((int)($method['count'] ?? 0)) }} giao dịch</small>
+                            <strong><?php echo e($method['label'] ?? 'N/A'); ?></strong>
+                            <small><?php echo e(number_format((int)($method['count'] ?? 0))); ?> giao dịch</small>
                         </div>
                         <div class="amount">
-                            <strong>{{ number_format((float)($method['total_revenue'] ?? 0), 0, ',', '.') }}đ</strong>
+                            <strong><?php echo e(number_format((float)($method['total_revenue'] ?? 0), 0, ',', '.')); ?>đ</strong>
                         </div>
                     </div>
-                    @endforeach
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </div>
-                @else
+                <?php else: ?>
                 <p style="text-align: center; color: var(--gray-text); padding: 30px;">Chưa có dữ liệu</p>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    {{-- Voucher Stats --}}
+    
     <div class="panel">
         <div class="panel-header">
             <h3><i class="fas fa-ticket"></i>Thống kê Voucher</h3>
@@ -754,28 +752,28 @@
         <div class="panel-body">
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
                 <div style="background: var(--black-soft); border-radius: 10px; padding: 16px; text-align: center;">
-                    <div style="font-size: 1.4rem; font-weight: 900; color: var(--gold-main);">{{ number_format((int)($voucherStats['total_issued'] ?? 0)) }}</div>
+                    <div style="font-size: 1.4rem; font-weight: 900; color: var(--gold-main);"><?php echo e(number_format((int)($voucherStats['total_issued'] ?? 0))); ?></div>
                     <div style="font-size: 0.7rem; color: var(--gray-text); text-transform: uppercase; margin-top: 4px;">Đã phát hành</div>
                 </div>
                 <div style="background: var(--black-soft); border-radius: 10px; padding: 16px; text-align: center;">
-                    <div style="font-size: 1.4rem; font-weight: 900; color: var(--gold-main);">{{ number_format((int)($voucherStats['total_used'] ?? 0)) }}</div>
+                    <div style="font-size: 1.4rem; font-weight: 900; color: var(--gold-main);"><?php echo e(number_format((int)($voucherStats['total_used'] ?? 0))); ?></div>
                     <div style="font-size: 0.7rem; color: var(--gray-text); text-transform: uppercase; margin-top: 4px;">Đã sử dụng</div>
                 </div>
                 <div style="background: var(--black-soft); border-radius: 10px; padding: 16px; text-align: center;">
-                    <div style="font-size: 1.4rem; font-weight: 900; color: var(--gold-main);">{{ $voucherStats['usage_rate'] ?? 0 }}%</div>
+                    <div style="font-size: 1.4rem; font-weight: 900; color: var(--gold-main);"><?php echo e($voucherStats['usage_rate'] ?? 0); ?>%</div>
                     <div style="font-size: 0.7rem; color: var(--gray-text); text-transform: uppercase; margin-top: 4px;">Tỷ lệ sử dụng</div>
                 </div>
                 <div style="background: var(--black-soft); border-radius: 10px; padding: 16px; text-align: center;">
-                    <div style="font-size: 1.4rem; font-weight: 900; color: var(--gold-main);">{{ number_format((float)($voucherStats['total_discount'] ?? 0), 0, ',', '.') }}đ</div>
+                    <div style="font-size: 1.4rem; font-weight: 900; color: var(--gold-main);"><?php echo e(number_format((float)($voucherStats['total_discount'] ?? 0), 0, ',', '.')); ?>đ</div>
                     <div style="font-size: 0.7rem; color: var(--gray-text); text-transform: uppercase; margin-top: 4px;">Tiền giảm giá</div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // Custom dropdown functions
@@ -831,7 +829,7 @@ function setPeriod(period) {
 }
 
 // Chart data
-const revenueData = {!! json_encode($revenueByTime ?? []) !!};
+const revenueData = <?php echo json_encode($revenueByTime ?? []); ?>;
 const chartLabels = revenueData.map(item => item.period || item.label || '');
 const ticketChartData = revenueData.map(item => item.ticket_revenue || 0);
 const foodChartData = revenueData.map(item => item.food_revenue || 0);
@@ -912,7 +910,7 @@ new Chart(document.getElementById('pieChart'), {
     data: {
         labels: ['Vé', 'Combo'],
         datasets: [{
-            data: [{{ (float)($kpi['ticket_revenue'] ?? 0) }}, {{ (float)($kpi['food_revenue'] ?? 0) }}],
+            data: [<?php echo e((float)($kpi['ticket_revenue'] ?? 0)); ?>, <?php echo e((float)($kpi['food_revenue'] ?? 0)); ?>],
             backgroundColor: ['#f7b84b', '#22c55e'],
             borderWidth: 0,
             hoverOffset: 8
@@ -943,4 +941,6 @@ new Chart(document.getElementById('pieChart'), {
     }
 });
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH E:\laragon\www\WD-11-Cinehome-cinema\resources\views/admin/thong_ke/index.blade.php ENDPATH**/ ?>
