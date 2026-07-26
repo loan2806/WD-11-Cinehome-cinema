@@ -7,13 +7,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 
-    
+
     <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
 
-    
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
-    
+
     <link class="router-css" rel="stylesheet" href="<?php echo e(asset('assets/css/admin.css')); ?>?v=<?php echo e(filemtime(public_path('assets/css/admin.css'))); ?>">
 
     <?php echo $__env->yieldPushContent('styles'); ?>
@@ -128,7 +128,7 @@
 <body class="overflow-x-hidden bg-[#080808] text-white">
     <?php echo $__env->make('components.preloader', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
-    
+
     <?php if(session('success') || session('error') || session('warning')): ?>
     <div style="position: fixed; top: 24px; right: 24px; z-index: 100000; display: flex; width: min(390px, calc(100vw - 32px)); flex-direction: column; gap: 12px; pointer-events: none;">
         <?php if(session('success')): ?>
@@ -200,7 +200,7 @@
     </div>
     <?php endif; ?>
 
-    
+
     <?php if (isset($component)) { $__componentOriginal7ef94aa801410a663a471c55b223c943 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal7ef94aa801410a663a471c55b223c943 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.modal-confirm','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -224,10 +224,10 @@
 
     <div id="adminLayout" data-sidebar="open" class="min-h-screen overflow-x-hidden bg-[#080808] text-white">
 
-        
+
         <aside id="adminSidebar" class="admin-scrollbar fixed left-0 top-0 z-[60] h-screen w-[285px] overflow-y-auto overflow-x-hidden border-r border-[#d99a32]/20 bg-gradient-to-b from-[#110702] to-[#200d05] transition-transform duration-300">
 
-            
+
             <div class="flex items-center gap-3.5 border-b border-white/5 px-5 py-6">
                 <span class="cinehome-logo-sparkle flex h-[76px] w-[76px] items-center justify-center overflow-hidden rounded-3xl bg-transparent p-0 shadow-lg shadow-[#ff2f45]/20">
                     <img src="<?php echo e(asset('assets/images/LOGO copy.png')); ?>" alt="CineHome Logo" class="cinehome-logo-img h-full w-full object-contain">
@@ -243,10 +243,10 @@
                 </div>
             </div>
 
-            
+
             <div class="mt-5 space-y-4 px-3 pb-8">
 
-                
+
                 <?php if(coQuyen('tong_quan.xem')): ?>
                 <div>
                     <p class="mb-2 px-3 text-[11px] font-black uppercase tracking-widest text-[#d7a767]/50">Tổng quan hệ thống</p>
@@ -257,7 +257,7 @@
                 </div>
                 <?php endif; ?>
 
-                
+
                 <?php if(coBatKyQuyenNao(['phim.xem', 'suat_chieu.xem', 'the_loai.xem', 'quoc_gia.xem'])): ?>
                     <?php
                         $isNoidungActive = request()->routeIs('admin.phims.*') ||
@@ -301,7 +301,7 @@
                     </div>
                 <?php endif; ?>
 
-                
+
                 <?php if(coBatKyQuyenNao(['phong_chieu.xem', 'loai_ghe.xem'])): ?>
                     <?php
                         $isPhongGheActive = request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*');
@@ -330,7 +330,7 @@
                     </div>
                 <?php endif; ?>
 
-                
+
                 <?php if(coBatKyQuyenNao(['kho_ve.xem', 'quay_ve.ban_ve', 'soat_ve.quet_qr', 'do_an.hoa_don', 'do_an.cau_hinh', 'khuyen_mai.xem'])): ?>
                     <?php
                         $isGiaoDichActive = request()->routeIs('admin.food-invoices.*')
@@ -387,7 +387,7 @@
                     </div>
                 <?php endif; ?>
 
-                
+
                 <?php if(coBatKyQuyenNao(['nhan_vien.xem', 'phan_quyen.ma_tran', 'khach_hang.xem', 'thanh_vien.xem'])): ?>
                     <?php
                         $isTaiKhoanActive = request()->routeIs('admin.nhanviens.*') ||
@@ -433,7 +433,7 @@
                     </div>
                 <?php endif; ?>
 
-                
+
                 <?php if(coBatKyQuyenNao(['bao_cao.doanh_thu', 'nhat_ky.he_thong'])): ?>
                     <?php
                         $isBaoCaoActive = request()->routeIs('admin.thong-ke.*') || request()->routeIs('admin.activity-logs.*');
@@ -462,7 +462,7 @@
                     </div>
                 <?php endif; ?>
 
-                
+
                 <?php if(coBatKyQuyenNao(['thong_bao.gui', 'cai_dat.he_thong'])): ?>
                     <?php
                         $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
@@ -493,7 +493,7 @@
                     </div>
                 <?php endif; ?>
 
-                
+
                 <div class="border-t border-white/10 pt-3">
                     <a href="<?php echo e(route('home')); ?>" class="flex items-center gap-3.5 rounded-xl px-4 py-3 text-[16px] font-bold text-gray-300 no-underline transition duration-200 hover:bg-white/5 hover:text-white">
                         <i class="fa-solid fa-house w-5 text-center text-xl text-[#d99a32]"></i>
@@ -504,14 +504,14 @@
             </div>
         </aside>
 
-        
+
         <main id="adminMain" class="ml-[285px] min-h-screen overflow-x-hidden bg-[#080808]">
 
-            
+
             <header class="sticky top-0 z-50 border-b border-white/10 bg-[#101010]/95 backdrop-blur-xl">
                 <div class="flex h-[76px] items-center justify-between gap-4 px-5">
 
-                    
+
                     <div class="flex min-w-0 items-center gap-4">
                         <button id="sidebarToggle" type="button" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border-0 bg-white/10 text-white transition hover:bg-[#d99a32] hover:text-[#2b1208]">
                             <i class="fa-solid fa-bars text-lg"></i>
@@ -527,13 +527,13 @@
                         </div>
                     </div>
 
-                    
+
                     <div class="hidden h-11 w-full max-w-[280px] items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 md:flex lg:max-w-[360px]">
                         <i class="fa-solid fa-magnifying-glass text-sm text-[#d99a32]"></i>
                         <input type="text" placeholder="Tìm nhanh chức năng hệ thống..." class="h-full w-full border-0 bg-transparent text-sm text-white outline-none placeholder-gray-500">
                     </div>
 
-                    
+
                     <div class="flex items-center gap-3">
                         <?php
                             $notificationCount = $notificationCount ?? 0;
@@ -557,7 +557,7 @@
                                 <?php endif; ?>
                             </button>
 
-                            
+
                             <div id="notifyBox" class="admin-notify-dropdown hidden">
                                 <div class="admin-notify-head">
                                     <span><i class="fa-solid fa-bell"></i></span>
@@ -617,30 +617,34 @@
                                 <i class="fa-solid fa-chevron-down ml-1 text-[10px] text-gray-400"></i>
                             </button>
 
-                            <div id="adminDropdownMenu" class="absolute right-0 top-[125%] z-[9999] hidden w-60 overflow-hidden rounded-xl border border-[#d99a32]/30 bg-[#151515]/95 shadow-2xl backdrop-blur-md">
-                                <div class="flex items-center gap-3 border-b border-white/10 bg-white/5 px-4 py-3">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white">
+                            <div id="adminDropdownMenu" class="admin-profile-menu absolute right-0 top-[125%] z-[9999] hidden w-[300px] overflow-hidden rounded-[22px] border border-white/10 bg-[#11151d]/96 shadow-[0_28px_70px_rgba(0,0,0,0.46)] backdrop-blur-xl">
+                                <div class="admin-profile-menu-head flex items-center gap-3 border-b border-white/10 bg-white/5 px-4 py-4">
+                                    <div class="admin-profile-menu-avatar flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white shadow-md">
                                         <i class="fa-solid fa-user text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <div class="truncate text-sm font-bold text-white"><?php echo e(Auth::user()->ho_ten); ?>
-
-                                        </div>
-                                        <div class="truncate text-[11px] text-gray-400"><?php echo e(Auth::user()->email); ?>
-
-                                        </div>
+                                        <div class="truncate text-sm font-bold text-white"><?php echo e(Auth::user()->ho_ten); ?></div>
+                                        <div class="truncate text-[11px] text-gray-400"><?php echo e(Auth::user()->email); ?></div>
+                                        <span class="admin-profile-menu-role"><?php echo e($adminRoleLabel); ?></span>
                                     </div>
                                 </div>
-                                <div class="p-1.5 border-b border-white/10">
-                                    <a href="<?php echo e(route('profile.edit')); ?>" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
-                                        <i class="fa-solid fa-user-gear w-4 text-xs text-center"></i> Hồ sơ cá nhân
+                                <div class="admin-profile-menu-section border-b border-white/10 p-2">
+                                    <a href="<?php echo e(route('profile.edit')); ?>" class="admin-profile-menu-link">
+                                        <i class="fa-solid fa-user-gear"></i>
+                                        <span>Hồ sơ cá nhân</span>
+                                    </a>
+
+                                    <a href="<?php echo e(route('admin.ve-xem-phims.index')); ?>" class="admin-profile-menu-link">
+                                        <i class="fa-solid fa-ticket"></i>
+                                        <span>Quản lý vé</span>
                                     </a>
                                 </div>
-                                <div class="p-1.5 bg-[#1a1a1a]/30">
+                                <div class="admin-profile-menu-section p-2">
                                     <form method="POST" action="<?php echo e(route('logout')); ?>" class="m-0">
                                         <?php echo csrf_field(); ?>
-                                        <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/15 border-0 bg-transparent text-left">
-                                            <i class="fa-solid fa-right-from-bracket w-4 text-xs text-center"></i> Đăng xuất Hệ thống
+                                        <button type="submit" class="admin-profile-menu-link is-danger">
+                                            <i class="fa-solid fa-right-from-bracket"></i>
+                                            <span>Đăng xuất Hệ thống</span>
                                         </button>
                                     </form>
                                 </div>
@@ -651,7 +655,7 @@
                 </div>
             </header>
 
-            
+
             <section class="w-full overflow-x-hidden px-6 py-6">
                 <?php echo $__env->yieldContent('content'); ?>
             </section>
@@ -660,7 +664,7 @@
 
     <?php echo $__env->yieldPushContent('scripts'); ?>
 
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const dropdownBoxes = document.querySelectorAll('.sidebar-dropdown-box');
@@ -686,7 +690,7 @@
         );
     </script>
     <?php endif; ?>
-    
+
     <?php if (! empty(trim($__env->yieldContent('module-permission')))): ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {

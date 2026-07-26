@@ -539,36 +539,35 @@
                                 <i class="fa-solid fa-chevron-down ml-1 text-[10px] text-gray-400"></i>
                             </button>
 
-                            <div id="adminDropdownMenu" class="absolute right-0 top-[125%] z-[9999] hidden w-60 overflow-hidden rounded-xl border border-[#d99a32]/30 bg-[#151515]/95 shadow-2xl backdrop-blur-md">
-                                <div class="flex items-center gap-3 border-b border-white/10 bg-white/5 px-4 py-3">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white">
+                            <div id="adminDropdownMenu" class="admin-profile-menu absolute right-0 top-[125%] z-[9999] hidden w-[300px] overflow-hidden rounded-[22px] border border-white/10 bg-[#11151d]/96 shadow-[0_28px_70px_rgba(0,0,0,0.46)] backdrop-blur-xl">
+                                <div class="admin-profile-menu-head flex items-center gap-3 border-b border-white/10 bg-white/5 px-4 py-4">
+                                    <div class="admin-profile-menu-avatar flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-[#8a4a21] to-[#d99a32] text-white shadow-md">
                                         <i class="fa-solid fa-user text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <div class="truncate text-sm font-bold text-white">{{ Auth::user()->ho_ten }}
-                                        </div>
-                                        <div class="truncate text-[11px] text-gray-400">{{ Auth::user()->email }}
-                                        </div>
+                                        <div class="truncate text-sm font-bold text-white">{{ Auth::user()->ho_ten }}</div>
+                                        <div class="truncate text-[11px] text-gray-400">{{ Auth::user()->email }}</div>
+                                        <span class="admin-profile-menu-role">{{ $adminRoleLabel }}</span>
                                     </div>
                                 </div>
-                                <div class="p-1.5 border-b border-white/10">
-
-                                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
-                                        <i class="fa-solid fa-user-gear w-4 text-xs text-center"></i>
-                                        Hồ sơ cá nhân
+                                <div class="admin-profile-menu-section border-b border-white/10 p-2">
+                                    <a href="{{ route('profile.edit') }}" class="admin-profile-menu-link">
+                                        <i class="fa-solid fa-user-gear"></i>
+                                        <span>Hồ sơ cá nhân</span>
                                     </a>
 
-                                    <a href="{{ route('admin.ve-xem-phims.index') }}" class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-gray-300 transition hover:bg-[#d99a32] hover:text-[#2b1208] no-underline">
-                                        <i class="fa-solid fa-ticket w-4 text-xs text-center"></i>
-                                        Quản lý vé
+                                    <a href="{{ route('admin.ve-xem-phims.index') }}" class="admin-profile-menu-link">
+                                        <i class="fa-solid fa-ticket"></i>
+                                        <span>Quản lý vé</span>
                                     </a>
 
                                 </div>
-                                <div class="p-1.5 bg-[#1a1a1a]/30">
+                                <div class="admin-profile-menu-section p-2">
                                     <form method="POST" action="{{ route('logout') }}" class="m-0">
                                         @csrf
-                                        <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold text-red-400 transition hover:bg-red-500/15 border-0 bg-transparent text-left">
-                                            <i class="fa-solid fa-right-from-bracket w-4 text-xs text-center"></i> Đăng xuất Hệ thống
+                                        <button type="submit" class="admin-profile-menu-link is-danger">
+                                            <i class="fa-solid fa-right-from-bracket"></i>
+                                            <span>Đăng xuất Hệ thống</span>
                                         </button>
                                     </form>
                                 </div>
