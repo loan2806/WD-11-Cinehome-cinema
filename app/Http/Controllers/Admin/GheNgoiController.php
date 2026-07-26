@@ -316,28 +316,43 @@ class GheNgoiController extends Controller
         ]);
 
         $service = app(SeatMaintenanceService::class);
-        $lich = $service->scheduleMaintenance(
-            $gheNgoi,
-            $request->date('thoi_gian_bat_dau'),
-            $request->filled('thoi_gian_ket_thuc') ? $request->date('thoi_gian_ket_thuc') : null,
-            auth()->id(),
-            $request->input('ly_do')
-        );
 
-        $this->ghiNhatKy($request, 'Lên lịch bảo trì ghế', 'Quản lý phòng & ghế', "Lên lịch bảo trì ghế {$gheNgoi->ma_ghe} lúc {$lich->thoi_gian_bat_dau}");
+        try {
+            $lich = $service->scheduleMaintenance(
+                $gheNgoi,
+                $request->date('thoi_gian_bat_dau'),
+                $request->filled('thoi_gian_ket_thuc') ? $request->date('thoi_gian_ket_thuc') : null,
+                auth()->id(),
+                $request->input('ly_do')
+            );
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Đã lên lịch bảo trì ghế thành công.',
-                'lich_id' => $lich->id,
-                'thoi_gian_bat_dau' => $lich->thoi_gian_bat_dau,
-            ]);
+            $this->ghiNhatKy($request, 'Lên lịch bảo trì ghế', 'Quản lý phòng & ghế', "Lên lịch bảo trì ghế {$gheNgoi->ma_ghe} lúc {$lich->thoi_gian_bat_dau}");
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã lên lịch bảo trì ghế thành công.',
+                    'lich_id' => $lich->id,
+                    'thoi_gian_bat_dau' => $lich->thoi_gian_bat_dau,
+                ]);
+            }
+
+            return redirect()
+                ->back()
+                ->with('success', 'Đã lên lịch bảo trì ghế thành công.');
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            return redirect()
+                ->back()
+                ->with('error', $e->getMessage())
+                ->withInput();
         }
-
-        return redirect()
-            ->back()
-            ->with('success', 'Đã lên lịch bảo trì ghế thành công.');
     }
 
     /**

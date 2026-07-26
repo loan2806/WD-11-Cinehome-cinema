@@ -40,12 +40,12 @@
         </p>
     </div>
     <div class="flex flex-wrap gap-3">
-        <button type="button" id="btnOpenAddSeat" data-phong-id="{{ $phongChieu->id }}"
+        <button type="button" id="btnOpenAddSeat" onclick="openAddSeatModalDirect()"
             class="inline-flex items-center gap-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3 text-sm font-bold text-emerald-300 transition hover:scale-[1.02] hover:bg-emerald-500/20 hover:border-emerald-500/50">
             <i class="fa-solid fa-plus"></i>
             Thêm ghế
         </button>
-        <button type="button" id="btnOpenAddRow" data-phong-id="{{ $phongChieu->id }}"
+        <button type="button" id="btnOpenAddRow" onclick="openAddRowModalDirect()"
             class="inline-flex items-center gap-2 rounded-2xl border border-[#d99a32]/30 bg-[#d99a32]/10 px-5 py-3 text-sm font-bold text-[#d99a32] transition hover:scale-[1.02] hover:bg-[#d99a32]/20 hover:border-[#d99a32]/50">
             <i class="fa-solid fa-layer-group"></i>
             Thêm hàng
@@ -87,8 +87,32 @@
         <div class="flex flex-wrap items-center gap-3 shrink-0">
             <div class="flex items-center gap-2">
                 <label class="text-xs text-gray-400">Đổi loại:</label>
-                <div class="relative">
-                    <select id="bulkLoaiGhe" class="appearance-none rounded-xl border border-white/10 bg-[#151515] pr-10 pl-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32] cursor-pointer min-w-[180px]">
+                <div class="relative" id="bulkLoaiGheWrapper" style="min-width: 200px;">
+                    <div class="custom-select custom-select--simple" data-select-id="bulkLoaiGhe" style="width: 200px;">
+                        <div class="custom-select__trigger" onclick="toggleCustomSelect(this)">
+                            <div class="custom-select__value">
+                                <span class="custom-select__text custom-select__text--placeholder">-- Chọn loại ghế --</span>
+                            </div>
+                            <div class="custom-select__arrow">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="custom-select__dropdown">
+                            @foreach(\App\Models\LoaiGhe::all() as $loai)
+                                <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
+                                    <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
+                                    <div class="custom-select__option-content">
+                                        <div class="custom-select__option-label">{{ $loai->ten_loai }}</div>
+                                        <div class="custom-select__option-meta">+{{ number_format($loai->phu_thu) }}đ</div>
+                                    </div>
+                                    <div class="custom-select__option-check">
+                                        <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    <select id="bulkLoaiGhe" class="hidden" onchange="handleBulkLoaiGheChange(this)">
                         <option value="">-- Chọn loại ghế --</option>
                         @foreach(\App\Models\LoaiGhe::all() as $loai)
                             <option value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}">
@@ -96,8 +120,7 @@
                             </option>
                         @endforeach
                     </select>
-                    <div id="bulkColorPreview" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 rounded-lg border border-white/10 shadow-sm"></div>
-                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none"></i>
+                    <div id="bulkColorPreview" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 rounded-lg border border-white/10 shadow-sm" style="display: none;"></div>
                 </div>
             </div>
             <button type="button" id="btnToggleMaintenance" class="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/10">
@@ -234,61 +257,197 @@
             <h6 class="mb-4 text-sm font-bold uppercase tracking-wider text-[#d99a32]">
                 <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Tạo ghế tự động
             </h6>
-            @if($phongChieu->gheNgois->count() > 0)
+            @php
+                $currentSeats = $phongChieu->gheNgois;
+                $hangGheMax = 0;
+                $cotMax = 0;
+                $totalCapacity = 0;
+
+                if ($currentSeats->count() > 0) {
+                    $hangGheMax = $currentSeats->pluck('hangGhe.ten_hang')->unique()->count();
+                    $cotMax = $currentSeats->max('vi_tri_cot') ?? 0;
+                    $totalCapacity = $hangGheMax * $cotMax;
+                }
+            @endphp
+
+            @if($currentSeats->count() >= $totalCapacity && $totalCapacity > 0)
+                {{-- PHÒNG ĐÃ ĐẦY GHẾ --}}
+                <div class="rounded-xl border border-green-500/30 bg-green-500/10 p-4 text-center">
+                    <div class="mb-2 text-4xl">
+                        <i class="fa-solid fa-circle-check text-green-400"></i>
+                    </div>
+                    <h4 class="mb-1 text-base font-bold text-green-400">Phòng Đã Đầy Ghế</h4>
+                    <p class="text-sm text-gray-400">
+                        {{ $currentSeats->count() }} ghế / {{ $totalCapacity }} chỗ
+                        ({{ $hangGheMax }} hàng × {{ $cotMax }} cột)
+                    </p>
+                </div>
+
+                <div class="mt-4 space-y-3">
+                    <button type="button" onclick="confirmResetSeats()"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/20">
+                        <i class="fa-solid fa-trash-can"></i>
+                        Reset Phòng (Xóa toàn bộ ghế)
+                    </button>
+                </div>
+            @elseif($currentSeats->count() > 0)
+                {{-- PHÒNG CÓ GHẾ NHƯNG CHƯA ĐẦY --}}
                 <div class="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-400">
                     <i class="fa-solid fa-triangle-exclamation mr-1"></i>
-                    Phòng đã có <strong>{{ $phongChieu->gheNgois->count() }}</strong> ghế. Tạo mới sẽ xóa toàn bộ ghế cũ.
+                    Phòng đã có <strong>{{ $currentSeats->count() }}</strong> ghế
+                    ({{ $hangGheMax }} hàng × {{ $cotMax }} cột).
+                        Tạo mới sẽ xóa toàn bộ ghế cũ.
                 </div>
+
+                <form action="{{ route('admin.phong-chieus.generate-seats', $phongChieu) }}" method="POST">
+                    @csrf
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="mb-2 block text-xs font-medium text-gray-400">Số Hàng</label>
+                                <input type="number" name="so_hang" value="8" min="1" max="20" required
+                                    class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-xs font-medium text-gray-400">Số Cột</label>
+                                <input type="number" name="so_cot" value="10" min="1" max="20" required
+                                    class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
+                            </div>
+                        </div>
+
+                        {{-- SEAT TYPE CARDS --}}
+                        <div class="space-y-4">
+                            {{-- Ghế Thường --}}
+                            <div>
+                                <label class="mb-2 flex items-center gap-2 text-xs font-medium text-gray-400">
+                                    <i class="fa-solid fa-couch text-[#d99a32]"></i>
+                                    Loại ghế Thường
+                                    <span class="ml-1 rounded bg-[#d99a32]/20 px-1.5 py-0.5 text-[10px] text-[#d99a32]">BẮT BUỘC</span>
+                                </label>
+                                <div class="flex flex-wrap gap-2">
+                                    @php $firstNormal = true; @endphp
+                                    @foreach(\App\Models\LoaiGhe::where('la_couple', false)->get() as $loai)
+                                        <label class="seat-type-pill {{ $firstNormal ? 'active' : '' }}" data-value="{{ $loai->id }}" data-hidden="loai_ghe_thuong_id">
+                                            <input type="radio" name="loai_ghe_thuong_radio" value="{{ $loai->id }}" {{ $firstNormal ? 'checked' : '' }} class="sr-only">
+                                            <span class="pill-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></span>
+                                            <span class="pill-text">{{ $loai->ten_loai }}</span>
+                                            <span class="pill-price">+{{ number_format($loai->phu_thu) }}đ</span>
+                                        </label>
+                                        @php $firstNormal = false; @endphp
+                                    @endforeach
+                                </div>
+                                <input type="hidden" name="loai_ghe_thuong_id" id="loai_ghe_thuong_id" value="{{ \App\Models\LoaiGhe::where('la_couple', false)->first()->id ?? '' }}">
+                            </div>
+
+                            {{-- Ghế VIP --}}
+                            <div>
+                                <label class="mb-2 flex items-center gap-2 text-xs font-medium text-gray-400">
+                                    <i class="fa-solid fa-star text-yellow-400"></i>
+                                    Loại ghế VIP
+                                    <span class="ml-1 rounded bg-gray-500/20 px-1.5 py-0.5 text-[10px] text-gray-500">TÙY CHỌN</span>
+                                </label>
+                                <div class="flex flex-wrap gap-2">
+                                    <label class="seat-type-pill opt-none active" data-value="" data-hidden="loai_ghe_vip_id">
+                                        <input type="radio" name="loai_ghe_vip_radio" value="" checked class="sr-only">
+                                        <span class="pill-color bg-gray-600"></span>
+                                        <span class="pill-text">Không</span>
+                                    </label>
+                                    @foreach(\App\Models\LoaiGhe::where('la_couple', false)->where('ten_loai', 'like', '%vip%')->get() as $loai)
+                                        <label class="seat-type-pill" data-value="{{ $loai->id }}" data-hidden="loai_ghe_vip_id">
+                                            <input type="radio" name="loai_ghe_vip_radio" value="{{ $loai->id }}" class="sr-only">
+                                            <span class="pill-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></span>
+                                            <span class="pill-text">{{ $loai->ten_loai }}</span>
+                                            <span class="pill-price">+{{ number_format($loai->phu_thu) }}đ</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                <input type="hidden" name="loai_ghe_vip_id" id="loai_ghe_vip_id" value="">
+                            </div>
+
+                            {{-- Ghế Couple --}}
+                            <div>
+                                <label class="mb-2 flex items-center gap-2 text-xs font-medium text-gray-400">
+                                    <i class="fa-solid fa-heart text-pink-400"></i>
+                                    Loại ghế Couple
+                                    <span class="ml-1 rounded bg-gray-500/20 px-1.5 py-0.5 text-[10px] text-gray-500">TÙY CHỌN</span>
+                                </label>
+                                <div class="flex flex-wrap gap-2">
+                                    <label class="seat-type-pill opt-none active" data-value="" data-hidden="loai_ghe_couple_id">
+                                        <input type="radio" name="loai_ghe_couple_radio" value="" checked class="sr-only">
+                                        <span class="pill-color bg-gray-600"></span>
+                                        <span class="pill-text">Không</span>
+                                    </label>
+                                    @foreach(\App\Models\LoaiGhe::where('la_couple', true)->get() as $loai)
+                                        <label class="seat-type-pill" data-value="{{ $loai->id }}" data-hidden="loai_ghe_couple_id">
+                                            <input type="radio" name="loai_ghe_couple_radio" value="{{ $loai->id }}" class="sr-only">
+                                            <span class="pill-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></span>
+                                            <span class="pill-text">{{ $loai->ten_loai }}</span>
+                                            <span class="pill-price">+{{ number_format($loai->phu_thu) }}đ</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                <input type="hidden" name="loai_ghe_couple_id" id="loai_ghe_couple_id" value="">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit"
+                        class="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#d99a32]/20 transition hover:scale-[1.02] hover:shadow-xl hover:shadow-[#d99a32]/30">
+                        <i class="fa-solid fa-couch"></i>
+                        Tạo Ghế Mới (Xóa ghế cũ)
+                    </button>
+                </form>
+            @else
+                {{-- PHÒNG TRỐNG - CHƯA CÓ GHẾ --}}
+                <form action="{{ route('admin.phong-chieus.generate-seats', $phongChieu) }}" method="POST">
+                    @csrf
+                    <div class="space-y-4">
+                        <div>
+                            <label class="mb-2 block text-xs font-medium text-gray-400">Số Hàng</label>
+                            <input type="number" name="so_hang" value="8" min="1" max="20" required
+                                class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-xs font-medium text-gray-400">Số Cột</label>
+                            <input type="number" name="so_cot" value="10" min="1" max="20" required
+                                class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-xs font-medium text-gray-400">Loại ghế Thường</label>
+                            <select name="loai_ghe_thuong_id" required
+                                class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
+                                @foreach(\App\Models\LoaiGhe::where('la_couple', false)->get() as $loai)
+                                    <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-xs font-medium text-gray-400">Loại ghế VIP</label>
+                            <select name="loai_ghe_vip_id"
+                                class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
+                                <option value="">-- Không có VIP --</option>
+                                @foreach(\App\Models\LoaiGhe::where('la_couple', false)->where('ten_loai', 'like', '%vip%')->get() as $loai)
+                                    <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-xs font-medium text-gray-400">Loại ghế Couple</label>
+                            <select name="loai_ghe_couple_id"
+                                class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
+                                <option value="">-- Không có Couple --</option>
+                                @foreach(\App\Models\LoaiGhe::where('la_couple', true)->get() as $loai)
+                                    <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit"
+                        class="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#d99a32]/20 transition hover:scale-[1.02] hover:shadow-xl hover:shadow-[#d99a32]/30">
+                        <i class="fa-solid fa-couch"></i>
+                        Tạo Ghế Tự Động
+                    </button>
+                </form>
             @endif
-            <form action="{{ route('admin.phong-chieus.generate-seats', $phongChieu) }}" method="POST">
-                @csrf
-                <div class="space-y-4">
-                    <div>
-                        <label class="mb-2 block text-xs font-medium text-gray-400">Số Hàng</label>
-                        <input type="number" name="so_hang" value="8" min="1" max="20" required
-                            class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-xs font-medium text-gray-400">Số Cột</label>
-                        <input type="number" name="so_cot" value="10" min="1" max="20" required
-                            class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-xs font-medium text-gray-400">Loại ghế Thường</label>
-                        <select name="loai_ghe_thuong_id" required
-                            class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
-                            @foreach(\App\Models\LoaiGhe::all() as $loai)
-                                <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-xs font-medium text-gray-400">Loại ghế VIP</label>
-                        <select name="loai_ghe_vip_id"
-                            class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
-                            <option value="">-- Không có VIP --</option>
-                            @foreach(\App\Models\LoaiGhe::all() as $loai)
-                                <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-2 block text-xs font-medium text-gray-400">Loại ghế Couple</label>
-                        <select name="loai_ghe_couple_id"
-                            class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
-                            <option value="">-- Không có Couple --</option>
-                            @foreach(\App\Models\LoaiGhe::all() as $loai)
-                                <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <button type="submit"
-                    class="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#8a4a21] to-[#d99a32] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#d99a32]/20 transition hover:scale-[1.02] hover:shadow-xl hover:shadow-[#d99a32]/30">
-                    <i class="fa-solid fa-couch"></i>
-                    Tạo Ghế Tự Động
-                </button>
-            </form>
         </div>
 
         {{-- Huong dan su dung --}}
@@ -408,6 +567,7 @@
                                                     data-mau-sac="{{ $ghe['mau_sac'] ?? '#666666' }}"
                                                     data-phu-thu="{{ $ghe['phu_thu'] ?? 0 }}"
                                                     data-trang-thai="{{ $ghe['trang_thai'] }}"
+                                                    data-cot="{{ $j }}"
                                                     data-couple-group="{{ $coupleGroupId }}"
                                                     data-couple-siblings='@json($siblings)'
                                                     data-couple-position="left"
@@ -549,346 +709,690 @@
 </div>
 
 {{-- ROW CHANGE MODAL --}}
-<div id="rowChangeModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-    <div class="w-full max-w-md rounded-2xl border border-white/10 bg-[#111111] p-6 shadow-2xl">
-        <div class="mb-5 flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#d99a32]/15">
-                <i class="fa-solid fa-palette text-xl text-[#d99a32]"></i>
-            </div>
-            <div>
-                <h3 class="text-lg font-bold text-white">
-                    Đổi loại ghế hàng <span id="rowChangeModalTenHang" class="text-[#d99a32]"></span>
-                </h3>
-                <p class="text-xs text-gray-500"><span id="rowChangeModalRowIndex"></span></p>
-            </div>
-        </div>
-        <div class="mb-4">
-            <label class="mb-3 block text-xs font-medium uppercase tracking-wider text-gray-500">Chọn loại ghế mới</label>
-            <div class="relative">
-                <select id="rowChangeModalLoaiGhe" class="w-full appearance-none rounded-xl border border-white/10 bg-[#0f0f0f] px-4 py-3.5 pl-12 text-white outline-none focus:border-[#d99a32] cursor-pointer">
-                    @foreach(\App\Models\LoaiGhe::all() as $loai)
-                        <option value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}">
-                            {{ $loai->ten_loai }} — {{ number_format($loai->phu_thu) }}đ phụ thu
-                        </option>
-                    @endforeach
-                </select>
-                <div id="rowModalColorPreview" class="pointer-events-none absolute left-3.5 top-1/2 h-6 w-6 -translate-y-1/2 rounded-lg border border-white/10 shadow-sm"></div>
-                <i class="fa-solid fa-chevron-down absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none"></i>
-            </div>
-            <p class="mt-2 text-xs text-gray-600">Thay đổi sẽ áp dụng cho <strong class="text-gray-400">tất cả ghế</strong> trong hàng này.</p>
-            <div id="rowTypeRestrictionWarning" class="hidden mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-                <div class="flex items-start gap-2.5">
-                    <i class="fa-solid fa-triangle-exclamation mt-0.5 text-sm text-amber-400"></i>
-                    <div class="text-xs text-amber-300 leading-relaxed">
-                        <strong>Hàng ghế gần màn chiếu/cuối phòng không được đổi loại.</strong><br>
-                        <span id="rowRestrictionDetail" class="text-amber-400/80"></span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Bảo trì cả hàng --}}
-        <div class="mb-5 rounded-xl border border-white/10 bg-white/5 p-3">
-            <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2.5">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/15">
-                        <i class="fa-solid fa-wrench text-sm text-orange-400"></i>
+<div id="rowChangeModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-[6px]">
+    <div class="w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] p-0 shadow-2xl shadow-black/60 overflow-hidden animate-modal-in">
+        {{-- Header với gradient --}}
+        <div class="relative px-6 pt-6 pb-5 bg-gradient-to-r from-[#d99a32]/10 via-[#d99a32]/5 to-transparent border-b border-white/5">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#d99a32] via-[#e5a847] to-transparent"></div>
+            <div class="flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#d99a32]/20 to-[#d99a32]/5 border border-[#d99a32]/20">
+                        <i class="fa-solid fa-palette text-xl text-[#d99a32]"></i>
                     </div>
                     <div>
-                        <div class="text-sm font-bold text-white">Bảo trì cả hàng</div>
-                        <div class="text-[11px] text-gray-500">
-                            <span id="rowMaintenanceStats">--</span>
-                        </div>
+                        <h3 class="text-lg font-bold text-white leading-tight">
+                            Đổi loại ghế hàng <span id="rowChangeModalTenHang" class="text-[#d99a32]"></span>
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-0.5"><span id="rowChangeModalRowIndex"></span></p>
                     </div>
                 </div>
-                <button type="button" id="rowMaintenanceBtn" onclick="window.__rowMaintClick && window.__rowMaintClick(event)" class="rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300 transition hover:bg-orange-500/25 hover:border-orange-500/60">
-                    <i class="fa-solid fa-wrench mr-1"></i><span id="rowMaintenanceBtnLabel">Bảo trì</span>
+                <button type="button" id="rowChangeModalCancelHeader" class="text-gray-500 hover:text-white hover:bg-white/10 rounded-lg p-1.5 transition-all">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
         </div>
 
-        <div class="flex gap-3">
-            <button type="button" id="rowChangeModalDelete" class="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-400 transition hover:bg-red-500/20 hover:border-red-500/50">
-                <i class="fa-solid fa-trash-can mr-1.5"></i>Xóa hàng
-            </button>
-            <button type="button" id="rowChangeModalCancel" class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
-                <i class="fa-solid fa-xmark mr-1.5"></i>Hủy
-            </button>
-            <button type="button" id="rowChangeModalApply" class="flex-1 rounded-xl bg-[#d99a32] px-4 py-3 text-sm font-bold text-black transition hover:bg-[#e5a847] hover:scale-[1.01]">
-                <i class="fa-solid fa-check mr-1.5"></i>Áp dụng
-            </button>
+        {{-- Body --}}
+        <div class="px-6 py-5">
+            {{-- Chọn loại ghế --}}
+            <div class="mb-5">
+                <label class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    <span class="h-px flex-1 bg-white/5"></span>
+                    Chọn loại ghế mới
+                    <span class="h-px flex-1 bg-white/5"></span>
+                </label>
+                <div class="relative" id="rowChangeModalLoaiGheWrapper">
+                    <div class="custom-select" data-select-id="rowChangeModalLoaiGhe">
+                        <div class="custom-select__trigger" onclick="toggleCustomSelect(this)">
+                            <div class="custom-select__value">
+                                <div class="custom-select__color-dot" id="rowModalColorDot" style="background-color: #666"></div>
+                                <span class="custom-select__text custom-select__text--placeholder">-- Chọn loại ghế --</span>
+                            </div>
+                            <div class="custom-select__arrow">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="custom-select__dropdown">
+                            @foreach(\App\Models\LoaiGhe::all() as $loai)
+                                <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
+                                    <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
+                                    <div class="custom-select__option-content">
+                                        <div class="custom-select__option-label">{{ $loai->ten_loai }}</div>
+                                        <div class="custom-select__option-meta">+{{ number_format($loai->phu_thu) }}đ</div>
+                                    </div>
+                                    <div class="custom-select__option-check">
+                                        <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    <select id="rowChangeModalLoaiGhe" class="hidden">
+                        @foreach(\App\Models\LoaiGhe::all() as $loai)
+                            <option value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" class="bg-[#1a1a2e]">
+                                {{ $loai->ten_loai }} — +{{ number_format($loai->phu_thu) }}đ
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <p class="mt-2 text-xs text-gray-600 text-center">Thay đổi áp dụng cho <span class="text-gray-400 font-medium">tất cả ghế</span> trong hàng này</p>
+                <div id="rowTypeRestrictionWarning" class="hidden mt-3 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/5 p-3.5">
+                    <div class="flex items-start gap-2.5">
+                        <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20 mt-0.5">
+                            <i class="fa-solid fa-triangle-exclamation text-xs text-amber-400"></i>
+                        </div>
+                        <div class="text-xs text-amber-300/90 leading-relaxed">
+                            <strong class="font-semibold">Hàng ghế không được phép đổi loại.</strong><br>
+                            <span id="rowRestrictionDetail" class="text-amber-400/80"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Bảo trì cả hàng --}}
+            <div class="mb-5 rounded-xl border border-white/8 bg-gradient-to-r from-white/[0.03] to-white/[0.01] p-4 backdrop-blur-sm">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/15">
+                            <i class="fa-solid fa-wrench text-sm text-orange-400"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-semibold text-white">Bảo trì cả hàng</div>
+                            <div class="text-[11px] text-gray-500 mt-0.5">
+                                <span id="rowMaintenanceStats">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="rowMaintenanceBtn" onclick="window.__rowMaintClick && window.__rowMaintClick(event)" class="rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-orange-500/5 px-4 py-2 text-xs font-bold text-orange-300 transition-all hover:from-orange-500/20 hover:to-orange-500/10 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 active:scale-95">
+                        <i class="fa-solid fa-wrench mr-1.5"></i><span id="rowMaintenanceBtnLabel">Bảo trì</span>
+                    </button>
+                </div>
+            </div>
+
+            {{-- Actions --}}
+            <div class="flex gap-2.5">
+                <button type="button" id="rowChangeModalDelete" class="rounded-xl border border-red-500/25 bg-red-500/8 px-4 py-3 text-xs font-bold text-red-400/90 transition-all hover:from-red-500/15 hover:to-red-500/5 hover:border-red-500/40 active:scale-[0.98]">
+                    <i class="fa-solid fa-trash-can mr-1.5"></i>Xóa hàng
+                </button>
+                <button type="button" id="rowChangeModalCancel" class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10 hover:text-white active:scale-[0.98]">
+                    <i class="fa-solid fa-xmark mr-1.5"></i>Hủy
+                </button>
+                <button type="button" id="rowChangeModalApply" class="flex-1 rounded-xl bg-gradient-to-r from-[#d99a32] to-[#e5a847] px-4 py-3 text-sm font-bold text-black shadow-lg shadow-[#d99a32]/20 transition-all hover:from-[#e5a847] hover:to-[#d99a32] hover:shadow-[#d99a32]/30 active:scale-[0.98]">
+                    <i class="fa-solid fa-check mr-1.5"></i>Áp dụng
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
 {{-- MODAL: BẢO TRÌ GHẾ (VÔ THỜI HẠN / CÓ THỜI HẠN) --}}
-<div id="maintenanceModal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-    <div class="w-full max-w-lg mx-4 rounded-2xl border border-white/10 bg-[#111111] p-6 shadow-2xl">
-        <div class="mb-5 flex items-center gap-3">
-            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/15">
-                <i class="fa-solid fa-wrench text-xl text-orange-400"></i>
-            </div>
-            <div>
-                <h3 class="text-lg font-bold text-white">
-                    Bảo trì ghế <span id="maintenanceModalSeatCount" class="text-orange-400"></span>
-                </h3>
-                <p class="text-xs text-gray-500">Chọn loại bảo trì phù hợp</p>
-            </div>
-        </div>
-
-        {{-- Chọn loại bảo trì --}}
-        <div class="mb-5">
-            <label class="mb-3 block text-xs font-medium uppercase tracking-wider text-gray-500">Loại bảo trì</label>
-            <div class="grid grid-cols-2 gap-3">
-                <label class="maintenance-type-option cursor-pointer">
-                    <input type="radio" name="maintenance_type" value="unlimited" class="peer hidden" checked>
-                    <div class="rounded-xl border-2 border-white/10 bg-white/5 p-4 transition-all peer-checked:border-orange-500 peer-checked:bg-orange-500/10 hover:border-white/20">
-                        <div class="flex items-center gap-2 mb-2">
-                            <i class="fa-solid fa-infinity text-orange-400"></i>
-                            <span class="font-bold text-white">Vô thời hạn</span>
-                        </div>
-                        <p class="text-xs text-gray-400">Ghế bị khóa cho đến khi Admin kích hoạt lại thủ công.</p>
+<div id="maintenanceModal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/75 backdrop-blur-[6px]">
+    <div class="w-full max-w-lg mx-4 rounded-2xl border border-white/10 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] p-0 shadow-2xl shadow-black/60 overflow-hidden animate-modal-in">
+        {{-- Header --}}
+        <div class="relative px-6 pt-6 pb-5 bg-gradient-to-r from-orange-500/10 via-orange-500/5 to-transparent border-b border-white/5">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500"></div>
+            <div class="flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/20">
+                        <i class="fa-solid fa-wrench text-xl text-orange-400"></i>
                     </div>
-                </label>
-                <label class="maintenance-type-option cursor-pointer">
-                    <input type="radio" name="maintenance_type" value="scheduled" class="peer hidden">
-                    <div class="rounded-xl border-2 border-white/10 bg-white/5 p-4 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-500/10 hover:border-white/20">
-                        <div class="flex items-center gap-2 mb-2">
-                            <i class="fa-solid fa-calendar-clock text-blue-400"></i>
-                            <span class="font-bold text-white">Có thời hạn</span>
-                        </div>
-                        <p class="text-xs text-gray-400">Ghế tự động kích hoạt khi hết thời gian bảo trì.</p>
+                    <div>
+                        <h3 class="text-lg font-bold text-white leading-tight">
+                            Bảo trì ghế <span id="maintenanceModalSeatCount" class="text-orange-400"></span>
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Chọn loại bảo trì phù hợp</p>
                     </div>
-                </label>
-            </div>
-        </div>
-
-        {{-- Form bảo trì có thời hạn --}}
-        <div id="scheduledMaintenanceForm" class="hidden mb-5 space-y-4 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-            <div class="flex items-center gap-2 mb-2">
-                <i class="fa-solid fa-clock text-blue-400"></i>
-                <span class="text-sm font-bold text-blue-300">Thông tin bảo trì có thời hạn</span>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Thời gian bắt đầu <span class="text-red-400">*</span></label>
-                    <input type="datetime-local" id="maintenanceStartTime" 
-                        class="w-full rounded-xl border border-white/10 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-colors"
-                        min="">
                 </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Thời gian kết thúc <span class="text-blue-400/60">(Tùy chọn)</span></label>
-                    <input type="datetime-local" id="maintenanceEndTime" 
-                        class="w-full rounded-xl border border-white/10 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-colors">
+                <button type="button" id="maintenanceModalCloseHeader" class="text-gray-500 hover:text-white hover:bg-white/10 rounded-lg p-1.5 transition-all">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        {{-- Body --}}
+        <div class="px-6 py-5">
+            {{-- Hiển thị lỗi --}}
+            <div id="maintenanceErrors" class="hidden mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                <div class="flex items-start gap-2">
+                    <i class="fa-solid fa-circle-exclamation text-red-400 mt-0.5"></i>
+                    <div id="maintenanceErrorsList" class="text-sm text-red-300"></div>
                 </div>
             </div>
-            <div>
-                <label class="mb-1.5 block text-xs font-medium text-gray-400">Lý do bảo trì <span class="text-red-400">*</span></label>
-                <textarea id="maintenanceReason" rows="2"
-                    class="w-full rounded-xl border border-white/10 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none focus:border-blue-500 transition-colors resize-none"
-                    placeholder="Nhập lý do bảo trì (VD: Thay đệm ghế, sửa cơ chế ngả...)"></textarea>
-            </div>
-            <div class="flex items-center gap-2 text-xs text-blue-400/70">
-                <i class="fa-solid fa-info-circle"></i>
-                <span>Khi hết thời gian, ghế sẽ tự động hoạt động trở lại.</span>
-            </div>
-        </div>
 
-        {{-- Lý do bảo trì vô thời hạn --}}
-        <div id="unlimitedMaintenanceReason" class="mb-5">
-            <label class="mb-1.5 block text-xs font-medium text-gray-400">Lý do bảo trì</label>
-            <input type="text" id="maintenanceReasonUnlimited" 
-                class="w-full rounded-xl border border-white/10 bg-[#0f0f0f] px-3 py-2.5 text-sm text-white outline-none focus:border-orange-500 transition-colors"
-                placeholder="Nhập lý do bảo trì (tùy chọn)">
-        </div>
+            {{-- Chọn loại bảo trì --}}
+            <div class="mb-5">
+                <label class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
+                    <span class="h-px flex-1 bg-white/5"></span>
+                    Loại bảo trì
+                    <span class="h-px flex-1 bg-white/5"></span>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="maintenance-type-option cursor-pointer group">
+                        <input type="radio" name="maintenance_type" value="unlimited" class="peer hidden" checked>
+                        <div class="relative rounded-xl border-2 border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 transition-all duration-200 peer-checked:border-orange-500 peer-checked:from-orange-500/12 peer-checked:to-orange-500/5 hover:border-white/20 overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                            <div class="relative flex flex-col items-center text-center gap-2">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/20 group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-infinity text-orange-400"></i>
+                                </div>
+                                <span class="font-bold text-white text-sm">Vô thời hạn</span>
+                                <span class="text-[11px] text-gray-500 leading-relaxed">Khóa đến khi<br>Admin mở lại</span>
+                            </div>
+                            <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
+                                <div class="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500">
+                                    <i class="fa-solid fa-check text-[9px] text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="maintenance-type-option cursor-pointer group">
+                        <input type="radio" name="maintenance_type" value="scheduled" class="peer hidden">
+                        <div class="relative rounded-xl border-2 border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 transition-all duration-200 peer-checked:border-blue-500 peer-checked:from-blue-500/12 peer-checked:to-blue-500/5 hover:border-white/20 overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 peer-checked:opacity-100 transition-opacity"></div>
+                            <div class="relative flex flex-col items-center text-center gap-2">
+                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/20 group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-stopwatch text-blue-400"></i>
+                                </div>
+                                <span class="font-bold text-white text-sm">Có thời hạn</span>
+                                <span class="text-[11px] text-gray-500 leading-relaxed">Tự động mở<br>khi hết hạn</span>
+                            </div>
+                            <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
+                                <div class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500">
+                                    <i class="fa-solid fa-check text-[9px] text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
 
-        <div class="flex gap-3">
-            <button type="button" id="maintenanceModalCancel" class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
-                <i class="fa-solid fa-xmark mr-1.5"></i>Hủy
-            </button>
-            <button type="button" id="maintenanceModalApply" class="flex-1 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white transition hover:bg-orange-600">
-                <i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì
-            </button>
+            {{-- Form bảo trì có thời hạn --}}
+            <div id="scheduledMaintenanceForm" class="hidden mb-5 space-y-4 rounded-xl border border-blue-500/20 bg-gradient-to-b from-blue-500/8 to-blue-500/3 p-5 backdrop-blur-sm">
+                <div class="flex items-center gap-2.5 mb-1">
+                    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20">
+                        <i class="fa-solid fa-clock text-xs text-blue-400"></i>
+                    </div>
+                    <span class="text-sm font-bold text-blue-300">Thông tin bảo trì có thời hạn</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    {{-- Ngày bắt đầu --}}
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-gray-300">
+                            <span class="flex h-5 w-5 items-center justify-center rounded-md bg-blue-500/20">
+                                <i class="fa-solid fa-play text-[9px] text-blue-400"></i>
+                            </span>
+                            Bắt đầu <span class="text-red-400">*</span>
+                        </label>
+                        <div class="relative group/datetime">
+                            <input type="datetime-local" id="maintenanceStartTime"
+                                class="w-full rounded-xl border-2 border-white/10 bg-[#0a0a14] px-4 py-3 pr-12 text-sm text-white outline-none transition-all placeholder:text-gray-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 cursor-pointer dark:[color-scheme:dark]"
+                                min="">
+                            <button type="button" onclick="document.getElementById('maintenanceStartTime').showPicker()" 
+                                class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-blue-400/50 hover:text-blue-400 transition-all group-hover/datetime:text-blue-300 cursor-pointer">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {{-- Ngày kết thúc --}}
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 text-xs font-semibold text-gray-300">
+                            <span class="flex h-5 w-5 items-center justify-center rounded-md bg-blue-500/20">
+                                <i class="fa-solid fa-stop text-[9px] text-blue-400"></i>
+                            </span>
+                            Kết thúc <span class="text-gray-500 font-normal">(Tùy chọn)</span>
+                        </label>
+                        <div class="relative group/datetime">
+                            <input type="datetime-local" id="maintenanceEndTime"
+                                class="w-full rounded-xl border-2 border-white/10 bg-[#0a0a14] px-4 py-3 pr-12 text-sm text-white outline-none transition-all placeholder:text-gray-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 cursor-pointer dark:[color-scheme:dark]"
+                                min="">
+                            <button type="button" onclick="document.getElementById('maintenanceEndTime').showPicker()"
+                                class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-blue-400/50 hover:text-blue-400 transition-all group-hover/datetime:text-blue-300 cursor-pointer">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {{-- Lý do bảo trì --}}
+                <div class="space-y-2">
+                    <label class="flex items-center gap-2 text-xs font-semibold text-gray-300">
+                        <span class="flex h-5 w-5 items-center justify-center rounded-md bg-blue-500/20">
+                            <i class="fa-solid fa-message-lines text-[9px] text-blue-400"></i>
+                        </span>
+                        Lý do bảo trì <span class="text-red-400">*</span>
+                    </label>
+                    <textarea id="maintenanceReason" rows="2"
+                        class="w-full rounded-xl border-2 border-white/10 bg-[#0a0a14] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-gray-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 resize-none"
+                        placeholder="VD: Thay đệm ghế, sửa cơ chế ngả..."></textarea>
+                </div>
+                
+                {{-- Thông báo --}}
+                <div class="flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/20">
+                        <i class="fa-solid fa-circle-info text-sm text-blue-400"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-blue-300">Tự động kích hoạt lại</p>
+                        <p class="mt-0.5 text-xs text-gray-400">Khi hết thời gian bảo trì, ghế sẽ tự động hoạt động trở lại mà không cần thao tác thủ công.</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Lý do bảo trì vô thời hạn --}}
+            <div id="unlimitedMaintenanceReason" class="mb-5 space-y-2">
+                <label class="flex items-center gap-2 text-xs font-semibold text-gray-300">
+                    <span class="flex h-5 w-5 items-center justify-center rounded-md bg-orange-500/20">
+                        <i class="fa-solid fa-message-lines text-[9px] text-orange-400"></i>
+                    </span>
+                    Lý do bảo trì <span class="text-gray-500 font-normal">(Tùy chọn)</span>
+                </label>
+                <input type="text" id="maintenanceReasonUnlimited"
+                    class="w-full rounded-xl border-2 border-white/10 bg-[#0a0a14] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-gray-600 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/15"
+                    placeholder="VD: Thay đệm ghế, sửa cơ chế ngả...">
+            </div>
+
+            {{-- Actions --}}
+            <div class="flex gap-2.5">
+                <button type="button" id="maintenanceModalCancel" class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10 hover:text-white active:scale-[0.98]">
+                    <i class="fa-solid fa-xmark mr-1.5"></i>Hủy
+                </button>
+                <button type="button" id="maintenanceModalApply" class="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all hover:from-orange-400 hover:to-amber-400 hover:shadow-orange-500/30 active:scale-[0.98]">
+                    <i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
 {{-- MODAL: THÊM GHẾ --}}
-<div id="addSeatModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-    <div class="w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-[#0f0f0f] p-6 shadow-2xl">
-        <div class="mb-5 flex items-center justify-between">
-            <div>
-                <h3 class="text-lg font-bold text-white">
-                    <i class="fa-solid fa-plus text-emerald-400 mr-2"></i>Thêm ghế mới
-                </h3>
-                <p class="text-xs text-gray-500 mt-1">Thêm 1 ghế vào hàng đã chọn trong phòng {{ $phongChieu->ten_phong }}</p>
-            </div>
-            <button type="button" id="addSeatModalClose" class="text-gray-500 hover:text-white">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
-        </div>
-
-        <div id="addSeatModalErrors" class="hidden mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300"></div>
-
-        <form id="addSeatForm" class="space-y-4">
-            <div>
-                <label class="mb-1.5 block text-xs font-medium text-gray-400">Hàng ghế <span class="text-red-400">*</span></label>
-                <select name="hang_ghe_id" id="addSeatHangGhe" required
-                    class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
-                    <option value="">-- Chọn hàng --</option>
-                    @foreach($phongChieu->hangGhes->sortBy('ten_hang') as $hang)
-                        <option value="{{ $hang->id }}" data-la-couple="{{ $hang->la_hang_couple ? 1 : 0 }}">{{ $hang->ten_hang }}{{ $hang->la_hang_couple ? ' (Couple)' : '' }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Mã ghế <span class="text-red-400">*</span></label>
-                    <input type="text" name="ma_ghe" id="addSeatMaGhe" maxlength="10" required
-                        placeholder="VD: A1, B2"
-                        class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
+<div id="addSeatModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-[6px]">
+    <div class="w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] p-0 shadow-2xl shadow-black/60 overflow-hidden animate-modal-in">
+        {{-- Header --}}
+        <div class="relative px-6 pt-6 pb-5 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border-b border-white/5">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500"></div>
+            <div class="flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border border-emerald-500/20">
+                        <i class="fa-solid fa-plus text-xl text-emerald-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white leading-tight">
+                            Thêm ghế mới
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Phòng {{ $phongChieu->ten_phong }}</p>
+                    </div>
                 </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Cột <span class="text-red-400">*</span></label>
-                    <input type="number" name="cot" id="addSeatCot" min="1" required
-                        class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
-                </div>
-            </div>
-
-            <div>
-                <label class="mb-1.5 block text-xs font-medium text-gray-400">Loại ghế <span class="text-red-400">*</span></label>
-                <select name="loai_ghe_id" id="addSeatLoaiGhe" required
-                    class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
-                    <option value="">-- Chọn loại --</option>
-                    @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
-                        <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <label class="mb-1.5 block text-xs font-medium text-gray-400">Trạng thái <span class="text-red-400">*</span></label>
-                <select name="trang_thai" id="addSeatTrangThai" required
-                    class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500">
-                    <option value="hoat_dong">Hoạt động</option>
-                    <option value="bao_tri">Bảo trì</option>
-                </select>
-            </div>
-
-            <div class="flex gap-3 pt-2">
-                <button type="button" id="addSeatCancel"
-                    class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
-                    Hủy
-                </button>
-                <button type="submit" id="addSeatSubmit"
-                    class="flex-1 rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-black transition hover:bg-emerald-400 hover:scale-[1.01]">
-                    <i class="fa-solid fa-plus mr-1.5"></i>Thêm ghế
+                <button type="button" id="addSeatModalClose" onclick="closeAddSeatModalDirect()" class="text-gray-500 hover:text-white hover:bg-white/10 rounded-lg p-1.5 transition-all">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-        </form>
-    </div>
-</div>
-
-{{-- MODAL: THÊM HÀNG --}}
-<div id="addRowModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
-    <div class="w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-[#0f0f0f] p-6 shadow-2xl">
-        <div class="mb-5 flex items-center justify-between">
-            <div>
-                <h3 class="text-lg font-bold text-white">
-                    <i class="fa-solid fa-layer-group text-[#d99a32] mr-2"></i>Thêm hàng ghế mới
-                </h3>
-                <p class="text-xs text-gray-500 mt-1">Thêm hàng ghế mới vào phòng {{ $phongChieu->ten_phong }} (có thể kèm ghế mẫu)</p>
-            </div>
-            <button type="button" id="addRowModalClose" class="text-gray-500 hover:text-white">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
         </div>
 
-        <div id="addRowModalErrors" class="hidden mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300"></div>
+        {{-- Body --}}
+        <div class="px-6 py-5">
+            <div id="addSeatModalErrors" class="hidden mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300"></div>
 
-        <form id="addRowForm" class="space-y-4">
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Tên hàng <span class="text-red-400">*</span></label>
-                    <input type="text" name="ten_hang" id="addRowTenHang" maxlength="10" required
-                        placeholder="VD: A, B, C..."
-                        class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
-                </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Loại ghế mặc định</label>
-                    <select name="loai_ghe_mac_dinh_id" id="addRowLoaiMacDinh"
-                        class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
-                        <option value="">-- Không đặt --</option>
-                        @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
-                            <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
+            <form id="addSeatForm" class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                        Hàng ghế <span class="text-red-400">*</span>
+                    </label>
+                    <div class="custom-select custom-select--green custom-select--simple" data-select-id="addSeatHangGhe">
+                        <div class="custom-select__trigger" onclick="toggleCustomSelect(this)">
+                            <div class="custom-select__value">
+                                <span class="custom-select__text custom-select__text--placeholder">-- Chọn hàng --</span>
+                            </div>
+                            <div class="custom-select__arrow">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="custom-select__dropdown">
+                            @foreach($phongChieu->hangGhes->sortBy('ten_hang') as $hang)
+                                <div class="custom-select__option" data-value="{{ $hang->id }}" data-la-couple="{{ $hang->la_hang_couple ? 1 : 0 }}" onclick="selectCustomOption(this)">
+                                    <div class="custom-select__option-content">
+                                        <div class="custom-select__option-label">{{ $hang->ten_hang }}</div>
+                                        <div class="custom-select__option-meta">{{ $hang->la_hang_couple ? 'Hàng Couple' : 'Hàng thường' }}</div>
+                                    </div>
+                                    <div class="custom-select__option-check">
+                                        <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    <select name="hang_ghe_id" id="addSeatHangGhe" class="hidden" required>
+                        <option value="">-- Chọn hàng --</option>
+                        @foreach($phongChieu->hangGhes->sortBy('ten_hang') as $hang)
+                            <option value="{{ $hang->id }}" data-la-couple="{{ $hang->la_hang_couple ? 1 : 0 }}">{{ $hang->ten_hang }}{{ $hang->la_hang_couple ? ' (Couple)' : '' }}</option>
                         @endforeach
                     </select>
                 </div>
-            </div>
 
-            <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-[#0a0a0a] p-3">
-                <input type="checkbox" name="la_hang_couple" id="addRowIsCouple" value="1"
-                    class="mt-0.5 h-4 w-4 rounded border-white/20 bg-[#151515] text-pink-500 focus:ring-pink-500">
-                <div class="text-xs">
-                    <div class="font-semibold text-white">Hàng ghép đôi (Couple)</div>
-                    <div class="text-gray-500 mt-0.5">Hệ thống sẽ tự ghép 2 ghế liền kề thành 1 cặp khi tạo ghế mẫu.</div>
-                </div>
-            </label>
-
-            <div class="rounded-xl border border-white/10 bg-[#0a0a0a] p-3">
-                <label class="flex cursor-pointer items-center gap-3 text-xs text-gray-300">
-                    <input type="checkbox" name="tu_dong_tao_ghe" id="addRowAuto" value="1" checked
-                        class="h-4 w-4 rounded border-white/20 bg-[#151515] text-[#d99a32] focus:ring-[#d99a32]">
-                    <span>Tự động tạo ghế mẫu cho hàng (theo số cột)</span>
-                </label>
-            </div>
-
-            <div id="addRowAutoBox" class="space-y-3 rounded-xl border border-white/10 bg-[#0a0a0a] p-3">
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="mb-1.5 block text-xs font-medium text-gray-400">Số ghế <span class="text-red-400">*</span></label>
-                        <input type="number" name="so_ghe" id="addRowSoGhe" min="1" max="50" value="10"
-                            class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                            Mã ghế <span class="text-red-400">*</span>
+                        </label>
+                        <input type="text" name="ma_ghe" id="addSeatMaGhe" maxlength="10" required
+                            placeholder="VD: A1, B2"
+                            class="w-full rounded-xl border border-white/10 bg-[#0a0a14] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all">
                     </div>
-                    <div>
-                        <label class="mb-1.5 block text-xs font-medium text-gray-400">Cột bắt đầu</label>
-                        <input type="number" name="cot_bat_dau" id="addRowCotBatDau" min="1" value="1"
-                            class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                            Cột <span class="text-red-400">*</span>
+                        </label>
+                        <input type="number" name="cot" id="addSeatCot" min="1" required
+                            class="w-full rounded-xl border border-white/10 bg-[#0a0a14] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all">
                     </div>
                 </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Loại ghế cho hàng <span class="text-red-400">*</span></label>
-                    <select name="loai_ghe_id" id="addRowLoaiGhe"
-                        class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+
+                <div class="space-y-1.5">
+                    <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                        Loại ghế <span class="text-red-400">*</span>
+                    </label>
+                    <div class="custom-select custom-select--green" data-select-id="addSeatLoaiGhe">
+                        <div class="custom-select__trigger" onclick="toggleCustomSelect(this)">
+                            <div class="custom-select__value">
+                                <div class="custom-select__color-dot" style="background-color: #666"></div>
+                                <span class="custom-select__text custom-select__text--placeholder">-- Chọn loại --</span>
+                            </div>
+                            <div class="custom-select__arrow">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="custom-select__dropdown">
+                            @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
+                                <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
+                                    <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
+                                    <div class="custom-select__option-content">
+                                        <div class="custom-select__option-label">{{ $loai->ten_loai }}</div>
+                                        <div class="custom-select__option-meta">+{{ number_format($loai->phu_thu) }}đ</div>
+                                    </div>
+                                    <div class="custom-select__option-check">
+                                        <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    <select name="loai_ghe_id" id="addSeatLoaiGhe" class="hidden" required>
                         <option value="">-- Chọn loại --</option>
                         @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
                             <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
                         @endforeach
                     </select>
                 </div>
-                <div>
-                    <label class="mb-1.5 block text-xs font-medium text-gray-400">Trạng thái ghế</label>
-                    <select name="trang_thai" id="addRowTrangThai"
-                        class="w-full appearance-none rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32]">
+
+                <div class="space-y-1.5">
+                    <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                        Trạng thái <span class="text-red-400">*</span>
+                    </label>
+                    <div class="custom-select custom-select--green custom-select--simple" data-select-id="addSeatTrangThai">
+                        <div class="custom-select__trigger" onclick="toggleCustomSelect(this)">
+                            <div class="custom-select__value">
+                                <span class="custom-select__text custom-select__text--placeholder">-- Chọn trạng thái --</span>
+                            </div>
+                            <div class="custom-select__arrow">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="custom-select__dropdown">
+                            <div class="custom-select__option" data-value="hoat_dong" onclick="selectCustomOption(this)">
+                                <div class="custom-select__option-color" style="background-color: #10b981"></div>
+                                <div class="custom-select__option-content">
+                                    <div class="custom-select__option-label">Hoạt động</div>
+                                </div>
+                                <div class="custom-select__option-check">
+                                    <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                </div>
+                            </div>
+                            <div class="custom-select__option" data-value="bao_tri" onclick="selectCustomOption(this)">
+                                <div class="custom-select__option-color" style="background-color: #f59e0b"></div>
+                                <div class="custom-select__option-content">
+                                    <div class="custom-select__option-label">Bảo trì</div>
+                                </div>
+                                <div class="custom-select__option-check">
+                                    <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <select name="trang_thai" id="addSeatTrangThai" class="hidden" required>
+                        class="w-full appearance-none rounded-xl border border-white/10 bg-[#0a0a14] px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer">
                         <option value="hoat_dong">Hoạt động</option>
                         <option value="bao_tri">Bảo trì</option>
                     </select>
                 </div>
-                <p class="text-[11px] text-gray-500">Mã ghế sẽ tự sinh: <span class="text-[#d99a32] font-bold" id="addRowPreview">A1, A2, ...</span></p>
-            </div>
 
-            <div class="flex gap-3 pt-2">
-                <button type="button" id="addRowCancel"
-                    class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
-                    Hủy
-                </button>
-                <button type="submit" id="addRowSubmit"
-                    class="flex-1 rounded-xl bg-[#d99a32] px-4 py-3 text-sm font-bold text-black transition hover:bg-[#e5a847] hover:scale-[1.01]">
-                    <i class="fa-solid fa-plus mr-1.5"></i>Thêm hàng
+                <div class="flex gap-2.5 pt-2">
+                    <button type="button" id="addSeatCancel" onclick="closeAddSeatModalDirect()"
+                        class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10 hover:text-white active:scale-[0.98]">
+                        Hủy
+                    </button>
+                    <button type="submit" id="addSeatSubmit"
+                        class="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 px-4 py-3 text-sm font-bold text-black shadow-lg shadow-emerald-500/20 transition-all hover:from-emerald-400 hover:to-teal-300 hover:shadow-emerald-500/30 active:scale-[0.98]">
+                        <i class="fa-solid fa-plus mr-1.5"></i>Thêm ghế
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- MODAL: THÊM HÀNG --}}
+<div id="addRowModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-[6px]">
+    <div class="w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] p-0 shadow-2xl shadow-black/60 overflow-hidden animate-modal-in">
+        {{-- Header --}}
+        <div class="relative px-6 pt-6 pb-5 bg-gradient-to-r from-[#d99a32]/10 via-[#d99a32]/5 to-transparent border-b border-white/5">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#d99a32] via-[#e5a847] to-[#d99a32]"></div>
+            <div class="flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#d99a32]/20 to-[#d99a32]/5 border border-[#d99a32]/20">
+                        <i class="fa-solid fa-layer-group text-xl text-[#d99a32]"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white leading-tight">
+                            Thêm hàng ghế mới
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Phòng {{ $phongChieu->ten_phong }}</p>
+                    </div>
+                </div>
+                <button type="button" id="addRowModalClose" onclick="closeAddRowModalDirect()" class="text-gray-500 hover:text-white hover:bg-white/10 rounded-lg p-1.5 transition-all">
+                    <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-        </form>
+        </div>
+
+        {{-- Body --}}
+        <div class="px-6 py-5">
+            <div id="addRowModalErrors" class="hidden mb-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300"></div>
+
+            <form id="addRowForm" class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                            <span class="h-1.5 w-1.5 rounded-full bg-[#d99a32]"></span>
+                            Tên hàng <span class="text-red-400">*</span>
+                        </label>
+                        <input type="text" name="ten_hang" id="addRowTenHang" maxlength="10" required
+                            placeholder="VD: A, B, C..."
+                            class="w-full rounded-xl border border-white/10 bg-[#0a0a14] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32] focus:ring-2 focus:ring-[#d99a32]/20 transition-all">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                            <span class="h-1.5 w-1.5 rounded-full bg-[#d99a32] opacity-50"></span>
+                            Loại ghế mặc định
+                        </label>
+                        <div class="custom-select custom-select--simple" data-select-id="addRowLoaiMacDinh">
+                            <div class="custom-select__trigger" onclick="toggleCustomSelect(this)">
+                                <div class="custom-select__value">
+                                    <span class="custom-select__text custom-select__text--placeholder">-- Không đặt --</span>
+                                </div>
+                                <div class="custom-select__arrow">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="custom-select__dropdown">
+                                @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
+                                    <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
+                                        <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
+                                        <div class="custom-select__option-content">
+                                            <div class="custom-select__option-label">{{ $loai->ten_loai }}</div>
+                                        </div>
+                                        <div class="custom-select__option-check">
+                                            <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <select name="loai_ghe_mac_dinh_id" id="addRowLoaiMacDinh" class="hidden">
+                            <option value="">-- Không đặt --</option>
+                            @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
+                                <option value="{{ $loai->id }}">{{ $loai->ten_loai }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/8 bg-gradient-to-r from-pink-500/5 to-pink-500/2 p-3.5 transition-all hover:from-pink-500/8 hover:to-pink-500/4">
+                    <input type="checkbox" name="la_hang_couple" id="addRowIsCouple" value="1"
+                        class="mt-0.5 h-4 w-4 rounded border-white/20 bg-[#0a0a14] text-pink-500 focus:ring-pink-500 accent-pink-500">
+                    <div class="text-xs">
+                        <div class="font-semibold text-white">Hàng ghép đôi (Couple)</div>
+                        <div class="text-gray-500 mt-0.5">Hệ thống tự ghép 2 ghế liền kề thành 1 cặp</div>
+                    </div>
+                </label>
+
+                <div class="rounded-xl border border-white/8 bg-white/[0.02] p-3.5 backdrop-blur-sm">
+                    <label class="flex cursor-pointer items-center gap-3 text-xs text-gray-300">
+                        <input type="checkbox" name="tu_dong_tao_ghe" id="addRowAuto" value="1" checked
+                            class="h-4 w-4 rounded border-white/20 bg-[#0a0a14] text-[#d99a32] focus:ring-[#d99a32] accent-[#d99a32]">
+                        <span>Tự động tạo ghế mẫu cho hàng</span>
+                    </label>
+                </div>
+
+                <div id="addRowAutoBox" class="space-y-3 rounded-xl border border-white/8 bg-white/[0.02] p-4 backdrop-blur-sm">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="space-y-1.5">
+                            <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                                <span class="h-1.5 w-1.5 rounded-full bg-[#d99a32]"></span>
+                                Số ghế <span class="text-red-400">*</span>
+                            </label>
+                            <input type="number" name="so_ghe" id="addRowSoGhe" min="1" max="50" value="10"
+                                class="w-full rounded-xl border border-white/10 bg-[#0a0a14] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32] focus:ring-2 focus:ring-[#d99a32]/20 transition-all">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                                <span class="h-1.5 w-1.5 rounded-full bg-[#d99a32] opacity-50"></span>
+                                Cột bắt đầu
+                            </label>
+                            <input type="number" name="cot_bat_dau" id="addRowCotBatDau" min="1" value="1"
+                                class="w-full rounded-xl border border-white/10 bg-[#0a0a14] px-4 py-2.5 text-sm text-white outline-none focus:border-[#d99a32] focus:ring-2 focus:ring-[#d99a32]/20 transition-all">
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                            <span class="h-1.5 w-1.5 rounded-full bg-[#d99a32]"></span>
+                            Loại ghế <span class="text-red-400">*</span>
+                        </label>
+                        <div class="custom-select" data-select-id="addRowLoaiGhe">
+                            <div class="custom-select__trigger" onclick="toggleCustomSelect(this)">
+                                <div class="custom-select__value">
+                                    <div class="custom-select__color-dot" style="background-color: #666"></div>
+                                    <span class="custom-select__text custom-select__text--placeholder">-- Chọn loại --</span>
+                                </div>
+                                <div class="custom-select__arrow">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="custom-select__dropdown">
+                                @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
+                                    <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
+                                        <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
+                                        <div class="custom-select__option-content">
+                                            <div class="custom-select__option-label">{{ $loai->ten_loai }}</div>
+                                            <div class="custom-select__option-meta">+{{ number_format($loai->phu_thu) }}đ</div>
+                                        </div>
+                                        <div class="custom-select__option-check">
+                                            <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        <select name="loai_ghe_id" id="addRowLoaiGhe" class="hidden">
+                            <option value="">-- Chọn loại --</option>
+                            @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
+                                <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="flex items-center gap-1.5 text-xs font-medium text-gray-400">
+                            <span class="h-1.5 w-1.5 rounded-full bg-[#d99a32] opacity-50"></span>
+                            Trạng thái ghế
+                        </label>
+                        <div class="custom-select custom-select--simple" data-select-id="addRowTrangThai">
+                            <div class="custom-select__trigger" onclick="toggleCustomSelect(this)">
+                                <div class="custom-select__value">
+                                    <span class="custom-select__text custom-select__text--placeholder">-- Chọn trạng thái --</span>
+                                </div>
+                                <div class="custom-select__arrow">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="custom-select__dropdown">
+                                <div class="custom-select__option" data-value="hoat_dong" onclick="selectCustomOption(this)">
+                                    <div class="custom-select__option-color" style="background-color: #10b981"></div>
+                                    <div class="custom-select__option-content">
+                                        <div class="custom-select__option-label">Hoạt động</div>
+                                    </div>
+                                    <div class="custom-select__option-check">
+                                        <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                    </div>
+                                </div>
+                                <div class="custom-select__option" data-value="bao_tri" onclick="selectCustomOption(this)">
+                                    <div class="custom-select__option-color" style="background-color: #f59e0b"></div>
+                                    <div class="custom-select__option-content">
+                                        <div class="custom-select__option-label">Bảo trì</div>
+                                    </div>
+                                    <div class="custom-select__option-check">
+                                        <i class="fa-solid fa-check text-white text-[10px]"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <select name="trang_thai" id="addRowTrangThai" class="hidden">
+                            <option value="hoat_dong">Hoạt động</option>
+                            <option value="bao_tri">Bảo trì</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2 rounded-lg bg-[#d99a32]/5 border border-[#d99a32]/10 px-3 py-2">
+                        <i class="fa-solid fa-eye text-[#d99a32] text-xs"></i>
+                        <span class="text-xs text-gray-500">Mã ghế: <span class="text-[#d99a32] font-bold" id="addRowPreview">A1, A2, ...</span></span>
+                    </div>
+                </div>
+
+                <div class="flex gap-2.5 pt-1">
+                    <button type="button" id="addRowCancel" onclick="closeAddRowModalDirect()"
+                        class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10 hover:text-white active:scale-[0.98]">
+                        Hủy
+                    </button>
+                    <button type="submit" id="addRowSubmit"
+                        class="flex-1 rounded-xl bg-gradient-to-r from-[#d99a32] to-[#e5a847] px-4 py-3 text-sm font-bold text-black shadow-lg shadow-[#d99a32]/20 transition-all hover:from-[#e5a847] hover:to-[#d99a32] hover:shadow-[#d99a32]/30 active:scale-[0.98]">
+                        <i class="fa-solid fa-plus mr-1.5"></i>Thêm hàng
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -968,6 +1472,294 @@
         background: radial-gradient(ellipse at center, rgba(217, 154, 50, 0.25) 0%, transparent 70%);
         pointer-events: none;
         filter: blur(8px);
+    }
+
+    /* ==================== CUSTOM SELECT DROPDOWN ==================== */
+    .custom-select {
+        position: relative;
+        width: 100%;
+    }
+
+    .custom-select__trigger {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 10px 14px;
+        background: #0f0f1a;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .custom-select__trigger:hover {
+        border-color: rgba(255, 255, 255, 0.25);
+        background: #141425;
+    }
+
+    .custom-select__trigger:focus,
+    .custom-select__trigger.active {
+        outline: none;
+        border-color: #d99a32;
+        box-shadow: 0 0 0 3px rgba(217, 154, 50, 0.2), 0 0 20px rgba(217, 154, 50, 0.15);
+    }
+
+    .custom-select__value {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .custom-select__color-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+    }
+
+    .custom-select__text {
+        color: #aaa;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .custom-select__text--placeholder {
+        color: #666;
+    }
+
+    .custom-select__arrow {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.5);
+        transition: all 0.3s ease;
+    }
+
+    .custom-select__trigger.active .custom-select__arrow {
+        transform: rotate(180deg);
+        color: #d99a32;
+    }
+
+    .custom-select__dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        right: 0;
+        background: #1a1a2e;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        padding: 8px;
+        z-index: 9999;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        max-height: 280px;
+        overflow-y: auto;
+        display: none !important;
+    }
+
+    .custom-select__dropdown::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .custom-select__dropdown::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+    }
+
+    .custom-select__dropdown::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 3px;
+    }
+
+    .custom-select__dropdown::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .custom-select__trigger.active + .custom-select__dropdown {
+        display: block !important;
+    }
+
+    /* === NATIVE SELECT STYLING (Tạo ghế tự động form) === */
+    .modal-content select[name="loai_ghe_thuong_id"],
+    .modal-content select[name="loai_ghe_vip_id"],
+    .modal-content select[name="loai_ghe_couple_id"] {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: #1a1a2e !important;
+        color: #fff;
+        padding: 10px 14px;
+        font-size: 14px;
+        outline: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 12px center !important;
+        padding-right: 36px !important;
+    }
+
+    .modal-content select[name="loai_ghe_thuong_id"]:hover,
+    .modal-content select[name="loai_ghe_vip_id"]:hover,
+    .modal-content select[name="loai_ghe_couple_id"]:hover {
+        border-color: rgba(255, 255, 255, 0.25);
+        background-color: #141425 !important;
+    }
+
+    .modal-content select[name="loai_ghe_thuong_id"]:focus,
+    .modal-content select[name="loai_ghe_vip_id"]:focus,
+    .modal-content select[name="loai_ghe_couple_id"]:focus {
+        border-color: #d99a32;
+        box-shadow: 0 0 0 3px rgba(217, 154, 50, 0.2);
+    }
+
+    .modal-content select option {
+        background: #1a1a2e !important;
+        color: #fff;
+        padding: 10px;
+    }
+
+    .modal-content select option:hover,
+    .modal-content select option:focus {
+        background: rgba(217, 154, 50, 0.3) !important;
+    }
+
+    /* === ALL SELECTS IN MODALS === */
+    .modal-content select {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        background: #1a1a2e !important;
+        color: #fff !important;
+        padding: 10px 36px 10px 14px !important;
+        font-size: 14px !important;
+        outline: none !important;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        appearance: none !important;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E") !important;
+        background-repeat: no-repeat !important;
+        background-position: right 12px center !important;
+    }
+
+    .modal-content select:hover {
+        border-color: rgba(255, 255, 255, 0.25) !important;
+        background-color: #141425 !important;
+    }
+
+    .modal-content select:focus {
+        border-color: #d99a32 !important;
+        box-shadow: 0 0 0 3px rgba(217, 154, 50, 0.2) !important;
+    }
+
+    /* Fix select arrow in Firefox */
+    @-moz-document url-prefix() {
+        .modal-content select {
+            padding-right: 36px !important;
+        }
+    }
+
+    /* Fix select arrow in Firefox */
+    @-moz-document url-prefix() {
+        .modal-content select {
+            padding-right: 36px !important;
+        }
+    }
+
+    .custom-select__option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .custom-select__option:hover {
+        background: rgba(217, 154, 50, 0.15);
+    }
+
+    .custom-select__option.selected {
+        background: rgba(217, 154, 50, 0.25);
+    }
+
+    .custom-select__option-color {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        flex-shrink: 0;
+    }
+
+    .custom-select__option-content {
+        flex: 1;
+    }
+
+    .custom-select__option-label {
+        color: #fff;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .custom-select__option-meta {
+        color: #888;
+        font-size: 12px;
+        margin-top: 2px;
+    }
+
+    .custom-select__option-check {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #d99a32;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.2s ease;
+    }
+
+    .custom-select__option.selected .custom-select__option-check {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    /* Simple select without color dot */
+    .custom-select--simple .custom-select__color-dot {
+        display: none;
+    }
+
+    /* Green theme variant */
+    .custom-select--green .custom-select__trigger:focus,
+    .custom-select--green .custom-select__trigger.active {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2), 0 0 20px rgba(16, 185, 129, 0.15);
+    }
+
+    .custom-select--green .custom-select__option:hover {
+        background: rgba(16, 185, 129, 0.15);
+    }
+
+    .custom-select--green .custom-select__option.selected {
+        background: rgba(16, 185, 129, 0.25);
+    }
+
+    .custom-select--green .custom-select__option-check {
+        background: #10b981;
+    }
+
+    .custom-select--green .custom-select__trigger.active .custom-select__arrow {
+        color: #10b981;
     }
 
     /* Seat Row Layout */
@@ -1126,6 +1918,9 @@
     }
     /* CSS cũ .seat-chip--couple dòng 785-794 đã xóa - dùng rule mới ở phía dưới */
 
+    /* Alpine.js cloak */
+    [x-cloak] { display: none !important; }
+
     /* Seat Interaction */
     .seat-interactive {
         cursor: pointer;
@@ -1150,6 +1945,16 @@
     /* ==== GHẾ ĐANG ĐƯỢC CHỌN ==== */
     /* Hiệu ứng được apply bằng inline style qua syncSeatCheckMark() trong JS
        để đảm bảo không bị CSS rule nào ghi đè. Chỉ giữ @keyframes ở đây. */
+
+    /* Modal animation */
+    @keyframes modalSlideIn {
+        0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-modal-in {
+        animation: modalSlideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
     @keyframes seatPulse {
         0%, 100% {
             box-shadow:
@@ -1390,6 +2195,66 @@
         vertical-align: middle;
         flex-shrink: 0;
     }
+
+    /* Seat type pills */
+    .seat-type-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 12px;
+        color: #9ca3af;
+    }
+
+    .seat-type-pill:hover {
+        background: rgba(217, 154, 50, 0.1);
+        border-color: rgba(217, 154, 50, 0.3);
+        color: #e5e7eb;
+    }
+
+    .seat-type-pill.active {
+        background: rgba(217, 154, 50, 0.15);
+        border-color: #d99a32;
+        color: #f4c56a;
+        box-shadow: 0 0 12px rgba(217, 154, 50, 0.2);
+    }
+
+    .seat-type-pill.opt-none {
+        opacity: 0.6;
+    }
+
+    .seat-type-pill.opt-none.active {
+        background: rgba(100, 100, 100, 0.15);
+        border-color: #888;
+        color: #aaa;
+        box-shadow: none;
+    }
+
+    .pill-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+    .pill-text {
+        font-weight: 500;
+    }
+
+    .pill-price {
+        font-size: 10px;
+        color: #d99a32;
+        opacity: 0.8;
+    }
+
+    .seat-type-pill.active .pill-price {
+        opacity: 1;
+    }
 </style>
 @php /* STYLES END */ @endphp
 
@@ -1460,8 +2325,213 @@ window.showToast = function(message, type = 'error') {
     setTimeout(dismiss, 4000);
 };
 
+// Global functions for modal buttons
+window.openAddSeatModalDirect = function() {
+    var modal = document.getElementById('addSeatModal');
+    var form = document.getElementById('addSeatForm');
+    var errors = document.getElementById('addSeatModalErrors');
+    if (!modal) return;
+    if (form) form.reset();
+    if (errors) {
+        errors.classList.add('hidden');
+        errors.innerHTML = '';
+    }
+    // Auto-suggest cột kế tiếp
+    var hangSelect = document.getElementById('addSeatHangGhe');
+    if (hangSelect && hangSelect.value) {
+        hangSelect.dispatchEvent(new Event('change'));
+    }
+    modal.classList.remove('hidden');
+};
+
+window.closeAddSeatModalDirect = function() {
+    var modal = document.getElementById('addSeatModal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.openAddRowModalDirect = function() {
+    var modal = document.getElementById('addRowModal');
+    var form = document.getElementById('addRowForm');
+    var errors = document.getElementById('addRowModalErrors');
+    if (!modal) return;
+    if (form) form.reset();
+    if (errors) {
+        errors.classList.add('hidden');
+        errors.innerHTML = '';
+    }
+    // Update preview
+    if (typeof updateAddRowPreviewDirect === 'function') {
+        updateAddRowPreviewDirect();
+    }
+    modal.classList.remove('hidden');
+};
+
+window.closeAddRowModalDirect = function() {
+    var modal = document.getElementById('addRowModal');
+    if (modal) modal.classList.add('hidden');
+};
+
+// === RESET SEATS FUNCTION ===
+window.confirmResetSeats = function() {
+    if (confirm('Bạn có chắc muốn xóa toàn bộ ghế trong phòng này?\n\nHành động này không thể hoàn tác!')) {
+        // Tạo form ẩn để submit DELETE request
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('admin.phong-chieus.generate-seats', $phongChieu) }}';
+
+        var csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        form.appendChild(csrfInput);
+
+        var methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+
+        // Thêm input để trigger xóa toàn bộ
+        var resetInput = document.createElement('input');
+        resetInput.type = 'hidden';
+        resetInput.name = 'reset_all';
+        resetInput.value = '1';
+        form.appendChild(resetInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+};
+
+window.updateAddRowPreviewDirect = function() {
+    var ten = (document.getElementById('addRowTenHang')?.value || 'A').trim();
+    var so = parseInt(document.getElementById('addRowSoGhe')?.value, 10) || 0;
+    var start = parseInt(document.getElementById('addRowCotBatDau')?.value, 10) || 1;
+    var preview = document.getElementById('addRowPreview');
+    if (!preview) return;
+    if (so <= 0) { preview.textContent = ten + '1, ' + ten + '2, ...'; return; }
+    if (so <= 3) {
+        var codes = [];
+        for (var i = 0; i < so; i++) codes.push(ten + (start + i));
+        preview.textContent = codes.join(', ');
+    } else {
+        preview.textContent = ten + start + ', ' + ten + (start + 1) + ', ... ' + ten + (start + so - 1);
+    }
+};
+
+// === CUSTOM SELECT DROPDOWN (GLOBAL FUNCTIONS) ===
+function toggleCustomSelect(trigger) {
+    // Prevent default and stop propagation
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const wrapper = trigger.closest('.custom-select');
+    const dropdown = wrapper.querySelector('.custom-select__dropdown');
+    const isActive = trigger.classList.contains('active');
+
+    // Close all dropdowns first
+    document.querySelectorAll('.custom-select__trigger.active').forEach(t => {
+        t.classList.remove('active');
+    });
+    document.querySelectorAll('.custom-select__dropdown').forEach(d => {
+        d.style.display = 'none';
+    });
+
+    // Toggle current one
+    if (!isActive) {
+        trigger.classList.add('active');
+        dropdown.style.display = 'block';
+    }
+}
+
+function selectCustomOption(option) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const wrapper = option.closest('.custom-select');
+    const trigger = wrapper.querySelector('.custom-select__trigger');
+    const select = wrapper.querySelector('select');
+    const value = option.dataset.value;
+    const text = option.querySelector('.custom-select__option-label').textContent;
+
+    // Update trigger display
+    const valueDiv = trigger.querySelector('.custom-select__value');
+    valueDiv.innerHTML = '';
+
+    // Add color dot if exists
+    const colorDot = option.querySelector('.custom-select__option-color');
+    if (colorDot) {
+        const dot = document.createElement('div');
+        dot.className = 'custom-select__color-dot';
+        dot.style.backgroundColor = colorDot.style.backgroundColor;
+        valueDiv.appendChild(dot);
+    }
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'custom-select__text';
+    textSpan.textContent = text;
+    valueDiv.appendChild(textSpan);
+
+    // Update hidden select
+    if (select) {
+        select.value = value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // Mark selected option
+    wrapper.querySelectorAll('.custom-select__option').forEach(o => o.classList.remove('selected'));
+    option.classList.add('selected');
+
+    // Close dropdown
+    trigger.classList.remove('active');
+    const dropdown = wrapper.querySelector('.custom-select__dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+
+    // Trigger custom event for specific handlers
+    const selectId = wrapper.dataset.selectId;
+    if (selectId === 'rowChangeModalLoaiGhe') {
+        handleRowLoaiGheChange({ value });
+    } else if (selectId === 'bulkLoaiGhe') {
+        handleBulkLoaiGheChange({ value });
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.custom-select')) {
+        document.querySelectorAll('.custom-select__trigger.active').forEach(t => {
+            t.classList.remove('active');
+        });
+        document.querySelectorAll('.custom-select__dropdown').forEach(d => {
+            d.style.display = 'none';
+        });
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     const phongChieuId = {{ $phongChieu->id }};
+
+    // === SEAT TYPE PILL HANDLING ===
+    document.querySelectorAll('.seat-type-pill').forEach(function(pill) {
+        pill.addEventListener('click', function(e) {
+            // Remove active from siblings in same group
+            const container = this.closest('.flex.flex-wrap');
+            container.querySelectorAll('.seat-type-pill').forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+
+            // Update hidden input
+            const hiddenId = this.dataset.hidden;
+            const value = this.dataset.value;
+            const hiddenInput = document.getElementById(hiddenId);
+            if (hiddenInput) {
+                hiddenInput.value = value;
+            }
+        });
+    });
 
     // === CSRF helper: đặt sớm để mọi handler bên dưới đều dùng được ===
     function getCsrfToken() {
@@ -2005,11 +3075,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if (maintenanceReason) maintenanceReason.value = '';
         if (maintenanceReasonUnlimited) maintenanceReasonUnlimited.value = '';
 
+        // Clear errors
+        const errorsDiv = document.getElementById('maintenanceErrors');
+        const errorsList = document.getElementById('maintenanceErrorsList');
+        if (errorsDiv) errorsDiv.classList.add('hidden');
+        if (errorsList) errorsList.innerHTML = '';
+
         maintenanceModal?.classList.remove('hidden');
     });
 
     // Đóng modal
     document.getElementById('maintenanceModalCancel')?.addEventListener('click', function() {
+        maintenanceModal?.classList.add('hidden');
+        pendingMaintenanceSeats = [];
+    });
+    document.getElementById('maintenanceModalCloseHeader')?.addEventListener('click', function() {
         maintenanceModal?.classList.add('hidden');
         pendingMaintenanceSeats = [];
     });
@@ -2117,11 +3197,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectedSeats.clear();
                     document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
                     updateBulkToolbar();
-                    showToast(data.message || 'Đã lên lịch bảo trì.', 'success');
-                    if (data.errors?.length > 0) {
-                        console.warn('Một số ghế:', data.errors);
+
+                    // Hiện lỗi nếu có
+                    const errorsDiv = document.getElementById('maintenanceErrors');
+                    const errorsList = document.getElementById('maintenanceErrorsList');
+                    if (data.errors && data.errors.length > 0) {
+                        if (errorsList) errorsList.innerHTML = data.errors.map(e => `<div class="mb-1">• ${e}</div>`).join('');
+                        if (errorsDiv) errorsDiv.classList.remove('hidden');
+                        showToast('Một số ghế không thể bảo trì. Xem chi tiết bên dưới.', 'warning');
+                    } else {
+                        if (errorsDiv) errorsDiv.classList.add('hidden');
+                        showToast(data.message || 'Đã lên lịch bảo trì.', 'success');
                     }
                 } else {
+                    // Có thể có validation errors trong response
+                    if (data.errors && data.errors.length > 0) {
+                        const errorsDiv = document.getElementById('maintenanceErrors');
+                        const errorsList = document.getElementById('maintenanceErrorsList');
+                        if (errorsList) errorsList.innerHTML = data.errors.map(e => `<div class="mb-1">• ${e}</div>`).join('');
+                        if (errorsDiv) errorsDiv.classList.remove('hidden');
+                    }
                     showToast(data.message || 'Có lỗi xảy ra', 'error');
                 }
             } catch (err) {
@@ -2433,11 +3528,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // --- Ràng buộc đổi loại: 3 hàng gần màn chiếu chỉ được ghế Thường, 3 hàng cuối chỉ được VIP/Couple ---
             const totalRows = allRows.length;
             const isTopThree = rowIndex < 3;
-            const isBottomThree = rowIndex >= totalRows - 3;
+            const isLastTwo = rowIndex >= totalRows - 2;
             const restrictionWarning = document.getElementById('rowTypeRestrictionWarning');
             const restrictionDetail = document.getElementById('rowRestrictionDetail');
             const applyBtn = document.getElementById('rowChangeModalApply');
             const loaiSelect = document.getElementById('rowChangeModalLoaiGhe');
+            const colorPreview = document.getElementById('rowModalColorPreview');
+            const textEl = document.getElementById('rowModalLoaiGheText');
 
             if (restrictionWarning) restrictionWarning.classList.add('hidden');
             if (applyBtn) applyBtn.disabled = false;
@@ -2447,11 +3544,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     restrictionWarning.classList.remove('hidden');
                     restrictionDetail.textContent = '3 hàng gần màn chiếu chỉ được đặt ghế Thường.';
                 }
-            } else if (isBottomThree) {
+                if (applyBtn) applyBtn.disabled = true;
+            } else if (isLastTwo) {
                 if (restrictionWarning) {
                     restrictionWarning.classList.remove('hidden');
-                    restrictionDetail.textContent = '3 hàng cuối phòng chỉ được đặt ghế VIP hoặc Couple.';
+                    restrictionDetail.textContent = '2 hàng cuối chỉ được đặt ghế Couple.';
                 }
+            } else {
+                if (restrictionWarning) restrictionWarning.classList.add('hidden');
+            }
+
+            // Reset dropdown về option đầu tiên
+            const colorDot = document.getElementById('rowModalColorDot');
+            if (loaiSelect && loaiSelect.options.length > 0) {
+                loaiSelect.selectedIndex = 0;
+                const firstOpt = loaiSelect.options[0];
+                if (colorDot) colorDot.style.backgroundColor = firstOpt.dataset.color || '#666';
             }
 
             rowChangeModal.classList.remove('hidden');
@@ -2494,12 +3602,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnEl.className = 'rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300 transition hover:bg-orange-500/25 hover:border-orange-500/60';
             }
 
-            // --- Ràng buộc đổi loại: 3 hàng gần màn chiếu chỉ được ghế Thường, 3 hàng cuối chỉ được VIP/Couple ---
+            // --- Ràng buộc đổi loại: 3 hàng gần màn chiếu chỉ được ghế Thường, 2 hàng cuối chỉ được Couple ---
             const allRows = Array.from(document.querySelectorAll('.seat-row'));
             const rowIndex = allRows.findIndex(r => r.dataset.hangGheId === hangGheId);
             const totalRows = allRows.length;
             const isTopThree = rowIndex >= 0 && rowIndex < 3;
-            const isBottomThree = rowIndex >= 0 && rowIndex >= totalRows - 3;
+            const isLastTwo = rowIndex >= 0 && rowIndex >= totalRows - 2;
             const restrictionWarning = document.getElementById('rowTypeRestrictionWarning');
             const restrictionDetail = document.getElementById('rowRestrictionDetail');
             const applyBtn = document.getElementById('rowChangeModalApply');
@@ -2512,11 +3620,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     restrictionWarning.classList.remove('hidden');
                     restrictionDetail.textContent = '3 hàng gần màn chiếu chỉ được đặt ghế Thường.';
                 }
-            } else if (isBottomThree) {
+            } else if (isLastTwo) {
                 if (restrictionWarning) {
                     restrictionWarning.classList.remove('hidden');
-                    restrictionDetail.textContent = '3 hàng cuối phòng chỉ được đặt ghế VIP hoặc Couple.';
+                    restrictionDetail.textContent = '2 hàng cuối chỉ được đặt ghế Couple.';
                 }
+            }
+
+            // Set first option as default
+            const select = document.getElementById('rowChangeModalLoaiGhe');
+            const colorDot = document.getElementById('rowModalColorDot');
+            if (select && select.options.length > 0) {
+                select.selectedIndex = 0;
+                const firstOpt = select.options[0];
+                if (colorDot) colorDot.style.backgroundColor = firstOpt.dataset.color || '#666';
             }
 
             rowChangeModal.classList.remove('hidden');
@@ -2526,36 +3643,138 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('rowChangeModalCancel').addEventListener('click', function() {
         rowChangeModal.classList.add('hidden');
     });
+    document.getElementById('rowChangeModalCancelHeader')?.addEventListener('click', function() {
+        rowChangeModal.classList.add('hidden');
+    });
+
+    // Select loại ghế - update color dot
+    const loaiGheSelect = document.getElementById('rowChangeModalLoaiGhe');
+    const colorDot = document.getElementById('rowModalColorDot');
+
+    // Handler for custom select changes
+    window.handleRowLoaiGheChange = function(data) {
+        const value = data.value || data.target?.value;
+        const select = document.getElementById('rowChangeModalLoaiGhe');
+        const option = select?.querySelector(`option[value="${value}"]`);
+        const color = option?.dataset?.color || '#666';
+        if (colorDot) colorDot.style.backgroundColor = color;
+
+        // === Validation: 3 hàng đầu chỉ được ghế Thường ===
+        if (currentRowHangId && option) {
+            const allRows = Array.from(document.querySelectorAll('.seat-row'));
+            const currentRowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${currentRowHangId}"]`);
+            const rowIndex = currentRowEl ? allRows.indexOf(currentRowEl) : -1;
+            const isTopThree = rowIndex >= 0 && rowIndex < 3;
+
+            if (isTopThree) {
+                const isCoupleOption = option?.dataset?.laCouple === 'true' || option?.dataset?.laCouple === '1';
+                const loaiTen = option?.textContent?.toLowerCase() || '';
+                const isVipSelected = loaiTen.includes('vip');
+
+                if (isCoupleOption) {
+                    showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế Couple.', 'error');
+                    // Reset về option đầu tiên
+                    if (select && select.options.length > 0) {
+                        select.selectedIndex = 0;
+                        const firstOpt = select.options[0];
+                        if (colorDot) colorDot.style.backgroundColor = firstOpt.dataset.color || '#666';
+                    }
+                    return;
+                }
+                if (isVipSelected) {
+                    showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP.', 'error');
+                    // Reset về option đầu tiên
+                    if (select && select.options.length > 0) {
+                        select.selectedIndex = 0;
+                        const firstOpt = select.options[0];
+                        if (colorDot) colorDot.style.backgroundColor = firstOpt.dataset.color || '#666';
+                    }
+                    return;
+                }
+            }
+        }
+    };
+
+    window.handleBulkLoaiGheChange = function(data) {
+        const value = data.value || data.target?.value;
+        const preview = document.getElementById('bulkColorPreview');
+        if (preview) {
+            const select = document.getElementById('bulkLoaiGhe');
+            const option = select?.querySelector(`option[value="${value}"]`);
+            preview.style.backgroundColor = option?.dataset?.color || 'transparent';
+        }
+    };
+
+    if (loaiGheSelect) {
+        loaiGheSelect.addEventListener('change', function() {
+            const color = this.options[this.selectedIndex]?.dataset?.color || '#666';
+            if (colorDot) colorDot.style.backgroundColor = color;
+        });
+        // Init color
+        const initColor = loaiGheSelect.options[loaiGheSelect.selectedIndex]?.dataset?.color || '#666';
+        if (colorDot) colorDot.style.backgroundColor = initColor;
+    }
 
     document.getElementById('rowChangeModalApply').addEventListener('click', function() {
-        const loaiGheId = rowModalLoaiGhe.value;
-        const selectedOption = rowModalLoaiGhe.options[rowModalLoaiGhe.selectedIndex];
+        const select = document.getElementById('rowChangeModalLoaiGhe');
+        const loaiGheId = loaiGheSelect.value;
+        const selectedOption = loaiGheSelect.options[loaiGheSelect.selectedIndex];
+        
+        // Lấy thông tin từ data attributes
+        const isCoupleOption = selectedOption?.dataset?.laCouple === 'true' || selectedOption?.dataset?.laCouple === '1';
         const loaiTen = selectedOption ? selectedOption.textContent.toLowerCase() : '';
+        const isVipSelected = loaiTen.includes('vip');
 
-        // --- Validation: 3 hàng gần màn chiếu chỉ được đặt ghế Thường, 3 hàng cuối chỉ được VIP/Couple ---
+        // --- Validation: 3 hàng gần màn chiếu chỉ được đặt ghế Thường, 2 hàng cuối chỉ được Couple ---
         const allRows = Array.from(document.querySelectorAll('.seat-row'));
         const currentRowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${currentRowHangId}"]`);
         const rowIndex = currentRowEl ? allRows.indexOf(currentRowEl) : -1;
         const totalRows = allRows.length;
 
         if (rowIndex >= 0) {
-            const isTopThree = rowIndex < 3;
-            const isBottomThree = rowIndex >= totalRows - 3;
-            const isThuongSelected = loaiTen.includes('thường') || loaiTen.includes('thuong') || loaiTen.includes('standard');
-            const isVipSelected = loaiTen.includes('vip');
-            const isCoupleSelected = loaiTen.includes('couple') || loaiTen.includes('đôi');
+            const isTopThree = rowIndex < 3;  // Hàng 1, 2, 3
+            const isLastTwo = rowIndex >= totalRows - 2;  // 2 hàng cuối
+            const isMiddle = !isTopThree && !isLastTwo;  // Hàng 4 trở đi (không phải 2 hàng cuối)
 
-            // 3 hàng gần màn chiếu: CHỈ được ghế Thường, không được VIP/Couple
-            if (isTopThree && (isVipSelected || isCoupleSelected)) {
-                showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP hay Couple.', 'error');
-                setBtnLoading(this, false);
-                return;
+            // 3 hàng gần màn chiếu: CHỈ được ghế Thường (không phải VIP, không phải Couple)
+            if (isTopThree) {
+                if (isCoupleOption) {
+                    showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế Couple.', 'error');
+                    setBtnLoading(this, false);
+                    return;
+                }
+                if (isVipSelected) {
+                    showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP.', 'error');
+                    setBtnLoading(this, false);
+                    return;
+                }
             }
-            // 3 hàng cuối: CHỈ được VIP/Couple, không được ghế Thường
-            if (isBottomThree && isThuongSelected) {
-                showToast('3 hàng cuối phòng chỉ được đặt ghế VIP hoặc Couple. Không thể đặt ghế Thường.', 'error');
-                setBtnLoading(this, false);
-                return;
+            
+            // Hàng giữa (hàng 4 trở đi, không tính 2 hàng cuối): CHỈ được ghế VIP
+            if (isMiddle) {
+                if (isCoupleOption) {
+                    showToast('Hàng ghế này chỉ được đặt ghế VIP. Không thể đặt ghế Couple.', 'error');
+                    setBtnLoading(this, false);
+                    return;
+                }
+                if (!isVipSelected) {
+                    showToast('Hàng ghế này chỉ được đặt ghế VIP. Không thể đặt ghế Thường.', 'error');
+                    setBtnLoading(this, false);
+                    return;
+                }
+            }
+            
+            // 2 hàng cuối: CHỈ được ghế Couple
+            if (isLastTwo) {
+                if (!isCoupleOption) {
+                    if (isVipSelected) {
+                        showToast('2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế VIP.', 'error');
+                    } else {
+                        showToast('2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế Thường.', 'error');
+                    }
+                    setBtnLoading(this, false);
+                    return;
+                }
             }
         }
 
@@ -2912,6 +4131,41 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Validate: check trùng mã ghế trong DOM
+        var existingSeat = document.querySelector(`.seat-interactive[data-ma-ghe="${payload.ma_ghe}"]`);
+        if (existingSeat) {
+            showAddSeatErrors({ _global: [`Ghế "${payload.ma_ghe}" đã tồn tại trong phòng.`] });
+            return;
+        }
+
+        // Validate: check trùng cột trong hàng
+        var rowForColCheck = document.querySelector(`.seat-row[data-hang-ghe-id="${payload.hang_ghe_id}"]`);
+        if (rowForColCheck) {
+            var existingCol = rowForColCheck.querySelector(`.seat-interactive[data-cot="${payload.cot}"]`);
+            if (existingCol) {
+                showAddSeatErrors({ _global: [`Cột ${payload.cot} đã có ghế "${existingCol.dataset.maGhe}" trong hàng này.`] });
+                return;
+            }
+        }
+
+        // Validate: check ràng buộc theo vị trí hàng
+        var allRows = Array.from(document.querySelectorAll('.seat-row'));
+        var rowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${payload.hang_ghe_id}"]`);
+        var rowIndex = rowEl ? allRows.indexOf(rowEl) : -1;
+        var totalRows = allRows.length;
+        var isTopThree = rowIndex >= 0 && rowIndex < 3;
+        var isLastTwo = rowIndex >= 0 && rowIndex >= totalRows - 2;
+        var selectedLoai = addSeatLoaiGhe.options[addSeatLoaiGhe.selectedIndex].textContent.toLowerCase();
+
+        if (isTopThree && !selectedLoai.includes('thường')) {
+            showAddSeatErrors({ _global: ['3 hàng gần màn chiếu chỉ được đặt ghế Thường.'] });
+            return;
+        }
+        if (isLastTwo && !selectedLoai.includes('couple')) {
+            showAddSeatErrors({ _global: ['2 hàng cuối chỉ được đặt ghế Couple.'] });
+            return;
+        }
+
         const csrfToken = getCsrfToken();
         if (!csrfToken) {
             showAddSeatErrors({ _global: ['Không tìm thấy CSRF token. Vui lòng tải lại trang (F5).'] });
@@ -3049,6 +4303,15 @@ document.addEventListener('DOMContentLoaded', function() {
             showAddRowErrors({ ten_hang: ['Vui lòng nhập tên hàng.'] });
             return;
         }
+
+        // Validate: check trùng tên hàng trong DOM
+        var tenHangVal = addRowTenHang.value.trim().toUpperCase();
+        var existingRow = document.querySelector(`.seat-row[data-hang="'${tenHangVal}'"]`);
+        if (existingRow) {
+            showAddRowErrors({ ten_hang: [`Hàng "${tenHangVal}" đã tồn tại trong phòng.`] });
+            return;
+        }
+
         if (tuDong && (!soGhe || soGhe < 1)) {
             showAddRowErrors({ so_ghe: ['Vui lòng nhập số ghế khi bật tự động tạo.'] });
             return;
@@ -3056,6 +4319,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tuDong && !loaiGheId) {
             showAddRowErrors({ loai_ghe_id: ['Vui lòng chọn loại ghế khi bật tự động tạo.'] });
             return;
+        }
+
+        // Validate: check vị trí hàng mới dựa trên loại ghế
+        var allRows = Array.from(document.querySelectorAll('.seat-row'));
+        var totalRows = allRows.length;
+        if (tuDong && loaiGheId) {
+            var selectedLoai = addRowLoaiGhe.options[addRowLoaiGhe.selectedIndex].textContent.toLowerCase();
+            var isCouple = selectedLoai.includes('couple');
+            var isVip = selectedLoai.includes('vip');
+            var isNormal = selectedLoai.includes('thường') || selectedLoai.includes('normal');
+
+            // Hàng mới sẽ ở cuối
+            var newRowIndex = totalRows;
+            var isTopThree = newRowIndex < 3;
+            var isLastTwo = newRowIndex >= totalRows - 2;
+
+            if (isTopThree && !isNormal) {
+                showAddRowErrors({ _global: ['3 hàng gần màn chiếu chỉ được đặt ghế Thường. Vui lòng chọn ghế Thường hoặc thêm hàng ở vị trí khác.'] });
+                return;
+            }
+            if (isLastTwo && !isCouple) {
+                showAddRowErrors({ _global: ['2 hàng cuối chỉ được đặt ghế Couple. Vui lòng chọn ghế Couple hoặc thêm hàng ở vị trí khác.'] });
+                return;
+            }
         }
 
         const payload = {
@@ -3117,8 +4404,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // ESC để đóng modal
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            closeAddSeatModal();
-            closeAddRowModal();
+            var addSeatModal = document.getElementById('addSeatModal');
+            var addRowModal = document.getElementById('addRowModal');
+            var rowChangeModal = document.getElementById('rowChangeModal');
+            if (addSeatModal) addSeatModal.classList.add('hidden');
+            if (addRowModal) addRowModal.classList.add('hidden');
+            if (rowChangeModal) rowChangeModal.classList.add('hidden');
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.custom-select')) {
+            document.querySelectorAll('.custom-select__trigger.active').forEach(t => {
+                t.classList.remove('active');
+            });
+            document.querySelectorAll('.custom-select__dropdown').forEach(d => {
+                d.style.display = 'none';
+            });
         }
     });
 </script>
+

@@ -324,9 +324,10 @@ class ThongKeService
      */
     public function getRevenueByRoom(): array
     {
-        return VeXemPhim::query()
+        $result = VeXemPhim::query()
             ->whereBetween('ve_xem_phims.created_at', [$this->from, $this->to])
             ->whereIn('ve_xem_phims.trang_thai', ['da_thanh_toan', 'da_su_dung'])
+            ->whereNotNull('ve_xem_phims.suat_chieu_id')
             ->when($this->phimId, fn($q) => $q->whereHas('suatChieu', fn($sq) => $sq->where('phim_id', $this->phimId)))
             ->join('suat_chieus', 've_xem_phims.suat_chieu_id', '=', 'suat_chieus.id')
             ->join('phong_chieus', 'suat_chieus.phong_chieu_id', '=', 'phong_chieus.id')
@@ -338,8 +339,16 @@ class ThongKeService
             )
             ->groupBy('phong_chieus.id', 'phong_chieus.ten_phong')
             ->orderByDesc('total_revenue')
-            ->get()
-            ->toArray();
+            ->get();
+
+        return $result->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'ten_phong' => $item->ten_phong,
+                'total_revenue' => (float) $item->total_revenue,
+                'tickets_sold' => (int) $item->tickets_sold,
+            ];
+        })->toArray();
     }
 
     /**
@@ -347,27 +356,65 @@ class ThongKeService
      */
     public function getRevenueBySeatType(): array
     {
-        return VeXemPhim::query()
-            ->whereBetween('ve_xem_phims.created_at', [$this->from, $this->to])
-            ->whereIn('ve_xem_phims.trang_thai', ['da_thanh_toan', 'da_su_dung'])
+        // Lấy tất cả vé đã thanh toán
+        $tickets = VeXemPhim::query()
+            ->whereBetween('created_at', [$this->from, $this->to])
+            ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung'])
             ->when($this->phimId, fn($q) => $q->whereHas('suatChieu', fn($sq) => $sq->where('phim_id', $this->phimId)))
             ->when($this->phongChieuId, fn($q) => $q->whereHas('suatChieu', fn($sq) => $sq->where('phong_chieu_id', $this->phongChieuId)))
-            ->join('suat_chieus', 've_xem_phims.suat_chieu_id', '=', 'suat_chieus.id')
-            ->join('ghe_ngois', function ($join) {
-                $join->on('ghe_ngois.ma_ghe', '=', 've_xem_phims.ma_ghe')
-                    ->whereColumn('ghe_ngois.phong_chieu_id', 'suat_chieus.phong_chieu_id');
-            })
-            ->join('loai_ghes', 'ghe_ngois.loai_ghe_id', '=', 'loai_ghes.id')
-            ->select(
-                'loai_ghes.id',
-                'loai_ghes.ten_loai',
-                DB::raw('SUM(ve_xem_phims.tong_tien) as total_revenue'),
-                DB::raw('COUNT(ve_xem_phims.id) as tickets_sold')
-            )
-            ->groupBy('loai_ghes.id', 'loai_ghes.ten_loai')
-            ->orderByDesc('total_revenue')
-            ->get()
-            ->toArray();
+            ->with(['suatChieu.phongChieu', 'suatChieu.phongChieu.gheNgois', 'suatChieu.phongChieu.gheNgois.loaiGhe'])
+            ->get();
+
+        $seatTypeRevenue = [];
+
+        foreach ($tickets as $ticket) {
+            // Tách các mã ghế (có thể là "A1,A2" hoặc "A1 | A2")
+            $seatCodesRaw = str_replace(['|', ' '], ',', (string) $ticket->ma_ghe);
+            $seatCodes = array_filter(array_map('trim', explode(',', $seatCodesRaw)));
+            $seatCount = count($seatCodes);
+            
+            if ($seatCount == 0) continue;
+
+            // Lấy phòng chiếu từ suất chiếu
+            $room = $ticket->suatChieu?->phongChieu;
+            if (!$room) continue;
+
+            // Tính giá tiền mỗi ghế (tổng tiền vé chia số ghế)
+            $pricePerSeat = (float) $ticket->tong_tien / $seatCount;
+
+            // Tìm thông tin ghế trong phòng
+            foreach ($seatCodes as $seatCode) {
+                $seatCode = strtoupper(trim($seatCode));
+                if (empty($seatCode)) continue;
+
+                // Tìm ghế trong phòng
+                $seat = $room->gheNgois->first(function ($ghe) use ($seatCode) {
+                    return strtoupper(trim((string) $ghe->ma_ghe)) === $seatCode;
+                });
+
+                $seatTypeName = $seat?->loaiGhe?->ten_loai ?? 'Không xác định';
+                $seatTypeId = $seat?->loai_ghe_id ?? 'unknown';
+
+                $key = $seatTypeId === 'unknown' ? 'unknown' : $seatTypeId;
+
+                if (!isset($seatTypeRevenue[$key])) {
+                    $seatTypeRevenue[$key] = [
+                        'id' => $seatTypeId,
+                        'ten_loai' => $seatTypeName,
+                        'total_revenue' => 0,
+                        'tickets_sold' => 0,
+                    ];
+                }
+
+                $seatTypeRevenue[$key]['total_revenue'] += $pricePerSeat;
+                $seatTypeRevenue[$key]['tickets_sold'] += 1;
+            }
+        }
+
+        // Sắp xếp theo doanh thu giảm dần
+        usort($seatTypeRevenue, fn($a, $b) => $b['total_revenue'] <=> $a['total_revenue']);
+
+        return array_values($seatTypeRevenue);
     }
 
     /**
