@@ -1,9 +1,7 @@
-@extends('layouts.admin')
+<?php $__env->startSection('page-title', 'Quản lý suất chiếu'); ?>
+<?php $__env->startSection('page-subtitle', 'Điều phối lịch chiếu theo từng phim, phòng và trạng thái vận hành'); ?>
 
-@section('page-title', 'Quản lý suất chiếu')
-@section('page-subtitle', 'Điều phối lịch chiếu theo từng phim, phòng và trạng thái vận hành')
-
-@php
+<?php
     $posterUrl = function (?string $poster): string {
         if (empty($poster)) {
             return asset('assets/images/LOGO copy.png');
@@ -40,11 +38,11 @@
     $statusLabels = \App\Models\SuatChieu::TRANG_THAI_LIST + [
         'dung_nhan_ve' => 'Dừng nhận vé',
     ];
-@endphp
+?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="showtime-index-page">
-    @include('admin.partials.flash')
+    <?php echo $__env->make('admin.partials.flash', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
     <section class="showtime-index-hero">
         <div>
@@ -60,11 +58,11 @@
         </div>
 
         <div class="showtime-index-actions">
-            <a href="{{ route('admin.suat-chieus.create') }}" class="movie-action-btn is-primary">
+            <a href="<?php echo e(route('admin.suat-chieus.create')); ?>" class="movie-action-btn is-primary">
                 <i class="fa-solid fa-calendar-plus"></i>
                 Thêm suất chiếu
             </a>
-            <a href="{{ route('admin.phims.index') }}" class="movie-action-btn is-ghost">
+            <a href="<?php echo e(route('admin.phims.index')); ?>" class="movie-action-btn is-ghost">
                 <i class="fa-solid fa-film"></i>
                 Kho phim
             </a>
@@ -76,7 +74,7 @@
             <span><i class="fa-solid fa-clapperboard"></i></span>
             <div>
                 <small>Phim trong trang</small>
-                <strong>{{ number_format($visibleMovies->count()) }}</strong>
+                <strong><?php echo e(number_format($visibleMovies->count())); ?></strong>
             </div>
         </article>
 
@@ -84,7 +82,7 @@
             <span><i class="fa-solid fa-calendar-check"></i></span>
             <div>
                 <small>Suất đang hiển thị</small>
-                <strong>{{ number_format($visibleShowtimes->count()) }}</strong>
+                <strong><?php echo e(number_format($visibleShowtimes->count())); ?></strong>
             </div>
         </article>
 
@@ -92,7 +90,7 @@
             <span><i class="fa-solid fa-clock"></i></span>
             <div>
                 <small>Suất hôm nay</small>
-                <strong>{{ number_format($todayShowtimes) }}</strong>
+                <strong><?php echo e(number_format($todayShowtimes)); ?></strong>
             </div>
         </article>
 
@@ -100,21 +98,22 @@
             <span><i class="fa-solid fa-filter"></i></span>
             <div>
                 <small>Bộ lọc đang dùng</small>
-                <strong>{{ number_format($activeFilterCount) }}</strong>
+                <strong><?php echo e(number_format($activeFilterCount)); ?></strong>
             </div>
         </article>
     </section>
 
-    <form method="GET" action="{{ route('admin.suat-chieus.index') }}" class="showtime-index-filter">
+    <form method="GET" action="<?php echo e(route('admin.suat-chieus.index')); ?>" class="showtime-index-filter">
         <label class="showtime-filter-field">
             <span>Phim</span>
             <select name="phim_id">
                 <option value="">Tất cả phim</option>
-                @foreach ($phims as $itemPhim)
-                    <option value="{{ $itemPhim->id }}" @selected(request('phim_id') == $itemPhim->id)>
-                        {{ $itemPhim->ten_phim }}
+                <?php $__currentLoopData = $phims; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $itemPhim): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($itemPhim->id); ?>" <?php if(request('phim_id') == $itemPhim->id): echo 'selected'; endif; ?>>
+                        <?php echo e($itemPhim->ten_phim); ?>
+
                     </option>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </select>
         </label>
 
@@ -122,11 +121,11 @@
             <span>Phòng chiếu</span>
             <select name="phong_chieu_id">
                 <option value="">Tất cả phòng</option>
-                @foreach ($phongChieus as $phong)
-                    <option value="{{ $phong->id }}" @selected(request('phong_chieu_id') == $phong->id)>
-                        {{ $phong->ten_phong }} ({{ strtoupper($phong->loai_phong) }})
+                <?php $__currentLoopData = $phongChieus; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $phong): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($phong->id); ?>" <?php if(request('phong_chieu_id') == $phong->id): echo 'selected'; endif; ?>>
+                        <?php echo e($phong->ten_phong); ?> (<?php echo e(strtoupper($phong->loai_phong)); ?>)
                     </option>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </select>
         </label>
 
@@ -134,17 +133,18 @@
             <span>Trạng thái</span>
             <select name="trang_thai">
                 <option value="">Tất cả trạng thái</option>
-                @foreach ($statusLabels as $value => $label)
-                    <option value="{{ $value }}" @selected(request('trang_thai') == $value)>
-                        {{ $label }}
+                <?php $__currentLoopData = $statusLabels; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($value); ?>" <?php if(request('trang_thai') == $value): echo 'selected'; endif; ?>>
+                        <?php echo e($label); ?>
+
                     </option>
-                @endforeach
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </select>
         </label>
 
         <label class="showtime-filter-field">
             <span>Ngày chiếu</span>
-            <input type="date" name="ngay_chieu" value="{{ request('ngay_chieu') }}">
+            <input type="date" name="ngay_chieu" value="<?php echo e(request('ngay_chieu')); ?>">
         </label>
 
         <div class="showtime-filter-actions">
@@ -152,7 +152,7 @@
                 <i class="fa-solid fa-magnifying-glass"></i>
                 Lọc lịch
             </button>
-            <a href="{{ route('admin.suat-chieus.index') }}" class="movie-action-btn is-ghost">
+            <a href="<?php echo e(route('admin.suat-chieus.index')); ?>" class="movie-action-btn is-ghost">
                 <i class="fa-solid fa-rotate-left"></i>
                 Đặt lại
             </a>
@@ -166,37 +166,38 @@
                     <i class="fa-solid fa-list-check"></i>
                     Kết quả điều phối
                 </span>
-                <h3>{{ number_format($moviesWithShowtimes) }} phim có suất chiếu trong trang này</h3>
+                <h3><?php echo e(number_format($moviesWithShowtimes)); ?> phim có suất chiếu trong trang này</h3>
             </div>
             <p>
                 Hiển thị
-                <strong>{{ $phimsPhanTrang->firstItem() ?? 0 }} - {{ $phimsPhanTrang->lastItem() ?? 0 }}</strong>
+                <strong><?php echo e($phimsPhanTrang->firstItem() ?? 0); ?> - <?php echo e($phimsPhanTrang->lastItem() ?? 0); ?></strong>
                 trong
-                <strong>{{ number_format($phimsPhanTrang->total()) }}</strong>
+                <strong><?php echo e(number_format($phimsPhanTrang->total())); ?></strong>
                 phim
             </p>
         </div>
 
         <div class="showtime-movie-stack">
-            @forelse ($phimsPhanTrang as $phim)
-                @php
+            <?php $__empty_1 = true; $__currentLoopData = $phimsPhanTrang; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $phim): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                <?php
                     $movieShowtimes = $phim->showtimes;
                     $movieTodayCount = $movieShowtimes->filter(fn ($showtime) => $showtime->thoi_gian_chieu?->isToday())->count();
                     $movieUpcomingCount = $movieShowtimes->filter(fn ($showtime) => $showtime->thoi_gian_chieu?->isFuture())->count();
                     $firstShowtime = $movieShowtimes->first();
-                @endphp
+                ?>
 
-                <details class="showtime-movie-card" {{ $loop->first ? 'open' : '' }}>
+                <details class="showtime-movie-card" <?php echo e($loop->first ? 'open' : ''); ?>>
                     <summary class="showtime-movie-summary">
                         <div class="showtime-movie-title">
-                            <img src="{{ $posterUrl($phim->poster) }}" alt="{{ $phim->ten_phim }}">
+                            <img src="<?php echo e($posterUrl($phim->poster)); ?>" alt="<?php echo e($phim->ten_phim); ?>">
                             <div>
-                                <strong>{{ $phim->ten_phim }}</strong>
+                                <strong><?php echo e($phim->ten_phim); ?></strong>
                                 <span>
                                     <i class="fa-regular fa-clock"></i>
-                                    {{ $phim->thoi_luong ?? 90 }} phút
+                                    <?php echo e($phim->thoi_luong ?? 90); ?> phút
                                     <b></b>
-                                    {{ $phim->country?->ten_quoc_gia ?? 'Chưa cập nhật quốc gia' }}
+                                    <?php echo e($phim->country?->ten_quoc_gia ?? 'Chưa cập nhật quốc gia'); ?>
+
                                 </span>
                             </div>
                         </div>
@@ -204,15 +205,15 @@
                         <div class="showtime-movie-metrics">
                             <span>
                                 <small>Tổng suất</small>
-                                <strong>{{ $movieShowtimes->count() }}</strong>
+                                <strong><?php echo e($movieShowtimes->count()); ?></strong>
                             </span>
                             <span>
                                 <small>Hôm nay</small>
-                                <strong>{{ $movieTodayCount }}</strong>
+                                <strong><?php echo e($movieTodayCount); ?></strong>
                             </span>
                             <span>
                                 <small>Sắp tới</small>
-                                <strong>{{ $movieUpcomingCount }}</strong>
+                                <strong><?php echo e($movieUpcomingCount); ?></strong>
                             </span>
                         </div>
 
@@ -222,10 +223,10 @@
                     </summary>
 
                     <div class="showtime-movie-body">
-                        @if ($movieShowtimes->isNotEmpty())
+                        <?php if($movieShowtimes->isNotEmpty()): ?>
                             <div class="showtime-mobile-list">
-                                @foreach ($movieShowtimes as $suat)
-                                    @php
+                                <?php $__currentLoopData = $movieShowtimes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $suat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php
                                         $status = $suat->trang_thai;
                                         $statusClass = match ($status) {
                                             'dang_chieu' => 'is-live',
@@ -233,19 +234,21 @@
                                             'huy' => 'is-cancelled',
                                             default => 'is-muted',
                                         };
-                                    @endphp
+                                    ?>
                                     <article class="showtime-mobile-item">
                                         <div>
-                                            <strong>{{ $suat->thoi_gian_chieu?->format('H:i d/m/Y') ?? 'N/A' }}</strong>
+                                            <strong><?php echo e($suat->thoi_gian_chieu?->format('H:i d/m/Y') ?? 'N/A'); ?></strong>
                                             <span>
-                                                {{ $suat->rapChieuPhim?->ten_rap ?? 'N/A' }}
+                                                <?php echo e($suat->rapChieuPhim?->ten_rap ?? 'N/A'); ?>
+
                                                 •
-                                                {{ $suat->phongChieu?->ten_phong ?? 'N/A' }}
+                                                <?php echo e($suat->phongChieu?->ten_phong ?? 'N/A'); ?>
+
                                             </span>
                                         </div>
-                                        <em class="{{ $statusClass }}">{{ $statusLabels[$status] ?? $status }}</em>
+                                        <em class="<?php echo e($statusClass); ?>"><?php echo e($statusLabels[$status] ?? $status); ?></em>
                                     </article>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </div>
 
                             <div class="showtime-table-wrap">
@@ -263,8 +266,8 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($movieShowtimes as $suat)
-                                            @php
+                                        <?php $__currentLoopData = $movieShowtimes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $suat): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <?php
                                                 $status = $suat->trang_thai;
                                                 $statusClass = match ($status) {
                                                     'dang_chieu' => 'is-live',
@@ -272,47 +275,51 @@
                                                     'huy' => 'is-cancelled',
                                                     default => 'is-muted',
                                                 };
-                                            @endphp
+                                            ?>
                                             <tr>
                                                 <td>
-                                                    <span class="showtime-code">#{{ sprintf('%04d', $suat->id) }}</span>
+                                                    <span class="showtime-code">#<?php echo e(sprintf('%04d', $suat->id)); ?></span>
                                                 </td>
-                                                <td>{{ $suat->rapChieuPhim?->ten_rap ?? 'N/A' }}</td>
+                                                <td><?php echo e($suat->rapChieuPhim?->ten_rap ?? 'N/A'); ?></td>
                                                 <td>
                                                     <span class="showtime-room-chip">
-                                                        {{ $suat->phongChieu?->ten_phong ?? 'N/A' }}
-                                                        @if ($suat->phongChieu?->loai_phong)
-                                                            <b>{{ strtoupper($suat->phongChieu->loai_phong) }}</b>
-                                                        @endif
+                                                        <?php echo e($suat->phongChieu?->ten_phong ?? 'N/A'); ?>
+
+                                                        <?php if($suat->phongChieu?->loai_phong): ?>
+                                                            <b><?php echo e(strtoupper($suat->phongChieu->loai_phong)); ?></b>
+                                                        <?php endif; ?>
                                                     </span>
                                                 </td>
-                                                <td>{{ $suat->thoi_gian_chieu?->format('d/m/Y') ?? 'N/A' }}</td>
+                                                <td><?php echo e($suat->thoi_gian_chieu?->format('d/m/Y') ?? 'N/A'); ?></td>
                                                 <td>
                                                     <span class="showtime-time-range">
-                                                        {{ $suat->thoi_gian_chieu?->format('H:i') ?? '--:--' }}
+                                                        <?php echo e($suat->thoi_gian_chieu?->format('H:i') ?? '--:--'); ?>
+
                                                         <i class="fa-solid fa-arrow-right"></i>
-                                                        {{ $suat->thoi_gian_ket_thuc?->format('H:i') ?? '--:--' }}
+                                                        <?php echo e($suat->thoi_gian_ket_thuc?->format('H:i') ?? '--:--'); ?>
+
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <strong class="showtime-price">{{ number_format((float) $suat->gia_ve) }}đ</strong>
+                                                    <strong class="showtime-price"><?php echo e(number_format((float) $suat->gia_ve)); ?>đ</strong>
                                                 </td>
                                                 <td>
-                                                    <span class="showtime-status {{ $statusClass }}">
-                                                        {{ $statusLabels[$status] ?? $status }}
+                                                    <span class="showtime-status <?php echo e($statusClass); ?>">
+                                                        <?php echo e($statusLabels[$status] ?? $status); ?>
+
                                                     </span>
                                                 </td>
                                                 <td>
                                                     <div class="showtime-row-actions">
-                                                        <a href="{{ route('admin.suat-chieus.show', $suat) }}" class="movie-icon-btn is-view" title="Xem chi tiết">
+                                                        <a href="<?php echo e(route('admin.suat-chieus.show', $suat)); ?>" class="movie-icon-btn is-view" title="Xem chi tiết">
                                                             <i class="fa-solid fa-eye"></i>
                                                         </a>
-                                                        <a href="{{ route('admin.suat-chieus.edit', $suat) }}" class="movie-icon-btn is-edit" title="Sửa suất chiếu">
+                                                        <a href="<?php echo e(route('admin.suat-chieus.edit', $suat)); ?>" class="movie-icon-btn is-edit" title="Sửa suất chiếu">
                                                             <i class="fa-solid fa-pen"></i>
                                                         </a>
-                                                        <form action="{{ route('admin.suat-chieus.destroy', $suat) }}" method="POST" onsubmit="return confirm('Bạn chắc chắn muốn xóa suất chiếu này?')">
-                                                            @csrf
-                                                            @method('DELETE')
+                                                        <form action="<?php echo e(route('admin.suat-chieus.destroy', $suat)); ?>" method="POST" onsubmit="return confirm('Bạn chắc chắn muốn xóa suất chiếu này?')">
+                                                            <?php echo csrf_field(); ?>
+                                                            <?php echo method_field('DELETE'); ?>
                                                             <button type="submit" class="movie-icon-btn is-delete" title="Xóa suất chiếu">
                                                                 <i class="fa-solid fa-trash-can"></i>
                                                             </button>
@@ -320,36 +327,38 @@
                                                     </div>
                                                 </td>
                                             </tr>
-                                        @endforeach
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </tbody>
                                 </table>
                             </div>
-                        @else
+                        <?php else: ?>
                             <div class="showtime-empty-card">
                                 <i class="fa-regular fa-calendar-xmark"></i>
                                 <strong>Phim này chưa có suất chiếu phù hợp</strong>
                                 <span>Thêm suất chiếu mới hoặc thay đổi bộ lọc để xem các lịch khác.</span>
-                                <a href="{{ route('admin.suat-chieus.create', ['phim_id' => $phim->id]) }}" class="movie-action-btn is-primary">
+                                <a href="<?php echo e(route('admin.suat-chieus.create', ['phim_id' => $phim->id])); ?>" class="movie-action-btn is-primary">
                                     <i class="fa-solid fa-calendar-plus"></i>
                                     Tạo suất chiếu
                                     <i class="fa-solid fa-arrow-right"></i>
                                 </a>
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
                 </details>
-            @empty
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="showtime-empty-card is-page-empty">
                     <i class="fa-solid fa-box-open"></i>
                     <strong>Không tìm thấy phim phù hợp</strong>
                     <span>Thử thay đổi bộ lọc hoặc thêm phim mới vào kho trước khi lên lịch.</span>
                 </div>
-            @endforelse
+            <?php endif; ?>
         </div>
 
         <div class="showtime-index-pagination">
-            @include('components.admin-pagination', ['paginator' => $phimsPhanTrang])
+            <?php echo $__env->make('components.admin-pagination', ['paginator' => $phimsPhanTrang], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
         </div>
     </section>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\DATN\WD-11-Cinehome-cinema\resources\views/admin/suat-chieus/index.blade.php ENDPATH**/ ?>

@@ -1348,6 +1348,14 @@ body {
         radial-gradient(circle at 20% 0%, rgba(229, 9, 20, 0.24), transparent 34%),
         linear-gradient(180deg, rgba(8, 10, 15, 0.98), rgba(13, 17, 25, 0.96)) !important;
     box-shadow: 22px 0 70px rgba(0, 0, 0, 0.34);
+    scrollbar-width: none !important;
+    -ms-overflow-style: none;
+}
+
+#adminSidebar::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
 }
 
 #adminSidebar > div:first-child {
@@ -4499,7 +4507,7 @@ body {
 }
 
 #adminDropdownMenu {
-    width: 240px !important;
+    width: min(300px, calc(100vw - 24px)) !important;
 }
 
 #adminDropdownMenu > div,
@@ -4518,6 +4526,93 @@ body {
     border-radius: 10px !important;
     text-align: left !important;
     text-decoration: none !important;
+}
+
+#adminDropdownMenu.admin-profile-menu {
+    padding: 0 !important;
+    border-color: rgba(255, 255, 255, 0.11) !important;
+    background:
+        linear-gradient(180deg, rgba(18, 22, 31, 0.98), rgba(13, 16, 23, 0.98)) !important;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.48) !important;
+    overflow: hidden !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-head {
+    padding: 16px 16px 14px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)) !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-avatar {
+    box-shadow: 0 14px 28px rgba(217, 154, 50, 0.18) !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-role {
+    display: inline-flex !important;
+    align-items: center !important;
+    min-height: 24px !important;
+    margin-top: 8px !important;
+    padding: 0 10px !important;
+    border: 1px solid rgba(246, 186, 76, 0.22) !important;
+    border-radius: 999px !important;
+    background: rgba(246, 186, 76, 0.08) !important;
+    color: #f6ba4c !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-section {
+    padding: 10px !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    padding: 10px 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: #e9eef8 !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    text-decoration: none !important;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link i:first-child {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    flex: 0 0 34px !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--cinema-red-soft) !important;
+    font-size: 13px !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link:hover {
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link.is-danger {
+    border-color: rgba(255, 59, 70, 0.16) !important;
+    background: rgba(255, 59, 70, 0.08) !important;
+    color: #ffd7dc !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link.is-danger i:first-child {
+    background: rgba(255, 59, 70, 0.15) !important;
+    color: #ff6a76 !important;
 }
 
 #adminMain > section {
@@ -7463,6 +7558,16 @@ body {
     line-height: 1.55;
 }
 
+.movie-detail-empty .movie-action-btn {
+    align-self: center;
+    min-width: 240px;
+}
+
+.movie-detail-empty .movie-action-btn i:last-child {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
 @media (max-width: 1180px) {
     .movie-detail-layout {
         grid-template-columns: 1fr;
@@ -8726,6 +8831,16 @@ body {
     color: var(--schedule-muted);
     font-size: 13px;
     line-height: 1.55;
+}
+
+.showtime-empty-card .movie-action-btn {
+    align-self: center;
+    min-width: 236px;
+}
+
+.showtime-empty-card .movie-action-btn i:last-child {
+    font-size: 12px;
+    opacity: 0.9;
 }
 
 .showtime-index-pagination {

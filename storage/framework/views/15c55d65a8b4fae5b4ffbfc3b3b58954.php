@@ -1,9 +1,7 @@
-@extends('layouts.admin')
+<?php $__env->startSection('page-title', 'Chi tiết phim'); ?>
+<?php $__env->startSection('page-subtitle', 'Xem thông tin phim, poster, trailer và lịch chiếu liên quan'); ?>
 
-@section('page-title', 'Chi tiết phim')
-@section('page-subtitle', 'Xem thông tin phim, poster, trailer và lịch chiếu liên quan')
-
-@php
+<?php
     $posterUrl = function (?string $poster): string {
         if (empty($poster)) {
             return asset('assets/images/LOGO copy.png');
@@ -71,49 +69,51 @@
         'huy' => 'Hủy',
         'dung_nhan_ve' => 'Dừng nhận vé',
     ];
-@endphp
+?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="movie-detail-page">
-    @include('admin.partials.flash')
+    <?php echo $__env->make('admin.partials.flash', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
 
     <section class="movie-detail-hero">
-        <div class="movie-detail-backdrop" style="background-image: url('{{ $poster }}');"></div>
+        <div class="movie-detail-backdrop" style="background-image: url('<?php echo e($poster); ?>');"></div>
         <div class="movie-detail-hero-content">
             <div class="movie-detail-poster">
-                <img src="{{ $poster }}" alt="{{ $phim->ten_phim }}">
+                <img src="<?php echo e($poster); ?>" alt="<?php echo e($phim->ten_phim); ?>">
             </div>
 
             <div class="movie-detail-copy">
                 <span class="movie-kicker">
                     <i class="fa-solid fa-film"></i>
-                    Hồ sơ phim #{{ $phim->id }}
+                    Hồ sơ phim #<?php echo e($phim->id); ?>
+
                 </span>
-                <h2>{{ $phim->ten_phim }}</h2>
+                <h2><?php echo e($phim->ten_phim); ?></h2>
 
                 <div class="movie-detail-tags">
-                    @if ($phim->gioi_han_tuoi)
-                        <span class="is-age">{{ $phim->gioi_han_tuoi }}</span>
-                    @endif
-                    <span><i class="fa-regular fa-clock"></i>{{ (int) $phim->thoi_luong }} phút</span>
-                    <span><i class="fa-solid fa-language"></i>{{ $phim->ngon_ngu ?: 'Chưa cập nhật' }}</span>
-                    <span><i class="fa-solid fa-location-dot"></i>{{ $phim->country?->ten_quoc_gia ?? 'Chưa cập nhật' }}</span>
+                    <?php if($phim->gioi_han_tuoi): ?>
+                        <span class="is-age"><?php echo e($phim->gioi_han_tuoi); ?></span>
+                    <?php endif; ?>
+                    <span><i class="fa-regular fa-clock"></i><?php echo e((int) $phim->thoi_luong); ?> phút</span>
+                    <span><i class="fa-solid fa-language"></i><?php echo e($phim->ngon_ngu ?: 'Chưa cập nhật'); ?></span>
+                    <span><i class="fa-solid fa-location-dot"></i><?php echo e($phim->country?->ten_quoc_gia ?? 'Chưa cập nhật'); ?></span>
                 </div>
 
                 <p>
-                    {{ \Illuminate\Support\Str::limit($phim->mo_ta ?: 'Chưa có mô tả cho phim này.', 230) }}
+                    <?php echo e(\Illuminate\Support\Str::limit($phim->mo_ta ?: 'Chưa có mô tả cho phim này.', 230)); ?>
+
                 </p>
 
                 <div class="movie-detail-actions">
-                    <a href="{{ route('admin.phims.edit', $phim) }}" class="movie-action-btn is-primary">
+                    <a href="<?php echo e(route('admin.phims.edit', $phim)); ?>" class="movie-action-btn is-primary">
                         <i class="fa-solid fa-pen"></i>
                         Sửa phim
                     </a>
-                    <a href="{{ route('admin.suat-chieus.index', ['phim_id' => $phim->id]) }}" class="movie-action-btn is-soft">
+                    <a href="<?php echo e(route('admin.suat-chieus.index', ['phim_id' => $phim->id])); ?>" class="movie-action-btn is-soft">
                         <i class="fa-solid fa-calendar-days"></i>
                         Xem suất chiếu
                     </a>
-                    <a href="{{ route('admin.phims.index') }}" class="movie-action-btn is-ghost">
+                    <a href="<?php echo e(route('admin.phims.index')); ?>" class="movie-action-btn is-ghost">
                         <i class="fa-solid fa-arrow-left"></i>
                         Quay lại
                     </a>
@@ -127,7 +127,7 @@
             <span><i class="fa-solid fa-tags"></i></span>
             <div>
                 <small>Thể loại</small>
-                <strong>{{ $phim->genres->count() }}</strong>
+                <strong><?php echo e($phim->genres->count()); ?></strong>
             </div>
         </article>
 
@@ -135,7 +135,7 @@
             <span><i class="fa-solid fa-calendar-check"></i></span>
             <div>
                 <small>Tổng suất chiếu</small>
-                <strong>{{ $phim->showtimes->count() }}</strong>
+                <strong><?php echo e($phim->showtimes->count()); ?></strong>
             </div>
         </article>
 
@@ -143,7 +143,7 @@
             <span><i class="fa-solid fa-hourglass-half"></i></span>
             <div>
                 <small>Suất sắp tới</small>
-                <strong>{{ $upcomingShowtimes->count() }}</strong>
+                <strong><?php echo e($upcomingShowtimes->count()); ?></strong>
             </div>
         </article>
 
@@ -151,7 +151,7 @@
             <span><i class="fa-solid fa-video"></i></span>
             <div>
                 <small>Trailer</small>
-                <strong>{{ $trailerEmbed ? 'Có' : 'Chưa' }}</strong>
+                <strong><?php echo e($trailerEmbed ? 'Có' : 'Chưa'); ?></strong>
             </div>
         </article>
     </section>
@@ -170,35 +170,35 @@
                 <div class="movie-info-grid">
                     <div>
                         <small>Tên phim</small>
-                        <strong>{{ $phim->ten_phim }}</strong>
+                        <strong><?php echo e($phim->ten_phim); ?></strong>
                     </div>
                     <div>
                         <small>Quốc gia</small>
-                        <strong>{{ $phim->country?->ten_quoc_gia ?? 'Chưa cập nhật' }}</strong>
+                        <strong><?php echo e($phim->country?->ten_quoc_gia ?? 'Chưa cập nhật'); ?></strong>
                     </div>
                     <div>
                         <small>Đạo diễn</small>
-                        <strong>{{ $phim->dao_dien ?: 'Chưa cập nhật' }}</strong>
+                        <strong><?php echo e($phim->dao_dien ?: 'Chưa cập nhật'); ?></strong>
                     </div>
                     <div>
                         <small>Diễn viên</small>
-                        <strong>{{ $phim->dien_vien ?: 'Chưa cập nhật' }}</strong>
+                        <strong><?php echo e($phim->dien_vien ?: 'Chưa cập nhật'); ?></strong>
                     </div>
                     <div>
                         <small>Ngôn ngữ</small>
-                        <strong>{{ $phim->ngon_ngu ?: 'Chưa cập nhật' }}</strong>
+                        <strong><?php echo e($phim->ngon_ngu ?: 'Chưa cập nhật'); ?></strong>
                     </div>
                     <div>
                         <small>Giới hạn tuổi</small>
-                        <strong>{{ $phim->gioi_han_tuoi ?: 'Chưa cập nhật' }}</strong>
+                        <strong><?php echo e($phim->gioi_han_tuoi ?: 'Chưa cập nhật'); ?></strong>
                     </div>
                     <div>
                         <small>Thời lượng</small>
-                        <strong>{{ (int) $phim->thoi_luong }} phút</strong>
+                        <strong><?php echo e((int) $phim->thoi_luong); ?> phút</strong>
                     </div>
                     <div>
                         <small>Slug</small>
-                        <strong>{{ $phim->slug }}</strong>
+                        <strong><?php echo e($phim->slug); ?></strong>
                     </div>
                 </div>
             </section>
@@ -213,7 +213,8 @@
                 </div>
 
                 <div class="movie-description-box">
-                    {{ $phim->mo_ta ?: 'Chưa có mô tả cho phim này.' }}
+                    <?php echo e($phim->mo_ta ?: 'Chưa có mô tả cho phim này.'); ?>
+
                 </div>
             </section>
 
@@ -224,15 +225,15 @@
                         <h3>Suất chiếu gần đây</h3>
                         <p>Theo dõi nhanh lịch chiếu đã gắn với phim này.</p>
                     </div>
-                    <a href="{{ route('admin.suat-chieus.index', ['phim_id' => $phim->id]) }}">
+                    <a href="<?php echo e(route('admin.suat-chieus.index', ['phim_id' => $phim->id])); ?>">
                         Xem tất cả <i class="fa-solid fa-arrow-right"></i>
                     </a>
                 </div>
 
-                @if ($latestShowtimes->isNotEmpty())
+                <?php if($latestShowtimes->isNotEmpty()): ?>
                     <div class="movie-showtime-list">
-                        @foreach ($latestShowtimes as $showtime)
-                            @php
+                        <?php $__currentLoopData = $latestShowtimes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $showtime): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php
                                 $status = $showtime->trang_thai;
                                 $statusClass = match ($status) {
                                     'dang_chieu' => 'is-live',
@@ -240,44 +241,48 @@
                                     'huy' => 'is-cancelled',
                                     default => 'is-muted',
                                 };
-                            @endphp
+                            ?>
                             <article class="movie-showtime-item">
                                 <div class="movie-showtime-date">
-                                    <strong>{{ $showtime->thoi_gian_chieu?->format('d') ?? '--' }}</strong>
-                                    <span>{{ $showtime->thoi_gian_chieu?->format('m/Y') ?? '--/----' }}</span>
+                                    <strong><?php echo e($showtime->thoi_gian_chieu?->format('d') ?? '--'); ?></strong>
+                                    <span><?php echo e($showtime->thoi_gian_chieu?->format('m/Y') ?? '--/----'); ?></span>
                                 </div>
                                 <div class="movie-showtime-info">
                                     <strong>
-                                        {{ $showtime->thoi_gian_chieu?->format('H:i') ?? '--:--' }}
-                                        @if ($showtime->thoi_gian_ket_thuc)
-                                            - {{ $showtime->thoi_gian_ket_thuc->format('H:i') }}
-                                        @endif
+                                        <?php echo e($showtime->thoi_gian_chieu?->format('H:i') ?? '--:--'); ?>
+
+                                        <?php if($showtime->thoi_gian_ket_thuc): ?>
+                                            - <?php echo e($showtime->thoi_gian_ket_thuc->format('H:i')); ?>
+
+                                        <?php endif; ?>
                                     </strong>
                                     <span>
-                                        {{ $showtime->rapChieuPhim?->ten_rap ?? 'Chưa cập nhật rạp' }}
+                                        <?php echo e($showtime->rapChieuPhim?->ten_rap ?? 'Chưa cập nhật rạp'); ?>
+
                                         •
-                                        {{ $showtime->phongChieu?->ten_phong ?? 'Chưa cập nhật phòng' }}
+                                        <?php echo e($showtime->phongChieu?->ten_phong ?? 'Chưa cập nhật phòng'); ?>
+
                                     </span>
                                 </div>
                                 <div class="movie-showtime-meta">
-                                    <b>{{ number_format((float) $showtime->gia_ve) }}đ</b>
-                                    <em class="{{ $statusClass }}">{{ $statusLabels[$status] ?? $status }}</em>
+                                    <b><?php echo e(number_format((float) $showtime->gia_ve)); ?>đ</b>
+                                    <em class="<?php echo e($statusClass); ?>"><?php echo e($statusLabels[$status] ?? $status); ?></em>
                                 </div>
                             </article>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
-                @else
+                <?php else: ?>
                     <div class="movie-detail-empty">
                         <i class="fa-regular fa-calendar-xmark"></i>
                         <strong>Chưa có suất chiếu</strong>
                         <span>Hãy tạo lịch chiếu để phim có thể bán vé trên hệ thống.</span>
-                        <a href="{{ route('admin.suat-chieus.create', ['phim_id' => $phim->id]) }}" class="movie-action-btn is-primary">
+                        <a href="<?php echo e(route('admin.suat-chieus.create', ['phim_id' => $phim->id])); ?>" class="movie-action-btn is-primary">
                             <i class="fa-solid fa-calendar-plus"></i>
                             Tạo suất chiếu
                             <i class="fa-solid fa-arrow-right"></i>
                         </a>
                     </div>
-                @endif
+                <?php endif; ?>
             </section>
         </main>
 
@@ -291,7 +296,7 @@
                     </div>
                 </div>
 
-                <img src="{{ $poster }}" alt="{{ $phim->ten_phim }}">
+                <img src="<?php echo e($poster); ?>" alt="<?php echo e($phim->ten_phim); ?>">
             </section>
 
             <section class="movie-detail-panel movie-detail-media">
@@ -303,17 +308,17 @@
                     </div>
                 </div>
 
-                @if ($trailerEmbed)
+                <?php if($trailerEmbed): ?>
                     <div class="movie-detail-trailer">
-                        <iframe src="{{ $trailerEmbed }}" title="Trailer {{ $phim->ten_phim }}" allowfullscreen></iframe>
+                        <iframe src="<?php echo e($trailerEmbed); ?>" title="Trailer <?php echo e($phim->ten_phim); ?>" allowfullscreen></iframe>
                     </div>
-                @else
+                <?php else: ?>
                     <div class="movie-detail-empty is-compact">
                         <i class="fa-brands fa-youtube"></i>
                         <strong>Chưa có trailer hợp lệ</strong>
                         <span>Cập nhật link YouTube để xem preview tại đây.</span>
                     </div>
-                @endif
+                <?php endif; ?>
             </section>
 
             <section class="movie-detail-panel">
@@ -326,14 +331,16 @@
                 </div>
 
                 <div class="movie-detail-genres">
-                    @forelse ($phim->genres as $genre)
-                        <span>{{ $genre->ten_the_loai }}</span>
-                    @empty
+                    <?php $__empty_1 = true; $__currentLoopData = $phim->genres; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $genre): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <span><?php echo e($genre->ten_the_loai); ?></span>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <span class="is-muted">Chưa có thể loại</span>
-                    @endforelse
+                    <?php endif; ?>
                 </div>
             </section>
         </aside>
     </div>
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.admin', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\laragon\www\DATN\WD-11-Cinehome-cinema\resources\views/admin/phims/show.blade.php ENDPATH**/ ?>
