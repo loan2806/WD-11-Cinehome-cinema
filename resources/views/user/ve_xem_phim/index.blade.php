@@ -89,6 +89,9 @@
         ['status' => 'het_han', 'label' => 'Hết hạn', 'count' => $ticketStats['expired'] ?? 0],
         ['status' => 'da_huy', 'label' => 'Đã hủy', 'count' => $ticketStats['cancelled'] ?? 0],
     ];
+
+    // Lấy vé chờ thanh toán gần nhất (nếu có)
+    $pendingTicketAlert = $veXemPhims->firstWhere('trang_thai', 'cho_thanh_toan');
 @endphp
 
 <section class="mytickets-page">
@@ -166,7 +169,7 @@
             </article>
         </div>
 
-        {{-- 🌟 THÔNG BÁO CẢNH BÁO ĐẶT NGAY TRÊN DANH SÁCH VÉ --}}
+        {{-- 🌟 THÔNG BÁO CẢNH BÁO LỖI / CHUYỂN HƯỚNG ĐẶT VÉ KHÁC --}}
         @if(session('error'))
             <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(153, 27, 27, 0.35)); border: 1px solid rgba(239, 68, 68, 0.6); color: #ffffff; padding: 16px 20px; border-radius: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; box-shadow: 0 8px 25px rgba(239, 68, 68, 0.2); backdrop-filter: blur(10px);">
                 <div style="background: #ef4444; color: #fff; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);">
@@ -185,6 +188,36 @@
                 </div>
                 <div style="flex: 1; font-size: 15px; font-weight: 600; line-height: 1.5; color: #dcfce7;">
                     {{ session('success') }}
+                </div>
+            </div>
+        @endif
+
+        {{-- 🌟 BANNER CẢNH BÁO NẾU ĐANG CÓ ĐƠN CHỜ THANH TOÁN --}}
+        @if($pendingTicketAlert && method_exists($pendingTicketAlert, 'isExpired') && !$pendingTicketAlert->isExpired())
+            <div style="background: rgba(234, 179, 8, 0.12); border: 1px solid #eab308; color: #fef08a; padding: 18px 24px; border-radius: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; box-shadow: 0 10px 30px -5px rgba(234, 179, 8, 0.25);">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="background: #eab308; color: #000; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; flex-shrink: 0;" class="animate-pay-pulse">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <strong style="display: block; color: #fff; font-size: 16px; font-weight: 800; margin-bottom: 3px;">
+                            Bạn đang có đơn hàng chờ thanh toán: {{ $pendingTicketAlert->ten_phim }}
+                        </strong>
+                        <span style="font-size: 13px; color: #cbd5e1;">
+                            Ghế giữ: <b style="color: #facc15;">{{ $pendingTicketAlert->ma_ghe }}</b> • Tổng tiền: <b style="color: #facc15;">{{ number_format($pendingTicketAlert->tong_tien, 0, ',', '.') }}đ</b>
+                        </span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <a href="{{ route('dat_ve.checkout', ['suat_chieu_id' => $pendingTicketAlert->suat_chieu_id, 'pending_ticket_id' => $pendingTicketAlert->id]) }}" style="background: #eab308; color: #000; padding: 10px 20px; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 13px; transition: 0.2s;" class="myticket-detail-btn">
+                        Thanh toán ngay <i class="fa-solid fa-arrow-right " style="margin-left: 4px;"></i>
+                    </a>
+                    <form action="{{ route('dat_ve.huy_ve_pending', $pendingTicketAlert->id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này để chọn suất chiếu mới?');">
+                        @csrf
+                        <button type="submit" style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 10px 16px; border-radius: 10px; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.4); font-size: 13px; cursor: pointer;" class="myticket-detail-btn">
+                            Hủy đơn
+                        </button>
+                    </form>
                 </div>
             </div>
         @endif
@@ -291,7 +324,7 @@
                                 </strong>
                                 <small>{{ $meta['description'] }}</small>
 
-                                {{-- 🌟 ĐÃ CẬP NHẬT: NÚT THANH TOÁN MÀU CHỮ ĐEN RÕ RÀNG + ANIMATION KHÔI PHỤC --}}
+                                {{-- 🌟 NÚT THANH TOÁN & HỦY ĐƠN VÉ PENDING --}}
                                 @if($veXemPhim->trang_thai === 'cho_thanh_toan')
                                     <div class="myticket-status-action" style="margin-top: 12px; width: 100%;">
                                         @if(method_exists($veXemPhim, 'isExpired') && $veXemPhim->isExpired())
@@ -313,10 +346,9 @@
                                                       onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này để nhả lại ghế trống?');">
                                                     @csrf
                                                     <button type="submit"
-                                                    class="myticket-detail-btn"
+                                                            class="myticket-detail-btn"
                                                             style="width: 100%; background: rgba(239, 68, 68, 0.12); color: #fca5a5 !important; border: 1px solid rgba(239, 68, 68, 0.35); font-weight: 700; font-size: 13px; padding: 10px 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;">
-                                                            
-                                                        <i class="fa-solid fa-xmark "></i>
+                                                        <i class="fa-solid fa-xmark"></i>
                                                         <span>Hủy đơn</span>
                                                     </button>
                                                 </form>
@@ -327,7 +359,7 @@
                             </div>
                         </div>
 
-                        {{-- 🌟 THIẾT KẾ MỚI CHO NÚT CHI TIẾT VÉ --}}
+                        {{-- 🌟 NÚT CHI TIẾT VÉ CHO VÉ ĐÃ THANH TOÁN / ĐÃ SỬ DỤNG / HẾT HẠN --}}
                         @if($veXemPhim->trang_thai !== 'cho_thanh_toan')
                             <div class="myticket-actions" style="display: flex; justify-content: flex-end; align-items: center;">
                                 <a href="{{ route('user.ve_xem_phim.show', $veXemPhim) }}" class="btn-ticket-detail-custom">

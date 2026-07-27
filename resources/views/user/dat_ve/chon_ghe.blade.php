@@ -125,6 +125,28 @@
             </aside>
 
             <section class="booking-seat-map-panel" aria-label="Sơ đồ chọn ghế">
+                
+                {{-- 🌟 BANNER CẢNH BÁO ĐƠN HÀNG CHỜ THANH TOÁN (ĐÃ SỬA TÊN THAM SỐ MOVIE) --}}
+                @if (isset($pendingTicket) && $pendingTicket && !$pendingTicket->isExpired())
+                    <div class="booking-pending-alert" style="background: rgba(234, 179, 8, 0.12) !important; border: 1px solid #eab308 !important; color: #fef08a !important; padding: 16px 20px !important; border-radius: 16px !important; margin-bottom: 20px !important; display: flex !important; justify-content: space-between !important; align-items: center !important; gap: 15px !important; flex-wrap: wrap !important; z-index: 99 !important; box-shadow: 0 10px 25px -5px rgba(234, 179, 8, 0.2);">
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <i class="fa-solid fa-clock-rotate-left" style="color: #facc15 !important; font-size: 22px !important;"></i>
+                            <div>
+                                <strong style="display: block; color: #fff; font-size: 15px; font-weight: 700; margin-bottom: 2px;">Bạn đang có đơn hàng chờ thanh toán (Mã vé: {{ $pendingTicket->ma_ve }})</strong>
+                                <span style="font-size: 13px; color: #cbd5e1;">Ghế đang giữ: <b style="color: #facc15;">{{ $pendingTicket->ma_ghe }}</b></span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <a href="{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id, 'pending_ticket_id' => $pendingTicket->id]) }}" style="background: #eab308; color: #000; padding: 9px 18px; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 13px; transition: 0.2s;">
+                                Tiếp tục thanh toán <i class="fa-solid fa-arrow-right" style="margin-left: 4px;"></i>
+                            </a>
+                            <a href="{{ route('dat_ve.chon_ghe', ['movie' => $suatChieu->id, 'reset' => 1]) }}" style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 9px 16px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 13px; border: 1px solid rgba(239, 68, 68, 0.4);" onclick="return confirm('Bạn có chắc muốn hủy đơn chờ này để chọn lại ghế mới?')">
+                                Hủy & Chọn lại
+                            </a>
+                        </div>
+                    </div>
+                @endif
+
                 <div class="booking-seat-toolbar">
                     <div>
                         <span class="booking-eyebrow">
@@ -357,7 +379,7 @@
             let countdownTimerInterval = null;
             let selectedSeats = [];
             let lockedSeats = new Set();
-            let isProceedingToFood = false; // Flag kiểm tra người dùng có đang chuyển tiếp sang bước chọn đồ ăn không
+            let isProceedingToFood = false;
 
             const params = new URLSearchParams(window.location.search);
             const seatParam = params.get("ghe");
@@ -439,7 +461,6 @@
                 updateUI();
             }
 
-            // 🌟 GIẢI PHÁP TRIỆT ĐỂ: Tự động gửi request nhả ghế ngầm khi thoát / chuyển trang
             function releaseAllSeatsBeacon() {
                 if (isProceedingToFood || selectedSeats.length === 0) return;
 
@@ -463,10 +484,8 @@
                 localStorage.removeItem(storageKey);
             }
 
-            // 1. Nhả ghế khi người dùng Tắt Tab, Reload, hoặc rời trang
             window.addEventListener("pagehide", releaseAllSeatsBeacon);
 
-            // 2. Nhả ghế khi người dùng bấm vào bất kỳ Link chuyển trang nào (Trang chủ, Đặt vé, Đổi suất chiếu...)
             document.addEventListener("click", function(e) {
                 const link = e.target.closest("a");
                 if (link && link.href) {
@@ -500,6 +519,17 @@
             function checkTimerState() {
                 if (!countdownEl) return;
 
+                if (selectedSeats.length === 0) {
+                    if (countdownTimerInterval) {
+                        clearInterval(countdownTimerInterval);
+                        countdownTimerInterval = null;
+                    }
+                    localStorage.removeItem(storageKey);
+                    countdownEl.innerText = "07:00";
+                    countdownEl.classList.remove("animate-pulse");
+                    return;
+                }
+
                 let deadline = Number(localStorage.getItem(storageKey));
                 const serverDeadline = Number(pendingDeadline) || null;
                 const validStoredDeadline = deadline && deadline > Date.now() ? deadline : null;
@@ -511,18 +541,8 @@
                     deadline = validServerDeadline;
                 } else if (validStoredDeadline) {
                     deadline = validStoredDeadline;
-                } else if (selectedSeats.length > 0) {
-                    deadline = Date.now() + (7 * 60 * 1000);
                 } else {
-                    if (countdownTimerInterval) {
-                        clearInterval(countdownTimerInterval);
-                        countdownTimerInterval = null;
-                    }
-
-                    localStorage.removeItem(storageKey);
-                    countdownEl.innerText = "07:00";
-                    countdownEl.classList.remove("animate-pulse");
-                    return;
+                    deadline = Date.now() + (7 * 60 * 1000);
                 }
 
                 localStorage.setItem(storageKey, deadline);
@@ -769,7 +789,7 @@
                         return;
                     }
 
-                    isProceedingToFood = true; // Bật cờ không giải phóng ghế khi chuyển hướng tiếp
+                    isProceedingToFood = true;
 
                     const seats = encodeURIComponent(selectedSeats.join(","));
                     let url = `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seats}`;
@@ -781,15 +801,20 @@
                 });
             }
 
+            // 🌟 ĐÃ SỬA TÊN THAM SỐ ROUTE SANG 'movie' DỨT ĐIỂM LỖI 500
             if (btnResetSeats) {
                 btnResetSeats.addEventListener("click", async function() {
-                    if (selectedSeats.length === 0) return;
+                    if (!confirm('Bạn có chắc chắn muốn hủy chọn ghế ?')) return;
+                    
+                    localStorage.removeItem(storageKey);
                     await releaseAllSeats();
                     clearSeatErrorJS();
+                    
                     if (countdownEl) {
                         countdownEl.innerText = "07:00";
                     }
-                    alert('Đã hủy chọn ghế cũ. Vui lòng chọn ghế mới.');
+
+                    window.location.href = "{{ route('dat_ve.chon_ghe', ['movie' => $suatChieu->id, 'reset' => 1]) }}";
                 });
             }
 
