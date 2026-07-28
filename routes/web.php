@@ -81,6 +81,10 @@ Route::get('/', [PhimsController::class, 'home'])->name('home');
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
+    if (! $user) {
+        return redirect()->route('login');
+    }
+
     if ($user->hasRole('Quản lý hệ thống') || $user->vai_tro === 'quan_ly_he_thong') {
         return redirect()->route('system.dashboard');
     }
@@ -99,7 +103,7 @@ Route::get('/dashboard', function () {
     }
 
     return redirect()->route('home');
-})->name('dashboard');
+})->middleware('auth')->name('dashboard');
 
 Route::get('/phims', [PhimsController::class, 'index'])->name('user.phims.index');
 Route::get('/phims/{movie}', [PhimsController::class, 'show'])->name('user.phims.show');
