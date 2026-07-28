@@ -150,17 +150,17 @@ class SeatGeneratorService
             
             // Xác định loại ghế theo vị trí hàng:
             // - 3 hàng đầu (gần màn): Thường
-            // - 2 hàng cuối (xa màn): Couple
+            // - 1 hàng cuối (xa màn): Couple
             // - Hàng giữa: VIP
             $loaiGheId = $loaiGheThuongId; // Mặc định thường
             $laHangCouple = false;
             
-            if ($i >= $soHang - 2 && $loaiGheCoupleId) {
-                // 2 hàng cuối: Couple
+            if ($i >= $soHang - 1 && $loaiGheCoupleId) {
+                // 1 hàng cuối: Couple
                 $loaiGheId = $loaiGheCoupleId;
                 $laHangCouple = true;
             } elseif ($i >= 3 && $loaiGheVipId) {
-                // Hàng 4 trở đi (không tính 2 hàng cuối): VIP
+                // Hàng 4 trở đi (không tính 1 hàng cuối): VIP
                 $loaiGheId = $loaiGheVipId;
             }
             

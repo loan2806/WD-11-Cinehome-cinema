@@ -545,11 +545,19 @@
         </div>
 
         <div class="kpi-card">
-            <div class="kpi-icon" style="background: rgba(59, 130, 246, 0.12);">
-                <i class="fas fa-burger" style="color: #3b82f6;"></i>
+            <div class="kpi-icon" style="background: rgba(168, 85, 247, 0.12);">
+                <i class="fas fa-burger" style="color: #a855f7;"></i>
             </div>
-            <div class="kpi-value">{{ number_format((float)($kpi['food_revenue'] ?? 0), 0, ',', '.') }}đ</div>
+            <div class="kpi-value">{{ number_format((float)($kpi['combo_revenue'] ?? 0), 0, ',', '.') }}đ</div>
             <div class="kpi-label">Doanh thu combo</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background: rgba(59, 130, 246, 0.12);">
+                <i class="fas fa-cookie-bite" style="color: #3b82f6;"></i>
+            </div>
+            <div class="kpi-value">{{ number_format((float)($kpi['snack_revenue'] ?? 0), 0, ',', '.') }}đ</div>
+            <div class="kpi-label">Đồ ăn & Nước</div>
         </div>
 
         <div class="kpi-card">
@@ -583,14 +591,6 @@
             <div class="kpi-value">{{ number_format((int)($kpi['vouchers_used'] ?? 0)) }}</div>
             <div class="kpi-label">Voucher sử dụng</div>
         </div>
-
-        <div class="kpi-card">
-            <div class="kpi-icon" style="background: rgba(234, 179, 8, 0.12);">
-                <i class="fas fa-chair" style="color: #eab308;"></i>
-            </div>
-            <div class="kpi-value">{{ number_format((float)($kpi['seat_occupancy_rate'] ?? 0), 1) }}%</div>
-            <div class="kpi-label">Tỷ lệ lấp đầy</div>
-        </div>
     </div>
 
     {{-- Main Charts --}}
@@ -623,12 +623,12 @@
                         <div class="lbl">Vé</div>
                     </div>
                     <div class="mini-stat">
-                        <div class="val">{{ $kpi['total_revenue'] > 0 ? round($kpi['food_revenue'] / $kpi['total_revenue'] * 100) : 0 }}%</div>
+                        <div class="val">{{ $kpi['total_revenue'] > 0 ? round($kpi['combo_revenue'] / $kpi['total_revenue'] * 100) : 0 }}%</div>
                         <div class="lbl">Combo</div>
                     </div>
                     <div class="mini-stat">
-                        <div class="val">{{ number_format((float)($kpi['average_ticket_price'] ?? 0), 0, ',', '.') }}đ</div>
-                        <div class="lbl">Giá TB</div>
+                        <div class="val">{{ $kpi['total_revenue'] > 0 ? round($kpi['snack_revenue'] / $kpi['total_revenue'] * 100) : 0 }}%</div>
+                        <div class="lbl">Đồ ăn</div>
                     </div>
                 </div>
             </div>
@@ -834,7 +834,8 @@ function setPeriod(period) {
 const revenueData = {!! json_encode($revenueByTime ?? []) !!};
 const chartLabels = revenueData.map(item => item.period || item.label || '');
 const ticketChartData = revenueData.map(item => item.ticket_revenue || 0);
-const foodChartData = revenueData.map(item => item.food_revenue || 0);
+const comboChartData = revenueData.map(item => item.combo_revenue || 0);
+const snackChartData = revenueData.map(item => item.snack_revenue || 0);
 
 // Line Chart
 new Chart(document.getElementById('lineChart'), {
@@ -856,14 +857,26 @@ new Chart(document.getElementById('lineChart'), {
             },
             {
                 label: 'Doanh thu combo',
-                data: foodChartData,
-                borderColor: '#22c55e',
-                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                data: comboChartData,
+                borderColor: '#a855f7',
+                backgroundColor: 'rgba(168, 85, 247, 0.1)',
                 fill: true,
                 tension: 0.4,
                 pointRadius: 0,
                 pointHoverRadius: 6,
-                pointHoverBackgroundColor: '#22c55e',
+                pointHoverBackgroundColor: '#a855f7',
+                borderWidth: 2
+            },
+            {
+                label: 'Đồ ăn & Nước',
+                data: snackChartData,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#3b82f6',
                 borderWidth: 2
             }
         ]
@@ -910,10 +923,14 @@ new Chart(document.getElementById('lineChart'), {
 new Chart(document.getElementById('pieChart'), {
     type: 'doughnut',
     data: {
-        labels: ['Vé', 'Combo'],
+        labels: ['Vé', 'Combo', 'Đồ ăn & Nước'],
         datasets: [{
-            data: [{{ (float)($kpi['ticket_revenue'] ?? 0) }}, {{ (float)($kpi['food_revenue'] ?? 0) }}],
-            backgroundColor: ['#f7b84b', '#22c55e'],
+            data: [
+                {{ (float)($kpi['ticket_revenue'] ?? 0) }},
+                {{ (float)($kpi['combo_revenue'] ?? 0) }},
+                {{ (float)($kpi['snack_revenue'] ?? 0) }}
+            ],
+            backgroundColor: ['#f7b84b', '#a855f7', '#3b82f6'],
             borderWidth: 0,
             hoverOffset: 8
         }]

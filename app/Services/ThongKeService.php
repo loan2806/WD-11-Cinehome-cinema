@@ -71,11 +71,32 @@ class ThongKeService
     public function getKPISummary(): array
     {
         $ticketRevenue = (clone $this->getPaidTicketQuery())->sum('tong_tien');
-        $foodRevenue = (clone $this->getPaidFoodInvoiceQuery())->sum('total');
-        $totalRevenue = $ticketRevenue + $foodRevenue;
+        
+        // Lấy hóa đơn đồ ăn đã thanh toán
+        $foodInvoices = (clone $this->getPaidFoodInvoiceQuery())
+            ->with(['items.doAn'])
+            ->get();
+        
+        $comboRevenue = 0;
+        $snackRevenue = 0;
+        
+        foreach ($foodInvoices as $invoice) {
+            foreach ($invoice->items as $item) {
+                $isCombo = $item->doAn?->isCombo() ?? false;
+                $itemTotal = (float) $item->price * (int) $item->quantity;
+                
+                if ($isCombo) {
+                    $comboRevenue += $itemTotal;
+                } else {
+                    $snackRevenue += $itemTotal;
+                }
+            }
+        }
+        
+        $totalRevenue = $ticketRevenue + $comboRevenue + $snackRevenue;
         $ticketsSold = (clone $this->getPaidTicketQuery())->count();
-        $foodInvoices = (clone $this->getPaidFoodInvoiceQuery())->count();
-        $totalInvoices = $ticketsSold + $foodInvoices;
+        $foodInvoicesCount = $foodInvoices->count();
+        $totalInvoices = $ticketsSold + $foodInvoicesCount;
         $averageTicketPrice = $ticketsSold > 0 ? $ticketRevenue / $ticketsSold : 0;
 
         // Tổng số suất chiếu trong khoảng thời gian
@@ -100,10 +121,11 @@ class ThongKeService
         return [
             'total_revenue' => $totalRevenue,
             'ticket_revenue' => $ticketRevenue,
-            'food_revenue' => $foodRevenue,
+            'combo_revenue' => $comboRevenue,
+            'snack_revenue' => $snackRevenue,
             'tickets_sold' => $ticketsSold,
             'total_invoices' => $totalInvoices,
-            'food_invoices' => $foodInvoices,
+            'food_invoices' => $foodInvoicesCount,
             'average_ticket_price' => $averageTicketPrice,
             'seat_occupancy_rate' => $seatOccupancyRate,
             'total_showtimes' => $totalShowtimes,
@@ -159,30 +181,28 @@ class ThongKeService
             ->get()
             ->keyBy('period');
 
-        $foodRevenue = FoodInvoice::query()
+        // Lấy dữ liệu đồ ăn và phân tách combo/đồ ăn riêng
+        $foodInvoices = FoodInvoice::query()
             ->whereBetween('created_at', [$this->from, $this->to])
             ->where('payment_status', 'paid')
-            ->select(
-                DB::raw("DATE_FORMAT(created_at, '{$groupFormat}') as period"),
-                DB::raw('SUM(total) as revenue'),
-                DB::raw('COUNT(*) as invoices')
-            )
-            ->groupBy('period')
+            ->with(['items.doAn'])
             ->get()
-            ->keyBy('period');
+            ->groupBy(function ($invoice) use ($groupFormat) {
+                return Carbon::parse($invoice->created_at)->format(str_replace('%', '', $groupFormat));
+            });
 
         // Xử lý theo quý
         if ($periodType === 'quarter') {
-            return $this->processQuarterlyData($ticketRevenue, $foodRevenue);
+            return $this->processQuarterlyData($ticketRevenue, $foodInvoices);
         }
 
-        return $this->mergeRevenueData($ticketRevenue, $foodRevenue);
+        return $this->mergeRevenueData($ticketRevenue, $foodInvoices, $periodType);
     }
 
     /**
      * Xử lý dữ liệu theo quý
      */
-    protected function processQuarterlyData($ticketRevenue, $foodRevenue): array
+    protected function processQuarterlyData($ticketRevenue, $foodInvoices): array
     {
         $result = [];
 
@@ -197,9 +217,9 @@ class ThongKeService
                 $result[$key] = [
                     'period' => $key,
                     'ticket_revenue' => 0,
-                    'food_revenue' => 0,
+                    'combo_revenue' => 0,
+                    'snack_revenue' => 0,
                     'tickets' => 0,
-                    'invoices' => 0,
                 ];
             }
             $result[$key]['ticket_revenue'] += $item->revenue;
@@ -207,9 +227,9 @@ class ThongKeService
         }
 
         // Gộp dữ liệu đồ ăn theo quý
-        foreach ($foodRevenue as $item) {
-            $year = substr($item->period, 0, 4);
-            $month = (int) substr($item->period, 5, 2);
+        foreach ($foodInvoices as $period => $invoices) {
+            $year = substr($period, 0, 4);
+            $month = (int) substr($period, 5, 2);
             $quarter = ceil($month / 3);
             $key = "{$year}-Q{$quarter}";
 
@@ -217,18 +237,29 @@ class ThongKeService
                 $result[$key] = [
                     'period' => $key,
                     'ticket_revenue' => 0,
-                    'food_revenue' => 0,
+                    'combo_revenue' => 0,
+                    'snack_revenue' => 0,
                     'tickets' => 0,
-                    'invoices' => 0,
                 ];
             }
-            $result[$key]['food_revenue'] += $item->revenue;
-            $result[$key]['invoices'] += $item->invoices;
+
+            foreach ($invoices as $invoice) {
+                foreach ($invoice->items as $item) {
+                    $isCombo = $item->doAn?->isCombo() ?? false;
+                    $itemTotal = (float) $item->price * (int) $item->quantity;
+                    
+                    if ($isCombo) {
+                        $result[$key]['combo_revenue'] += $itemTotal;
+                    } else {
+                        $result[$key]['snack_revenue'] += $itemTotal;
+                    }
+                }
+            }
         }
 
         // Tính tổng cho mỗi quý
         foreach ($result as $key => &$item) {
-            $item['total_revenue'] = $item['ticket_revenue'] + $item['food_revenue'];
+            $item['total_revenue'] = $item['ticket_revenue'] + $item['combo_revenue'] + $item['snack_revenue'];
         }
 
         ksort($result);
@@ -238,22 +269,53 @@ class ThongKeService
     /**
      * Gộp dữ liệu vé và đồ ăn
      */
-    protected function mergeRevenueData($ticketRevenue, $foodRevenue): array
+    protected function mergeRevenueData($ticketRevenue, $foodInvoices, string $periodType = 'day'): array
     {
-        $allPeriods = $ticketRevenue->keys()->merge($foodRevenue->keys())->unique()->sort();
+        $groupFormat = match ($periodType) {
+            'month' => '%Y-%m',
+            'quarter' => 'Y-quarter',
+            'year' => '%Y',
+            default => '%Y-%m-%d',
+        };
+
+        $allPeriods = collect($ticketRevenue->keys()->toArray());
+        
+        // Lấy tất cả các period từ foodInvoices
+        $foodPeriods = $foodInvoices->keys();
+        $allPeriods = $allPeriods->merge($foodPeriods)->unique()->sort();
 
         $result = [];
         foreach ($allPeriods as $period) {
             $ticket = $ticketRevenue->get($period);
-            $food = $foodRevenue->get($period);
+            
+            // Tính combo và đồ ăn riêng
+            $comboRevenue = 0;
+            $snackRevenue = 0;
+            $invoiceCount = 0;
+            
+            if ($foodInvoices->has($period)) {
+                foreach ($foodInvoices->get($period) as $invoice) {
+                    $invoiceCount++;
+                    foreach ($invoice->items as $item) {
+                        $isCombo = $item->doAn?->isCombo() ?? false;
+                        $itemTotal = (float) $item->price * (int) $item->quantity;
+                        
+                        if ($isCombo) {
+                            $comboRevenue += $itemTotal;
+                        } else {
+                            $snackRevenue += $itemTotal;
+                        }
+                    }
+                }
+            }
 
             $result[] = [
                 'period' => $period,
                 'ticket_revenue' => $ticket->revenue ?? 0,
-                'food_revenue' => $food->revenue ?? 0,
+                'combo_revenue' => $comboRevenue,
+                'snack_revenue' => $snackRevenue,
                 'tickets' => $ticket->tickets ?? 0,
-                'invoices' => $food->invoices ?? 0,
-                'total_revenue' => ($ticket->revenue ?? 0) + ($food->revenue ?? 0),
+                'total_revenue' => ($ticket->revenue ?? 0) + $comboRevenue + $snackRevenue,
             ];
         }
 
@@ -548,16 +610,34 @@ class ThongKeService
     }
 
     /**
-     * Cơ cấu doanh thu (vé, combo, dịch vụ)
+     * Cơ cấu doanh thu (vé, combo, đồ ăn riêng)
      */
     public function getRevenueStructure(): array
     {
         $ticketRevenue = (clone $this->getPaidTicketQuery())->sum('tong_tien');
-        $foodRevenue = (clone $this->getPaidFoodInvoiceQuery())->sum('total');
-        $totalRevenue = $ticketRevenue + $foodRevenue;
-
-        // Doanh thu dịch vụ khác (nếu có trong tương lai)
-        $serviceRevenue = 0;
+        
+        // Lấy hóa đơn đồ ăn đã thanh toán
+        $foodInvoices = (clone $this->getPaidFoodInvoiceQuery())
+            ->with(['items.doAn'])
+            ->get();
+        
+        $comboRevenue = 0;
+        $foodRevenue = 0;
+        
+        foreach ($foodInvoices as $invoice) {
+            foreach ($invoice->items as $item) {
+                $isCombo = $item->doAn?->isCombo() ?? false;
+                $itemTotal = (float) $item->price * (int) $item->quantity;
+                
+                if ($isCombo) {
+                    $comboRevenue += $itemTotal;
+                } else {
+                    $foodRevenue += $itemTotal;
+                }
+            }
+        }
+        
+        $totalRevenue = $ticketRevenue + $comboRevenue + $foodRevenue;
 
         return [
             'ticket' => [
@@ -565,15 +645,15 @@ class ThongKeService
                 'percentage' => $totalRevenue > 0 ? round(($ticketRevenue / $totalRevenue) * 100, 2) : 0,
                 'label' => 'Doanh thu vé',
             ],
+            'combo' => [
+                'revenue' => $comboRevenue,
+                'percentage' => $totalRevenue > 0 ? round(($comboRevenue / $totalRevenue) * 100, 2) : 0,
+                'label' => 'Doanh thu combo',
+            ],
             'food' => [
                 'revenue' => $foodRevenue,
                 'percentage' => $totalRevenue > 0 ? round(($foodRevenue / $totalRevenue) * 100, 2) : 0,
-                'label' => 'Doanh thu combo',
-            ],
-            'service' => [
-                'revenue' => $serviceRevenue,
-                'percentage' => $totalRevenue > 0 ? round(($serviceRevenue / $totalRevenue) * 100, 2) : 0,
-                'label' => 'Dịch vụ khác',
+                'label' => 'Đồ ăn & Nước',
             ],
             'total' => $totalRevenue,
         ];
