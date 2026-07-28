@@ -18,6 +18,7 @@
 
         $statusLabels = [
             'da_thanh_toan' => 'Đã thanh toán',
+            'da_in' => 'Đã in',
             'da_su_dung' => 'Đã sử dụng',
             'da_huy' => 'Đã hủy',
         ];
@@ -351,6 +352,7 @@
 
             const statusMap = {
                 da_thanh_toan: 'Đã thanh toán',
+                da_in: 'Đã in',
                 da_su_dung: 'Đã sử dụng',
                 da_huy: 'Đã hủy'
             };

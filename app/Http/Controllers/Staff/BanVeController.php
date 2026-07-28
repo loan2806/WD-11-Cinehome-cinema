@@ -51,6 +51,7 @@ class BanVeController extends Controller
             ->whereIn('trang_thai', [
                 'dang_giu',
                 'da_thanh_toan',
+                'da_in',
                 'da_su_dung'
             ])
             ->pluck('ma_ghe')
@@ -548,6 +549,7 @@ $menu = $foods
                         'dang_giu',
                         'da_dat',
                         'da_thanh_toan',
+                        'da_in',
                         'da_su_dung',
                     ])
                     ->lockForUpdate()
@@ -1557,6 +1559,47 @@ return redirect()
         $ve = $this->findPrintableTicket($id);
 
         return view('staff.ban-ve.success', compact('ve'));
+    }
+
+    /**
+     * Đánh dấu vé đã được phát hành/in.
+     *
+     * Với trình duyệt, không thể xác định chắc chắn người dùng đã bấm
+     * Print hay Cancel trong hộp thoại hệ thống. Vì vậy nghiệp vụ coi
+     * thao tác bấm nút "In vé" là thời điểm phát hành vé.
+     */
+    public function markAsPrinted(int $id)
+    {
+        $ve = VeXemPhim::query()
+            ->where('loai_ve', 'tai_quay')
+            ->findOrFail($id);
+
+        if ($ve->trang_thai === 'da_huy') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vé đã bị hủy, không thể đánh dấu đã in.',
+            ], 422);
+        }
+
+        if ($ve->trang_thai === 'da_su_dung') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Vé đã được sử dụng.',
+                'status' => 'da_su_dung',
+            ]);
+        }
+
+        if ($ve->trang_thai === 'da_thanh_toan') {
+            $ve->update([
+                'trang_thai' => 'da_in',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Vé đã được đánh dấu là đã in.',
+            'status' => $ve->fresh()->trang_thai,
+        ]);
     }
 
     /**

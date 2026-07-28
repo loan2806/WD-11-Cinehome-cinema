@@ -229,6 +229,12 @@ Route::middleware(['auth'])
         Route::get('/ban-ve/payos-callback', [BanVeController::class, 'payosCallback'])->name('ban-ve.payos-callback');
         Route::get('/ban-ve/ket-qua/{id}', [BanVeController::class, 'success'])->whereNumber('id')->name('ban-ve.success');
         Route::get('/ban-ve/in-ve/{id}', [BanVeController::class, 'printTicket'])->whereNumber('id')->name('ban-ve.print-ticket');
+
+        // Đánh dấu vé là "Đã in" khi nhân viên bấm nút in vé
+        Route::post('/ban-ve/{id}/mark-printed', [BanVeController::class, 'markAsPrinted'])
+            ->whereNumber('id')
+            ->name('ban-ve.mark-printed');
+
         Route::get('/ban-ve/in-hoa-don/{id}', [BanVeController::class, 'printInvoice'])->whereNumber('id')->name('ban-ve.print-invoice');
 
         Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');

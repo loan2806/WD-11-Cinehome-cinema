@@ -45,7 +45,9 @@
                 <label>Trạng thái</label>
                 <select name="trang_thai" class="select-soft">
                     <option value="">Tất cả</option>
+                    <option value="cho_thanh_toan" {{ request('trang_thai') === 'cho_thanh_toan' ? 'selected' : '' }}>Chờ thanh toán</option>
                     <option value="da_thanh_toan" {{ request('trang_thai') === 'da_thanh_toan' ? 'selected' : '' }}>Đã thanh toán</option>
+                    <option value="da_in" {{ request('trang_thai') === 'da_in' ? 'selected' : '' }}>Đã in</option>
                     <option value="da_su_dung" {{ request('trang_thai') === 'da_su_dung' ? 'selected' : '' }}>Đã sử dụng</option>
                     <option value="da_huy" {{ request('trang_thai') === 'da_huy' ? 'selected' : '' }}>Đã hủy</option>
                 </select>
@@ -86,6 +88,7 @@
                         <th>Trạng thái</th>
                         <th>Người tạo</th>
                         <th>Tổng tiền</th>
+                        <th>Thao tác</th>
                     </tr>
                 </thead>
 
@@ -118,12 +121,20 @@
                             </td>
 
                             <td>
-                                @if ($ticket->trang_thai === 'da_thanh_toan')
+                                @if ($ticket->trang_thai === 'cho_thanh_toan')
+                                    <span class="status-badge status-pending">Chờ thanh toán</span>
+                                @elseif ($ticket->trang_thai === 'da_thanh_toan')
                                     <span class="status-badge status-paid">Đã thanh toán</span>
+                                @elseif ($ticket->trang_thai === 'da_in')
+                                    <span class="status-badge status-printed">Đã in</span>
                                 @elseif ($ticket->trang_thai === 'da_su_dung')
                                     <span class="status-badge status-used">Đã sử dụng</span>
-                                @else
+                                @elseif ($ticket->trang_thai === 'da_huy')
                                     <span class="status-badge status-cancel">Đã hủy</span>
+                                @else
+                                    <span class="status-badge">
+                                        {{ $ticket->trang_thai ?: 'Không xác định' }}
+                                    </span>
                                 @endif
                             </td>
 
@@ -138,10 +149,51 @@
                             <td>
                                 <strong class="money">{{ number_format($ticket->tong_tien, 0, ',', '.') }}đ</strong>
                             </td>
+
+                            <td>
+                                @if (
+                                    $ticket->loai_ve === 'tai_quay'
+                                    && in_array(
+                                        $ticket->trang_thai,
+                                        ['da_thanh_toan', 'da_in'],
+                                        true
+                                    )
+                                )
+                                    <button
+                                        type="button"
+                                        class="btn-print-history"
+                                        data-ticket-id="{{ $ticket->id }}"
+                                        data-ticket-status="{{ $ticket->trang_thai }}"
+                                    >
+                                        <i class="fa-solid fa-print"></i>
+
+                                        <span>
+                                            {{ $ticket->trang_thai === 'da_in'
+                                                ? 'In lại'
+                                                : 'In vé'
+                                            }}
+                                        </span>
+                                    </button>
+                                @elseif ($ticket->trang_thai === 'da_su_dung')
+                                    <span class="action-note action-used">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        Đã sử dụng
+                                    </span>
+                                @elseif ($ticket->trang_thai === 'da_huy')
+                                    <span class="action-note action-cancel">
+                                        <i class="fa-solid fa-ban"></i>
+                                        Không thể in
+                                    </span>
+                                @else
+                                    <span class="action-note">
+                                        ---
+                                    </span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="empty-box">
                                     <i class="fa-solid fa-ticket-simple"></i>
                                     <p>Chưa có vé nào phù hợp với điều kiện tìm kiếm.</p>
@@ -436,10 +488,22 @@
         border: 1px solid rgba(245,166,35,.35);
     }
 
+    .status-pending {
+        color: #fde68a;
+        background: rgba(234,179,8,.12);
+        border: 1px solid rgba(234,179,8,.35);
+    }
+
     .status-paid {
         color: #ffe4a3;
         background: rgba(245,166,35,.14);
         border: 1px solid rgba(245,166,35,.35);
+    }
+
+    .status-printed {
+        color: #c7d2fe;
+        background: rgba(99,102,241,.14);
+        border: 1px solid rgba(99,102,241,.35);
     }
 
     .status-used {
@@ -456,6 +520,54 @@
 
     .money {
         color: #f5a623;
+    }
+
+    .btn-print-history {
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 14px;
+        border: 1px solid rgba(245,166,35,.55);
+        border-radius: 12px;
+        color: #16100a;
+        background: linear-gradient(135deg, #f5a623, #ffd166);
+        font-size: 13px;
+        font-weight: 900;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all .25s ease;
+        box-shadow: 0 8px 22px rgba(245,166,35,.16);
+    }
+
+    .btn-print-history:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(245,166,35,.3);
+    }
+
+    .btn-print-history:disabled {
+        opacity: .6;
+        cursor: wait;
+        transform: none;
+    }
+
+    .action-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #888;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .action-used {
+        color: #86efac;
+    }
+
+    .action-cancel {
+        color: #fca5a5;
     }
 
     .empty-box {
@@ -503,6 +615,193 @@
         }
     }
 </style>
+
+
+<iframe
+    id="historyPrintFrame"
+    title="In vé"
+    style="
+        position: fixed;
+        width: 1px;
+        height: 1px;
+        right: 0;
+        bottom: 0;
+        border: 0;
+        opacity: 0;
+        pointer-events: none;
+    "
+></iframe>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const printFrame = document.getElementById('historyPrintFrame');
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? '';
+
+        let currentButton = null;
+        let isPrinting = false;
+
+        function restoreButton() {
+            if (!currentButton) {
+                isPrinting = false;
+                return;
+            }
+
+            const status = currentButton.dataset.ticketStatus;
+
+            currentButton.disabled = false;
+
+            currentButton.innerHTML = status === 'da_in'
+                ? '<i class="fa-solid fa-print"></i><span>In lại</span>'
+                : '<i class="fa-solid fa-print"></i><span>In vé</span>';
+
+            currentButton = null;
+            isPrinting = false;
+        }
+
+        async function markTicketAsPrinted(ticketId) {
+            const urlTemplate = @json(
+                route(
+                    'staff.ban-ve.mark-printed',
+                    ['id' => '__TICKET_ID__']
+                )
+            );
+
+            const url = urlTemplate.replace(
+                '__TICKET_ID__',
+                ticketId
+            );
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.message
+                    ?? 'Không thể cập nhật trạng thái vé.'
+                );
+            }
+
+            return data;
+        }
+
+        function openPrintDialog(ticketId) {
+            const urlTemplate = @json(
+                route(
+                    'staff.ban-ve.print-ticket',
+                    ['id' => '__TICKET_ID__']
+                )
+            );
+
+            const printUrl = urlTemplate.replace(
+                '__TICKET_ID__',
+                ticketId
+            );
+
+            printFrame.onload = function () {
+                setTimeout(function () {
+                    try {
+                        const printWindow = printFrame.contentWindow;
+
+                        printWindow.focus();
+                        printWindow.print();
+                    } catch (error) {
+                        console.error(
+                            'Không thể mở hộp thoại in:',
+                            error
+                        );
+
+                        alert(
+                            'Không thể mở hộp thoại in. '
+                            + 'Vui lòng thử lại.'
+                        );
+                    } finally {
+                        restoreButton();
+                    }
+                }, 500);
+            };
+
+            printFrame.src =
+                printUrl
+                + '?embedded=1&t='
+                + Date.now();
+        }
+
+        document.addEventListener('click', async function (event) {
+            const button = event.target.closest(
+                '.btn-print-history'
+            );
+
+            if (!button || isPrinting) {
+                return;
+            }
+
+            const ticketId = button.dataset.ticketId;
+            const status = button.dataset.ticketStatus;
+
+            if (!ticketId) {
+                return;
+            }
+
+            if (!['da_thanh_toan', 'da_in'].includes(status)) {
+                alert(
+                    'Vé này không ở trạng thái cho phép in.'
+                );
+                return;
+            }
+
+            isPrinting = true;
+            currentButton = button;
+
+            button.disabled = true;
+            button.innerHTML =
+                '<i class="fa-solid fa-spinner fa-spin"></i>'
+                + '<span>Đang chuẩn bị...</span>';
+
+            try {
+                if (status === 'da_thanh_toan') {
+                    await markTicketAsPrinted(ticketId);
+
+                    /*
+                     * Cập nhật ngay trên giao diện để người dùng
+                     * thấy vé đã chuyển sang trạng thái Đã in.
+                     */
+                    button.dataset.ticketStatus = 'da_in';
+
+                    const row = button.closest('tr');
+                    const statusCell = row?.children[5];
+
+                    if (statusCell) {
+                        statusCell.innerHTML =
+                            '<span class="status-badge status-printed">'
+                            + 'Đã in'
+                            + '</span>';
+                    }
+                }
+
+                openPrintDialog(ticketId);
+            } catch (error) {
+                console.error(error);
+
+                alert(
+                    error.message
+                    ?? 'Không thể chuẩn bị vé để in.'
+                );
+
+                restoreButton();
+            }
+        });
+    });
+</script>
 
 @if(session('clear_food_cart'))
 <script>
