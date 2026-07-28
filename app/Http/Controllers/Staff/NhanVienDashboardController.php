@@ -10,7 +10,7 @@ class NhanVienController extends Controller
     public function index()
     {
         // Kiểm tra quyền xem
-        if (!coQuyen('nhan_vien.xem')) {
+        if (! \coQuyen('nhan_vien.xem')) {
             return redirect()->route('admin.dashboard')->with('error', 'Bạn không có quyền truy cập Danh sách nhân viên!');
         }
 
@@ -21,7 +21,7 @@ class NhanVienController extends Controller
     public function store(Request $request)
     {
         // Kiểm tra quyền thêm/sửa/xóa
-        if (!coQuyen('nhan_vien.quan_ly')) {
+        if (! \coQuyen('nhan_vien.quan_ly')) {
             return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền thực hiện thao tác này!');
         }
 
@@ -30,7 +30,7 @@ class NhanVienController extends Controller
 
     public function toggleStatus($id)
     {
-        if (!coQuyen('nhan_vien.quan_ly')) {
+        if (! \coQuyen('nhan_vien.quan_ly')) {
             return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền khóa/mở khóa nhân viên!');
         }
 

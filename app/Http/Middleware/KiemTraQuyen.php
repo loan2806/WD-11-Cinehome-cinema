@@ -13,7 +13,7 @@ class KiemTraQuyen
      */
     public function handle(Request $request, Closure $next, string $maQuyen): Response
     {
-        if (!coQuyen($maQuyen)) {
+        if (! \coQuyen($maQuyen)) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,

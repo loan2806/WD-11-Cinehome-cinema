@@ -7,6 +7,8 @@ use App\Http\Middleware\KiemTraQuyen;
 use App\Http\Middleware\Cors;
 use Illuminate\Http\Request;
 
+require_once __DIR__.'/../app/helpers.php';
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',

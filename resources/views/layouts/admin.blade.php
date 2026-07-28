@@ -102,7 +102,7 @@
                 event.preventDefault();
                 event.stopPropagation();
 
-                adminMenu ? .classList.add('hidden');
+                adminMenu?.classList.add('hidden');
                 notifyBox.classList.toggle('hidden');
             });
 
@@ -119,7 +119,7 @@
 
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
-                notifyBox ? .classList.add('hidden');
+                notifyBox?.classList.add('hidden');
             }
         });
     });
@@ -355,7 +355,6 @@
                             @endif
                         </div>
                     </div>
-                </div>
                 @endif
 
                 {{-- 6. BÁO CÁO & THỐNG KÊ --}}
@@ -579,7 +578,7 @@
             </header>
 
             {{-- CONTENT --}}
-            <section class="w-full overflow-x-hidden px-6 py-6">
+            <section id="adminContent" class="w-full overflow-x-hidden px-6 py-6">
                 @yield('content')
             </section>
         </main>

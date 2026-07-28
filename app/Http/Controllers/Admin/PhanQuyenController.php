@@ -14,7 +14,7 @@ class PhanQuyenController extends Controller
     public function maTran()
     {
         // 🌟 BẢO VỆ TỨC THÌ: Nếu quyền xem Ma trận bị tước, lập tức chặn lại
-        if (!coQuyen('phan_quyen.ma_tran')) {
+        if (! \coQuyen('phan_quyen.ma_tran')) {
             return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền truy cập Ma trận phân quyền!');
         }
 
@@ -30,7 +30,7 @@ class PhanQuyenController extends Controller
     public function capNhat(Request $request)
     {
         // 🌟 BẢO VỆ TỨC THÌ: Kiểm tra ngay tại thời điểm bấm gửi Form
-        if (!coQuyen('phan_quyen.ma_tran')) {
+        if (! \coQuyen('phan_quyen.ma_tran')) {
             return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn vừa bị thu hồi quyền thao tác trên Ma trận phân quyền!');
         }
 
