@@ -100,11 +100,19 @@ class PhongChieuController extends Controller
             ? $phongChieu->gheNgois->max('cot')
             : 0;
 
+        // Lấy lịch bảo trì của phòng
+        $lichBaoTris = LichBaoTriGheNgoi::where('phong_chieu_id', $phongChieu->id)
+            ->with(['gheNgoi', 'nguoiDung'])
+            ->where('thoi_gian_ket_thuc', '>=', now())
+            ->orderBy('thoi_gian_bat_dau')
+            ->get();
+
         return view('admin.phong-chieus.show', compact(
             'phongChieu',
             'seatMap',
             'soHang',
-            'soCot'
+            'soCot',
+            'lichBaoTris'
         ));
     }
 
@@ -211,6 +219,13 @@ class PhongChieuController extends Controller
             }
         }
 
+        // Tự động lấy loại ghế couple mặc định nếu không chọn
+        $loaiGheCoupleId = $request->loai_ghe_couple_id;
+        if (!$loaiGheCoupleId) {
+            $coupleSeat = \App\Models\LoaiGhe::where('la_couple', true)->first();
+            $loaiGheCoupleId = $coupleSeat?->id;
+        }
+
         $request->validate([
             'so_hang' => 'required|integer|min:1|max:20',
             'so_cot' => 'required|integer|min:1|max:20',
@@ -238,7 +253,7 @@ class PhongChieuController extends Controller
                 (int) $request->so_cot,
                 (int) $request->loai_ghe_thuong_id,
                 $request->loai_ghe_vip_id,
-                $request->loai_ghe_couple_id,
+                $loaiGheCoupleId,
                 true
             );
 

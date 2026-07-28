@@ -195,6 +195,53 @@
     </div>
 </div>
 
+{{-- LICH BAO TRI --}}
+<div id="lichBaoTriContainer">
+@if($lichBaoTris->count() > 0)
+    <div class="mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-[#0f0f0f] to-[#151515] p-5">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-amber-400">
+                <i class="fa-solid fa-calendar-days"></i>
+                Lịch bảo trì sắp tới (<span id="lichBaoTriCount">{{ $lichBaoTris->count() }}</span>)
+            </h3>
+            <span class="text-xs text-gray-500">Click để hủy</span>
+        </div>
+        <div id="lichBaoTriList" class="space-y-2 max-h-48 overflow-y-auto">
+        @foreach($lichBaoTris as $lich)
+            <div class="lich-bao-tri-item group flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-3 transition hover:border-amber-500/30 hover:bg-amber-500/5" data-lich-id="{{ $lich->id }}">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20">
+                        <i class="fa-solid fa-couch text-sm text-amber-400"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-white">{{ $lich->gheNgoi->ma_ghe ?? 'N/A' }}</p>
+                        <p class="text-xs text-gray-400">
+                            {{ $lich->thoi_gian_bat_dau->format('d/m/Y H:i') }}
+                            @if($lich->thoi_gian_bat_dau->isFuture())
+                                <span class="ml-1 text-amber-400">({{ $lich->thoi_gian_bat_dau->diffForHumans() }})</span>
+                            @endif
+                            @if($lich->ly_do)
+                                - {{ $lich->ly_do }}
+                            @endif
+                        </p>
+                    </div>
+                </div>
+                <form action="{{ route('admin.lich-bao-tri-ghe-ngois.cancel', $lich) }}" method="POST" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button"
+                        onclick="openModalHuyBaoTri('{{ route('admin.lich-bao-tri-ghe-ngois.cancel', $lich) }}', '{{ $lich->gheNgoi->ma_ghe ?? 'này' }}')"
+                        class="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:border-red-500/60 hover:bg-red-500/20">
+                        <i class="fa-solid fa-xmark mr-1"></i>Hủy
+                    </button>
+                </form>
+            </div>
+        @endforeach
+        </div>
+    </div>
+@endif
+</div>
+
 {{-- MAIN GRID --}}
 <div class="grid gap-6 lg:grid-cols-12">
 
@@ -326,7 +373,7 @@
                                 </label>
                                 <div class="flex flex-wrap gap-2">
                                     @php $firstNormal = true; @endphp
-                                    @foreach(\App\Models\LoaiGhe::where('la_couple', false)->get() as $loai)
+                                    @foreach(\App\Models\LoaiGhe::where('la_couple', false)->where('ten_loai', 'not like', '%vip%')->get() as $loai)
                                         <label class="seat-type-pill {{ $firstNormal ? 'active' : '' }}" data-value="{{ $loai->id }}" data-hidden="loai_ghe_thuong_id">
                                             <input type="radio" name="loai_ghe_thuong_radio" value="{{ $loai->id }}" {{ $firstNormal ? 'checked' : '' }} class="sr-only">
                                             <span class="pill-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></span>
@@ -347,11 +394,6 @@
                                     <span class="ml-1 rounded bg-gray-500/20 px-1.5 py-0.5 text-[10px] text-gray-500">TÙY CHỌN</span>
                                 </label>
                                 <div class="flex flex-wrap gap-2">
-                                    <label class="seat-type-pill opt-none active" data-value="" data-hidden="loai_ghe_vip_id">
-                                        <input type="radio" name="loai_ghe_vip_radio" value="" checked class="sr-only">
-                                        <span class="pill-color bg-gray-600"></span>
-                                        <span class="pill-text">Không</span>
-                                    </label>
                                     @foreach(\App\Models\LoaiGhe::where('la_couple', false)->where('ten_loai', 'like', '%vip%')->get() as $loai)
                                         <label class="seat-type-pill" data-value="{{ $loai->id }}" data-hidden="loai_ghe_vip_id">
                                             <input type="radio" name="loai_ghe_vip_radio" value="{{ $loai->id }}" class="sr-only">
@@ -372,11 +414,6 @@
                                     <span class="ml-1 rounded bg-gray-500/20 px-1.5 py-0.5 text-[10px] text-gray-500">TÙY CHỌN</span>
                                 </label>
                                 <div class="flex flex-wrap gap-2">
-                                    <label class="seat-type-pill opt-none active" data-value="" data-hidden="loai_ghe_couple_id">
-                                        <input type="radio" name="loai_ghe_couple_radio" value="" checked class="sr-only">
-                                        <span class="pill-color bg-gray-600"></span>
-                                        <span class="pill-text">Không</span>
-                                    </label>
                                     @foreach(\App\Models\LoaiGhe::where('la_couple', true)->get() as $loai)
                                         <label class="seat-type-pill" data-value="{{ $loai->id }}" data-hidden="loai_ghe_couple_id">
                                             <input type="radio" name="loai_ghe_couple_radio" value="{{ $loai->id }}" class="sr-only">
@@ -434,7 +471,6 @@
                             <label class="mb-2 block text-xs font-medium text-gray-400">Loại ghế Couple</label>
                             <select name="loai_ghe_couple_id"
                                 class="w-full rounded-xl border border-white/10 bg-[#151515] px-4 py-2.5 text-sm text-white outline-none transition focus:border-[#d99a32] focus:ring-1 focus:ring-[#d99a32]/30">
-                                <option value="">-- Không có Couple --</option>
                                 @foreach(\App\Models\LoaiGhe::where('la_couple', true)->get() as $loai)
                                     <option value="{{ $loai->id }}">{{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)</option>
                                 @endforeach
@@ -1451,6 +1487,51 @@
     {{-- (Hành động đã được tích hợp trên thanh bulk action) --}}
 </div>
 
+{{-- MODAL XÁC NHẬN HỦY BẢO TRÌ --}}
+<div id="modalHuyBaoTri" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeModalHuyBaoTri()"></div>
+    <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="pointer-events-auto w-full max-w-md rounded-3xl border border-white/10 bg-gradient-to-b from-[#1a1a1a] to-[#0f0f0f] p-6 shadow-2xl">
+            <div class="text-center">
+                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20">
+                    <i class="fa-solid fa-triangle-exclamation text-2xl text-red-400"></i>
+                </div>
+                <h3 class="mb-2 text-xl font-bold text-white">Xác nhận hủy bảo trì</h3>
+                <p class="mb-1 text-sm text-gray-400">Bạn có chắc muốn hủy lịch bảo trì cho ghế</p>
+                <p class="mb-5 text-lg font-bold text-red-400"><span id="modalHuyBaoTriGhe"></span>?</p>
+                <p class="mb-6 text-xs text-gray-500">Hành động này không thể hoàn tác.</p>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeModalHuyBaoTri()"
+                        class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10">
+                        Không, giữ lại
+                    </button>
+                    <button type="submit" form="formHuyBaoTri"
+                        class="flex-1 rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-4 py-3 text-sm font-bold text-white transition hover:scale-[1.02]">
+                        Có, hủy bảo trì
+                    </button>
+                </div>
+                <form id="formHuyBaoTri" method="POST" class="hidden">
+                    @csrf
+                    @method('DELETE')
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openModalHuyBaoTri(url, maGhe) {
+    document.getElementById('modalHuyBaoTriGhe').textContent = maGhe;
+    document.getElementById('formHuyBaoTri').action = url;
+    document.getElementById('modalHuyBaoTri').classList.remove('hidden');
+    document.getElementById('modalHuyBaoTri').querySelector('.backdrop-blur-sm').style.opacity = '1';
+}
+
+function closeModalHuyBaoTri() {
+    document.getElementById('modalHuyBaoTri').classList.add('hidden');
+}
+</script>
+
 @endsection
 
 @php /* STYLES */ @endphp
@@ -1915,6 +1996,22 @@
     }
     .seat-chip--maintenance::before {
         background: rgba(255, 255, 255, 0.3) !important;
+    }
+    /* Ghế sắp bảo trì */
+    .seat-chip.seat-chip--pending .seat-label,
+    .seat-chip.seat-chip--pending > span {
+        color: #92400e !important;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+    }
+    .seat-chip--pending {
+        background: #fef3c7 !important;
+        border: 2px solid #f59e0b;
+        color: #92400e;
+        font-weight: 700;
+        font-size: 11px;
+    }
+    .seat-chip--pending::before {
+        background: rgba(255, 255, 255, 0.5) !important;
     }
     /* CSS cũ .seat-chip--couple dòng 785-794 đã xóa - dùng rule mới ở phía dưới */
 
@@ -2619,15 +2716,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Build className
         let className = 'seat-chip seat-interactive';
         if (trangThai === 'bao_tri') className += ' seat-chip--maintenance';
-        if (trangThai === 'sap_bao_tri') className += ' seat-chip--pending';
+        else if (trangThai === 'sap_bao_tri') className += ' seat-chip--pending';
         if (isCouple) className += ' seat-chip--couple';
         if (isSelected) className += ' selected';
         seatEl.className = className;
 
-        // Reset style + content
-        if (trangThai === 'bao_tri' || trangThai === 'sap_bao_tri') {
-            seatEl.style.backgroundColor = '';
-            seatEl.style.color = '#991b1b';
+        // Reset style + content - xử lý đúng theo trạng thái
+        if (trangThai === 'bao_tri') {
+            seatEl.style.backgroundColor = '#dc2626';
+            seatEl.style.color = '#ffffff';
         } else if (trangThai === 'sap_bao_tri') {
             seatEl.style.backgroundColor = '#fef3c7';
             seatEl.style.color = '#92400e';
@@ -2635,11 +2732,16 @@ document.addEventListener('DOMContentLoaded', function() {
             seatEl.style.backgroundColor = mauSac;
             seatEl.style.color = '#1a0b04';
         }
-        // Tất cả ghế đều dùng chữ đen - không cần áp dụng auto contrast nữa
-        // Đảm bảo label span bên trong giữ màu đen
+        // Đảm bảo label span bên trong giữ màu đúng
         const labelSpans = seatEl.querySelectorAll('.seat-label, .seat-couple-left, .seat-couple-right');
         labelSpans.forEach(s => {
-            s.style.color = trangThai === 'bao_tri' ? '#991b1b' : (trangThai === 'sap_bao_tri' ? '#92400e' : '#1a0b04');
+            if (trangThai === 'bao_tri') {
+                s.style.color = '#ffffff';
+            } else if (trangThai === 'sap_bao_tri') {
+                s.style.color = '#92400e';
+            } else {
+                s.style.color = '#1a0b04';
+            }
         });
     }
 
@@ -2654,6 +2756,80 @@ document.addEventListener('DOMContentLoaded', function() {
             renderSelectedSeatsChips();
         }
         updateBulkMaintenanceBtnLabel();
+    }
+
+    // Cập nhật danh sách lịch bảo trì sau khi lên lịch thành công
+    function updateLichBaoTriList(schedules) {
+        const container = document.getElementById('lichBaoTriContainer');
+        if (!container) return;
+
+        let wrapper = container.querySelector('.mb-6.rounded-2xl');
+        const listContainer = document.getElementById('lichBaoTriList');
+
+        // Nếu chưa có wrapper, tạo mới
+        if (!wrapper) {
+            wrapper = document.createElement('div');
+            wrapper.className = 'mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-[#0f0f0f] to-[#151515] p-5';
+            wrapper.innerHTML = `
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-amber-400">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        Lịch bảo trì sắp tới (<span id="lichBaoTriCount">0</span>)
+                    </h3>
+                    <span class="text-xs text-gray-500">Click để hủy</span>
+                </div>
+                <div id="lichBaoTriList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+            `;
+            container.appendChild(wrapper);
+        }
+
+        // Cập nhật số lượng
+        const countSpan = document.getElementById('lichBaoTriCount');
+        const newCount = (parseInt(countSpan?.textContent || '0') || 0) + schedules.length;
+        if (countSpan) countSpan.textContent = newCount;
+
+        // Thêm các lịch mới vào danh sách
+        const list = document.getElementById('lichBaoTriList');
+        if (list) {
+            schedules.forEach(schedule => {
+                // Kiểm tra xem lịch đã tồn tại chưa
+                const existing = list.querySelector(`[data-lich-id="${schedule.lich_id}"]`);
+                if (existing) return;
+
+                const item = document.createElement('div');
+                item.className = 'lich-bao-tri-item group flex items-center justify-between rounded-xl border border-white/5 bg-white/5 p-3 transition hover:border-amber-500/30 hover:bg-amber-500/5';
+                item.dataset.lichId = schedule.lich_id;
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/20">
+                            <i class="fa-solid fa-couch text-sm text-amber-400"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-white">${schedule.ma_ghe}</p>
+                            <p class="text-xs text-gray-400">
+                                ${schedule.thoi_gian_bat_dau}
+                                ${schedule.thoi_gian_ket_thuc ? ' - ' + schedule.thoi_gian_ket_thuc : ''}
+                            </p>
+                        </div>
+                    </div>
+                    <button type="button"
+                        onclick="openModalHuyBaoTri('/admin/lich-bao-tri-ghe-ngois/' + ${schedule.lich_id}, '${schedule.ma_ghe}')"
+                        class="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:border-red-500/60 hover:bg-red-500/20">
+                        <i class="fa-solid fa-xmark mr-1"></i>Hủy
+                    </button>
+                `;
+                list.appendChild(item);
+
+                // Animation fade in
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(-10px)';
+                requestAnimationFrame(() => {
+                    item.style.transition = 'all 0.3s ease';
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                });
+            });
+        }
     }
 
     /**
@@ -3197,6 +3373,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectedSeats.clear();
                     document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
                     updateBulkToolbar();
+
+                    // Cập nhật danh sách lịch bảo trì
+                    if (data.schedules && data.schedules.length > 0) {
+                        updateLichBaoTriList(data.schedules);
+                    }
 
                     // Hiện lỗi nếu có
                     const errorsDiv = document.getElementById('maintenanceErrors');

@@ -329,11 +329,21 @@ class GheNgoiController extends Controller
             $this->ghiNhatKy($request, 'Lên lịch bảo trì ghế', 'Quản lý phòng & ghế', "Lên lịch bảo trì ghế {$gheNgoi->ma_ghe} lúc {$lich->thoi_gian_bat_dau}");
 
             if ($request->expectsJson()) {
+                // Cập nhật trạng thái ghế thành "sắp bảo trì"
+                $ghe->update(['trang_thai' => 'sap_bao_tri']);
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Đã lên lịch bảo trì ghế thành công.',
                     'lich_id' => $lich->id,
                     'thoi_gian_bat_dau' => $lich->thoi_gian_bat_dau,
+                    'updated_seats' => [[
+                        'id' => $ghe->id,
+                        'trang_thai' => 'sap_bao_tri',
+                        'loai_ghe' => $ghe->loaiGhe->ten_loai ?? '',
+                        'mau_sac' => $ghe->mau_sac ?? '#6b7280',
+                        'phu_thu' => $ghe->phu_thu ?? 0,
+                    ]],
                 ]);
             }
 
@@ -380,6 +390,27 @@ class GheNgoiController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Đã kích hoạt lại ghế thành công.');
+    }
+
+    public function cancelMaintenance(Request $request, LichBaoTriGheNgoi $lichBaoTriGheNgoi)
+    {
+        $ghe = $lichBaoTriGheNgoi->gheNgoi;
+        $maGhe = $ghe->ma_ghe ?? 'N/A';
+
+        $lichBaoTriGheNgoi->delete();
+
+        $this->ghiNhatKy($request, 'Hủy lịch bảo trì ghế', 'Quản lý phòng & ghế', "Hủy lịch bảo trì ghế {$maGhe}");
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã hủy lịch bảo trì thành công.',
+            ]);
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Đã hủy lịch bảo trì thành công.');
     }
 
     protected function buildConflictMessage(array $conflicts): string
