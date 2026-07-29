@@ -330,7 +330,7 @@ $previousUrl = url()->previous();
 
                             <input type="hidden" name="food_cart" value="{{ json_encode($foodItems->values()->all()) }}">
 
-                            <input type="hidden" name="clear_cart_key" value="staff_food_cart_{{ $staffId }}_{{ $suatChieu->id }}">
+                            <input type="hidden" name="clear_cart_key" value="staff_food_cart_v2_{{ $staffId }}_{{ $suatChieu->id }}">
 
                             {{-- PHƯƠNG THỨC THANH TOÁN --}}
                             <div class="space-y-3">
@@ -468,7 +468,7 @@ $previousUrl = url()->previous();
                                         </p>
 
                                         <p class="mt-1 text-sm leading-6 text-gray-400">
-                                            Sau khi xác nhận, hệ thống sẽ tạo giao dịch và hiển thị mã QR để khách quét thanh toán.
+                                            Sau khi xác nhận, hệ thống tạo giao dịch VietQR và khóa các ghế đã chọn trong 7 phút để chờ khách thanh toán.
                                         </p>
 
                                     </div>
@@ -488,7 +488,7 @@ $previousUrl = url()->previous();
                                 </div>
 
                                 <p class="mt-3 text-xs text-orange-400">
-                                    Vé chỉ được phát hành sau khi giao dịch được xác nhận đã thanh toán.
+                                    Vé chỉ được phát hành sau khi PayOS xác nhận thanh toán thành công. Nếu hủy hoặc quá hạn, ghế sẽ được giải phóng.
                                 </p>
 
                             </div>
