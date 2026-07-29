@@ -710,8 +710,199 @@
             flex: 1;
         }
     }
+
+    /* ===== Modal xác nhận in vé ===== */
+    .print-confirm-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .print-confirm-modal.is-open {
+        display: flex;
+    }
+
+    .print-confirm-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, .72);
+        backdrop-filter: blur(5px);
+    }
+
+    .print-confirm-dialog {
+        position: relative;
+        width: min(460px, 100%);
+        overflow: hidden;
+        border: 1px solid rgba(245, 166, 35, .35);
+        border-radius: 24px;
+        background:
+            radial-gradient(circle at top right, rgba(245, 166, 35, .12), transparent 32%),
+            linear-gradient(145deg, #191919, #101010);
+        box-shadow:
+            0 28px 80px rgba(0, 0, 0, .55),
+            0 0 34px rgba(245, 166, 35, .12);
+        animation: printConfirmIn .22s ease;
+    }
+
+    .print-confirm-icon {
+        width: 58px;
+        height: 58px;
+        display: grid;
+        place-items: center;
+        margin: 26px auto 0;
+        border-radius: 18px;
+        color: #111;
+        background: linear-gradient(135deg, #ffd166, #f5a623);
+        box-shadow: 0 12px 30px rgba(245, 166, 35, .25);
+        font-size: 23px;
+    }
+
+    .print-confirm-content {
+        padding: 20px 28px 6px;
+        text-align: center;
+    }
+
+    .print-confirm-content h3 {
+        margin: 0;
+        color: #fff;
+        font-size: 22px;
+        font-weight: 900;
+    }
+
+    .print-confirm-content > p {
+        margin: 10px 0 0;
+        color: #cfcfcf;
+        font-size: 14px;
+    }
+
+    .print-confirm-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 12px 14px;
+        border: 1px solid rgba(245, 166, 35, .18);
+        border-radius: 14px;
+        color: #a9a9a9;
+        background: rgba(245, 166, 35, .06);
+        text-align: left;
+        font-size: 12px;
+        line-height: 1.55;
+    }
+
+    .print-confirm-note i {
+        margin-top: 2px;
+        color: #f5a623;
+    }
+
+    .print-confirm-note strong {
+        color: #ffd166;
+    }
+
+    .print-confirm-actions {
+        display: grid;
+        grid-template-columns: 1fr 1.25fr;
+        gap: 10px;
+        padding: 20px 24px 24px;
+    }
+
+    .print-confirm-btn {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 14px;
+        border: 1px solid transparent;
+        font-size: 13px;
+        font-weight: 900;
+        cursor: pointer;
+        transition: .22s ease;
+    }
+
+    .print-confirm-cancel {
+        color: #ddd;
+        border-color: rgba(255, 255, 255, .1);
+        background: rgba(255, 255, 255, .06);
+    }
+
+    .print-confirm-cancel:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, .1);
+        transform: translateY(-1px);
+    }
+
+    .print-confirm-ok {
+        color: #16100a;
+        background: linear-gradient(135deg, #ffd166, #f5a623);
+        box-shadow: 0 10px 24px rgba(245, 166, 35, .2);
+    }
+
+    .print-confirm-ok:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(245, 166, 35, .32);
+    }
+
+    @keyframes printConfirmIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px) scale(.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @media (max-width: 560px) {
+        .print-confirm-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+
+
 </style>
 
+
+
+<div id="printConfirmModal" class="print-confirm-modal" aria-hidden="true">
+    <div class="print-confirm-backdrop" data-print-confirm-cancel></div>
+
+    <div class="print-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="printConfirmTitle">
+        <div class="print-confirm-icon">
+            <i class="fa-solid fa-print"></i>
+        </div>
+
+        <div class="print-confirm-content">
+            <h3 id="printConfirmTitle">Xác nhận in vé</h3>
+            <p>Bạn đã in vé thành công chưa?</p>
+
+            <div class="print-confirm-note">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>
+                    Chỉ khi xác nhận thành công, trạng thái vé mới chuyển sang
+                    <strong>Đã in</strong>.
+                </span>
+            </div>
+        </div>
+
+        <div class="print-confirm-actions">
+            <button type="button" class="print-confirm-btn print-confirm-cancel" data-print-confirm-cancel>
+                <i class="fa-solid fa-xmark"></i>
+                Chưa in
+            </button>
+
+            <button type="button" class="print-confirm-btn print-confirm-ok" data-print-confirm-ok>
+                <i class="fa-solid fa-check"></i>
+                Đã in thành công
+            </button>
+        </div>
+    </div>
+</div>
 
 <iframe
     id="historyPrintFrame"
@@ -731,6 +922,51 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const printFrame = document.getElementById('historyPrintFrame');
+        const printConfirmModal = document.getElementById('printConfirmModal');
+        const printConfirmOk = printConfirmModal?.querySelector('[data-print-confirm-ok]');
+        const printConfirmCancelButtons = printConfirmModal?.querySelectorAll('[data-print-confirm-cancel]');
+
+        function askPrintConfirmation() {
+            return new Promise((resolve) => {
+                if (!printConfirmModal || !printConfirmOk || !printConfirmCancelButtons) {
+                    resolve(false);
+                    return;
+                }
+
+                const closeModal = (result) => {
+                    printConfirmModal.classList.remove('is-open');
+                    printConfirmModal.setAttribute('aria-hidden', 'true');
+                    document.body.style.overflow = '';
+
+                    printConfirmOk.removeEventListener('click', onConfirm);
+                    printConfirmCancelButtons.forEach((button) => {
+                        button.removeEventListener('click', onCancel);
+                    });
+                    document.removeEventListener('keydown', onKeydown);
+
+                    resolve(result);
+                };
+
+                const onConfirm = () => closeModal(true);
+                const onCancel = () => closeModal(false);
+                const onKeydown = (event) => {
+                    if (event.key === 'Escape') {
+                        closeModal(false);
+                    }
+                };
+
+                printConfirmOk.addEventListener('click', onConfirm);
+                printConfirmCancelButtons.forEach((button) => {
+                    button.addEventListener('click', onCancel);
+                });
+                document.addEventListener('keydown', onKeydown);
+
+                printConfirmModal.classList.add('is-open');
+                printConfirmModal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                printConfirmOk.focus();
+            });
+        }
         const csrfToken = document
             .querySelector('meta[name="csrf-token"]')
             ?.getAttribute('content') ?? '';
@@ -790,7 +1026,29 @@
             return data;
         }
 
-        function openPrintDialog(ticketId) {
+        function updatePrintedStatusOnScreen(button) {
+            if (!button) {
+                return;
+            }
+
+            button.dataset.ticketStatus = 'da_in';
+
+            const row = button.closest('tr');
+            const statusCell = row?.children[5];
+
+            if (statusCell) {
+                statusCell.innerHTML =
+                    '<span class="status-badge status-printed">'
+                    + 'Đã in'
+                    + '</span>';
+            }
+
+            button.innerHTML =
+                '<i class="fa-solid fa-print"></i>'
+                + '<span>In lại</span>';
+        }
+
+        function openPrintDialog(ticketId, originalStatus) {
             const urlTemplate = @json(
                 route(
                     'staff.ban-ve.print-ticket',
@@ -804,12 +1062,53 @@
             );
 
             printFrame.onload = function () {
-                setTimeout(function () {
+                setTimeout(async function () {
                     try {
                         const printWindow = printFrame.contentWindow;
 
+                        /*
+                         * window.print() sẽ chờ cho tới khi hộp thoại in được đóng.
+                         * Vì vậy đặt bước xác nhận NGAY SAU print() sẽ ổn định hơn
+                         * so với phụ thuộc vào sự kiện afterprint của iframe.
+                         */
                         printWindow.focus();
                         printWindow.print();
+
+                        // Nếu đây là thao tác "In lại" thì không cần đổi trạng thái.
+                        if (originalStatus === 'da_in') {
+                            restoreButton();
+                            return;
+                        }
+
+                        const printedSuccessfully = await askPrintConfirmation();
+
+                        if (!printedSuccessfully) {
+                            restoreButton();
+                            return;
+                        }
+
+                        try {
+                            if (currentButton) {
+                                currentButton.innerHTML =
+                                    '<i class="fa-solid fa-spinner fa-spin"></i>'
+                                    + '<span>Đang xác nhận...</span>';
+                            }
+
+                            await markTicketAsPrinted(ticketId);
+
+                            updatePrintedStatusOnScreen(currentButton);
+
+                            alert('Đã xác nhận in vé thành công.');
+                        } catch (error) {
+                            console.error(error);
+
+                            alert(
+                                error.message
+                                ?? 'Không thể cập nhật trạng thái Đã in.'
+                            );
+                        } finally {
+                            restoreButton();
+                        }
                     } catch (error) {
                         console.error(
                             'Không thể mở hộp thoại in:',
@@ -820,7 +1119,7 @@
                             'Không thể mở hộp thoại in. '
                             + 'Vui lòng thử lại.'
                         );
-                    } finally {
+
                         restoreButton();
                     }
                 }, 500);
@@ -832,7 +1131,7 @@
                 + Date.now();
         }
 
-        document.addEventListener('click', async function (event) {
+        document.addEventListener('click', function (event) {
             const button = event.target.closest(
                 '.btn-print-history'
             );
@@ -863,38 +1162,12 @@
                 '<i class="fa-solid fa-spinner fa-spin"></i>'
                 + '<span>Đang chuẩn bị...</span>';
 
-            try {
-                if (status === 'da_thanh_toan') {
-                    await markTicketAsPrinted(ticketId);
-
-                    /*
-                     * Cập nhật ngay trên giao diện để người dùng
-                     * thấy vé đã chuyển sang trạng thái Đã in.
-                     */
-                    button.dataset.ticketStatus = 'da_in';
-
-                    const row = button.closest('tr');
-                    const statusCell = row?.children[5];
-
-                    if (statusCell) {
-                        statusCell.innerHTML =
-                            '<span class="status-badge status-printed">'
-                            + 'Đã in'
-                            + '</span>';
-                    }
-                }
-
-                openPrintDialog(ticketId);
-            } catch (error) {
-                console.error(error);
-
-                alert(
-                    error.message
-                    ?? 'Không thể chuẩn bị vé để in.'
-                );
-
-                restoreButton();
-            }
+            /*
+             * QUAN TRỌNG:
+             * Không gọi markTicketAsPrinted() ở đây nữa.
+             * Mở hộp thoại in trước, sau khi hộp thoại đóng mới hỏi xác nhận.
+             */
+            openPrintDialog(ticketId, status);
         });
     });
 </script>

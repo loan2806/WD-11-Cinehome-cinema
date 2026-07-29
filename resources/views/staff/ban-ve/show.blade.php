@@ -141,14 +141,14 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
                                 $isCouple = (bool) ($ghe->loaiGhe?->la_couple ?? false);
 
                                 if ($isCouple || str_contains($seatType, 'đôi') || str_contains($seatType, 'doi') || str_contains($seatType, 'couple')) {
-                                    $seatClass = 'seat-couple';
-                                    $seatPrice = ($basePrice * 2) + $surcharge;
+                                $seatClass = 'seat-couple';
+                                $seatPrice = ($basePrice * 2) + $surcharge;
                                 } elseif (str_contains($seatType, 'vip')) {
-                                    $seatClass = 'seat-vip';
-                                    $seatPrice = $basePrice + $surcharge;
+                                $seatClass = 'seat-vip';
+                                $seatPrice = $basePrice + $surcharge;
                                 } else {
-                                    $seatClass = 'seat-normal';
-                                    $seatPrice = $basePrice + $surcharge;
+                                $seatClass = 'seat-normal';
+                                $seatPrice = $basePrice + $surcharge;
                                 }
                                 @endphp
                                 <div class="seat-wrapper">
@@ -182,48 +182,48 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
             </div>
 
             @php
-                $seatTypePriceList = $seatsByRow
-                    ->flatten()
-                    ->groupBy(fn($seat) => $seat->loaiGhe->id ?? 0)
-                    ->map(function ($seatGroup) use ($suatChieu) {
-                        $seat = $seatGroup->first();
-                        $typeName = $seat->loaiGhe->ten_loai ?? 'Thường';
-                        $typeNameLower = strtolower($typeName);
-                        $basePrice = (float) ($suatChieu->gia_ve ?? 0);
-                        $surcharge = (float) ($seat->loaiGhe?->phu_thu ?? 0);
-                        $isCouple = (bool) ($seat->loaiGhe?->la_couple ?? false);
+            $seatTypePriceList = $seatsByRow
+            ->flatten()
+            ->groupBy(fn($seat) => $seat->loaiGhe->id ?? 0)
+            ->map(function ($seatGroup) use ($suatChieu) {
+            $seat = $seatGroup->first();
+            $typeName = $seat->loaiGhe->ten_loai ?? 'Thường';
+            $typeNameLower = strtolower($typeName);
+            $basePrice = (float) ($suatChieu->gia_ve ?? 0);
+            $surcharge = (float) ($seat->loaiGhe?->phu_thu ?? 0);
+            $isCouple = (bool) ($seat->loaiGhe?->la_couple ?? false);
 
-                        if ($isCouple || str_contains($typeNameLower, 'đôi') || str_contains($typeNameLower, 'doi') || str_contains($typeNameLower, 'couple')) {
-                            $price = ($basePrice * 2) + $surcharge;
-                            $dotClass = 'is-couple';
-                        } elseif (str_contains($typeNameLower, 'vip')) {
-                            $price = $basePrice + $surcharge;
-                            $dotClass = 'is-vip';
-                        } else {
-                            $price = $basePrice + $surcharge;
-                            $dotClass = 'is-empty';
-                        }
+            if ($isCouple || str_contains($typeNameLower, 'đôi') || str_contains($typeNameLower, 'doi') || str_contains($typeNameLower, 'couple')) {
+            $price = ($basePrice * 2) + $surcharge;
+            $dotClass = 'is-couple';
+            } elseif (str_contains($typeNameLower, 'vip')) {
+            $price = $basePrice + $surcharge;
+            $dotClass = 'is-vip';
+            } else {
+            $price = $basePrice + $surcharge;
+            $dotClass = 'is-empty';
+            }
 
-                        return [
-                            'name' => $typeName,
-                            'price' => $price,
-                            'dotClass' => $dotClass,
-                        ];
-                    })
-                    ->values();
+            return [
+            'name' => $typeName,
+            'price' => $price,
+            'dotClass' => $dotClass,
+            ];
+            })
+            ->values();
             @endphp
 
             <div class="booking-seat-price-info">
                 <span class="price-info-title">LOẠI GHẾ</span>
 
                 @foreach($seatTypePriceList as $seatTypePrice)
-                    <div class="price-info-row">
-                        <span>
-                            <i class="price-dot {{ $seatTypePrice['dotClass'] }}"></i>
-                            {{ $seatTypePrice['name'] }}
-                        </span>
-                        <strong>{{ number_format($seatTypePrice['price'], 0, ',', '.') }}đ</strong>
-                    </div>
+                <div class="price-info-row">
+                    <span>
+                        <i class="price-dot {{ $seatTypePrice['dotClass'] }}"></i>
+                        {{ $seatTypePrice['name'] }}
+                    </span>
+                    <strong>{{ number_format($seatTypePrice['price'], 0, ',', '.') }}đ</strong>
+                </div>
                 @endforeach
             </div>
 
@@ -352,9 +352,15 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
 
     .booking-seat-layout-admin {
         display: grid;
-        grid-template-columns: 290px 1fr 320px;
+        grid-template-columns: minmax(230px, 290px) minmax(0, 1fr) minmax(260px, 320px);
         gap: 20px;
         align-items: start;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .booking-seat-layout-admin>* {
+        min-width: 0;
     }
 
     .booking-seat-hero {
@@ -468,6 +474,15 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
         border: 1px solid rgba(255, 255, 255, .08);
         border-radius: 20px;
         padding: 20px;
+        min-width: 0;
+    }
+
+    .booking-seat-map-panel {
+        overflow: hidden;
+    }
+
+    .booking-seat-order-card {
+        width: 100%;
     }
 
     .booking-seat-poster-wrap {
@@ -578,10 +593,20 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
     }
 
     .booking-seat-scroll {
-        overflow-x: auto;
-        padding: 20px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden !important;
+        padding: 10px 4px;
         background: #161616;
         border-radius: 12px;
+    }
+
+    /* Chrome / Edge */
+    .booking-seat-scroll::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
 
     .booking-seat-grid {
@@ -886,13 +911,352 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
         cursor: not-allowed;
     }
 
-    @media (max-width: 1300px) {
+    /* =========================
+       RESPONSIVE - 100% / 125%
+       ========================= */
+
+    /* Desktop rộng */
+    @media (min-width: 1500px) {
         .booking-seat-layout-admin {
-            grid-template-columns: 1fr;
+            grid-template-columns:
+                minmax(230px, 290px) minmax(0, 1fr) minmax(260px, 300px);
+            gap: 18px;
+        }
+    }
+
+    /* Laptop / Windows Scale 125% */
+    @media (min-width: 1050px) and (max-width: 1499px) {
+        .booking-seat-page {
+            width: 100%;
+            min-width: 0;
+        }
+
+        .booking-seat-hero {
+            padding: 18px 20px;
+            gap: 20px;
+        }
+
+        .booking-seat-hero h1 {
+            font-size: 22px;
+        }
+
+        .booking-steps-flow {
+            width: 220px;
+            flex-shrink: 0;
+        }
+
+        .booking-seat-mini-stats {
+            gap: 10px;
+        }
+
+        .booking-seat-mini-stats div {
+            padding: 8px 14px;
+        }
+
+        .booking-seat-layout-admin {
+            grid-template-columns:
+                minmax(180px, 220px) minmax(0, 1fr) minmax(210px, 250px);
+            gap: 14px;
+        }
+
+        .booking-seat-movie-card,
+        .booking-seat-map-panel,
+        .booking-seat-order-card {
+            padding: 14px;
+        }
+
+        .booking-seat-poster-wrap img {
+            height: 290px;
+        }
+
+        .booking-seat-info-card {
+            padding: 12px;
+        }
+
+        .booking-seat-info-card dl div {
+            font-size: 11px;
+            gap: 10px;
+        }
+
+        .booking-seat-info-card dd {
+            text-align: right;
+        }
+
+        .booking-seat-toolbar {
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .booking-seat-toolbar h2 {
+            font-size: 19px;
+        }
+
+        .booking-seat-timer {
+            padding: 8px 10px;
+            flex-shrink: 0;
+        }
+
+        .booking-screen-wrap {
+            margin-bottom: 22px;
+        }
+
+        .booking-seat-scroll {
+            padding: 12px;
+        }
+
+        .booking-seat-grid {
+            gap: 9px;
+        }
+
+        .seat-row {
+            gap: 7px;
+        }
+
+        .seat-list {
+            gap: 5px;
+        }
+
+        .seat-button {
+            width: 34px;
+            height: 34px;
+            font-size: 9px;
+        }
+
+        .seat-couple {
+            width: 73px;
+        }
+
+        .row-label {
+            width: 18px;
+            font-size: 12px;
+        }
+
+        .booking-seat-legend {
+            gap: 10px;
+            margin-top: 18px;
+            font-size: 10px;
+        }
+
+        .booking-seat-price-info,
+        .booking-order-section {
+            padding: 12px;
+        }
+
+        .price-info-row,
+        .booking-order-line {
+            font-size: 11px;
+        }
+
+        .booking-order-card-head h2 {
+            font-size: 18px;
+        }
+
+        .booking-seat-total-card {
+            padding: 14px 10px;
+        }
+
+        .booking-seat-total-card strong {
+            font-size: 24px;
+        }
+
+        .booking-seat-primary-cta {
+            padding: 12px 8px;
+            font-size: 12px;
+        }
+    }
+
+    /* Viewport hẹp: ẩn poster, ưu tiên sơ đồ + đơn hàng */
+    @media (min-width: 850px) and (max-width: 1049px) {
+        .booking-seat-hero {
+            padding: 16px;
+            gap: 14px;
+        }
+
+        .booking-seat-hero h1 {
+            font-size: 20px;
+        }
+
+        .booking-flow-hero-copy p {
+            font-size: 12px;
+        }
+
+        .booking-seat-mini-stats {
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .booking-seat-mini-stats div {
+            padding: 7px 10px;
+        }
+
+        .booking-steps-flow {
+            width: 200px;
+            flex-shrink: 0;
+        }
+
+        .booking-seat-layout-admin {
+            grid-template-columns:
+                minmax(0, 1fr) minmax(210px, 230px);
+            gap: 12px;
         }
 
         .booking-seat-movie-card {
             display: none;
+        }
+
+        .booking-seat-map-panel,
+        .booking-seat-order-card {
+            padding: 12px;
+        }
+
+        .booking-seat-toolbar {
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .booking-seat-toolbar h2 {
+            font-size: 18px;
+        }
+
+        .booking-seat-timer {
+            padding: 7px 8px;
+            font-size: 11px;
+        }
+
+        .booking-screen-wrap {
+            margin-bottom: 18px;
+        }
+
+        .booking-seat-scroll {
+            padding: 10px;
+        }
+
+        .booking-seat-grid {
+            gap: 8px;
+        }
+
+        .seat-row {
+            gap: 5px;
+        }
+
+        .seat-list {
+            gap: 4px;
+        }
+
+        .seat-button {
+            width: 31px;
+            height: 31px;
+            font-size: 8px;
+            border-radius: 6px 6px 3px 3px;
+        }
+
+        .seat-couple {
+            width: 66px;
+        }
+
+        .row-label {
+            width: 16px;
+            font-size: 11px;
+        }
+
+        .booking-seat-legend {
+            gap: 8px;
+            margin-top: 15px;
+            font-size: 9px;
+        }
+
+        .booking-seat-price-info,
+        .booking-order-section {
+            padding: 10px;
+        }
+
+        .price-info-row,
+        .booking-order-line {
+            font-size: 10px;
+        }
+
+        .booking-order-card-head h2 {
+            font-size: 17px;
+        }
+
+        .booking-seat-total-card {
+            padding: 12px 8px;
+        }
+
+        .booking-seat-total-card strong {
+            font-size: 22px;
+        }
+
+        .booking-seat-primary-cta {
+            padding: 11px 7px;
+            font-size: 11px;
+        }
+    }
+
+    /* Tablet / viewport rất hẹp */
+    @media (max-width: 849px) {
+        .booking-seat-hero {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 15px;
+            gap: 15px;
+        }
+
+        .booking-seat-hero h1 {
+            font-size: 20px;
+        }
+
+        .booking-seat-mini-stats {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .booking-seat-mini-stats div {
+            flex: 1 1 100px;
+            padding: 8px 10px;
+        }
+
+        .booking-steps-flow {
+            width: 100%;
+        }
+
+        .booking-seat-layout-admin {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+        }
+
+        .booking-seat-movie-card {
+            display: none;
+        }
+
+        .booking-seat-map-panel,
+        .booking-seat-order-card {
+            width: 100%;
+            padding: 12px;
+        }
+
+        .booking-seat-toolbar {
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .booking-seat-toolbar h2 {
+            font-size: 18px;
+        }
+
+        .booking-seat-timer {
+            padding: 7px 8px;
+            font-size: 10px;
+        }
+
+        .booking-seat-scroll {
+            padding: 10px;
+            overflow-x: auto;
+        }
+
+        .booking-seat-legend {
+            gap: 8px;
+            font-size: 9px;
         }
     }
 

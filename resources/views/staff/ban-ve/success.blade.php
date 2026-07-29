@@ -192,7 +192,10 @@
                             {{ $label }}
                         </span>
 
-                        <strong class="text-right">
+                        <strong
+                            class="text-right"
+                            @if ($label === 'Trạng thái') id="ticketStatusText" @endif
+                        >
                             {{ $value ?: '---' }}
                         </strong>
 
@@ -494,6 +497,91 @@
 </div>
 
 
+
+{{-- ========================================================= --}}
+{{-- MODAL XÁC NHẬN SAU KHI ĐÓNG HỘP THOẠI IN                --}}
+{{-- ========================================================= --}}
+<div id="printConfirmModal"
+     class="fixed inset-0 z-[99999] hidden items-center justify-center p-5">
+
+    <div
+        id="printConfirmBackdrop"
+        class="absolute inset-0 bg-black/75 backdrop-blur-sm"
+    ></div>
+
+    <div
+        class="relative w-full max-w-md overflow-hidden rounded-3xl
+               border border-yellow-400/30
+               bg-gradient-to-br from-[#1b1b1b] to-[#101010]
+               shadow-[0_30px_90px_rgba(0,0,0,.65)]"
+    >
+        <div class="p-7 text-center">
+
+            <div
+                class="mx-auto flex h-16 w-16 items-center justify-center
+                       rounded-2xl bg-gradient-to-br from-yellow-300
+                       to-yellow-500 text-2xl text-black
+                       shadow-[0_12px_30px_rgba(250,204,21,.25)]"
+            >
+                <i class="fa-solid fa-print"></i>
+            </div>
+
+            <h3 class="mt-5 text-2xl font-black text-white">
+                Xác nhận in vé
+            </h3>
+
+            <p class="mt-2 text-sm text-gray-400">
+                Vé và hóa đơn đã được in ra giấy thành công chưa?
+            </p>
+
+            <div
+                class="mt-5 flex items-start gap-3 rounded-2xl
+                       border border-yellow-400/15
+                       bg-yellow-400/5 p-4 text-left"
+            >
+                <i class="fa-solid fa-circle-info mt-0.5 text-yellow-400"></i>
+
+                <p class="text-xs leading-5 text-gray-400">
+                    Chỉ khi xác nhận thành công, trạng thái vé mới chuyển sang
+                    <strong class="text-yellow-300">Đã in</strong>.
+                    Nếu bạn vừa bấm Hủy trong cửa sổ in, hãy chọn
+                    <strong class="text-white">Chưa in</strong>.
+                </p>
+            </div>
+
+            <div class="mt-6 grid grid-cols-2 gap-3">
+
+                <button
+                    type="button"
+                    id="btnPrintNotDone"
+                    class="flex items-center justify-center gap-2
+                           rounded-2xl border border-white/10
+                           bg-white/5 px-4 py-3.5
+                           font-black text-gray-200 transition
+                           hover:bg-white/10"
+                >
+                    <i class="fa-solid fa-xmark"></i>
+                    Chưa in
+                </button>
+
+                <button
+                    type="button"
+                    id="btnPrintDone"
+                    class="flex items-center justify-center gap-2
+                           rounded-2xl border-0
+                           bg-gradient-to-r from-yellow-400 to-amber-500
+                           px-4 py-3.5 font-black text-black transition
+                           hover:from-yellow-300 hover:to-amber-400"
+                >
+                    <i class="fa-solid fa-check"></i>
+                    Đã in thành công
+                </button>
+
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- ========================================================= --}}
 {{-- IFRAME ẨN DÙNG ĐỂ IN - KHÔNG CHUYỂN TRANG                --}}
 {{-- ========================================================= --}}
@@ -516,14 +604,60 @@
 
 <script>
     let isPrinting = false;
+    let isConfirmingPrinted = false;
 
+    function setPrintButtonReady() {
+        const button = document.getElementById('btnPrintTicket');
+        const buttonText = document.getElementById('printButtonText');
+
+        isPrinting = false;
+
+        if (!button || !buttonText) {
+            return;
+        }
+
+        button.disabled = false;
+        button.classList.remove('opacity-60', 'cursor-wait');
+
+        const statusText =
+            document.getElementById('ticketStatusText')
+                ?.textContent.trim();
+
+        buttonText.textContent =
+            statusText === 'Đã in'
+                ? 'In lại {{ $seatCount }} vé & hóa đơn'
+                : 'In {{ $seatCount }} vé & hóa đơn';
+    }
+
+    function openPrintConfirmModal() {
+        const modal = document.getElementById('printConfirmModal');
+
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closePrintConfirmModal() {
+        const modal = document.getElementById('printConfirmModal');
+
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+    }
 
     /**
-     * Mở hộp thoại in mà không rời khỏi
-     * trang kết quả bán vé.
+     * Chỉ mở hộp thoại in.
+     * KHÔNG cập nhật trạng thái trước khi nhân viên xác nhận.
      */
-    async function printTicket() {
-
+    function printTicket() {
         if (isPrinting) {
             return;
         }
@@ -532,19 +666,89 @@
         const button = document.getElementById('btnPrintTicket');
         const buttonText = document.getElementById('printButtonText');
 
+        if (!frame || !button || !buttonText) {
+            return;
+        }
+
         isPrinting = true;
 
         button.disabled = true;
         button.classList.add('opacity-60', 'cursor-wait');
         buttonText.textContent = 'Đang chuẩn bị vé...';
 
-        try {
+        frame.onload = function () {
+            setTimeout(function () {
+                try {
+                    const printWindow = frame.contentWindow;
 
-            /*
-             * Đánh dấu "Đã in" tại thời điểm nhân viên chủ động
-             * bấm nút In vé. Trình duyệt không cung cấp API tin cậy
-             * để biết người dùng bấm Print hay Cancel trong hộp thoại.
-             */
+                    printWindow.focus();
+                    printWindow.print();
+
+                    /*
+                     * Sau khi hộp thoại in đóng, hiện modal xác nhận đẹp.
+                     * Nếu vé đã ở trạng thái Đã in thì đây chỉ là in lại,
+                     * không cần xác nhận lần nữa.
+                     */
+                    const currentStatus =
+                        document.getElementById('ticketStatusText')
+                            ?.textContent.trim();
+
+                    if (currentStatus !== 'Đã in') {
+                        openPrintConfirmModal();
+                    }
+
+                } catch (error) {
+                    console.error(
+                        'Không thể mở hộp thoại in:',
+                        error
+                    );
+
+                    alert(
+                        'Không thể mở hộp thoại in. '
+                        + 'Vui lòng thử lại.'
+                    );
+                } finally {
+                    setPrintButtonReady();
+                }
+            }, 500);
+        };
+
+        frame.src =
+            @json(
+                route(
+                    'staff.ban-ve.print-ticket',
+                    ['id' => $ve->id]
+                )
+            )
+            + '?embedded=1&t='
+            + Date.now();
+    }
+
+    /**
+     * Chỉ cập nhật Đã in sau khi nhân viên chủ động xác nhận.
+     */
+    async function confirmPrintedSuccess() {
+        if (isConfirmingPrinted) {
+            return;
+        }
+
+        const confirmButton = document.getElementById('btnPrintDone');
+        const notDoneButton = document.getElementById('btnPrintNotDone');
+
+        isConfirmingPrinted = true;
+
+        if (confirmButton) {
+            confirmButton.disabled = true;
+            confirmButton.innerHTML =
+                '<i class="fa-solid fa-spinner fa-spin"></i>'
+                + '<span>Đang xác nhận...</span>';
+        }
+
+        if (notDoneButton) {
+            notDoneButton.disabled = true;
+        }
+
+        try {
             const response = await fetch(
                 @json(
                     route(
@@ -574,95 +778,54 @@
                 );
             }
 
-            frame.onload = function () {
+            const statusText =
+                document.getElementById('ticketStatusText');
 
-                setTimeout(function () {
+            if (statusText) {
+                statusText.textContent = 'Đã in';
+            }
 
-                    try {
+            const printButtonText =
+                document.getElementById('printButtonText');
 
-                        const printWindow = frame.contentWindow;
+            if (printButtonText) {
+                printButtonText.textContent =
+                    'In lại {{ $seatCount }} vé & hóa đơn';
+            }
 
-                        printWindow.focus();
-                        printWindow.print();
-
-                    } catch (error) {
-
-                        console.error(
-                            'Không thể mở hộp thoại in:',
-                            error
-                        );
-
-                        alert(
-                            'Không thể mở hộp thoại in. ' +
-                            'Vui lòng thử lại.'
-                        );
-
-                    } finally {
-
-                        isPrinting = false;
-
-                        button.disabled = false;
-
-                        button.classList.remove(
-                            'opacity-60',
-                            'cursor-wait'
-                        );
-
-                        buttonText.textContent =
-                            'In lại {{ $seatCount }} vé & hóa đơn';
-
-                    }
-
-                }, 500);
-
-            };
-
-            frame.src =
-                @json(
-                    route(
-                        'staff.ban-ve.print-ticket',
-                        ['id' => $ve->id]
-                    )
-                )
-                + '?embedded=1&t='
-                + Date.now();
+            closePrintConfirmModal();
 
         } catch (error) {
-
             console.error(error);
 
             alert(
                 error.message
-                ?? 'Không thể chuẩn bị vé để in.'
+                ?? 'Không thể cập nhật trạng thái Đã in.'
             );
+        } finally {
+            isConfirmingPrinted = false;
 
-            isPrinting = false;
+            if (confirmButton) {
+                confirmButton.disabled = false;
+                confirmButton.innerHTML =
+                    '<i class="fa-solid fa-check"></i>'
+                    + '<span>Đã in thành công</span>';
+            }
 
-            button.disabled = false;
-
-            button.classList.remove(
-                'opacity-60',
-                'cursor-wait'
-            );
-
-            buttonText.textContent =
-                'In {{ $seatCount }} vé & hóa đơn';
+            if (notDoneButton) {
+                notDoneButton.disabled = false;
+            }
         }
     }
-
-
 
     /**
      * Xóa giỏ đồ ăn của giao dịch vừa hoàn thành.
      */
     function clearCurrentFoodCart() {
-
         const staffId = {{ $staffId }};
         const showtimeId = {{ $showtimeId }};
-
         const sessionCartKey =
             @json(session('clear_food_cart_key'));
-
 
         localStorage.removeItem(
             `staff_food_cart_v2_${staffId}_${showtimeId}`
@@ -672,38 +835,43 @@
             `staff_food_cart_${staffId}_${showtimeId}`
         );
 
-
         if (sessionCartKey) {
             localStorage.removeItem(sessionCartKey);
         }
 
-
         Object.keys(localStorage)
             .filter(function (key) {
-
                 return (
                     key.startsWith('staff_food_cart_')
-                    &&
-                    key.endsWith(`_${showtimeId}`)
+                    && key.endsWith(`_${showtimeId}`)
                 );
-
             })
             .forEach(function (key) {
-
                 localStorage.removeItem(key);
-
             });
     }
 
+    document.addEventListener('DOMContentLoaded', function () {
+        clearCurrentFoodCart();
 
-    document.addEventListener(
-        'DOMContentLoaded',
-        function () {
+        document
+            .getElementById('btnPrintNotDone')
+            ?.addEventListener('click', closePrintConfirmModal);
 
-            clearCurrentFoodCart();
+        document
+            .getElementById('printConfirmBackdrop')
+            ?.addEventListener('click', closePrintConfirmModal);
 
-        }
-    );
+        document
+            .getElementById('btnPrintDone')
+            ?.addEventListener('click', confirmPrintedSuccess);
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closePrintConfirmModal();
+            }
+        });
+    });
 </script>
 
 @endsection
