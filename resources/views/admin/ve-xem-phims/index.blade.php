@@ -17,6 +17,17 @@
         ];
 
         $statusLabels = [
+            'cho_thanh_toan' => 'Chờ thanh toán',
+            'da_thanh_toan' => 'Đã thanh toán',
+            'da_in' => 'Đã in',
+            'da_su_dung' => 'Đã sử dụng',
+            'da_huy' => 'Đã hủy',
+            'het_han' => 'Hết hạn',
+        ];
+
+        // Chỉ các trạng thái nghiệp vụ này mới cho Admin sửa thủ công.
+        // "Chờ thanh toán" phải do PayOS xác nhận, không được xác nhận tay.
+        $editableStatusLabels = [
             'da_thanh_toan' => 'Đã thanh toán',
             'da_in' => 'Đã in',
             'da_su_dung' => 'Đã sử dụng',
@@ -255,24 +266,36 @@
                                     </strong>
                                 </td>
                                 <td>
-                                    <form method="POST" action="{{ route('admin.ve-xem-phims.cap-nhat-trang-thai', $ticket) }}">
-                                        @csrf
-                                        @method('PATCH')
+                                    @if ($ticket->trang_thai === 'cho_thanh_toan')
+                                        <span class="ticket-status-static status-cho_thanh_toan">
+                                            <i class="fa-regular fa-clock"></i>
+                                            Chờ thanh toán
+                                        </span>
+                                    @elseif ($ticket->trang_thai === 'het_han')
+                                        <span class="ticket-status-static status-het_han">
+                                            <i class="fa-solid fa-hourglass-end"></i>
+                                            Hết hạn
+                                        </span>
+                                    @else
+                                        <form method="POST" action="{{ route('admin.ve-xem-phims.cap-nhat-trang-thai', $ticket) }}">
+                                            @csrf
+                                            @method('PATCH')
 
-                                        <select
-                                            name="trang_thai"
-                                            onchange="confirmTicketStatus(this)"
-                                            data-current="{{ $ticket->trang_thai }}"
-                                            class="ticket-status-select status-{{ $ticket->trang_thai }}"
-                                            aria-label="Cập nhật trạng thái vé {{ $ticket->ma_ve }}"
-                                        >
-                                            @foreach ($statusLabels as $value => $label)
-                                                <option value="{{ $value }}" @selected($ticket->trang_thai === $value)>
-                                                    {{ $label }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </form>
+                                            <select
+                                                name="trang_thai"
+                                                onchange="confirmTicketStatus(this)"
+                                                data-current="{{ $ticket->trang_thai }}"
+                                                class="ticket-status-select status-{{ $ticket->trang_thai }}"
+                                                aria-label="Cập nhật trạng thái vé {{ $ticket->ma_ve }}"
+                                            >
+                                                @foreach ($editableStatusLabels as $value => $label)
+                                                    <option value="{{ $value }}" @selected($ticket->trang_thai === $value)>
+                                                        {{ $label }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </form>
+                                    @endif
                                 </td>
                                 <td>
                                     <div class="ticket-actions">
@@ -285,7 +308,17 @@
                                             <i class="fa-solid fa-eye"></i>
                                         </a>
 
-                                        @if ($ticket->trang_thai === 'da_thanh_toan')
+                                        @if ($ticket->trang_thai === 'cho_thanh_toan')
+                                            <span class="ticket-action-note pending">
+                                                <i class="fa-regular fa-clock"></i>
+                                                Chờ PayOS
+                                            </span>
+                                        @elseif ($ticket->trang_thai === 'het_han')
+                                            <span class="ticket-action-note expired">
+                                                <i class="fa-solid fa-hourglass-end"></i>
+                                                Hết hạn
+                                            </span>
+                                        @elseif ($ticket->trang_thai === 'da_thanh_toan')
                                             <form method="POST" action="{{ route('admin.ve-xem-phims.su-dung', $ticket) }}">
                                                 @csrf
                                                 @method('PATCH')
@@ -340,6 +373,41 @@
         </section>
     </div>
 
+    <style>
+        .ticket-status-static {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            min-height: 36px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .ticket-status-static.status-cho_thanh_toan {
+            color: #fde68a;
+            background: rgba(234, 179, 8, .12);
+            border: 1px solid rgba(234, 179, 8, .35);
+        }
+
+        .ticket-status-static.status-het_han {
+            color: #cbd5e1;
+            background: rgba(100, 116, 139, .14);
+            border: 1px solid rgba(100, 116, 139, .35);
+        }
+
+        .ticket-action-note.pending {
+            color: #facc15;
+        }
+
+        .ticket-action-note.expired {
+            color: #94a3b8;
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function confirmTicketStatus(select) {
@@ -351,10 +419,12 @@
             }
 
             const statusMap = {
+                cho_thanh_toan: 'Chờ thanh toán',
                 da_thanh_toan: 'Đã thanh toán',
                 da_in: 'Đã in',
                 da_su_dung: 'Đã sử dụng',
-                da_huy: 'Đã hủy'
+                da_huy: 'Đã hủy',
+                het_han: 'Hết hạn'
             };
 
             const submitChange = () => {

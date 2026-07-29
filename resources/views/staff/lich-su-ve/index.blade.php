@@ -50,6 +50,7 @@
                     <option value="da_in" {{ request('trang_thai') === 'da_in' ? 'selected' : '' }}>Đã in</option>
                     <option value="da_su_dung" {{ request('trang_thai') === 'da_su_dung' ? 'selected' : '' }}>Đã sử dụng</option>
                     <option value="da_huy" {{ request('trang_thai') === 'da_huy' ? 'selected' : '' }}>Đã hủy</option>
+                    <option value="het_han" {{ request('trang_thai') === 'het_han' ? 'selected' : '' }}>Hết hạn</option>
                 </select>
             </div>
 
@@ -131,6 +132,8 @@
                                     <span class="status-badge status-used">Đã sử dụng</span>
                                 @elseif ($ticket->trang_thai === 'da_huy')
                                     <span class="status-badge status-cancel">Đã hủy</span>
+                                @elseif ($ticket->trang_thai === 'het_han')
+                                    <span class="status-badge status-expired">Hết hạn</span>
                                 @else
                                     <span class="status-badge">
                                         {{ $ticket->trang_thai ?: 'Không xác định' }}
@@ -153,6 +156,37 @@
                             <td>
                                 @if (
                                     $ticket->loai_ve === 'tai_quay'
+                                    && $ticket->payment_method === 'vietqr'
+                                    && $ticket->trang_thai === 'cho_thanh_toan'
+                                )
+                                    <div class="pending-actions">
+                                        <a
+                                            href="{{ route('staff.ban-ve.vietqr-waiting', ['id' => $ticket->id]) }}"
+                                            class="btn-continue-payment"
+                                            title="Tiếp tục giao dịch VietQR"
+                                        >
+                                            <i class="fa-solid fa-qrcode"></i>
+                                            <span>Tiếp tục</span>
+                                        </a>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ route('staff.ban-ve.vietqr-cancel', ['id' => $ticket->id]) }}"
+                                            onsubmit="return confirm('Hủy giao dịch này và giải phóng ghế {{ $ticket->ma_ghe }}?')"
+                                        >
+                                            @csrf
+                                            <button
+                                                type="submit"
+                                                class="btn-cancel-pending"
+                                                title="Hủy và giải phóng ghế"
+                                            >
+                                                <i class="fa-solid fa-xmark"></i>
+                                                <span>Hủy</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                @elseif (
+                                    $ticket->loai_ve === 'tai_quay'
                                     && in_array(
                                         $ticket->trang_thai,
                                         ['da_thanh_toan', 'da_in'],
@@ -166,7 +200,6 @@
                                         data-ticket-status="{{ $ticket->trang_thai }}"
                                     >
                                         <i class="fa-solid fa-print"></i>
-
                                         <span>
                                             {{ $ticket->trang_thai === 'da_in'
                                                 ? 'In lại'
@@ -182,12 +215,15 @@
                                 @elseif ($ticket->trang_thai === 'da_huy')
                                     <span class="action-note action-cancel">
                                         <i class="fa-solid fa-ban"></i>
-                                        Không thể in
+                                        Đã hủy
+                                    </span>
+                                @elseif ($ticket->trang_thai === 'het_han')
+                                    <span class="action-note action-expired">
+                                        <i class="fa-solid fa-clock"></i>
+                                        Hết hạn
                                     </span>
                                 @else
-                                    <span class="action-note">
-                                        ---
-                                    </span>
+                                    <span class="action-note">---</span>
                                 @endif
                             </td>
                         </tr>
@@ -516,6 +552,66 @@
         color: #ffcccc;
         background: rgba(239,68,68,.14);
         border: 1px solid rgba(239,68,68,.35);
+    }
+
+    .status-expired {
+        color: #cbd5e1;
+        background: rgba(100,116,139,.14);
+        border: 1px solid rgba(100,116,139,.35);
+    }
+
+    .pending-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .pending-actions form {
+        margin: 0;
+    }
+
+    .btn-continue-payment,
+    .btn-cancel-pending {
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 0 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all .25s ease;
+    }
+
+    .btn-continue-payment {
+        color: #16100a;
+        background: linear-gradient(135deg, #f5a623, #ffd166);
+        border: 1px solid rgba(245,166,35,.55);
+    }
+
+    .btn-continue-payment:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(245,166,35,.25);
+    }
+
+    .btn-cancel-pending {
+        color: #fecaca;
+        background: rgba(239,68,68,.12);
+        border: 1px solid rgba(239,68,68,.35);
+    }
+
+    .btn-cancel-pending:hover {
+        color: #fff;
+        background: rgba(239,68,68,.28);
+        transform: translateY(-2px);
+    }
+
+    .action-expired {
+        color: #94a3b8;
     }
 
     .money {

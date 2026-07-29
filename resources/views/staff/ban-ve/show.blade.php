@@ -35,7 +35,7 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
                 </div>
                 <div>
                     <strong>{{$soldSeatCodes->count()}}</strong>
-                    <span>Đã bán</span>
+                    <span>Đã bán / đang giữ</span>
                 </div>
                 <div>
                     <strong>{{number_format($suatChieu->gia_ve,0,',','.')}}đ</strong>
@@ -112,8 +112,8 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
                     <h2>Vị trí ghế ngồi</h2>
                 </div>
                 <div class="booking-seat-timer">
-                    <span><i class="fa-regular fa-clock"></i> Thời gian giữ ghế</span>
-                    <strong id="countdown">07:00</strong>
+                    <span><i class="fa-solid fa-shield-halved"></i> Trạng thái ghế</span>
+                    <strong style="font-size: 13px;">Khóa khi tạo VietQR</strong>
                 </div>
             </div>
 
@@ -338,18 +338,6 @@ $availableSeats=$totalSeats-$soldSeatCodes->count()-count($maintenanceSeatCodes)
             render();
         });
 
-        const countdownEl = document.getElementById("countdown");
-        let duration = 7 * 60;
-        const timer = setInterval(function() {
-            let minutes = Math.floor(duration / 60);
-            let seconds = duration % 60;
-            countdownEl.textContent = (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-            if (--duration < 0) {
-                clearInterval(timer);
-                alert("Hết thời gian giữ ghế!");
-                window.location.reload();
-            }
-        }, 1000);
     });
 
 </script>

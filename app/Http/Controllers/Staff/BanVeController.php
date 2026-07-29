@@ -11,14 +11,21 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use PayOS\PayOS;
 use App\Models\BienTheDoAn;
 use App\Models\VeXemPhimGhe;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class BanVeController extends Controller
 {
+    private const STAFF_VIETQR_HOLD_MINUTES = 7;
+    private const STAFF_PAYOS_CACHE_MINUTES = 15;
+
     public function index()
     {
+        $this->expirePendingTickets();
+
         $showtimes = SuatChieu::with([
             'phim',
             'rapChieuPhim',
@@ -26,7 +33,7 @@ class BanVeController extends Controller
         ])
             ->withCount([
                 'veXemPhims as sold_tickets_count' => function ($query) {
-                    $query->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung']);
+                    $query->whereIn('trang_thai', ['da_thanh_toan', 'da_in', 'da_su_dung']);
                 }
             ])
             ->where('thoi_gian_chieu', '>=', now())
@@ -38,6 +45,8 @@ class BanVeController extends Controller
 
     public function show(SuatChieu $suatChieu)
     {
+        $this->expirePendingTickets($suatChieu->id);
+
         $suatChieu->load([
             'phim',
             'rapChieuPhim',
@@ -48,12 +57,19 @@ class BanVeController extends Controller
             'suat_chieu_id',
             $suatChieu->id
         )
-            ->whereIn('trang_thai', [
-                'dang_giu',
-                'da_thanh_toan',
-                'da_in',
-                'da_su_dung'
-            ])
+            ->where(function ($query) {
+                $query->whereIn('trang_thai', [
+                    'dang_giu',
+                    'da_dat',
+                    'da_thanh_toan',
+                    'da_in',
+                    'da_su_dung',
+                ])->orWhere(function ($pendingQuery) {
+                    $pendingQuery
+                        ->where('trang_thai', 'cho_thanh_toan')
+                        ->where('thoi_gian_het_han', '>', now());
+                });
+            })
             ->pluck('ma_ghe')
             ->flatMap(function ($codes) {
                 return collect(explode(',', $codes))
@@ -545,13 +561,19 @@ $menu = $foods
                     'suat_chieu_id',
                     $suatChieu->id
                 )
-                    ->whereIn('trang_thai', [
-                        'dang_giu',
-                        'da_dat',
-                        'da_thanh_toan',
-                        'da_in',
-                        'da_su_dung',
-                    ])
+                    ->where(function ($query) {
+                        $query->whereIn('trang_thai', [
+                            'dang_giu',
+                            'da_dat',
+                            'da_thanh_toan',
+                            'da_in',
+                            'da_su_dung',
+                        ])->orWhere(function ($pendingQuery) {
+                            $pendingQuery
+                                ->where('trang_thai', 'cho_thanh_toan')
+                                ->where('thoi_gian_het_han', '>', now());
+                        });
+                    })
                     ->lockForUpdate()
                     ->pluck('ma_ghe')
                     ->flatMap(function ($codes) {
@@ -834,10 +856,15 @@ foreach ($requestedFoodItems as $foodData) {
 
                 if ($paymentMethod === 'vietqr') {
                     /*
-    |--------------------------------------------------------------------------
-    | Tạo mã vé tạm
-    |--------------------------------------------------------------------------
-    */
+                    |--------------------------------------------------------------------------
+                    | Tạo mã vé tạm và mã giao dịch PayOS
+                    |--------------------------------------------------------------------------
+                    |
+                    | Vé tạm được lưu ngay vào database với trạng thái
+                    | "cho_thanh_toan". Trong 7 phút, các ghế của vé này
+                    | được xem là đang bị khóa đối với các giao dịch khác.
+                    |
+                    */
                     do {
                         $maVe =
                             'OFF-'
@@ -848,60 +875,65 @@ foreach ($requestedFoodItems as $foodData) {
                         VeXemPhim::where('ma_ve', $maVe)->exists()
                     );
 
-                    /*
-    |--------------------------------------------------------------------------
-    | Lưu dữ liệu bán vé tại quầy chờ PayOS xác nhận
-    |--------------------------------------------------------------------------
-    */
-                    $pendingData = [
+                    do {
+                        $orderCode = intval(
+                            filter_var(
+                                microtime(true) * 10000,
+                                FILTER_SANITIZE_NUMBER_INT
+                            )
+                        ) % 9007199254740991;
+                    } while (
+                        VeXemPhim::where('payos_order_code', $orderCode)->exists()
+                    );
+
+                    $expiresAt = now()->addMinutes(
+                        self::STAFF_VIETQR_HOLD_MINUTES
+                    );
+
+                    $vePending = VeXemPhim::create([
                         'nguoi_dung_id' => null,
                         'nhan_vien_id' => auth()->id(),
                         'suat_chieu_id' => $suatChieu->id,
                         'ma_ve' => $maVe,
-
                         'ten_phim' => $suatChieu->phim->ten_phim,
                         'ten_rap' => $suatChieu->rapChieuPhim->ten_rap,
                         'ten_phong' => $suatChieu->phongChieu->ten_phong,
-
                         'ma_ghe' => $selectedSeats->implode(','),
-                        'danh_sach_ghe' => $selectedSeats->values()->all(),
-
-                        'thoi_gian_chieu' =>
-                        $suatChieu->thoi_gian_chieu->toDateTimeString(),
-
+                        'thoi_gian_chieu' => $suatChieu->thoi_gian_chieu,
                         'tong_tien' => $tongTien,
+                        'tien_hoan' => 0,
+                        'loai_ve' => 'tai_quay',
+                        'trang_thai' => 'cho_thanh_toan',
+                        'thoi_gian_het_han' => $expiresAt,
+                        'food_items' => $verifiedFoodItems->values()->all(),
+                        'payment_method' => 'vietqr',
+                        'payos_order_code' => $orderCode,
+                        'received_amount' => 0,
+                        'change_amount' => 0,
                         'seat_total' => (int) round($seatTotal),
                         'food_total' => (int) round($foodTotal),
-                        'payment_method' => 'vietqr',
-                        'loai_ve' => 'tai_quay',
-                        'food_items' => $verifiedFoodItems->values()->all(),
-
-                        'clear_cart_key' =>
-                        $request->input('clear_cart_key'),
-                    ];
-
-                    Cache::put(
-                        "pending_staff_ve:{$maVe}",
-                        $pendingData,
-                        now()->addMinutes(15)
-                    );
+                    ]);
 
                     /*
-    |--------------------------------------------------------------------------
-    | Tạo giao dịch PayOS
-    |--------------------------------------------------------------------------
-    */
-                    $orderCode = intval(
-                        filter_var(
-                            microtime(true) * 10000,
-                            FILTER_SANITIZE_NUMBER_INT
-                        )
-                    ) % 9007199254740991;
-
+                    | Cache chỉ giữ dữ liệu phụ cho giao diện/giỏ hàng.
+                    | Trạng thái giữ ghế thật nằm trong database.
+                    */
                     Cache::put(
                         "staff_payos_mapping:{$orderCode}",
                         $maVe,
-                        now()->addMinutes(15)
+                        now()->addMinutes(self::STAFF_PAYOS_CACHE_MINUTES)
+                    );
+
+                    Cache::put(
+                        "pending_staff_ve:{$maVe}",
+                        [
+                            've_id' => $vePending->id,
+                            'ma_ve' => $maVe,
+                            'suat_chieu_id' => $suatChieu->id,
+                            'danh_sach_ghe' => $selectedSeats->values()->all(),
+                            'clear_cart_key' => $request->input('clear_cart_key'),
+                        ],
+                        now()->addMinutes(self::STAFF_PAYOS_CACHE_MINUTES)
                     );
 
                     $payOS = new PayOS(
@@ -914,32 +946,39 @@ foreach ($requestedFoodItems as $foodData) {
                         'orderCode' => $orderCode,
                         'amount' => $tongTien,
                         'description' => 'VE' . $orderCode,
-
                         'returnUrl' => route(
                             'staff.ban-ve.payos-callback'
                         ),
-
                         'cancelUrl' => route(
-                            'staff.ban-ve.show',
-                            $suatChieu->id
+                            'staff.ban-ve.payos-cancel'
                         ),
+                        // PayOS cũng hết hạn cùng thời điểm giữ ghế.
+                        'expiredAt' => $expiresAt->timestamp,
                     ];
 
                     $response = $payOS->paymentRequests->create(
                         $paymentData
                     );
 
-                    $checkoutUrl = $response->checkoutUrl ?? null;
+                    // SDK có thể trả object hoặc array, data_get đọc được cả hai.
+                    $checkoutUrl = data_get($response, 'checkoutUrl');
+                    $qrCode = data_get($response, 'qrCode');
 
-                    if (!$checkoutUrl) {
+                    if (!$checkoutUrl || !$qrCode) {
                         throw new \RuntimeException(
-                            'PayOS không trả về đường dẫn thanh toán.'
+                            'PayOS không trả về đầy đủ thông tin thanh toán VietQR.'
                         );
                     }
 
+                    // Lưu xuống DB để refresh trang vẫn còn QR và đường dẫn PayOS.
+                    $vePending->update([
+                        'payos_checkout_url' => $checkoutUrl,
+                        'payos_qr_code' => $qrCode,
+                    ]);
+
                     return [
                         'payment_method' => 'vietqr',
-                        'checkout_url' => $checkoutUrl,
+                        'pending_ticket_id' => $vePending->id,
                     ];
                 }
 
@@ -1324,8 +1363,9 @@ foreach ($verifiedFoodItems as $foodItem) {
                 ($result['payment_method'] ?? null)
                 === 'vietqr'
             ) {
-                return redirect()->away(
-                    $result['checkout_url']
+                return redirect()->route(
+                    'staff.ban-ve.vietqr-waiting',
+                    ['id' => $result['pending_ticket_id']]
                 );
             }
 
@@ -1378,177 +1418,252 @@ foreach ($verifiedFoodItems as $foodItem) {
             );
     }
 
-    public function payosCallback(Request $request)
+    /**
+     * Trang chờ thanh toán tại quầy.
+     * Vé đã tồn tại trong DB ở trạng thái cho_thanh_toan nên ghế được khóa thật.
+     */
+    public function vietQrWaiting(int $id)
     {
-        $orderCode = $request->input('orderCode');
-        $status = strtoupper(
-            (string) $request->input('status')
-        );
+        $this->expirePendingTickets();
 
-        $maVe = Cache::get(
-            "staff_payos_mapping:{$orderCode}"
-        );
+        $ve = VeXemPhim::query()
+            ->with(['nhanVien', 'suatChieu.phim', 'suatChieu.rapChieuPhim', 'suatChieu.phongChieu'])
+            ->where('loai_ve', 'tai_quay')
+            ->where('payment_method', 'vietqr')
+            ->findOrFail($id);
 
-        if (!$maVe) {
-            return redirect()
-                ->route('staff.ban-ve.index')
-                ->with(
-                    'error',
-                    'Giao dịch VietQR hết hạn hoặc không tồn tại.'
-                );
+        if (in_array($ve->trang_thai, ['da_thanh_toan', 'da_in', 'da_su_dung'], true)) {
+            return redirect()->route('staff.ban-ve.success', ['id' => $ve->id]);
         }
 
-        $pendingData = Cache::get(
-            "pending_staff_ve:{$maVe}"
-        );
-
-        if (!$pendingData) {
+        if (in_array($ve->trang_thai, ['da_huy', 'het_han'], true)) {
             return redirect()
-                ->route('staff.ban-ve.index')
-                ->with(
-                    'error',
-                    'Dữ liệu bán vé đã hết hạn.'
-                );
+                ->route('staff.ban-ve.show', $ve->suat_chieu_id)
+                ->with('error', 'Giao dịch VietQR đã hủy hoặc hết hạn. Ghế đã được giải phóng.');
         }
 
-        if ($status !== 'PAID') {
-            Cache::forget(
-                "staff_payos_mapping:{$orderCode}"
-            );
-
+        if (!$ve->payos_qr_code) {
             return redirect()
-                ->route(
-                    'staff.ban-ve.show',
-                    $pendingData['suat_chieu_id']
-                )
-                ->with(
-                    'error',
-                    'Thanh toán VietQR chưa thành công.'
-                );
+                ->route('staff.ban-ve.show', $ve->suat_chieu_id)
+                ->with('error', 'Giao dịch VietQR thiếu dữ liệu QR. Vui lòng tạo lại giao dịch.');
+        }
+
+        $qrSvg = QrCode::format('svg')
+            ->size(300)
+            ->margin(1)
+            ->generate((string) $ve->payos_qr_code);
+
+        return view('staff.ban-ve.vietqr-waiting', compact('ve', 'qrSvg'));
+    }
+
+    /**
+     * Frontend gọi định kỳ để đồng bộ trạng thái trực tiếp với PayOS.
+     * Cách này hoạt động cả khi chạy localhost và chưa cấu hình webhook public.
+     */
+    public function vietQrStatus(int $id)
+    {
+        $ve = VeXemPhim::query()
+            ->where('loai_ve', 'tai_quay')
+            ->where('payment_method', 'vietqr')
+            ->findOrFail($id);
+
+        if (in_array($ve->trang_thai, ['da_thanh_toan', 'da_in', 'da_su_dung'], true)) {
+            return response()->json([
+                'success' => true,
+                'status' => 'PAID',
+                'redirect_url' => route('staff.ban-ve.success', ['id' => $ve->id]),
+            ]);
+        }
+
+        if ($ve->trang_thai === 'da_huy') {
+            return response()->json([
+                'success' => true,
+                'status' => 'CANCELLED',
+                'redirect_url' => route('staff.ban-ve.show', $ve->suat_chieu_id),
+            ]);
+        }
+
+        if ($ve->trang_thai === 'het_han' || $ve->isExpired()) {
+            if ($ve->trang_thai === 'cho_thanh_toan') {
+                $ve->update([
+                    'trang_thai' => 'het_han',
+                    'thoi_gian_het_han' => null,
+                ]);
+                $this->cancelPayosLinkSilently($ve, 'Het thoi gian giu ghe');
+            }
+
+            return response()->json([
+                'success' => true,
+                'status' => 'EXPIRED',
+                'redirect_url' => route('staff.ban-ve.show', $ve->suat_chieu_id),
+            ]);
         }
 
         try {
-            $ve = DB::transaction(
-                function () use ($pendingData) {
-                    $existingTicket = VeXemPhim::where(
-                        'ma_ve',
-                        $pendingData['ma_ve']
-                    )->first();
+            $payosStatus = $this->getPayosStatus($ve);
 
-                    if ($existingTicket) {
-                        $this->createSeatTickets(
-                            $existingTicket,
-                            $pendingData['danh_sach_ghe']
-                                ?? explode(',', $pendingData['ma_ghe'])
-                        );
+            if ($payosStatus === 'PAID') {
+                $ve = $this->finalizePaidVietQr($ve);
 
-                        return $existingTicket;
-                    }
+                return response()->json([
+                    'success' => true,
+                    'status' => 'PAID',
+                    'redirect_url' => route('staff.ban-ve.success', ['id' => $ve->id]),
+                ]);
+            }
 
-                    $ve = VeXemPhim::create([
-                        'nguoi_dung_id' => null,
-                        'nhan_vien_id' =>
-                        $pendingData['nhan_vien_id'],
+            if ($payosStatus === 'CANCELLED') {
+                $ve->update([
+                    'trang_thai' => 'da_huy',
+                    'thoi_gian_het_han' => null,
+                ]);
 
-                        'suat_chieu_id' =>
-                        $pendingData['suat_chieu_id'],
+                return response()->json([
+                    'success' => true,
+                    'status' => 'CANCELLED',
+                    'redirect_url' => route('staff.ban-ve.show', $ve->suat_chieu_id),
+                ]);
+            }
 
-                        'ma_ve' =>
-                        $pendingData['ma_ve'],
-
-                        'ten_phim' =>
-                        $pendingData['ten_phim'],
-
-                        'ten_rap' =>
-                        $pendingData['ten_rap'],
-
-                        'ten_phong' =>
-                        $pendingData['ten_phong'],
-
-                        'ma_ghe' =>
-                        $pendingData['ma_ghe'],
-
-                        'thoi_gian_chieu' =>
-                        $pendingData['thoi_gian_chieu'],
-
-                        'tong_tien' =>
-                        $pendingData['tong_tien'],
-
-                        'seat_total' =>
-                        $pendingData['seat_total'] ?? 0,
-
-                        'food_total' =>
-                        $pendingData['food_total'] ?? 0,
-
-                        'payment_method' => 'vietqr',
-                        'received_amount' =>
-                        $pendingData['tong_tien'],
-
-                        'change_amount' => 0,
-                        'food_items' =>
-                        $pendingData['food_items'] ?? [],
-
-                        'loai_ve' => 'tai_quay',
-                        'trang_thai' => 'da_thanh_toan',
-                    ]);
-
-                    if (
-                        !empty($pendingData['food_items'])
-                    ) {
-                        Cache::put(
-                            "ve_foods:{$ve->id}",
-                            $pendingData['food_items'],
-                            now()->addDays(30)
-                        );
-                    }
-
-                    $this->createSeatTickets(
-                        $ve,
-                        $pendingData['danh_sach_ghe']
-                            ?? explode(',', $pendingData['ma_ghe'])
-                    );
-
-                    return $ve;
-                }
-            );
-
-            Cache::forget(
-                "pending_staff_ve:{$maVe}"
-            );
-
-            Cache::forget(
-    "staff_payos_mapping:{$orderCode}"
-);
-
-session()->flash(
-    'clear_food_cart_key',
-    $pendingData['clear_cart_key']
-        ?? (
-            'staff_food_cart_v2_'
-            . ($pendingData['nhan_vien_id'] ?? auth()->id())
-            . '_'
-            . $pendingData['suat_chieu_id']
-        )
-);
-
-return redirect()
-    ->route('staff.ban-ve.success', ['id' => $ve->id])
-    ->with(
-        'success',
-        'Thanh toán VietQR thành công. Mã vé: '
-            . $ve->ma_ve
-    );
+            return response()->json([
+                'success' => true,
+                'status' => $payosStatus ?: 'PENDING',
+                'expires_at' => optional($ve->thoi_gian_het_han)?->toIso8601String(),
+            ]);
         } catch (\Throwable $e) {
             report($e);
 
+            // Không giải phóng ghế chỉ vì API PayOS tạm thời không phản hồi.
+            return response()->json([
+                'success' => false,
+                'status' => 'PENDING',
+                'message' => 'Chưa thể kiểm tra PayOS, hệ thống sẽ tự thử lại.',
+            ], 200);
+        }
+    }
+
+    /** Hủy thủ công giao dịch đang chờ và giải phóng ghế. */
+    public function cancelPendingVietQr(int $id)
+    {
+        $ve = VeXemPhim::query()
+            ->where('loai_ve', 'tai_quay')
+            ->where('payment_method', 'vietqr')
+            ->findOrFail($id);
+
+        if ($ve->trang_thai === 'cho_thanh_toan') {
+            // Kiểm tra lần cuối để tránh hủy một giao dịch vừa thanh toán xong.
+            try {
+                if ($this->getPayosStatus($ve) === 'PAID') {
+                    $paidTicket = $this->finalizePaidVietQr($ve);
+
+                    return redirect()
+                        ->route('staff.ban-ve.success', ['id' => $paidTicket->id])
+                        ->with('success', 'PayOS vừa xác nhận thanh toán thành công nên giao dịch không bị hủy.');
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            $this->cancelPayosLinkSilently($ve, 'Nhan vien huy giao dich tai quay');
+
+            $ve->update([
+                'trang_thai' => 'da_huy',
+                'thoi_gian_het_han' => null,
+            ]);
+        }
+
+        return redirect()
+            ->route('staff.ban-ve.show', $ve->suat_chieu_id)
+            ->with('error', 'Đã hủy giao dịch VietQR. Ghế đã được giải phóng.');
+    }
+
+    public function payosCallback(Request $request)
+    {
+        $orderCode = (int) $request->input('orderCode');
+
+        $ve = $orderCode > 0
+            ? VeXemPhim::query()
+                ->where('loai_ve', 'tai_quay')
+                ->where('payment_method', 'vietqr')
+                ->where('payos_order_code', $orderCode)
+                ->first()
+            : null;
+
+        if (!$ve) {
             return redirect()
                 ->route('staff.ban-ve.index')
-                ->with(
-                    'error',
-                    'Đã nhận thanh toán nhưng không thể phát hành vé: '
-                        . $e->getMessage()
-                );
+                ->with('error', 'Không tìm thấy giao dịch VietQR.');
         }
+
+        try {
+            $status = $this->getPayosStatus($ve);
+
+            if ($status === 'PAID') {
+                $ve = $this->finalizePaidVietQr($ve);
+
+                return redirect()
+                    ->route('staff.ban-ve.success', ['id' => $ve->id])
+                    ->with('success', 'Thanh toán VietQR thành công. Mã vé: ' . $ve->ma_ve);
+            }
+
+            if ($status === 'CANCELLED') {
+                $ve->update([
+                    'trang_thai' => 'da_huy',
+                    'thoi_gian_het_han' => null,
+                ]);
+
+                return redirect()
+                    ->route('staff.ban-ve.show', $ve->suat_chieu_id)
+                    ->with('error', 'Giao dịch VietQR đã bị hủy.');
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return redirect()->route('staff.ban-ve.vietqr-waiting', ['id' => $ve->id]);
+    }
+
+    public function payosCancel(Request $request)
+    {
+        $orderCode = (int) $request->input('orderCode');
+
+        $ve = $orderCode > 0
+            ? VeXemPhim::query()
+                ->where('loai_ve', 'tai_quay')
+                ->where('payment_method', 'vietqr')
+                ->where('payos_order_code', $orderCode)
+                ->first()
+            : null;
+
+        if (!$ve) {
+            return redirect()
+                ->route('staff.ban-ve.index')
+                ->with('error', 'Không tìm thấy giao dịch VietQR cần hủy.');
+        }
+
+        // PayOS đưa trình duyệt về cancelUrl; trước khi hủy DB vẫn kiểm tra API lần cuối.
+        try {
+            if ($this->getPayosStatus($ve) === 'PAID') {
+                $ve = $this->finalizePaidVietQr($ve);
+
+                return redirect()
+                    ->route('staff.ban-ve.success', ['id' => $ve->id])
+                    ->with('success', 'Thanh toán VietQR đã thành công.');
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        if ($ve->trang_thai === 'cho_thanh_toan') {
+            $ve->update([
+                'trang_thai' => 'da_huy',
+                'thoi_gian_het_han' => null,
+            ]);
+        }
+
+        return redirect()
+            ->route('staff.ban-ve.show', $ve->suat_chieu_id)
+            ->with('error', 'Giao dịch VietQR đã được hủy. Các ghế đã được giải phóng.');
     }
 
     /**
@@ -1587,6 +1702,14 @@ return redirect()
                 'message' => 'Vé đã được sử dụng.',
                 'status' => 'da_su_dung',
             ]);
+        }
+
+        if (!in_array($ve->trang_thai, ['da_thanh_toan', 'da_in'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vé chưa thanh toán thành công nên chưa thể in.',
+                'status' => $ve->trang_thai,
+            ], 422);
         }
 
         if ($ve->trang_thai === 'da_thanh_toan') {
@@ -1659,6 +1782,14 @@ return redirect()
             ->where('loai_ve', 'tai_quay')
             ->findOrFail($id);
 
+        if (!in_array(
+            $ve->trang_thai,
+            ['da_thanh_toan', 'da_in', 'da_su_dung'],
+            true
+        )) {
+            abort(422, 'Vé chưa thanh toán thành công nên chưa thể xem hoặc in.');
+        }
+
         /*
          * Tương thích với vé cũ được tạo trước khi có bảng vé ghế.
          */
@@ -1672,6 +1803,235 @@ return redirect()
         }
 
         return $ve;
+    }
+
+    /** Lấy trạng thái chính thức của payment link từ API PayOS. */
+    private function getPayosStatus(VeXemPhim $ve): string
+    {
+        if (!$ve->payos_order_code) {
+            throw new \RuntimeException('Giao dịch không có PayOS orderCode.');
+        }
+
+        $response = Http::timeout(10)
+            ->acceptJson()
+            ->withHeaders([
+                'x-client-id' => (string) env('PAYOS_CLIENT_ID'),
+                'x-api-key' => (string) env('PAYOS_API_KEY'),
+            ])
+            ->get(
+                'https://api-merchant.payos.vn/v2/payment-requests/'
+                . $ve->payos_order_code
+            );
+
+        if (!$response->successful()) {
+            throw new \RuntimeException(
+                'Không thể lấy trạng thái PayOS (HTTP ' . $response->status() . ').'
+            );
+        }
+
+        return strtoupper((string) data_get($response->json(), 'data.status', 'PENDING'));
+    }
+
+    /** Hủy payment link PayOS nhưng không làm hỏng luồng nếu API đang lỗi. */
+    private function cancelPayosLinkSilently(VeXemPhim $ve, string $reason): void
+    {
+        if (!$ve->payos_order_code) {
+            return;
+        }
+
+        try {
+            Http::timeout(10)
+                ->acceptJson()
+                ->withHeaders([
+                    'x-client-id' => (string) env('PAYOS_CLIENT_ID'),
+                    'x-api-key' => (string) env('PAYOS_API_KEY'),
+                ])
+                ->post(
+                    'https://api-merchant.payos.vn/v2/payment-requests/'
+                    . $ve->payos_order_code
+                    . '/cancel',
+                    ['cancellationReason' => $reason]
+                );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /**
+     * Hoàn tất đúng một lần giao dịch VietQR đã PAID.
+     * Tạo vé ghế và trừ kho nằm cùng transaction để tránh trạng thái nửa vời.
+     */
+    private function finalizePaidVietQr(VeXemPhim $pendingTicket): VeXemPhim
+    {
+        return DB::transaction(function () use ($pendingTicket) {
+            $ve = VeXemPhim::query()
+                ->whereKey($pendingTicket->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (in_array($ve->trang_thai, ['da_thanh_toan', 'da_in', 'da_su_dung'], true)) {
+                return $ve;
+            }
+
+            if ($ve->trang_thai === 'da_huy') {
+                throw new \RuntimeException('Giao dịch đã bị hủy trước khi phát hành vé.');
+            }
+
+            $seatCodes = collect(explode(',', (string) $ve->ma_ghe))
+                ->map(fn ($seat) => strtoupper(trim($seat)))
+                ->filter()
+                ->unique()
+                ->values();
+
+            $otherBlockedSeats = VeXemPhim::query()
+                ->where('suat_chieu_id', $ve->suat_chieu_id)
+                ->where('id', '!=', $ve->id)
+                ->where(function ($query) {
+                    $query->whereIn('trang_thai', [
+                        'dang_giu', 'da_dat', 'da_thanh_toan', 'da_in', 'da_su_dung',
+                    ])->orWhere(function ($pendingQuery) {
+                        $pendingQuery
+                            ->where('trang_thai', 'cho_thanh_toan')
+                            ->where('thoi_gian_het_han', '>', now());
+                    });
+                })
+                ->lockForUpdate()
+                ->pluck('ma_ghe')
+                ->flatMap(fn ($codes) => collect(explode(',', (string) $codes)))
+                ->map(fn ($code) => strtoupper(trim($code)))
+                ->filter()
+                ->unique();
+
+            $conflicts = $seatCodes->intersect($otherBlockedSeats)->values();
+
+            if ($conflicts->isNotEmpty()) {
+                throw new \RuntimeException(
+                    'Ghế ' . $conflicts->implode(', ') . ' đã được giao dịch khác chiếm.'
+                );
+            }
+
+            $this->deductFoodStock(is_array($ve->food_items) ? $ve->food_items : []);
+
+            $ve->update([
+                'trang_thai' => 'da_thanh_toan',
+                'thoi_gian_het_han' => null,
+                'received_amount' => $ve->tong_tien,
+                'change_amount' => 0,
+            ]);
+
+            $this->createSeatTickets($ve, $seatCodes->all());
+
+            if (!empty($ve->food_items)) {
+                Cache::put('ve_foods:' . $ve->id, $ve->food_items, now()->addDays(30));
+            }
+
+            Cache::forget('pending_staff_ve:' . $ve->ma_ve);
+            Cache::forget('staff_payos_mapping:' . $ve->payos_order_code);
+
+            return $ve->fresh();
+        });
+    }
+
+    private function expirePendingTickets(?int $showtimeId = null): void
+    {
+        $query = VeXemPhim::query()
+            ->where('loai_ve', 'tai_quay')
+            ->where('payment_method', 'vietqr')
+            ->where('trang_thai', 'cho_thanh_toan')
+            ->whereNotNull('thoi_gian_het_han')
+            ->where('thoi_gian_het_han', '<=', now());
+
+        if ($showtimeId !== null) {
+            $query->where('suat_chieu_id', $showtimeId);
+        }
+
+        $query->update([
+            'trang_thai' => 'het_han',
+        ]);
+    }
+
+    private function deductFoodStock(array $foodItems): void
+    {
+        foreach ($foodItems as $foodItem) {
+            if (!is_array($foodItem)) {
+                continue;
+            }
+
+            $quantity = (int) ($foodItem['qty'] ?? 0);
+
+            if ($quantity <= 0) {
+                continue;
+            }
+
+            if (($foodItem['type'] ?? null) === 'combo') {
+                $food = DoAn::with(['comboItems.variant'])
+                    ->lockForUpdate()
+                    ->find((int) ($foodItem['food_id'] ?? 0));
+
+                if (!$food || !$food->isCombo()) {
+                    throw new \RuntimeException(
+                        'Không tìm thấy combo ' . ($foodItem['name'] ?? '') . '.'
+                    );
+                }
+
+                foreach ($food->comboItems as $comboItem) {
+                    $variantId =
+                        $comboItem->food_variant_id
+                        ?? $comboItem->variant_id
+                        ?? $comboItem->variant?->id;
+
+                    if (!$variantId) {
+                        throw new \RuntimeException(
+                            'Combo ' . $food->name . ' có thành phần không hợp lệ.'
+                        );
+                    }
+
+                    $quantityPerCombo = max(
+                        (int) ($comboItem->quantity ?? 1),
+                        1
+                    );
+
+                    $quantityToDeduct = $quantityPerCombo * $quantity;
+
+                    $updatedRows = BienTheDoAn::where('id', $variantId)
+                        ->where('stock_quantity', '>=', $quantityToDeduct)
+                        ->decrement('stock_quantity', $quantityToDeduct);
+
+                    if ($updatedRows === 0) {
+                        throw new \RuntimeException(
+                            'Không đủ tồn kho thành phần của combo '
+                                . $food->name . '.'
+                        );
+                    }
+                }
+
+                continue;
+            }
+
+            $variantId = (int) (
+                $foodItem['variant_id']
+                ?? $foodItem['id']
+                ?? 0
+            );
+
+            if ($variantId <= 0) {
+                throw new \RuntimeException(
+                    'Không xác định được biến thể của món '
+                        . ($foodItem['name'] ?? '') . '.'
+                );
+            }
+
+            $updatedRows = BienTheDoAn::where('id', $variantId)
+                ->where('stock_quantity', '>=', $quantity)
+                ->decrement('stock_quantity', $quantity);
+
+            if ($updatedRows === 0) {
+                throw new \RuntimeException(
+                    'Món ' . ($foodItem['name'] ?? '')
+                        . ' không còn đủ tồn kho.'
+                );
+            }
+        }
     }
 
     private function createSeatTickets(
