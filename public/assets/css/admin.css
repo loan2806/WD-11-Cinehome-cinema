@@ -4956,6 +4956,30 @@ body {
     padding-top: 24px !important;
 }
 
+#adminContent {
+    display: block !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+}
+
+#adminContent:has(.admin-dashboard) {
+    padding-top: 18px !important;
+}
+
+#adminContent:has(.admin-dashboard),
+#adminContent:has(.admin-dashboard) .admin-dashboard,
+#adminContent:has(.admin-dashboard) .admin-dashboard-hero {
+    align-content: start !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    margin-top: 0 !important;
+    transform: none !important;
+}
+
+#adminContent:has(.admin-dashboard) .admin-dashboard {
+    min-height: 0 !important;
+}
+
 #sidebarToggle {
     cursor: pointer !important;
     position: relative !important;

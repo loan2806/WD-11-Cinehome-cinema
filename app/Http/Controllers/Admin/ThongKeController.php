@@ -19,15 +19,40 @@ class ThongKeController extends Controller
 
     public function index(Request $request)
     {
-        $from = $request->input('from') 
-            ? Carbon::parse($request->input('from'))->startOfDay()->toDateTimeString() 
-            : Carbon::now()->startOfMonth()->toDateTimeString();
-        
-        $to = $request->input('to') 
-            ? Carbon::parse($request->input('to'))->endOfDay()->toDateTimeString() 
-            : Carbon::now()->endOfDay()->toDateTimeString();
-        
         $periodType = $request->input('period_type', 'day');
+        
+        // Xử lý from/to dựa trên period_type
+        $fromInput = $request->input('from');
+        $toInput = $request->input('to');
+        
+        // Nếu có input from/to thì dùng trực tiếp, không thì tính theo period_type
+        if ($fromInput && $toInput) {
+            $from = Carbon::parse($fromInput)->startOfDay()->toDateTimeString();
+            $to = Carbon::parse($toInput)->endOfDay()->toDateTimeString();
+        } else {
+            // Tính khoảng thời gian mặc định theo period_type
+            $now = Carbon::now();
+            switch ($periodType) {
+                case 'month':
+                    $from = $now->copy()->startOfMonth()->startOfDay()->toDateTimeString();
+                    $to = $now->copy()->endOfMonth()->endOfDay()->toDateTimeString();
+                    break;
+                case 'quarter':
+                    $currentQuarter = ceil($now->month / 3);
+                    $from = $now->copy()->quarter($currentQuarter)->startOfQuarter()->startOfDay()->toDateTimeString();
+                    $to = $now->copy()->quarter($currentQuarter)->endOfQuarter()->endOfDay()->toDateTimeString();
+                    break;
+                case 'year':
+                    $from = $now->copy()->startOfYear()->startOfDay()->toDateTimeString();
+                    $to = $now->copy()->endOfYear()->endOfDay()->toDateTimeString();
+                    break;
+                default: // day
+                    $from = $now->copy()->startOfDay()->toDateTimeString();
+                    $to = $now->copy()->endOfDay()->toDateTimeString();
+                    break;
+            }
+        }
+        
         $phimId = $request->input('phim_id') ? (int) $request->input('phim_id') : null;
         $phongChieuId = $request->input('phong_chieu_id') ? (int) $request->input('phong_chieu_id') : null;
 

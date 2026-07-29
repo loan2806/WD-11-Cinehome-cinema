@@ -81,6 +81,10 @@ Route::get('/', [PhimsController::class, 'home'])->name('home');
 Route::get('/dashboard', function () {
     $user = Auth::user();
 
+    if (! $user) {
+        return redirect()->route('login');
+    }
+
     if ($user->hasRole('Quản lý hệ thống') || $user->vai_tro === 'quan_ly_he_thong') {
         return redirect()->route('system.dashboard');
     }
@@ -99,7 +103,7 @@ Route::get('/dashboard', function () {
     }
 
     return redirect()->route('home');
-})->name('dashboard');
+})->middleware('auth')->name('dashboard');
 
 Route::get('/phims', [PhimsController::class, 'index'])->name('user.phims.index');
 Route::get('/phims/{movie}', [PhimsController::class, 'show'])->name('user.phims.show');
@@ -315,6 +319,7 @@ Route::middleware(['auth'])
             Route::post('ghe-ngois/{ghe_ngoi}/check-conflicts', [GheNgoiController::class, 'checkConflicts'])->name('ghe-ngois.check-conflicts');
             Route::post('ghe-ngois/{ghe_ngoi}/schedule-maintenance', [GheNgoiController::class, 'scheduleMaintenance'])->name('ghe-ngois.schedule-maintenance');
             Route::patch('lich-bao-tri-ghe-ngois/{lichBaoTriGheNgoi}/complete', [GheNgoiController::class, 'completeMaintenance'])->name('lich-bao-tri-ghe-ngois.complete');
+            Route::delete('lich-bao-tri-ghe-ngois/{lichBaoTriGheNgoi}', [GheNgoiController::class, 'cancelMaintenance'])->name('lich-bao-tri-ghe-ngois.cancel');
         });
 
         // 4. NGHIỆP VỤ QUẦY VÉ & DỊCH VỤ
