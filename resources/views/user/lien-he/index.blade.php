@@ -35,9 +35,8 @@
     }
 
     .contact-hero-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        position: relative;
+        display: inline-block;
         width: 62px;
         height: 62px;
         border-radius: 18px;
@@ -47,6 +46,10 @@
     }
 
     .contact-hero-icon .icon-svg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 28px;
         height: 28px;
     }
@@ -113,9 +116,8 @@
     }
 
     .contact-info-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        position: relative;
+        display: inline-block;
         flex: 0 0 auto;
         width: 40px;
         height: 40px;
@@ -125,6 +127,10 @@
     }
 
     .contact-info-icon .icon-svg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 18px;
         height: 18px;
     }

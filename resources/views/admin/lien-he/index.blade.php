@@ -34,9 +34,8 @@
     }
 
     .contact-admin-hero-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        position: relative;
+        display: inline-block;
         width: 52px;
         height: 52px;
         flex: 0 0 52px;
@@ -47,6 +46,10 @@
     }
 
     .contact-admin-hero-icon .icon-svg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 24px;
         height: 24px;
     }
@@ -89,9 +92,8 @@
     }
 
     .contact-admin-stat span.icon-wrap {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        position: relative;
+        display: inline-block;
         width: 44px;
         height: 44px;
         flex: 0 0 44px;
@@ -99,6 +101,10 @@
     }
 
     .contact-admin-stat span.icon-wrap .icon-svg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 20px;
         height: 20px;
     }
@@ -417,9 +423,8 @@
     }
 
     .contact-avatar {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        position: relative;
+        display: inline-block;
         width: 40px;
         height: 40px;
         flex: 0 0 40px;
@@ -429,6 +434,10 @@
     }
 
     .contact-avatar .icon-svg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 18px;
         height: 18px;
     }
