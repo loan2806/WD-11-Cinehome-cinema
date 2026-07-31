@@ -103,7 +103,26 @@
                 event.stopPropagation();
 
                 adminMenu?.classList.add('hidden');
+                const wasHidden = notifyBox.classList.contains('hidden');
                 notifyBox.classList.toggle('hidden');
+
+                if (wasHidden) {
+                    fetch('/admin/notifications/mark-all-read', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        }
+                    }).then(function(res) {
+                        if (res.ok) {
+                            document.getElementById('notifyBadge')?.remove();
+                        }
+                    }).catch(function(err) {
+                        console.log('Mark read error:', err);
+                    });
+                }
             });
 
             notifyBox.addEventListener('click', function(event) {
@@ -396,6 +415,7 @@
                     @php
                         $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
                             || request()->routeIs('admin.movie-reviews.*')
+                            || request()->routeIs('admin.lien-he.*')
                             || request()->routeIs('admin.system-settings.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isSystemActive ? 'open' : '' }}">
@@ -416,6 +436,12 @@
                             @if(coQuyen('cai_dat.he_thong'))
                             <a href="{{ route('admin.system-settings.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.system-settings.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
                                 Cấu hình tham số gốc
+                            </a>
+                            @endif
+
+                            @if(coQuyen('thong_bao.gui'))
+                            <a href="{{ route('admin.lien-he.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.lien-he.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Liên hệ khách hàng
                             </a>
                             @endif
                         </div>
@@ -475,9 +501,14 @@
                             };
                         @endphp
 
+                        @php
+                            $bellSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block;vertical-align:-0.15em;"><path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>';
+                            $arrowSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block;vertical-align:-0.1em;"><path d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>';
+                        @endphp
+
                         <div class="relative">
                             <button type="button" id="bellBtn" class="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 hover:bg-white/15 transition">
-                                <i class="fa-solid fa-bell text-white"></i>
+                                <span class="text-white" style="font-size:18px;">{!! $bellSvg !!}</span>
                                 @if ($notificationCount > 0)
                                 <span id="notifyBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold">
                                     {{ $notificationCount > 99 ? '99+' : $notificationCount }}
@@ -488,7 +519,7 @@
                             {{-- NOTIFICATION DROPDOWN --}}
                             <div id="notifyBox" class="admin-notify-dropdown hidden">
                                 <div class="admin-notify-head">
-                                    <span><i class="fa-solid fa-bell"></i></span>
+                                    <span style="font-size:16px;">{!! $bellSvg !!}</span>
                                     <div>
                                         <h3>Thông báo hệ thống</h3>
                                         <small>{{ $notificationCount }} thông báo chưa đọc</small>
@@ -499,7 +530,7 @@
                                     @forelse($adminNotifications ?? [] as $item)
                                     <article class="admin-notify-item {{ $item->da_doc ? '' : 'is-unread' }}">
                                         <span class="admin-notify-icon">
-                                            <i class="fa-solid fa-bell"></i>
+                                            {!! $bellSvg !!}
                                         </span>
                                         <div class="admin-notify-content">
                                             <strong>{{ $item->tieu_de }}</strong>
@@ -509,7 +540,7 @@
                                     </article>
                                     @empty
                                     <div class="admin-notify-empty">
-                                        <i class="fa-regular fa-bell"></i>
+                                        <span style="font-size:24px; color: var(--cinema-gold);">{!! $bellSvg !!}</span>
                                         <strong>Không có thông báo</strong>
                                         <span>Hệ thống đang yên ổn.</span>
                                     </div>
@@ -518,7 +549,7 @@
 
                                 <div class="admin-notify-footer">
                                     <a href="{{ route('admin.notifications.index') }}">
-                                        Xem tất cả <i class="fa-solid fa-arrow-right"></i>
+                                        Xem tất cả {!! $arrowSvg !!}
                                     </a>
                                 </div>
                             </div>

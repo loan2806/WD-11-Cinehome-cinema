@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CaiDatThanhToanController as AdminCaiDatThanhToanController;
 use App\Http\Controllers\Admin\DanhGiaPhimController as AdminDanhGiaPhimController;
+use App\Http\Controllers\Admin\LienHeController as AdminLienHeController;
 use App\Http\Controllers\Admin\FoodController as AdminFoodController;
 use App\Http\Controllers\Admin\FoodInvoiceController;
 use App\Http\Controllers\Admin\GheNgoiController;
@@ -41,6 +42,7 @@ use App\Http\Controllers\System\CaiDatThanhToanController;
 use App\Http\Controllers\User\BandoRapController;
 use App\Http\Controllers\User\BookingController;
 use App\Http\Controllers\User\DanhGiaPhimController;
+use App\Http\Controllers\User\LienHeController;
 use App\Http\Controllers\User\NotificationController as UserNotificationController;
 use App\Http\Controllers\User\PhimsController;
 use App\Http\Controllers\User\RapChieuPhimController;
@@ -115,6 +117,9 @@ Route::post('/phims/{movie}/reviews', [DanhGiaPhimController::class, 'store'])
 Route::get('/tin-tuc', [\App\Http\Controllers\User\TinTucController::class, 'index'])->name('user.tin-tuc.index');
 Route::get('/tin-tuc/{slug}', [\App\Http\Controllers\User\TinTucController::class, 'show'])->name('user.tin-tuc.show');
 Route::get('/khuyen-mai', [\App\Http\Controllers\User\TinTucController::class, 'voucherIndex'])->name('user.khuyen-mai.index');
+
+Route::get('/lien-he', [LienHeController::class, 'index'])->name('user.lien-he.index');
+Route::post('/lien-he', [LienHeController::class, 'store'])->name('user.lien-he.store');
 
 Route::get('/cinemas', [RapChieuPhimController::class, 'index'])->name('user.cinemas.index');
 Route::get('/cinemas/map', BandoRapController::class)->name('user.cinemas.map');
@@ -429,6 +434,11 @@ Route::middleware(['auth'])
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
             Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
+
+            Route::get('/lien-he', [AdminLienHeController::class, 'index'])->name('lien-he.index');
+            Route::get('/lien-he/{lienHe}', [AdminLienHeController::class, 'show'])->name('lien-he.show');
+            Route::patch('/lien-he/{lienHe}', [AdminLienHeController::class, 'update'])->name('lien-he.update');
+            Route::delete('/lien-he/{lienHe}', [AdminLienHeController::class, 'destroy'])->name('lien-he.destroy');
         });
 
         Route::middleware(['quyen:cai_dat.he_thong'])->group(function () {

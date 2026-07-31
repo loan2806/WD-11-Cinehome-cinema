@@ -26,7 +26,7 @@
                 <h5 class="text-white fw-bold">Hỗ trợ</h5>
                 <p>Điều khoản sử dụng</p>
                 <p>Chính sách hủy vé</p>
-                <p>Liên hệ</p>
+                <p><a href="{{ route('user.lien-he.index') }}" class="text-decoration-none text-reset">Liên hệ</a></p>
             </div>
 
             <div class="col-md-3">
