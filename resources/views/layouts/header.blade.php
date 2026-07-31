@@ -33,6 +33,10 @@
                 <a href="{{ route('user.voucher.index') }}" class="{{ request()->routeIs('user.voucher.*') || request()->routeIs('user.khuyen-mai.*') ? 'active' : '' }}">
                     Khuyến mãi
                 </a>
+
+                <a href="{{ route('user.lien-he.index') }}" class="{{ request()->routeIs('user.lien-he.*') ? 'active' : '' }}">
+                    Liên hệ
+                </a>
             </nav>
 
             <div class="nav-action booking-actions">
