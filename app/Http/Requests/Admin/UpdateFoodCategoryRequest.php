@@ -22,6 +22,10 @@ class UpdateFoodCategoryRequest extends FormRequest
                 Rule::unique('food_categories', 'name')
                     ->ignore($this->category->id),
             ],
+            'is_combo' => [
+    'nullable',
+    'boolean',
+],
         ];
     }
 

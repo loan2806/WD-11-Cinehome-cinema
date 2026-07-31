@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\DatVe;
 
 use App\Http\Controllers\Controller;
+use App\Models\BienTheDoAn;
 use App\Models\DoAn;
+use App\Models\FoodInvoice;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use App\Services\DatVeXemPhimService;
+use App\Services\FoodInventoryService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Models\NguoiDungVoucher;
@@ -127,9 +130,9 @@ class DatVeController extends Controller
                     'phongChieu.gheNgois.loaiGhe',
                     'veXemPhims'
                 ])->where('phim_id', $phim->id)
-                  ->where('thoi_gian_chieu', '>=', now())
-                  ->orderBy('thoi_gian_chieu')
-                  ->first();
+                    ->where('thoi_gian_chieu', '>=', now())
+                    ->orderBy('thoi_gian_chieu')
+                    ->first();
             }
         }
 
@@ -186,10 +189,10 @@ class DatVeController extends Controller
             ->when($pendingTicketId, fn($q) => $q->where('id', '!=', $pendingTicketId))
             ->where(function ($q) {
                 $q->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat'])
-                  ->orWhere(function ($sub) {
-                      $sub->where('trang_thai', 'cho_thanh_toan')
-                          ->where('thoi_gian_het_han', '>', now());
-                  });
+                    ->orWhere(function ($sub) {
+                        $sub->where('trang_thai', 'cho_thanh_toan')
+                            ->where('thoi_gian_het_han', '>', now());
+                    });
             })
             ->pluck('ma_ghe');
 
@@ -295,9 +298,9 @@ class DatVeController extends Controller
 
         $pendingTicket = Auth::check()
             ? VeXemPhim::where('nguoi_dung_id', Auth::id())
-                ->where('suat_chieu_id', $suatChieu->id)
-                ->where('trang_thai', 'cho_thanh_toan')
-                ->first()
+            ->where('suat_chieu_id', $suatChieu->id)
+            ->where('trang_thai', 'cho_thanh_toan')
+            ->first()
             : null;
 
         if ($pendingTicket && $pendingTicket->isExpired()) {
@@ -384,23 +387,31 @@ class DatVeController extends Controller
         $pendingTicketId = $pendingTicket?->id;
         $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
 
-        $foods = DoAn::active()->with([
-            'category',
-            'variants' => function ($query) {
-                $query->where('is_active', true)->orderBy('price');
-            },
-            'comboItems.variant.doAn',
-        ])->orderBy('sort_order')->orderBy('name')->get();
+        $foods = DoAn::active()
+            ->with([
+                'category',
+                'variants',
+                'comboItems.variant.doAn',
+            ])
+            ->whereHas('category')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
 
-        $menu = $foods->groupBy(function ($food) {
-            return trim($food->category?->name ?? 'Khác');
-        })->map(function ($items, $category) {
+       $menu = $foods->groupBy(function ($food) {
+
+    if ($food->category?->is_combo) {
+        return 'Combo';
+    }
+
+    return trim($food->category?->name ?? 'Khác');
+})->map(function ($items, $category) {
             return [
                 'category' => $category,
                 'foods' => $items->values()->map(function (DoAn $food) {
-                    $isCombo = strcasecmp(trim($food->category?->name ?? ''), 'Combo') === 0;
-
+                    $isCombo = $food->category?->is_combo ?? false;
                     if ($isCombo) {
+
                         $comboItems = $food->comboItems->map(function ($comboItem) {
                             return [
                                 'variant_id' => $comboItem->food_variant_id,
@@ -412,22 +423,45 @@ class DatVeController extends Controller
                             ];
                         });
 
-                        $price = $comboItems->sum(fn($item) => $item['price'] * $item['quantity']);
-                        $available = $comboItems->map(fn($item) => $item['quantity'] > 0 ? intdiv($item['stock'], $item['quantity']) : 0)->min() ?? 0;
+                        // Giá combo = tổng giá các món thành phần
+                        $price = $comboItems->sum(
+                            fn($item) => $item['price'] * $item['quantity']
+                        );
+
+                        // Số combo có thể bán dựa theo tồn kho món ít nhất
+                        $available = $comboItems
+                            ->map(function ($item) {
+                                if ($item['quantity'] <= 0) {
+                                    return 0;
+                                }
+
+                                return intdiv(
+                                    $item['stock'],
+                                    $item['quantity']
+                                );
+                            })
+                            ->min() ?? 0;
+
 
                         return [
                             'id' => $food->id,
                             'name' => $food->name,
                             'description' => $food->description,
                             'image' => $food->image,
+
+                            // Quan trọng
                             'is_combo' => true,
+
                             'price' => $price,
                             'available' => $available,
                             'combo_items' => $comboItems,
                         ];
                     }
 
+
+                    // Món thường
                     $variants = $food->variants->map(function ($variant) use ($food) {
+
                         return [
                             'id' => $variant->id,
                             'food_id' => $variant->food_id,
@@ -438,12 +472,16 @@ class DatVeController extends Controller
                         ];
                     });
 
+
                     return [
                         'id' => $food->id,
                         'name' => $food->name,
                         'description' => $food->description,
                         'image' => $food->image,
+
+                        // Không hard-code false nữa
                         'is_combo' => false,
+
                         'variants' => $variants,
                     ];
                 })->values(),
@@ -1245,19 +1283,7 @@ class DatVeController extends Controller
                         throw new \RuntimeException('Phiên thanh toán đã hết hạn (7 phút).');
                     }
 
-                    foreach (($bookingData['food_items'] ?? []) as $foodItem) {
-                        $foodId = $foodItem['id'] ?? null;
-                        $quantity = (int) ($foodItem['qty'] ?? 0);
-                        if (!$foodId || $quantity <= 0) continue;
-
-                        $food = DoAn::query()->lockForUpdate()->find($foodId);
-                        if ($food && isset($food->stock_quantity)) {
-                            if ((int)$food->stock_quantity < $quantity) {
-                                throw new \RuntimeException('Đồ ăn ' . $food->name . ' không còn đủ số lượng.');
-                            }
-                            $food->decrement('stock_quantity', $quantity);
-                        }
-                    }
+                    $this->truKhoDoAn($bookingData['food_items'] ?? []);
 
                     $existingTicket->update([
                         'ma_ghe' => $bookingData['ma_ghe'],
@@ -1273,6 +1299,8 @@ class DatVeController extends Controller
                     if ($voucherCaNhan) {
                         $voucherCaNhan->update(['da_su_dung' => true, 'ngay_su_dung' => now()]);
                     }
+
+                    $this->taoHoaDonDoAnChoVe($existingTicket, $bookingData['food_items'] ?? []);
 
                     return $existingTicket;
                 }
@@ -1290,10 +1318,10 @@ class DatVeController extends Controller
                 ->when($pendingTicketId, fn($q) => $q->where('id', '!=', $pendingTicketId))
                 ->where(function ($q) {
                     $q->whereIn('trang_thai', ['dang_giu', 'da_dat', 'da_thanh_toan', 'da_su_dung'])
-                      ->orWhere(function ($sub) {
-                          $sub->where('trang_thai', 'cho_thanh_toan')
-                              ->where('thoi_gian_het_han', '>', now());
-                      });
+                        ->orWhere(function ($sub) {
+                            $sub->where('trang_thai', 'cho_thanh_toan')
+                                ->where('thoi_gian_het_han', '>', now());
+                        });
                 })
                 ->lockForUpdate()
                 ->pluck('ma_ghe')
@@ -1308,23 +1336,7 @@ class DatVeController extends Controller
                 throw new \RuntimeException('Ghế đang trong quá trình thanh toán bởi người khác: ' . $blockedSeats->implode(', '));
             }
 
-            foreach (($bookingData['food_items'] ?? []) as $foodItem) {
-                $foodId = $foodItem['id'] ?? null;
-                $quantity = (int) ($foodItem['qty'] ?? 0);
-
-                if (!$foodId || $quantity <= 0) continue;
-
-                $food = DoAn::query()->lockForUpdate()->find($foodId);
-                if (!$food) continue;
-
-                if (isset($food->stock_quantity) && (int) $food->stock_quantity < $quantity) {
-                    throw new \RuntimeException('Đồ ăn ' . $food->name . ' không còn đủ số lượng.');
-                }
-
-                if (isset($food->stock_quantity)) {
-                    $food->decrement('stock_quantity', $quantity);
-                }
-            }
+            $this->truKhoDoAn($bookingData['food_items'] ?? []);
 
             $ve = VeXemPhim::create([
                 'nguoi_dung_id' => $bookingData['nguoi_dung_id'] ?? null,
@@ -1340,6 +1352,7 @@ class DatVeController extends Controller
                 'tien_hoan' => $bookingData['tien_hoan'] ?? 0,
                 'loai_ve' => $bookingData['loai_ve'] ?? 'truc_tuyen',
                 'trang_thai' => 'da_thanh_toan',
+                'food_items' => $bookingData['food_items'] ?? [],
                 'voucher_id' => $voucherCaNhan?->id,
             ]);
 
@@ -1347,8 +1360,114 @@ class DatVeController extends Controller
                 $voucherCaNhan->update(['da_su_dung' => true, 'ngay_su_dung' => now()]);
             }
 
+            $this->taoHoaDonDoAnChoVe($ve, $bookingData['food_items'] ?? []);
+
             return $ve;
         });
+    }
+
+    /**
+     * Giỏ đồ ăn (food_cart) không có field "id" — mỗi dòng có "key" dạng
+     * "variant-{food_variant_id}" (món lẻ, đã chọn size cụ thể) hoặc
+     * "combo-{food_id}" (combo). Hàm này giải mã key về food_id/variant_id thật.
+     */
+    private function phanTichCartItem(array $item): ?array
+    {
+        $quantity = (int) ($item['qty'] ?? 0);
+        $key = (string) ($item['key'] ?? '');
+
+        if ($quantity <= 0 || $key === '') {
+            return null;
+        }
+
+        if (str_starts_with($key, 'combo-')) {
+            $foodId = (int) substr($key, strlen('combo-'));
+
+            return $foodId > 0 ? ['food_id' => $foodId, 'variant_id' => null, 'quantity' => $quantity] : null;
+        }
+
+        if (str_starts_with($key, 'variant-')) {
+            $variantId = (int) substr($key, strlen('variant-'));
+            $variant = $variantId > 0 ? BienTheDoAn::find($variantId) : null;
+
+            return $variant ? ['food_id' => $variant->food_id, 'variant_id' => $variant->id, 'quantity' => $quantity] : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Trừ kho (biến thể + combo) theo giỏ đồ ăn của đơn đặt vé online.
+     */
+    private function truKhoDoAn(array $foodItems): void
+    {
+        if (empty($foodItems)) {
+            return;
+        }
+
+        $items = collect($foodItems)
+            ->map(fn($item) => $this->phanTichCartItem($item))
+            ->filter();
+
+        if ($items->isEmpty()) {
+            return;
+        }
+
+        (new FoodInventoryService())->deduct($items);
+    }
+
+    /**
+     * Ghi lại hóa đơn đồ ăn cho đơn đặt vé online để hiển thị trong
+     * trang quản trị "Hóa đơn đồ ăn & Combo" (liên kết qua ticket_id).
+     */
+    private function taoHoaDonDoAnChoVe(VeXemPhim $ve, array $foodItems): void
+    {
+        if (empty($foodItems) || FoodInvoice::where('ticket_id', $ve->id)->exists()) {
+            return;
+        }
+
+        $items = collect($foodItems)
+            ->map(function ($item) {
+                $parsed = $this->phanTichCartItem($item);
+                $quantity = (int) ($item['qty'] ?? 0);
+                $unitPrice = (float) ($item['price'] ?? 0);
+
+                return [
+                    'food_id' => $parsed['food_id'] ?? null,
+                    'food_variant_id' => $parsed['variant_id'] ?? null,
+                    'food_name' => $item['name'] ?? 'Đồ ăn',
+                    'quantity' => $quantity,
+                    'unit_price' => $unitPrice,
+                    'total_price' => $quantity * $unitPrice,
+                ];
+            })
+            ->filter(fn($item) => $item['quantity'] > 0)
+            ->values();
+
+        if ($items->isEmpty()) {
+            return;
+        }
+
+        $subtotal = $items->sum('total_price');
+
+        $invoice = FoodInvoice::create([
+            'invoice_code' => 'FD-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(4)),
+            'user_id' => $ve->nguoi_dung_id,
+            'ticket_id' => $ve->id,
+            'customer_name' => $ve->nguoiDung?->ho_ten,
+            'customer_phone' => $ve->nguoiDung?->so_dien_thoai,
+            'subtotal' => $subtotal,
+            'discount' => 0,
+            'total' => $subtotal,
+            'payment_status' => 'paid',
+            'inventory_deducted' => true,
+            'payment_method' => $ve->payment_method,
+            'note' => 'Đặt kèm vé #' . $ve->ma_ve,
+        ]);
+
+        foreach ($items as $item) {
+            $invoice->items()->create($item);
+        }
     }
 
     private function xoaKhoaVoucherTam(array $bookingData): void
@@ -1454,10 +1573,10 @@ class DatVeController extends Controller
         $bookedTickets = VeXemPhim::where('suat_chieu_id', $suatChieuId)
             ->where(function ($q) {
                 $q->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat'])
-                  ->orWhere(function ($sub) {
-                      $sub->where('trang_thai', 'cho_thanh_toan')
-                          ->where('thoi_gian_het_han', '>', now());
-                  });
+                    ->orWhere(function ($sub) {
+                        $sub->where('trang_thai', 'cho_thanh_toan')
+                            ->where('thoi_gian_het_han', '>', now());
+                    });
             })
             ->pluck('ma_ghe');
 

@@ -137,11 +137,11 @@ class FoodController extends Controller
 
         $categories = DanhMucDoAn::orderBy('name')->get();
 
-        $variants = BienTheDoAn::with('doAn.category')
-            ->whereHas('doAn', function ($q) {
-                $q->where('category_id', '!=', DanhMucDoAn::where('name', 'Combo')->value('id'));
-            })
-            ->get();
+        $variants = BienTheDoAn::with('doAn')
+    ->whereHas('doAn.category', function ($q) {
+        $q->where('is_combo', false);
+    })
+    ->get();
 
         return view('admin.foods.edit', compact(
             'food',
@@ -159,7 +159,7 @@ class FoodController extends Controller
         }
         $category = DanhMucDoAn::find($data['category_id']);
 
-        if ($category && str_contains(strtolower($category->name), 'combo')) {
+        if ($category && $category->is_combo) {
 
             $variantIds = collect($request->input('combo_items', []))
                 ->pluck('variant_id')
@@ -175,10 +175,7 @@ class FoodController extends Controller
 
         $food = Doan::create($data);
 
-        $isCombo = str_contains(
-            strtolower($food->category->name),
-            'combo'
-        );
+        $isCombo = $food->category->is_combo;
 
         if ($isCombo) {
 

@@ -146,13 +146,14 @@
                         <button
                             type="button"
                             class="food-chip"
-                            data-food-id="{{ $food->id }}"
-                            data-food-name="{{ $food->name }}"
-                            data-food-price="{{ $food->price }}"
-                            title="Còn {{ $food->stock_quantity }} phần"
+                            data-food-id="{{ $food['food_id'] }}"
+                            data-variant-id="{{ $food['variant_id'] }}"
+                            data-food-name="{{ $food['label'] }}"
+                            data-food-price="{{ $food['price'] }}"
+                            title="Còn {{ $food['stock'] }} phần"
                         >
-                            <span>{{ $food->name }}</span>
-                            <em>{{ $food->stock_quantity }}</em>
+                            <span>{{ $food['label'] }}</span>
+                            <em>{{ $food['stock'] }}</em>
                         </button>
                     @empty
                         <a href="{{ route('admin.foods.index') }}" class="food-chip is-empty">
@@ -360,6 +361,7 @@
 <template id="foodItemTemplate">
     <div class="food-item-row">
         <input data-field="food_id" type="hidden" class="food-id">
+        <input data-field="food_variant_id" type="hidden" class="food-variant-id">
         <label class="food-item-name">
             <span>Tên món</span>
             <input data-field="food_name" class="admin-input food-name" placeholder="Tên món" required>
@@ -428,6 +430,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function fillRow(row, food = {}) {
         row.querySelector('.food-id').value = food.food_id || food.id || '';
+        row.querySelector('.food-variant-id').value = food.food_variant_id || food.variant_id || '';
         row.querySelector('.food-name').value = food.food_name || food.name || '';
         row.querySelector('.food-quantity').value = food.quantity || 1;
         row.querySelector('.food-price').value = food.unit_price || food.price || '';
@@ -474,6 +477,7 @@ document.addEventListener('DOMContentLoaded', function () {
         button.addEventListener('click', function () {
             addRow({
                 id: button.dataset.foodId,
+                variant_id: button.dataset.variantId || '',
                 name: button.dataset.foodName,
                 price: button.dataset.foodPrice,
                 quantity: 1,

@@ -59,9 +59,12 @@ class FoodSeeder extends Seeder
 
             // Tạo món và category
             foreach ($foods as $foodData) {
-                $category = DanhMucDoAn::firstOrCreate(
+                $category = DanhMucDoAn::updateOrCreate(
                     ['name' => $foodData['category_name']],
-                    ['slug' => Str::slug($foodData['category_name'])]
+                    [
+                        'slug' => Str::slug($foodData['category_name']),
+                        'is_combo' => $foodData['category_name'] === 'Combo',
+                    ]
                 );
 
                 DoAn::updateOrCreate(
