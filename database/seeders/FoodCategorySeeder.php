@@ -11,21 +11,32 @@ use Illuminate\Support\Str;
 class FoodCategorySeeder extends Seeder
 {
     public function run(): void
-    {
-        $categories = [
-            'Đồ ăn',
-            'Nước uống',
-            'Combo',
-        ];
+{
+    $categories = [
+        [
+            'name' => 'Đồ ăn',
+            'is_combo' => false,
+        ],
+        [
+            'name' => 'Nước uống',
+            'is_combo' => false,
+        ],
+        [
+            'name' => 'Combo',
+            'is_combo' => true,
+        ],
+    ];
 
-        foreach ($categories as $name) {
-            DanhMucDoAn::updateOrCreate(
-                ['name' => $name],
-                [   
-                    'slug' => Str::slug($name),
-                    'name' => $name,
-                ]
-            );
-        }
+    foreach ($categories as $category) {
+
+        DanhMucDoAn::updateOrCreate(
+            ['name' => $category['name']],
+            [
+                'slug' => Str::slug($category['name']),
+                'name' => $category['name'],
+                'is_combo' => $category['is_combo'],
+            ]
+        );
     }
+}
 }

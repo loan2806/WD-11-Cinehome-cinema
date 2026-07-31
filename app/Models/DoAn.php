@@ -89,10 +89,10 @@ class DoAn extends Model
         return self::NGUONG_TON_KHO_THAP;
     }
 
-    public function isCombo(): bool
-    {
-        return str_contains(strtolower($this->category?->name ?? ''), 'combo');
-    }
+  public function isCombo(): bool
+{
+    return $this->category?->is_combo ?? false;
+}
 
     public function saleVariant(): ?BienTheDoAn
     {
@@ -119,7 +119,7 @@ class DoAn extends Model
     }
 
     public function category()
-    {
-        return $this->belongsTo(DanhMucDoAn::class, 'category_id');
-    }
+{
+    return $this->belongsTo(DanhMucDoAn::class, 'category_id');
+}
 }

@@ -41,9 +41,10 @@ class FoodCategoryController extends Controller
     {
         $data = $request->validated();
 
-        $data['slug'] = Str::slug($data['name']);
+$data['slug'] = Str::slug($data['name']);
+$data['is_combo'] = $request->boolean('is_combo');
 
-        $category = DanhMucDoAn::create($data);
+$category = DanhMucDoAn::create($data);
 
         AdminNotificationService::push(
             '🍿 Thêm danh mục',
@@ -65,27 +66,35 @@ class FoodCategoryController extends Controller
     {
         $data = $request->validated();
 
-        // 🔥 update slug khi đổi name
-        if ($category->name !== $data['name']) {
-            $data['slug'] = Str::slug($data['name']);
-        }
+        if ($category->doAns()->exists()
+        && $category->is_combo != $request->boolean('is_combo')) {
 
-        $category->update($data);
+        return back()
+            ->withInput()
+            ->with('error', 'Không thể thay đổi loại danh mục khi đã có món ăn.');
+    }
+
+if ($category->name !== $data['name']) {
+    $data['slug'] = Str::slug($data['name']);
+}
+
+$data['is_combo'] = $request->boolean('is_combo');
+
+$category->update($data);
 
         return redirect()
             ->route('admin.foods.categories.index')
             ->with('success', 'Danh mục đã được cập nhật.');
     }
 
-    public function destroy(DanhMucDoAn $category)
-    {
-        // 🔥 chặn xoá nếu đang có food
-        if ($category->foods()->exists()) {
-            return back()->with('error', 'Không thể xóa vì danh mục đang có sản phẩm.');
-        }
-
-        $category->delete();
-
-        return back()->with('success', 'Danh mục đã được xóa.');
+   public function destroy(DanhMucDoAn $category)
+{
+    if ($category->doAns()->exists()) {
+        return back()->with('error', 'Không thể xóa vì danh mục đang có sản phẩm.');
     }
+
+    $category->delete();
+
+    return back()->with('success', 'Danh mục đã được xóa.');
+}
 }

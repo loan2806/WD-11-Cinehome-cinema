@@ -183,9 +183,8 @@
     }
 
     .contact-back-link .icon-circle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        position: relative;
+        display: inline-block;
         width: 28px;
         height: 28px;
         border-radius: 50%;
@@ -199,7 +198,11 @@
         color: #ffffff;
     }
 
-    .contact-back-link .icon-svg {
+    .contact-back-link .icon-circle .icon-svg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 13px;
         height: 13px;
     }

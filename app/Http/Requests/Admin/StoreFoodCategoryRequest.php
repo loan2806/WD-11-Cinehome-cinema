@@ -21,6 +21,10 @@ class StoreFoodCategoryRequest extends FormRequest
                 'max:150',
                 Rule::unique('food_categories', 'name'),
             ],
+            'is_combo' => [
+    'nullable',
+    'boolean',
+],
         ];
     }
 

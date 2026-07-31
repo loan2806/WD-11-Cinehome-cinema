@@ -26,8 +26,21 @@
 
         <div>
             <label class="text-xs uppercase tracking-wider text-gray-400">Tên danh mục</label>
-            <input name="name" value="{{ old('name') }}" class="admin-input" placeholder="Ví dụ: Đồ ăn nhẹ" >
+            <input name="name" value="{{ old('name') }}" class="admin-input" placeholder="Ví dụ: Đồ ăn nhẹ">
             @error('name')<small class="text-red-500">{{ $message }}</small>@enderror
+        </div>
+        <div class="flex items-center gap-3">
+            <input
+                type="checkbox"
+                name="is_combo"
+                id="is_combo"
+                value="1"
+                {{ old('is_combo') ? 'checked' : '' }}
+                class="h-4 w-4 rounded border-gray-600 bg-gray-800">
+
+            <label for="is_combo" class="text-white">
+                Đây là danh mục Combo
+            </label>
         </div>
 
         <button class="btn-admin w-full">Lưu danh mục</button>
