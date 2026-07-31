@@ -4,6 +4,9 @@
 
 @section('content')
     @php
+        // Đọc trạng thái Tab từ URL (mặc định overview)
+        $activeTab = request('tab', 'overview');
+
         $posterUrl = asset('storage/movies/' . $movie->poster);
         $genres = $movie->genres->pluck('ten_the_loai')->filter()->values();
         $actors = collect(explode(',', (string) $movie->dien_vien))
@@ -85,7 +88,7 @@
                             @endif
 
                             @if ($canBook)
-                                <a href="{{ route('dat_ve.chon_ghe', $movie->slug) }}"
+                                <a href="#lich-chieu" id="btnHeroBooking"
                                     class="booking-link detail-action-btn detail-action-btn--primary">
                                     <i class="fa-solid fa-ticket"></i>
                                     Đặt vé ngay
@@ -150,23 +153,24 @@
 
         <main class="movie-detail-main">
             <div class="container-fluid px-5">
-                <section class="detail-tabs-shell reveal-on-scroll" data-detail-tabs>
+                <section class="detail-tabs-shell reveal-on-scroll" data-detail-tabs id="lich-chieu">
                     <div class="detail-tabs">
-                        <button type="button" class="active" data-detail-tab="overview">
+                        <button type="button" class="{{ $activeTab === 'overview' ? 'active' : '' }}" data-detail-tab="overview">
                             <i class="fa-solid fa-film"></i>
                             Tổng quan
                         </button>
-                        <button type="button" data-detail-tab="showtimes">
+                        <button type="button" class="{{ $activeTab === 'showtimes' ? 'active' : '' }}" data-detail-tab="showtimes">
                             <i class="fa-solid fa-calendar-days"></i>
                             Lịch chiếu
                         </button>
-                        <button type="button" data-detail-tab="cast">
+                        <button type="button" class="{{ $activeTab === 'cast' ? 'active' : '' }}" data-detail-tab="cast">
                             <i class="fa-solid fa-users"></i>
                             Diễn viên
                         </button>
                     </div>
 
-                    <div class="detail-tab-panel active" data-detail-panel="overview">
+                    {{-- TAB PANE TỔNG QUAN --}}
+                    <div class="detail-tab-panel {{ $activeTab === 'overview' ? 'active' : '' }}" data-detail-panel="overview">
                         <div class="detail-overview-grid">
                             <div class="detail-story-card">
                                 <span class="detail-section-kicker">Nội dung phim</span>
@@ -206,7 +210,8 @@
                         </div>
                     </div>
 
-                    <div class="detail-tab-panel" data-detail-panel="showtimes">
+                    {{-- TAB PANE LỊCH CHIẾU --}}
+                    <div class="detail-tab-panel {{ $activeTab === 'showtimes' ? 'active' : '' }}" data-detail-panel="showtimes">
                         <div class="detail-panel-head">
                             <span class="detail-section-kicker">Chọn suất chiếu</span>
                             <h2>Lịch chiếu sắp tới</h2>
@@ -243,7 +248,8 @@
                         @endforelse
                     </div>
 
-                    <div class="detail-tab-panel" data-detail-panel="cast">
+                    {{-- TAB PANE DIỄN VIÊN --}}
+                    <div class="detail-tab-panel {{ $activeTab === 'cast' ? 'active' : '' }}" data-detail-panel="cast">
                         <div class="detail-cast-layout">
                             <div class="detail-director-card">
                                 <span class="detail-section-kicker">Đạo diễn</span>
@@ -295,4 +301,77 @@
             </div>
         </main>
     </section>
+
+    {{-- SCRIPT TỰ ĐỘNG ÉP BẬT TAB LỊCH CHIẾU VÀ CUỘN MƯỢT --}}
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tabShell = document.querySelector('[data-detail-tabs]');
+            if (!tabShell) return;
+
+            const tabButtons = tabShell.querySelectorAll('[data-detail-tab]');
+            const tabPanels = tabShell.querySelectorAll('[data-detail-panel]');
+
+            function switchTab(targetTab) {
+                tabButtons.forEach(btn => {
+                    if (btn.getAttribute('data-detail-tab') === targetTab) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                tabPanels.forEach(panel => {
+                    if (panel.getAttribute('data-detail-panel') === targetTab) {
+                        panel.classList.add('active');
+                    } else {
+                        panel.classList.remove('active');
+                    }
+                });
+            }
+
+            // Gán sự kiện click cho các nút Tab
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const tab = this.getAttribute('data-detail-tab');
+                    switchTab(tab);
+                });
+            });
+
+            function forceActivateShowtimes() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const isShowtimes = urlParams.get('tab') === 'showtimes' || window.location.hash === '#lich-chieu';
+
+                if (isShowtimes) {
+                    // Chuyển tab sang Lịch chiếu
+                    switchTab('showtimes');
+
+                    // Tự động cuộn xuống đúng vị trí
+                    const targetElement = document.getElementById('lich-chieu');
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            }
+
+            // Chạy ngay khi DOM sẵn sàng
+            forceActivateShowtimes();
+
+            // Chạy trễ 150ms & 400ms để ghi đè JavaScript mặc định của Theme
+            setTimeout(forceActivateShowtimes, 150);
+            setTimeout(forceActivateShowtimes, 400);
+
+            // Nút "Đặt vé ngay" trên Banner Hero
+            const heroBookBtn = document.getElementById('btnHeroBooking');
+            if (heroBookBtn) {
+                heroBookBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    switchTab('showtimes');
+                    const targetElement = document.getElementById('lich-chieu');
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            }
+        });
+    </script>
 @endsection

@@ -377,3 +377,77 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+/* Cine Custom Select Dropdown Handler */
+document.addEventListener("DOMContentLoaded", function () {
+    const customSelects = document.querySelectorAll(".cine-custom-select");
+
+    if (!customSelects.length) return;
+
+    customSelects.forEach(function (selectContainer) {
+        const trigger = selectContainer.querySelector(".cine-select-trigger");
+        const dropdown = selectContainer.querySelector(".cine-select-dropdown");
+        const hiddenInput = selectContainer.querySelector("input[type='hidden']");
+        const valueSpan = selectContainer.querySelector(".cine-select-value");
+        const options = selectContainer.querySelectorAll(".cine-option");
+
+        if (!trigger || !dropdown) return;
+
+        trigger.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const isOpen = selectContainer.classList.contains("is-open");
+
+            // Close all other custom selects
+            customSelects.forEach(function (other) {
+                if (other !== selectContainer) {
+                    other.classList.remove("is-open");
+                }
+            });
+
+            selectContainer.classList.toggle("is-open", !isOpen);
+        });
+
+        options.forEach(function (option) {
+            option.addEventListener("click", function (e) {
+                e.stopPropagation();
+                const val = option.getAttribute("data-value") || "";
+                const text = option.querySelector("span") ? option.querySelector("span").textContent : "";
+
+                if (hiddenInput) hiddenInput.value = val;
+                if (valueSpan) valueSpan.textContent = text;
+
+                options.forEach(function (o) {
+                    o.classList.remove("selected");
+                });
+                option.classList.add("selected");
+
+                selectContainer.classList.remove("is-open");
+
+                // Submit parent filter form automatically
+                const form = selectContainer.closest("form");
+                if (form) {
+                    form.submit();
+                }
+            });
+        });
+    });
+
+    // Close open dropdowns when clicking outside
+    document.addEventListener("click", function (e) {
+        customSelects.forEach(function (selectContainer) {
+            if (!selectContainer.contains(e.target)) {
+                selectContainer.classList.remove("is-open");
+            }
+        });
+    });
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") {
+            customSelects.forEach(function (selectContainer) {
+                selectContainer.classList.remove("is-open");
+            });
+        }
+    });
+});
