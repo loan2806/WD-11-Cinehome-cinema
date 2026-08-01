@@ -64,4 +64,39 @@ class SuatChieu extends Model
 {
     return $this->hasMany(VeXemPhim::class, 'suat_chieu_id');
 }
+    public function tinhSoGhe(): array
+{
+    $tongGhe = $this->phongChieu?->gheNgois?->where('trang_thai', 'hoat_dong')->count() ?? 0;
+
+    $validTickets = $this->veXemPhims->filter(function ($ve) {
+        if (in_array($ve->trang_thai, ['da_dat', 'da_thanh_toan', 'da_su_dung'])) {
+            return true;
+        }
+        if ($ve->trang_thai === 'cho_thanh_toan' && $ve->thoi_gian_het_han && \Carbon\Carbon::parse($ve->thoi_gian_het_han)->isFuture()) {
+            return true;
+        }
+        return false;
+    });
+
+    $bookedSeats = collect();
+    foreach ($validTickets as $ve) {
+        if (!empty($ve->ma_ghe)) {
+            foreach (explode(',', (string) $ve->ma_ghe) as $code) {
+                $seatCode = strtoupper(trim($code));
+                if ($seatCode !== '') {
+                    $bookedSeats->push($seatCode);
+                }
+            }
+        }
+    }
+
+    $gheDaDat = $bookedSeats->unique()->count();
+    $gheTrong = max(0, $tongGhe - $gheDaDat);
+
+    return [
+        'tong_ghe' => $tongGhe,
+        'ghe_da_dat' => $gheDaDat,
+        'ghe_trong' => $gheTrong,
+    ];
+}
 }

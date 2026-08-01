@@ -743,305 +743,207 @@
     </div>
 
 </div>
-
-{{-- ROW CHANGE MODAL --}}
-<div id="rowChangeModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-[6px]">
-    <div class="w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] p-0 shadow-2xl shadow-black/60 overflow-hidden animate-modal-in">
-        {{-- Header với gradient --}}
-        <div class="relative px-6 pt-6 pb-5 bg-gradient-to-r from-[#d99a32]/10 via-[#d99a32]/5 to-transparent border-b border-white/5">
-            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#d99a32] via-[#e5a847] to-transparent"></div>
-            <div class="flex items-start justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#d99a32]/20 to-[#d99a32]/5 border border-[#d99a32]/20">
-                        <i class="fa-solid fa-palette text-xl text-[#d99a32]"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold text-white leading-tight">
-                            Đổi loại ghế hàng <span id="rowChangeModalTenHang" class="text-[#d99a32]"></span>
-                        </h3>
-                        <p class="text-xs text-gray-500 mt-0.5"><span id="rowChangeModalRowIndex"></span></p>
-                    </div>
+<!-- Modal Quản Lý Hàng Ghế -->
+<div id="rowChangeModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4 transition-all">
+    <div class="relative w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#121212] shadow-2xl shadow-black/80 transition-all">
+        
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between border-b border-white/10 bg-white/5 px-6 py-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f4c56a]/15 text-[#f4c56a] border border-[#f4c56a]/30">
+                    <i class="fa-solid fa-layer-group text-base"></i>
                 </div>
-                <button type="button" id="rowChangeModalCancelHeader" class="text-gray-500 hover:text-white hover:bg-white/10 rounded-lg p-1.5 transition-all">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+                <div>
+                    <h3 class="text-base font-extrabold text-white">Quản lý hàng ghế <span id="rowChangeModalTenHang" class="text-[#f4c56a]">A</span></h3>
+                    <p id="rowChangeModalRowIndex" class="text-xs text-gray-400 font-medium">Hàng thứ 1</p>
+                </div>
             </div>
+            <button type="button" id="rowChangeModalCancelHeader" class="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
         </div>
 
-        {{-- Body --}}
-        <div class="px-6 py-5">
-            {{-- Chọn loại ghế --}}
-            <div class="mb-5">
-                <label class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    <span class="h-px flex-1 bg-white/5"></span>
-                    Chọn loại ghế mới
-                    <span class="h-px flex-1 bg-white/5"></span>
-                </label>
-                <div class="relative" id="rowChangeModalLoaiGheWrapper">
-                    <div class="custom-select" data-select-id="rowChangeModalLoaiGhe">
-                        <div class="custom-select__trigger" onclick="toggleCustomSelect(this)">
-                            <div class="custom-select__value">
-                                <div class="custom-select__color-dot" id="rowModalColorDot" style="background-color: #666"></div>
-                                <span class="custom-select__text custom-select__text--placeholder">-- Chọn loại ghế --</span>
-                            </div>
-                            <div class="custom-select__arrow">
-                                <i class="fa-solid fa-chevron-down text-xs"></i>
-                            </div>
-                        </div>
-                        <div class="custom-select__dropdown">
-                            @foreach(\App\Models\LoaiGhe::all() as $loai)
-                                <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
-                                    <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
-                                    <div class="custom-select__option-content">
-                                        <div class="custom-select__option-label">{{ $loai->ten_loai }}</div>
-                                        <div class="custom-select__option-meta">+{{ number_format($loai->phu_thu) }}đ</div>
-                                    </div>
-                                    <div class="custom-select__option-check">
-                                        <i class="fa-solid fa-check text-white text-[10px]"></i>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    <select id="rowChangeModalLoaiGhe" class="hidden">
-                        @foreach(\App\Models\LoaiGhe::all() as $loai)
-                            <option value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" class="bg-[#1a1a2e]">
-                                {{ $loai->ten_loai }} — +{{ number_format($loai->phu_thu) }}đ
-                            </option>
-                        @endforeach
-                    </select>
+        <div class="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+
+            <!-- KHỐI 1: ĐỔI LOẠI GHẾ CẢ HÀNG -->
+            <div class="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-3">
+                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#f4c56a]">
+                    <i class="fa-solid fa-[#f4c56a] fa-palette"></i>
+                    Đổi loại ghế cho cả hàng
                 </div>
-                <p class="mt-2 text-xs text-gray-600 text-center">Thay đổi áp dụng cho <span class="text-gray-400 font-medium">tất cả ghế</span> trong hàng này</p>
-                <div id="rowTypeRestrictionWarning" class="hidden mt-3 rounded-xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-orange-500/5 p-3.5">
-                    <div class="flex items-start gap-2.5">
-                        <div class="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20 mt-0.5">
-                            <i class="fa-solid fa-triangle-exclamation text-xs text-amber-400"></i>
-                        </div>
-                        <div class="text-xs text-amber-300/90 leading-relaxed">
-                            <strong class="font-semibold">Hàng ghế không được phép đổi loại.</strong><br>
-                            <span id="rowRestrictionDetail" class="text-amber-400/80"></span>
-                        </div>
-                    </div>
+
+               <div class="custom-select relative" data-select-id="rowChangeModalLoaiGhe">
+    <!-- Select ẩn dùng để lưu value submit form / JS -->
+    <select id="rowChangeModalLoaiGhe" class="hidden">
+        @foreach($loaiGhes ?? [] as $loai)
+            <option value="{{ $loai->id }}" 
+                    data-color="{{ $loai->mau_sac }}" 
+                    data-la-couple="{{ $loai->la_couple ? 'true' : 'false' }}">
+                {{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)
+            </option>
+        @endforeach
+    </select>
+
+    <!-- Nút hiển thị Custom Select -->
+    <button type="button" 
+            class="custom-select__trigger flex w-full items-center justify-between rounded-xl border border-white/10 bg-[#1a1a1a] px-4 py-3 text-sm text-white focus:border-[#f4c56a] focus:outline-none" 
+            onclick="toggleCustomSelect(this)">
+        <div class="custom-select__value flex items-center gap-2.5">
+            <div class="custom-select__color-dot h-3 w-3 rounded-full bg-gray-500" id="rowModalColorDot"></div>
+            <span class="custom-select__text">Chọn loại ghế...</span>
+        </div>
+        <i class="fa-solid fa-chevron-down text-xs text-gray-400"></i>
+    </button>
+
+    <!-- Danh sách Option thả xuống -->
+    <div class="custom-select__dropdown absolute top-[calc(100%+6px)] left-0 right-0 z-[9999] hidden max-h-48 overflow-y-auto rounded-xl border border-white/10 bg-[#1a1a1a] p-1.5 shadow-2xl backdrop-blur-xl">
+        @foreach($loaiGhes ?? [] as $loai)
+            <div class="custom-select__option flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm text-white transition hover:bg-white/10" 
+                 data-value="{{ $loai->id }}" 
+                 onclick="selectCustomOption(this)">
+                <div class="flex items-center gap-2.5">
+                    <span class="custom-select__option-color h-3 w-3 rounded-full" style="background-color: {{ $loai->mau_sac }}"></span>
+                    <span class="custom-select__option-label">{{ $loai->ten_loai }}</span>
                 </div>
+                <span class="text-xs font-semibold text-amber-400/80">+{{ number_format($loai->phu_thu) }}đ</span>
+            </div>
+        @endforeach
+    </div>
+</div>
+
+                <!-- Cảnh báo quy tắc vị trí -->
+                <div id="rowTypeRestrictionWarning" class="hidden rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                    <i class="fa-solid fa-triangle-exclamation mr-1.5 text-amber-400"></i>
+                    <span id="rowRestrictionDetail">Hàng ghế không được phép đổi loại.</span>
+                </div>
+
+                <button type="button" id="rowChangeModalApply" class="w-full rounded-xl bg-gradient-to-r from-[#f4c56a] to-[#d99a32] py-2.5 text-xs font-bold uppercase text-black hover:brightness-110 transition shadow-lg shadow-[#f4c56a]/10">
+                    <i class="fa-solid fa-check mr-1.5"></i>Áp dụng đổi loại ghế
+                </button>
             </div>
 
-            {{-- Bảo trì cả hàng --}}
-            <div class="mb-5 rounded-xl border border-white/8 bg-gradient-to-r from-white/[0.03] to-white/[0.01] p-4 backdrop-blur-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/15">
-                            <i class="fa-solid fa-wrench text-sm text-orange-400"></i>
-                        </div>
-                        <div>
-                            <div class="text-sm font-semibold text-white">Bảo trì cả hàng</div>
-                            <div class="text-[11px] text-gray-500 mt-0.5">
-                                <span id="rowMaintenanceStats">--</span>
-                            </div>
-                        </div>
+            <!-- KHỐI 2: THIẾT LẬP BẢO TRÌ CẢ HÀNG -->
+            <div class="rounded-2xl border border-orange-500/20 bg-orange-500/[0.03] p-4 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-orange-400">
+                        <i class="fa-solid fa-wrench"></i>
+                        Bảo trì cả hàng
                     </div>
-                    <button type="button" id="rowMaintenanceBtn" onclick="window.__rowMaintClick && window.__rowMaintClick(event)" class="rounded-xl border border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-orange-500/5 px-4 py-2 text-xs font-bold text-orange-300 transition-all hover:from-orange-500/20 hover:to-orange-500/10 hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10 active:scale-95">
-                        <i class="fa-solid fa-wrench mr-1.5"></i><span id="rowMaintenanceBtnLabel">Bảo trì</span>
-                    </button>
+                    <span id="rowMaintenanceStats" class="text-xs text-gray-400">0 hoạt động · 0 bảo trì</span>
                 </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block mb-1.5 text-[11px] font-semibold text-gray-300">Bắt đầu <span class="text-red-400">*</span></label>
+                        <input type="datetime-local" id="rowMaintBatDau" class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-3 py-2 text-xs text-white focus:border-orange-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block mb-1.5 text-[11px] font-semibold text-gray-300">Kết thúc (không bắt buộc)</label>
+                        <input type="datetime-local" id="rowMaintKetThuc" class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-3 py-2 text-xs text-white focus:border-orange-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block mb-1.5 text-[11px] font-semibold text-gray-300">Lý do bảo trì <span class="text-red-400">*</span></label>
+                    <input type="text" id="rowMaintLyDo" placeholder="Nhập lý do bảo trì..." class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-3.5 py-2.5 text-xs text-white focus:border-orange-500 focus:outline-none">
+                </div>
+
+                <button type="button" id="rowMaintenanceBtn" onclick="window.__rowMaintClick(event)" class="w-full rounded-xl border border-orange-500/40 bg-orange-500/15 py-2.5 text-xs font-bold uppercase text-orange-300 hover:bg-orange-500/25 transition">
+                    <i class="fa-solid fa-wrench mr-1.5"></i>Xác nhận bảo trì hàng
+                </button>
             </div>
 
-            {{-- Actions --}}
-            <div class="flex gap-2.5">
-                <button type="button" id="rowChangeModalDelete" class="rounded-xl border border-red-500/25 bg-red-500/8 px-4 py-3 text-xs font-bold text-red-400/90 transition-all hover:from-red-500/15 hover:to-red-500/5 hover:border-red-500/40 active:scale-[0.98]">
+            <!-- KHỐI 3: NÚT HỦY & XÓA HÀNG -->
+            <div class="flex items-center justify-between pt-2">
+                <button type="button" id="rowChangeModalDelete" class="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500/20 transition">
                     <i class="fa-solid fa-trash-can mr-1.5"></i>Xóa hàng
                 </button>
-                <button type="button" id="rowChangeModalCancel" class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10 hover:text-white active:scale-[0.98]">
-                    <i class="fa-solid fa-xmark mr-1.5"></i>Hủy
-                </button>
-                <button type="button" id="rowChangeModalApply" class="flex-1 rounded-xl bg-gradient-to-r from-[#d99a32] to-[#e5a847] px-4 py-3 text-sm font-bold text-black shadow-lg shadow-[#d99a32]/20 transition-all hover:from-[#e5a847] hover:to-[#d99a32] hover:shadow-[#d99a32]/30 active:scale-[0.98]">
-                    <i class="fa-solid fa-check mr-1.5"></i>Áp dụng
+                <button type="button" id="rowChangeModalCancel" class="rounded-xl border border-white/10 bg-white/5 px-6 py-2 text-xs font-bold text-gray-300 hover:bg-white/10 transition">
+                    Đóng
                 </button>
             </div>
+
         </div>
     </div>
 </div>
 
-{{-- MODAL: BẢO TRÌ GHẾ (VÔ THỜI HẠN / CÓ THỜI HẠN) --}}
-<div id="maintenanceModal" class="hidden fixed inset-0 z-[99999] flex items-center justify-center bg-black/75 backdrop-blur-[6px]">
-    <div class="w-full max-w-lg mx-4 rounded-2xl border border-white/10 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] p-0 shadow-2xl shadow-black/60 overflow-hidden animate-modal-in">
-        {{-- Header --}}
-        <div class="relative px-6 pt-6 pb-5 bg-gradient-to-r from-orange-500/10 via-orange-500/5 to-transparent border-b border-white/5">
-            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500"></div>
-            <div class="flex items-start justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/20">
-                        <i class="fa-solid fa-wrench text-xl text-orange-400"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold text-white leading-tight">
-                            Bảo trì ghế <span id="maintenanceModalSeatCount" class="text-orange-400"></span>
-                        </h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Chọn loại bảo trì phù hợp</p>
-                    </div>
+
+<!-- MODAL BẢO TRÌ GHẾ (ĐÃ SỬA Z-INDEX CHỐNG ĐÈ & MỞ RỘNG FORM) -->
+<div id="maintenanceModal" class="fixed inset-0 z-[99999] hidden flex items-center justify-center bg-black/85 backdrop-blur-md p-4 transition-all duration-300">
+    <div class="relative w-full max-w-xl overflow-hidden rounded-3xl border border-[#f4c56a]/30 bg-[#121212] p-6 text-white shadow-2xl shadow-black/90">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-4 border-b border-white/10">
+            <div class="flex items-center gap-3">
+                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4c56a]/15 border border-[#f4c56a]/30 text-[#f4c56a] shadow-inner">
+                    <i class="fa-solid fa-wrench text-xl"></i>
                 </div>
-                <button type="button" id="maintenanceModalCloseHeader" class="text-gray-500 hover:text-white hover:bg-white/10 rounded-lg p-1.5 transition-all">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        Bảo trì <span id="maintModalSeatCount" class="text-[#f4c56a]">1 ghế</span>
+                    </h3>
+                    <p class="text-xs text-gray-400">Đặt thời hạn và lý do bảo trì ghế</p>
+                </div>
+            </div>
+            <button type="button" id="btnCloseMaintModal" class="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <!-- Khung danh sách ghế áp dụng -->
+        <div class="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5 flex items-center justify-between">
+            <span class="text-xs font-semibold text-gray-400 flex items-center gap-2">
+                <i class="fa-solid fa-couch text-[#f4c56a]"></i> Ghế áp dụng:
+            </span>
+            <div id="maintModalSeatBadges" class="flex flex-wrap gap-1.5 justify-end">
+                <span class="px-3 py-1 text-xs font-bold rounded-xl bg-[#f4c56a]/20 text-[#f4c56a] border border-[#f4c56a]/30">Chưa chọn</span>
             </div>
         </div>
 
-        {{-- Body --}}
-        <div class="px-6 py-5">
-            {{-- Hiển thị lỗi --}}
-            <div id="maintenanceErrors" class="hidden mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
-                <div class="flex items-start gap-2">
-                    <i class="fa-solid fa-circle-exclamation text-red-400 mt-0.5"></i>
-                    <div id="maintenanceErrorsList" class="text-sm text-red-300"></div>
+        <!-- Form nhập thời hạn -->
+        <div class="mt-5 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1.5 flex items-center gap-1.5">
+                        <i class="fa-regular fa-clock text-[#f4c56a]"></i>
+                        Thời gian bắt đầu <span class="text-red-400">*</span>
+                    </label>
+                    <input type="datetime-local" id="maintBatDau" class="w-full rounded-xl border border-white/15 bg-[#1a1a1a] px-4 py-3 text-sm font-medium text-white focus:border-[#f4c56a] focus:outline-none focus:ring-1 focus:ring-[#f4c56a] [color-scheme:dark]">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1.5 flex items-center gap-1.5">
+                        <i class="fa-regular fa-clock text-amber-400"></i>
+                        Thời gian kết thúc
+                    </label>
+                    <input type="datetime-local" id="maintKetThuc" class="w-full rounded-xl border border-white/15 bg-[#1a1a1a] px-4 py-3 text-sm font-medium text-white focus:border-[#f4c56a] focus:outline-none focus:ring-1 focus:ring-[#f4c56a] [color-scheme:dark]">
                 </div>
             </div>
 
-            {{-- Chọn loại bảo trì --}}
-            <div class="mb-5">
-                <label class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    <span class="h-px flex-1 bg-white/5"></span>
-                    Loại bảo trì
-                    <span class="h-px flex-1 bg-white/5"></span>
+            <div>
+                <label class="block text-xs font-semibold text-gray-300 mb-1.5 flex items-center gap-1.5">
+                    <i class="fa-solid fa-pen-to-square text-[#f4c56a]"></i>
+                    Lý do bảo trì <span class="text-red-400">*</span>
                 </label>
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="maintenance-type-option cursor-pointer group">
-                        <input type="radio" name="maintenance_type" value="unlimited" class="peer hidden" checked>
-                        <div class="relative rounded-xl border-2 border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 transition-all duration-200 peer-checked:border-orange-500 peer-checked:from-orange-500/12 peer-checked:to-orange-500/5 hover:border-white/20 overflow-hidden">
-                            <div class="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                            <div class="relative flex flex-col items-center text-center gap-2">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 border border-orange-500/20 group-hover:scale-110 transition-transform">
-                                    <i class="fa-solid fa-infinity text-orange-400"></i>
-                                </div>
-                                <span class="font-bold text-white text-sm">Vô thời hạn</span>
-                                <span class="text-[11px] text-gray-500 leading-relaxed">Khóa đến khi<br>Admin mở lại</span>
-                            </div>
-                            <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
-                                <div class="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500">
-                                    <i class="fa-solid fa-check text-[9px] text-white"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </label>
-                    <label class="maintenance-type-option cursor-pointer group">
-                        <input type="radio" name="maintenance_type" value="scheduled" class="peer hidden">
-                        <div class="relative rounded-xl border-2 border-white/10 bg-gradient-to-b from-white/[0.04] to-white/[0.01] p-4 transition-all duration-200 peer-checked:border-blue-500 peer-checked:from-blue-500/12 peer-checked:to-blue-500/5 hover:border-white/20 overflow-hidden">
-                            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 peer-checked:opacity-100 transition-opacity"></div>
-                            <div class="relative flex flex-col items-center text-center gap-2">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 border border-blue-500/20 group-hover:scale-110 transition-transform">
-                                    <i class="fa-solid fa-stopwatch text-blue-400"></i>
-                                </div>
-                                <span class="font-bold text-white text-sm">Có thời hạn</span>
-                                <span class="text-[11px] text-gray-500 leading-relaxed">Tự động mở<br>khi hết hạn</span>
-                            </div>
-                            <div class="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity">
-                                <div class="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500">
-                                    <i class="fa-solid fa-check text-[9px] text-white"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </label>
-                </div>
+                <textarea id="maintLyDo" rows="3" placeholder="VD: Thay đệm ghế, sửa cơ chế ngả lưng, hỏng tay vịn..." class="w-full rounded-xl border border-white/15 bg-[#1a1a1a] p-3.5 text-sm text-white focus:border-[#f4c56a] focus:outline-none focus:ring-1 focus:ring-[#f4c56a] placeholder:text-gray-500 resize-none"></textarea>
             </div>
 
-            {{-- Form bảo trì có thời hạn --}}
-            <div id="scheduledMaintenanceForm" class="hidden mb-5 space-y-4 rounded-xl border border-blue-500/20 bg-gradient-to-b from-blue-500/8 to-blue-500/3 p-5 backdrop-blur-sm">
-                <div class="flex items-center gap-2.5 mb-1">
-                    <div class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/20">
-                        <i class="fa-solid fa-clock text-xs text-blue-400"></i>
-                    </div>
-                    <span class="text-sm font-bold text-blue-300">Thông tin bảo trì có thời hạn</span>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    {{-- Ngày bắt đầu --}}
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-2 text-xs font-semibold text-gray-300">
-                            <span class="flex h-5 w-5 items-center justify-center rounded-md bg-blue-500/20">
-                                <i class="fa-solid fa-play text-[9px] text-blue-400"></i>
-                            </span>
-                            Bắt đầu <span class="text-red-400">*</span>
-                        </label>
-                        <div class="relative group/datetime">
-                            <input type="datetime-local" id="maintenanceStartTime"
-                                class="w-full rounded-xl border-2 border-white/10 bg-[#0a0a14] px-4 py-3 pr-12 text-sm text-white outline-none transition-all placeholder:text-gray-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 cursor-pointer dark:[color-scheme:dark]"
-                                min="">
-                            <button type="button" onclick="document.getElementById('maintenanceStartTime').showPicker()" 
-                                class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-blue-400/50 hover:text-blue-400 transition-all group-hover/datetime:text-blue-300 cursor-pointer">
-                                <i class="fa-solid fa-calendar-days"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    {{-- Ngày kết thúc --}}
-                    <div class="space-y-2">
-                        <label class="flex items-center gap-2 text-xs font-semibold text-gray-300">
-                            <span class="flex h-5 w-5 items-center justify-center rounded-md bg-blue-500/20">
-                                <i class="fa-solid fa-stop text-[9px] text-blue-400"></i>
-                            </span>
-                            Kết thúc <span class="text-gray-500 font-normal">(Tùy chọn)</span>
-                        </label>
-                        <div class="relative group/datetime">
-                            <input type="datetime-local" id="maintenanceEndTime"
-                                class="w-full rounded-xl border-2 border-white/10 bg-[#0a0a14] px-4 py-3 pr-12 text-sm text-white outline-none transition-all placeholder:text-gray-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 cursor-pointer dark:[color-scheme:dark]"
-                                min="">
-                            <button type="button" onclick="document.getElementById('maintenanceEndTime').showPicker()"
-                                class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-blue-400/50 hover:text-blue-400 transition-all group-hover/datetime:text-blue-300 cursor-pointer">
-                                <i class="fa-solid fa-calendar-days"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                {{-- Lý do bảo trì --}}
-                <div class="space-y-2">
-                    <label class="flex items-center gap-2 text-xs font-semibold text-gray-300">
-                        <span class="flex h-5 w-5 items-center justify-center rounded-md bg-blue-500/20">
-                            <i class="fa-solid fa-message-lines text-[9px] text-blue-400"></i>
-                        </span>
-                        Lý do bảo trì <span class="text-red-400">*</span>
-                    </label>
-                    <textarea id="maintenanceReason" rows="2"
-                        class="w-full rounded-xl border-2 border-white/10 bg-[#0a0a14] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-gray-600 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 resize-none"
-                        placeholder="VD: Thay đệm ghế, sửa cơ chế ngả..."></textarea>
-                </div>
-                
-                {{-- Thông báo --}}
-                <div class="flex items-start gap-3 rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/20">
-                        <i class="fa-solid fa-circle-info text-sm text-blue-400"></i>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-blue-300">Tự động kích hoạt lại</p>
-                        <p class="mt-0.5 text-xs text-gray-400">Khi hết thời gian bảo trì, ghế sẽ tự động hoạt động trở lại mà không cần thao tác thủ công.</p>
-                    </div>
-                </div>
+            <div class="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3.5 flex items-start gap-2.5">
+                <i class="fa-solid fa-circle-info text-blue-400 text-sm mt-0.5"></i>
+                <p class="text-xs text-blue-200 leading-relaxed">
+                    Khi đến thời gian bắt đầu, ghế sẽ tự động chuyển sang trạng thái <b>Bảo trì (khóa)</b>. Khi hết thời gian, ghế sẽ tự động kích hoạt hoạt động trở lại.
+                </p>
             </div>
+        </div>
 
-            {{-- Lý do bảo trì vô thời hạn --}}
-            <div id="unlimitedMaintenanceReason" class="mb-5 space-y-2">
-                <label class="flex items-center gap-2 text-xs font-semibold text-gray-300">
-                    <span class="flex h-5 w-5 items-center justify-center rounded-md bg-orange-500/20">
-                        <i class="fa-solid fa-message-lines text-[9px] text-orange-400"></i>
-                    </span>
-                    Lý do bảo trì <span class="text-gray-500 font-normal">(Tùy chọn)</span>
-                </label>
-                <input type="text" id="maintenanceReasonUnlimited"
-                    class="w-full rounded-xl border-2 border-white/10 bg-[#0a0a14] px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-gray-600 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/15"
-                    placeholder="VD: Thay đệm ghế, sửa cơ chế ngả...">
-            </div>
-
-            {{-- Actions --}}
-            <div class="flex gap-2.5">
-                <button type="button" id="maintenanceModalCancel" class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10 hover:text-white active:scale-[0.98]">
-                    <i class="fa-solid fa-xmark mr-1.5"></i>Hủy
-                </button>
-                <button type="button" id="maintenanceModalApply" class="flex-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all hover:from-orange-400 hover:to-amber-400 hover:shadow-orange-500/30 active:scale-[0.98]">
-                    <i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì
-                </button>
-            </div>
+        <!-- Footer Buttons -->
+        <div class="mt-6 flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+            <button type="button" id="btnCancelMaintModal" class="px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold transition">Hủy</button>
+            <button type="button" id="btnSubmitMaintenance" class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#f4c56a] to-[#e0a843] hover:brightness-110 text-black text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-[#f4c56a]/20">
+                <i class="fa-solid fa-wrench"></i> <span>Xác nhận bảo trì</span>
+            </button>
         </div>
     </div>
 </div>
-
 {{-- MODAL: THÊM GHẾ --}}
 <div id="addSeatModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-[6px]">
     <div class="w-full max-w-md mx-4 rounded-2xl border border-white/10 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a] p-0 shadow-2xl shadow-black/60 overflow-hidden animate-modal-in">
@@ -2352,94 +2254,73 @@ function closeModalHuyBaoTri() {
     .seat-type-pill.active .pill-price {
         opacity: 1;
     }
+            /* --- SỬA LỖI CUSTOM SELECT BỊ KHUẤT TRONG MODAL --- */
+        /* Cho phép khung chứa tràn phần dropdown ra ngoài */
+        #rowChangeModal .border,
+        #rowChangeModal .rounded-2xl,
+        #rowChangeModal .p-4,
+        #rowChangeModal .space-y-4 {
+            overflow: visible !important;
+        }
+
+        /* Định vị Custom Select và nổi lên trên các phần tử bên dưới */
+        .custom-select {
+            position: relative !important;
+            z-index: 40 !important;
+        }
+
+        /* Đảm bảo khung menu thả xuống luôn hiển thị trên cùng */
+        .custom-select__dropdown {
+            position: absolute !important;
+            top: calc(100% + 4px) !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 9999 !important;
+            max-height: 200px !important;
+            overflow-y: auto !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8) !important;
+        }
+                /* Bắt buộc khung Modal cho phép hiển thị phần tử tràn ra ngoài */
+        #rowChangeModal .border-white\/10,
+        #rowChangeModal .bg-[#141414],
+        #rowChangeModal .space-y-4,
+        #rowChangeModal .p-4 {
+            overflow: visible !important;
+        }
+
+        /* Đảm bảo danh sách lựa chọn luôn đè lên các nút ở dưới */
+        .custom-select__dropdown {
+            z-index: 99999 !important;
+        }
 </style>
 @php /* STYLES END */ @endphp
 
 <script>
 /* Show phong chieu - last updated: {{ date('Y-m-d H:i:s') }} */
-// Global fallback CSRF helper - định nghĩa ngoài DOMContentLoaded để form submit handler (line ~5173) và mọi nơi đều truy cập được
+// Global fallback CSRF helper - định nghĩa ngoài DOMContentLoaded để form submit handler và mọi nơi đều truy cập được
+
+/* === HELPER FUNCTIONS GLOBAL === */
+window.hidePopover = function() {
+    const popover = document.getElementById('seatInfoPopover');
+    if (popover) {
+        popover.classList.remove('is-visible');
+    }
+};
 window.getCsrfToken = function() {
     var meta = document.querySelector('meta[name="csrf-token"]');
     if (meta && meta.getAttribute('content')) {
         return meta.getAttribute('content');
     }
     var match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-    if (match) {
-        return decodeURIComponent(match[1]);
-    }
-    return '';
+    return match ? decodeURIComponent(match[1]) : '';
 };
 
 /**
- * Hiển thị toast notification đẹp (theo style Toast component của dự án).
+ * Hiển thị toast notification
  * Loại: 'error' | 'success' | 'warning' | 'info'
  */
-window.showToast = function(message, type = 'error') {
-    var variant = {
-        error:   { bg: 'bg-red-500/15', border: 'border-red-500/40', icon: 'fa-circle-exclamation', iconColor: 'text-red-300', text: 'text-red-100' },
-        success: { bg: 'bg-emerald-500/15', border: 'border-emerald-500/40', icon: 'fa-circle-check', iconColor: 'text-emerald-300', text: 'text-emerald-100' },
-        warning: { bg: 'bg-amber-500/15', border: 'border-amber-500/40', icon: 'fa-triangle-exclamation', iconColor: 'text-amber-300', text: 'text-amber-100' },
-        info:    { bg: 'bg-white/10', border: 'border-white/20', icon: 'fa-circle-info', iconColor: 'text-[#d99a32]', text: 'text-white' },
-    };
-    var v = variant[type] || variant.info;
 
-    var toast = document.createElement('div');
-    toast.setAttribute('data-admin-toast', '');
-    toast.className = 'admin-toast';
-    toast.innerHTML =
-        '<div class="flex items-start gap-3 rounded-2xl border ' + v.border + ' ' + v.bg + ' bg-[#101010]/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-xl">' +
-            '<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">' +
-                '<i class="fa-solid ' + v.icon + ' ' + v.iconColor + ' text-lg"></i>' +
-            '</div>' +
-            '<p class="' + v.text + ' min-w-0 flex-1 break-words pt-1 text-sm font-bold leading-snug">' + message + '</p>' +
-            '<button type="button" data-toast-close class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white">' +
-                '<i class="fa-solid fa-xmark text-sm"></i>' +
-            '</button>' +
-        '</div>';
-
-    var container = document.getElementById('toastContainer');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toastContainer';
-        container.className = 'fixed top-4 right-4 z-[99999] flex flex-col gap-2 pointer-events-none';
-        document.body.appendChild(container);
-    }
-    container.appendChild(toast);
-
-    // Animate in
-    requestAnimationFrame(function() {
-        toast.style.animation = 'adminToastIn 0.28s ease both';
-    });
-
-    function dismiss() {
-        toast.classList.add('is-hiding');
-        setTimeout(function() {
-            if (toast.parentElement) toast.remove();
-        }, 300);
-    }
-
-    toast.querySelector('[data-toast-close]').addEventListener('click', dismiss);
-    setTimeout(dismiss, 4000);
-};
-
-// Global functions for modal buttons
-window.openAddSeatModalDirect = function() {
-    var modal = document.getElementById('addSeatModal');
-    var form = document.getElementById('addSeatForm');
-    var errors = document.getElementById('addSeatModalErrors');
-    if (!modal) return;
-    if (form) form.reset();
-    if (errors) {
-        errors.classList.add('hidden');
-        errors.innerHTML = '';
-    }
-    // Auto-suggest cột kế tiếp
-    var hangSelect = document.getElementById('addSeatHangGhe');
-    if (hangSelect && hangSelect.value) {
-        hangSelect.dispatchEvent(new Event('change'));
-    }
-    modal.classList.remove('hidden');
-};
 
 window.closeAddSeatModalDirect = function() {
     var modal = document.getElementById('addSeatModal');
@@ -2456,7 +2337,6 @@ window.openAddRowModalDirect = function() {
         errors.classList.add('hidden');
         errors.innerHTML = '';
     }
-    // Update preview
     if (typeof updateAddRowPreviewDirect === 'function') {
         updateAddRowPreviewDirect();
     }
@@ -2468,37 +2348,6 @@ window.closeAddRowModalDirect = function() {
     if (modal) modal.classList.add('hidden');
 };
 
-// === RESET SEATS FUNCTION ===
-window.confirmResetSeats = function() {
-    if (confirm('Bạn có chắc muốn xóa toàn bộ ghế trong phòng này?\n\nHành động này không thể hoàn tác!')) {
-        // Tạo form ẩn để submit DELETE request
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '{{ route('admin.phong-chieus.generate-seats', $phongChieu) }}';
-
-        var csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = '_token';
-        csrfInput.value = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-        form.appendChild(csrfInput);
-
-        var methodInput = document.createElement('input');
-        methodInput.type = 'hidden';
-        methodInput.name = '_method';
-        methodInput.value = 'DELETE';
-        form.appendChild(methodInput);
-
-        // Thêm input để trigger xóa toàn bộ
-        var resetInput = document.createElement('input');
-        resetInput.type = 'hidden';
-        resetInput.name = 'reset_all';
-        resetInput.value = '1';
-        form.appendChild(resetInput);
-
-        document.body.appendChild(form);
-        form.submit();
-    }
-};
 
 window.updateAddRowPreviewDirect = function() {
     var ten = (document.getElementById('addRowTenHang')?.value || 'A').trim();
@@ -2516,88 +2365,7 @@ window.updateAddRowPreviewDirect = function() {
     }
 };
 
-// === CUSTOM SELECT DROPDOWN (GLOBAL FUNCTIONS) ===
-function toggleCustomSelect(trigger) {
-    // Prevent default and stop propagation
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
 
-    const wrapper = trigger.closest('.custom-select');
-    const dropdown = wrapper.querySelector('.custom-select__dropdown');
-    const isActive = trigger.classList.contains('active');
-
-    // Close all dropdowns first
-    document.querySelectorAll('.custom-select__trigger.active').forEach(t => {
-        t.classList.remove('active');
-    });
-    document.querySelectorAll('.custom-select__dropdown').forEach(d => {
-        d.style.display = 'none';
-    });
-
-    // Toggle current one
-    if (!isActive) {
-        trigger.classList.add('active');
-        dropdown.style.display = 'block';
-    }
-}
-
-function selectCustomOption(option) {
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-
-    const wrapper = option.closest('.custom-select');
-    const trigger = wrapper.querySelector('.custom-select__trigger');
-    const select = wrapper.querySelector('select');
-    const value = option.dataset.value;
-    const text = option.querySelector('.custom-select__option-label').textContent;
-
-    // Update trigger display
-    const valueDiv = trigger.querySelector('.custom-select__value');
-    valueDiv.innerHTML = '';
-
-    // Add color dot if exists
-    const colorDot = option.querySelector('.custom-select__option-color');
-    if (colorDot) {
-        const dot = document.createElement('div');
-        dot.className = 'custom-select__color-dot';
-        dot.style.backgroundColor = colorDot.style.backgroundColor;
-        valueDiv.appendChild(dot);
-    }
-
-    const textSpan = document.createElement('span');
-    textSpan.className = 'custom-select__text';
-    textSpan.textContent = text;
-    valueDiv.appendChild(textSpan);
-
-    // Update hidden select
-    if (select) {
-        select.value = value;
-        select.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    // Mark selected option
-    wrapper.querySelectorAll('.custom-select__option').forEach(o => o.classList.remove('selected'));
-    option.classList.add('selected');
-
-    // Close dropdown
-    trigger.classList.remove('active');
-    const dropdown = wrapper.querySelector('.custom-select__dropdown');
-    if (dropdown) dropdown.style.display = 'none';
-
-    // Trigger custom event for specific handlers
-    const selectId = wrapper.dataset.selectId;
-    if (selectId === 'rowChangeModalLoaiGhe') {
-        handleRowLoaiGheChange({ value });
-    } else if (selectId === 'bulkLoaiGhe') {
-        handleBulkLoaiGheChange({ value });
-    }
-}
-
-// Close dropdown when clicking outside
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.custom-select')) {
         document.querySelectorAll('.custom-select__trigger.active').forEach(t => {
@@ -2609,18 +2377,17 @@ document.addEventListener('click', function(e) {
     }
 });
 
+/* === MAIN LOGIC ON DOM LOAD === */
 document.addEventListener('DOMContentLoaded', function() {
     const phongChieuId = {{ $phongChieu->id }};
 
     // === SEAT TYPE PILL HANDLING ===
     document.querySelectorAll('.seat-type-pill').forEach(function(pill) {
         pill.addEventListener('click', function(e) {
-            // Remove active from siblings in same group
             const container = this.closest('.flex.flex-wrap');
             container.querySelectorAll('.seat-type-pill').forEach(p => p.classList.remove('active'));
             this.classList.add('active');
 
-            // Update hidden input
             const hiddenId = this.dataset.hidden;
             const value = this.dataset.value;
             const hiddenInput = document.getElementById(hiddenId);
@@ -2630,59 +2397,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // === CSRF helper: đặt sớm để mọi handler bên dưới đều dùng được ===
-    function getCsrfToken() {
-        const meta = document.querySelector('meta[name="csrf-token"]');
-        if (meta && meta.getAttribute('content')) {
-            return meta.getAttribute('content');
-        }
-        const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-        if (match) {
-            return decodeURIComponent(match[1]);
-        }
-        return '';
-    }
-
     let selectedSeats = new Set();
     let currentSeatId = null;
     let currentRowHangId = null;
     let currentSeatEl = null;
-    let currentSeatSiblings = []; // Mảng DOM elements thuộc cùng cặp couple (nếu có)
+    let currentSeatSiblings = [];
 
-    // === TỰ ĐỘNG PHÁT HIỆN ĐỘ SÁNG NỀN VÀ CHỌN MÀU CHỮ PHÙ HỢP ===
-    function getLuminance(hexColor) {
-        // Chuyển hex -> RGB
-        const hex = hexColor.replace('#', '');
-        const r = parseInt(hex.substr(0, 2), 16);
-        const g = parseInt(hex.substr(2, 2), 16);
-        const b = parseInt(hex.substr(4, 2), 16);
-        // Tính luminance theo công thức WCAG
-        const a = [r, g, b].map(v => {
-            v /= 255;
-            return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-        });
-        return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
-    }
-
-    function applyAutoContrast() {
-        document.querySelectorAll('.seat-interactive').forEach(seat => {
-            // Ghế bảo trì: giữ style mặc định
-            if (seat.classList.contains('seat-chip--maintenance')) return;
-            const mauSac = seat.dataset.mauSac; 
-            if (!mauSac) return;
-            const lum = getLuminance(mauSac);
-            // Nếu luminance > 0.5 (nền sáng) thì dùng chữ đen
-            // Nếu luminance <= 0.5 (nền tối) thì dùng chữ trắng
-            if (lum > 0.5) {
-                seat.classList.add('seat-light-bg');
-                seat.classList.remove('seat-dark-bg');
-            } else {
-                seat.classList.add('seat-dark-bg');
-                seat.classList.remove('seat-light-bg');
-            }
-        });
-    }
-    applyAutoContrast();
 
     // --- Elements ---
     const bulkActionsToolbar = document.getElementById('bulkActionsToolbar');
@@ -2695,78 +2415,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const rowChangeModal = document.getElementById('rowChangeModal');
     const rowModalLoaiGhe = document.getElementById('rowChangeModalLoaiGhe');
 
-    // --- Helpers ---
-    function findSeatEl(gheId) {
-        return document.querySelector(`.seat-interactive[data-ghe-id="${gheId}"]`);
-    }
 
-    function updateSeatDOM(seatEl, loaiGhe, mauSac, trangThai, phuThu) {
-        if (!seatEl) return;
-        // Lưu lại mã ghế hiện tại (vì className sẽ bị reset)
-        const maGhe = seatEl.dataset.maGhe;
-        const isSelected = seatEl.classList.contains('selected');
-        const isCouple = seatEl.classList.contains('seat-chip--couple');
-
-        seatEl.dataset.loaiGhe = loaiGhe;
-        seatEl.dataset.mauSac = mauSac;
-        seatEl.dataset.trangThai = trangThai;
-        seatEl.dataset.phuThu = phuThu;
-        seatEl.title = maGhe + ' - ' + loaiGhe + ' (' + Number(phuThu).toLocaleString() + 'đ)';
-
-        // Build className
-        let className = 'seat-chip seat-interactive';
-        if (trangThai === 'bao_tri') className += ' seat-chip--maintenance';
-        else if (trangThai === 'sap_bao_tri') className += ' seat-chip--pending';
-        if (isCouple) className += ' seat-chip--couple';
-        if (isSelected) className += ' selected';
-        seatEl.className = className;
-
-        // Reset style + content - xử lý đúng theo trạng thái
-        if (trangThai === 'bao_tri') {
-            seatEl.style.backgroundColor = '#dc2626';
-            seatEl.style.color = '#ffffff';
-        } else if (trangThai === 'sap_bao_tri') {
-            seatEl.style.backgroundColor = '#fef3c7';
-            seatEl.style.color = '#92400e';
-        } else {
-            seatEl.style.backgroundColor = mauSac;
-            seatEl.style.color = '#1a0b04';
-        }
-        // Đảm bảo label span bên trong giữ màu đúng
-        const labelSpans = seatEl.querySelectorAll('.seat-label, .seat-couple-left, .seat-couple-right');
-        labelSpans.forEach(s => {
-            if (trangThai === 'bao_tri') {
-                s.style.color = '#ffffff';
-            } else if (trangThai === 'sap_bao_tri') {
-                s.style.color = '#92400e';
-            } else {
-                s.style.color = '#1a0b04';
-            }
-        });
-    }
-
-    function updateBulkToolbar() {
-        const count = selectedSeats.size;
-        if (count > 0) {
-            bulkActionsToolbar.classList.remove('hidden');
-            selectedCount.textContent = count;
-            renderSelectedSeatsChips();
-        } else {
-            bulkActionsToolbar.classList.add('hidden');
-            renderSelectedSeatsChips();
-        }
-        updateBulkMaintenanceBtnLabel();
-    }
-
-    // Cập nhật danh sách lịch bảo trì sau khi lên lịch thành công
     function updateLichBaoTriList(schedules) {
         const container = document.getElementById('lichBaoTriContainer');
         if (!container) return;
 
         let wrapper = container.querySelector('.mb-6.rounded-2xl');
-        const listContainer = document.getElementById('lichBaoTriList');
 
-        // Nếu chưa có wrapper, tạo mới
         if (!wrapper) {
             wrapper = document.createElement('div');
             wrapper.className = 'mb-6 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-[#0f0f0f] to-[#151515] p-5';
@@ -2783,16 +2438,13 @@ document.addEventListener('DOMContentLoaded', function() {
             container.appendChild(wrapper);
         }
 
-        // Cập nhật số lượng
         const countSpan = document.getElementById('lichBaoTriCount');
         const newCount = (parseInt(countSpan?.textContent || '0') || 0) + schedules.length;
         if (countSpan) countSpan.textContent = newCount;
 
-        // Thêm các lịch mới vào danh sách
         const list = document.getElementById('lichBaoTriList');
         if (list) {
             schedules.forEach(schedule => {
-                // Kiểm tra xem lịch đã tồn tại chưa
                 const existing = list.querySelector(`[data-lich-id="${schedule.lich_id}"]`);
                 if (existing) return;
 
@@ -2820,7 +2472,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 list.appendChild(item);
 
-                // Animation fade in
                 item.style.opacity = '0';
                 item.style.transform = 'translateY(-10px)';
                 requestAnimationFrame(() => {
@@ -2832,66 +2483,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    /**
-     * Helper: đồng bộ hiệu ứng "đã chọn" với class .selected trên 1 element ghế.
-     * Dùng INLINE STYLE để đảm bảo không bị CSS rule nào ghi đè.
-     * Không động đến logic bulk action / click handler khác.
-     */
-    function syncSeatCheckMark(seatEl) {
-        if (!seatEl) return;
-        const existing = seatEl.querySelector('.seat-check-mark');
-        if (seatEl.classList.contains('selected')) {
-            if (!existing) {
-                const mark = document.createElement('span');
-                mark.className = 'seat-check-mark';
-                seatEl.appendChild(mark);
-            }
-            // === Inline style — chắc chắn thắng mọi CSS rule ===
-            seatEl.style.setProperty('transform', 'scale(1.15) translateY(-8px)', 'important');
-            seatEl.style.setProperty('z-index', '9999', 'important');
-            seatEl.style.setProperty('filter', 'brightness(1.35) saturate(1.25) drop-shadow(0 0 8px rgba(244,197,106,0.9))', 'important');
-            seatEl.style.setProperty('outline', '3px solid #fde68a', 'important');
-            seatEl.style.setProperty('outline-offset', '3px', 'important');
-            seatEl.style.setProperty('animation', 'seatPulse 1.4s ease-in-out infinite', 'important');
-        } else {
-            if (existing) existing.remove();
-            // === Xóa inline style để ghế trở về bình thường ===
-            seatEl.style.removeProperty('transform');
-            seatEl.style.removeProperty('z-index');
-            seatEl.style.removeProperty('filter');
-            seatEl.style.removeProperty('outline');
-            seatEl.style.removeProperty('outline-offset');
-            seatEl.style.removeProperty('animation');
-        }
-    }
-    // Đồng bộ cho mọi ghế khi load (phòng trường hợp có .selected sẵn từ server)
-    document.querySelectorAll('.seat-interactive').forEach(syncSeatCheckMark);
-    // (Đã bỏ debug log sau khi xác nhận hook chạy đúng)
 
-    /**
-     * Render danh sách chip tên ghế đã chọn vào #selectedSeatsList
-     * - Với ghế đơn: hiển thị tên 1 chip
-     * - Với ghế couple: hiển thị 1 chip với cả 2 tên (H1+H2) để user biết cả cặp được chọn
-     * - Click vào chip để bỏ chọn ghế đó
-     */
     function renderSelectedSeatsChips() {
         const list = document.getElementById('selectedSeatsList');
         if (!list) return;
         list.innerHTML = '';
 
-        // Group theo DOM node (couple = 1 node, thường = 1 node)
         const groupMap = new Map();
         selectedSeats.forEach(id => {
             const el = document.querySelector(`.seat-interactive[data-ghe-id="${id}"]`);
             if (!el) return;
-            // Tìm node đại diện: nếu là couple thì dùng node left, nếu là right thì dùng node left
-            let key;
-            if (el.classList.contains('seat-chip--couple')) {
-                // Couple: 1 node = 1 cặp, dùng node đó luôn
-                key = el.dataset.gheId + '|couple';
-            } else {
-                key = el.dataset.gheId;
-            }
+            let key = el.classList.contains('seat-chip--couple') ? el.dataset.gheId + '|couple' : el.dataset.gheId;
             if (!groupMap.has(key)) {
                 groupMap.set(key, { els: [el], isCouple: el.classList.contains('seat-chip--couple') });
             } else {
@@ -2899,7 +2501,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Sắp xếp theo thứ tự: A1, A2, ... rồi tới couple
         const sortedKeys = Array.from(groupMap.keys()).sort((a, b) => {
             const elA = groupMap.get(a).els[0];
             const elB = groupMap.get(b).els[0];
@@ -2935,13 +2536,11 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             chip.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // Bỏ chọn cả cặp nếu là couple
                 if (isCouple) {
                     siblings.forEach(sid => selectedSeats.delete(sid));
                 } else {
                     selectedSeats.delete(el.dataset.gheId);
                 }
-                // Cập nhật DOM
                 document.querySelectorAll('.seat-interactive.selected').forEach(dom => {
                     const sibArr = (() => {
                         try {
@@ -2950,7 +2549,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         } catch (e) { return []; }
                     })();
                     if (sibArr.length > 1) {
-                        // Couple: nếu không còn selectedSeats chứa id của nó thì bỏ
                         const stillSelected = sibArr.some(sid => selectedSeats.has(sid));
                         if (!stillSelected) { dom.classList.remove('selected'); syncSeatCheckMark(dom); }
                     } else {
@@ -2963,101 +2561,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function setBtnLoading(btn, loading, originalText) {
-        if (loading) {
-            btn.disabled = true;
-            btn.dataset.originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang xử lý...';
-        } else {
-            btn.disabled = false;
-            btn.innerHTML = btn.dataset.originalText || originalText;
-        }
-    }
 
-    function positionPopover(seatEl) {
-        const rect = seatEl.getBoundingClientRect();
-        const popoverW = 260;
-        const popoverH = 320;
-        let left = rect.right + 14;
-        let top = rect.top - 20;
-
-        if (left + popoverW > window.innerWidth - 16) {
-            left = rect.left - popoverW - 14;
-        }
-        if (top + popoverH > window.innerHeight - 16) {
-            top = window.innerHeight - popoverH - 16;
-        }
-        if (top < 16) top = 16;
-
-        popover.style.left = left + 'px';
-        popover.style.top = top + 'px';
-    }
-
-    function showPopover(seatEl) {
-        currentSeatEl = seatEl;
-        currentSeatId = seatEl.dataset.gheId;
-        const maGhe = seatEl.dataset.maGhe;
-        const loaiGhe = seatEl.dataset.loaiGhe;
-        const mauSac = seatEl.dataset.mauSac || '#666666';
-        const phuThu = Number(seatEl.dataset.phuThu || 0);
-        const trangThai = seatEl.dataset.trangThai;
-
-        // Fill popover info
-        document.getElementById('popoverMaGhe').textContent = maGhe;
-        document.getElementById('popoverLoaiGhe').textContent = loaiGhe.toUpperCase();
-        document.getElementById('popoverPhuThu').textContent = phuThu > 0 ? '+' + phuThu.toLocaleString() + 'đ' : 'Miễn phí';
-        document.getElementById('popoverHeaderMaGhe').textContent = maGhe;
-
-        // Set màu cho header gradient + color block thông qua CSS variable
-        popover.style.setProperty('--popover-color', mauSac);
-
-        // Status badge - đồng nhất với style tối giản của trang
-        const statusEl = document.getElementById('popoverStatus');
-        const maintInfoEl = document.getElementById('popoverMaintenanceInfo');
-        const maintTimeEl = document.getElementById('popoverMaintenanceTime');
-        const maintReasonEl = document.getElementById('popoverMaintenanceReason');
-
-        if (trangThai === 'bao_tri' || trangThai === 'sap_bao_tri') {
-            statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-bold text-red-400"><i class="fa-solid fa-wrench text-[10px]"></i> Đang bảo trì</span>';
-
-            // Hiển thị thông tin bảo trì có thời hạn nếu có
-            const lichId = seatEl.dataset.lichId;
-            const thoiGianKetThuc = seatEl.dataset.thoiGianKetThuc || seatEl.dataset.thoiGianKetThucRaw;
-            const isUnlimited = seatEl.dataset.isUnlimitedMaintenance === '1';
-
-            if (lichId && thoiGianKetThuc) {
-                maintInfoEl?.classList.remove('hidden');
-                maintTimeEl.textContent = '⏰ Hết hạn: ' + thoiGianKetThuc;
-                maintReasonEl.textContent = 'Bảo trì có thời hạn';
-            } else if (lichId || isUnlimited) {
-                maintInfoEl?.classList.remove('hidden');
-                maintTimeEl.textContent = '⏸️ Bảo trì vô thời hạn';
-                maintReasonEl.textContent = 'Chờ Admin kích hoạt';
-            } else {
-                maintInfoEl?.classList.add('hidden');
-            }
-        } else {
-            statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-400"><i class="fa-solid fa-check-circle text-[10px]"></i> Đang hoạt động</span>';
-            maintInfoEl?.classList.add('hidden');
-        }
-
-        positionPopover(seatEl);
-        popover.classList.add('is-visible');
-    }
-
-    function hidePopover() {
-        popover.classList.remove('is-visible');
-        currentSeatEl = null;
-    }
-
-    // --- Bulk Toolbar ---
-    clearSelection.addEventListener('click', function() {
+    clearSelection?.addEventListener('click', function() {
         selectedSeats.clear();
         document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
         updateBulkToolbar();
     });
 
-    // Color preview for bulk select
     if (bulkLoaiGheSelect) {
         bulkLoaiGheSelect.addEventListener('change', function() {
             const selected = this.options[this.selectedIndex];
@@ -3067,7 +2577,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Row modal color preview
     if (rowModalLoaiGhe) {
         rowModalLoaiGhe.addEventListener('change', function() {
             const selected = this.options[this.selectedIndex];
@@ -3080,23 +2589,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if (preview && firstOpt?.dataset?.color) preview.style.backgroundColor = firstOpt.dataset.color;
     }
 
-    applyBulkAction.addEventListener('click', function() {
+    applyBulkAction?.addEventListener('click', function() {
         if (selectedSeats.size === 0) return;
 
         const loaiGheId = bulkLoaiGheSelect?.value;
         if (!loaiGheId) {
-            showToast('Vui lòng chọn loại ghế để thay đổi.', 'warning');
+            window.showToast('Vui lòng chọn loại ghế để thay đổi.', 'warning');
             return;
         }
 
-        // Get selected loai ghe text
         const selectedOption = bulkLoaiGheSelect.options[bulkLoaiGheSelect.selectedIndex];
         const loaiTen = selectedOption ? selectedOption.textContent.toLowerCase() : '';
         const isThuongSelected = loaiTen.includes('thường') || loaiTen.includes('thuong') || loaiTen.includes('standard');
         const isVipSelected = loaiTen.includes('vip');
         const isCoupleSelected = loaiTen.includes('couple') || loaiTen.includes('đôi');
 
-        // Validate: check selected seats against row restrictions
         const allRows = Array.from(document.querySelectorAll('.seat-row'));
         const totalRows = allRows.length;
         let hasViolation = false;
@@ -3111,13 +2618,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const isTopThree = rowIndex >= 0 && rowIndex < 3;
             const isBottomThree = rowIndex >= 0 && rowIndex >= totalRows - 3;
 
-            // 3 hàng đầu: không được VIP/Couple
             if (isTopThree && (isVipSelected || isCoupleSelected)) {
                 hasViolation = true;
                 violationMsg = '3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP hay Couple.';
                 break;
             }
-            // 3 hàng cuối: không được thường
             if (isBottomThree && isThuongSelected) {
                 hasViolation = true;
                 violationMsg = '3 hàng cuối phòng chỉ được đặt ghế VIP hoặc Couple. Không thể đặt ghế Thường.';
@@ -3126,7 +2631,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         if (hasViolation) {
-            showToast(violationMsg, 'error');
+            window.showToast(violationMsg, 'error');
             return;
         }
 
@@ -3136,7 +2641,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': getCsrfToken(),
+                'X-CSRF-TOKEN': window.getCsrfToken(),
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
@@ -3155,113 +2660,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedSeats.clear();
                 document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
                 updateBulkToolbar();
-                bulkLoaiGheSelect.value = '';
+                if (bulkLoaiGheSelect) bulkLoaiGheSelect.value = '';
                 setTimeout(() => location.reload(), 300);
             } else {
-                showToast(data.message || 'Có lỗi xảy ra', 'error');
+                window.showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
-        .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
+        .catch(err => { console.error(err); window.showToast('Có lỗi xảy ra', 'error'); })
         .finally(() => { setBtnLoading(this, false, '<i class="fa-solid fa-check mr-1.5"></i>Áp dụng'); });
     });
 
-    // --- Modal Bảo trì ---
+    /* ============================================ */
+    /* MODAL BẢO TRÌ GHẾ (CHỈ BẢO TRÌ CÓ THỜI HẠN)  */
+    /* ============================================ */
     const maintenanceModal = document.getElementById('maintenanceModal');
-    const maintenanceStartTime = document.getElementById('maintenanceStartTime');
-    const maintenanceEndTime = document.getElementById('maintenanceEndTime');
-    const maintenanceReason = document.getElementById('maintenanceReason');
-    const maintenanceReasonUnlimited = document.getElementById('maintenanceReasonUnlimited');
-    const scheduledForm = document.getElementById('scheduledMaintenanceForm');
-    const unlimitedReasonDiv = document.getElementById('unlimitedMaintenanceReason');
-    const seatCountSpan = document.getElementById('maintenanceModalSeatCount');
 
-    // Thiết lập min cho datetime-local
-    if (maintenanceStartTime) {
+    const startTimeEl = document.getElementById('maintBatDau') || document.getElementById('maintenanceStartTime');
+    if (startTimeEl) {
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        maintenanceStartTime.min = now.toISOString().slice(0, 16);
+        startTimeEl.min = now.toISOString().slice(0, 16);
     }
 
-    // Toggle form khi chọn loại bảo trì
-    document.querySelectorAll('input[name="maintenance_type"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (this.value === 'scheduled') {
-                scheduledForm?.classList.remove('hidden');
-                unlimitedReasonDiv?.classList.add('hidden');
-            } else {
-                scheduledForm?.classList.add('hidden');
-                unlimitedReasonDiv?.classList.remove('hidden');
-            }
-        });
-    });
-
-    // Mở modal bảo trì
     let pendingMaintenanceSeats = [];
 
-    btnToggleMaintenance?.addEventListener('click', function() {
-        if (selectedSeats.size === 0) return;
-        const action = this.dataset.bulkAction || 'maintenance';
-
-        // Nếu là kích hoạt (đang bảo trì) → gọi trực tiếp API
-        if (action === 'activate') {
-            setBtnLoading(this, true);
-            fetch(`/admin/phong-chieus/${phongChieuId}/bulk-update-seats`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    ghe_ids: expandCoupleIds(Array.from(selectedSeats)),
-                    action: 'activate'
-                })
-            })
-            .then(response => response.json().then(data => ({ response, data })))
-            .then(({ response, data }) => {
-                if (response.ok && data.success && data.updated_seats) {
-                    data.updated_seats.forEach(item => {
-                        const el = findSeatEl(item.id);
-                        if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
-                    });
-                    selectedSeats.clear();
-                    document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
-                    updateBulkToolbar();
-                    showToast(data.message || 'Đã kích hoạt ghế.', 'success');
-                } else {
-                    showToast(data.message || 'Có lỗi xảy ra', 'error');
-                }
-            })
-            .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
-            .finally(() => { updateBulkMaintenanceBtnLabel(); setBtnLoading(this, false); });
-            return;
-        }
-
-        // Mở modal để chọn loại bảo trì
-        pendingMaintenanceSeats = expandCoupleIds(Array.from(selectedSeats));
-        const soGhe = pendingMaintenanceSeats.length;
-        seatCountSpan.textContent = `${soGhe} ghế`;
-
-        // Reset form
-        document.querySelector('input[name="maintenance_type"][value="unlimited"]').checked = true;
-        scheduledForm?.classList.add('hidden');
-        unlimitedReasonDiv?.classList.remove('hidden');
-        if (maintenanceStartTime) maintenanceStartTime.value = '';
-        if (maintenanceEndTime) maintenanceEndTime.value = '';
-        if (maintenanceReason) maintenanceReason.value = '';
-        if (maintenanceReasonUnlimited) maintenanceReasonUnlimited.value = '';
-
-        // Clear errors
-        const errorsDiv = document.getElementById('maintenanceErrors');
-        const errorsList = document.getElementById('maintenanceErrorsList');
-        if (errorsDiv) errorsDiv.classList.add('hidden');
-        if (errorsList) errorsList.innerHTML = '';
-
-        maintenanceModal?.classList.remove('hidden');
-    });
-
-    // Đóng modal
     document.getElementById('maintenanceModalCancel')?.addEventListener('click', function() {
+        maintenanceModal?.classList.add('hidden');
+        pendingMaintenanceSeats = [];
+    });
+    document.getElementById('btnCloseMaintModal')?.addEventListener('click', function() {
+        maintenanceModal?.classList.add('hidden');
+        pendingMaintenanceSeats = [];
+    });
+    document.getElementById('btnCancelMaintModal')?.addEventListener('click', function() {
         maintenanceModal?.classList.add('hidden');
         pendingMaintenanceSeats = [];
     });
@@ -3277,142 +2708,99 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Áp dụng bảo trì
-    document.getElementById('maintenanceModalApply')?.addEventListener('click', async function() {
+    const btnSubmitMaint = document.getElementById('btnSubmitMaintenance') || document.getElementById('maintenanceModalApply');
+    btnSubmitMaint?.addEventListener('click', async function() {
         if (pendingMaintenanceSeats.length === 0) return;
 
-        const loaiBaoTri = document.querySelector('input[name="maintenance_type"]:checked')?.value;
-        const btn = this;
+        const batDau = (document.getElementById('maintBatDau') || document.getElementById('maintenanceStartTime'))?.value;
+        const ketThuc = (document.getElementById('maintKetThuc') || document.getElementById('maintenanceEndTime'))?.value || null;
+        const lyDo = (document.getElementById('maintLyDo') || document.getElementById('maintenanceReason'))?.value?.trim();
 
-        // Validate
-        if (loaiBaoTri === 'scheduled') {
-            if (!maintenanceStartTime?.value) {
-                showToast('Vui lòng chọn thời gian bắt đầu.', 'warning');
-                return;
-            }
-            if (!maintenanceReason?.value.trim()) {
-                showToast('Vui lòng nhập lý do bảo trì.', 'warning');
-                return;
-            }
+        if (!batDau) {
+            window.showToast('Vui lòng chọn thời gian bắt đầu bảo trì.', 'warning');
+            return;
+        }
+        if (!lyDo) {
+            window.showToast('Vui lòng nhập lý do bảo trì.', 'warning');
+            return;
         }
 
+        const btn = this;
         setBtnLoading(btn, true, '');
 
-        if (loaiBaoTri === 'unlimited') {
-            // Bảo trì vô thời hạn - dùng API cũ
-            try {
-                const res = await fetch(`/admin/phong-chieus/${phongChieuId}/bulk-update-seats`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': getCsrfToken(),
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        ghe_ids: pendingMaintenanceSeats,
-                        action: 'maintenance',
-                        ly_do: maintenanceReasonUnlimited?.value || null
-                    })
-                });
-                const data = await res.json();
-                if (data.success && data.updated_seats) {
+        try {
+            const res = await fetch(`/admin/phong-chieus/${phongChieuId}/schedule-seat-maintenance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    ghe_ids: pendingMaintenanceSeats,
+                    thoi_gian_bat_dau: batDau,
+                    thoi_gian_ket_thuc: ketThuc,
+                    ngay_bat_dau: batDau,
+                    ngay_ket_thuc: ketThuc,
+                    ly_do: lyDo
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (data.updated_seats) {
                     data.updated_seats.forEach(item => {
                         const el = findSeatEl(item.id);
-                        if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
-                    });
-                    selectedSeats.clear();
-                    document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
-                    updateBulkToolbar();
-                    showToast(data.message || 'Đã chuyển ghế sang bảo trì.', 'success');
-                } else {
-                    showToast(data.message || 'Có lỗi xảy ra', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Có lỗi xảy ra', 'error');
-            }
-        } else {
-            // Bảo trì có thời hạn - dùng API mới
-            try {
-                const res = await fetch(`/admin/phong-chieus/${phongChieuId}/schedule-seat-maintenance`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': getCsrfToken(),
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        ghe_ids: pendingMaintenanceSeats,
-                        thoi_gian_bat_dau: maintenanceStartTime?.value,
-                        thoi_gian_ket_thuc: maintenanceEndTime?.value || null,
-                        ly_do: maintenanceReason?.value.trim()
-                    })
-                });
-                const data = await res.json();
-                console.log('Schedule maintenance response:', data);
-                if (data.success) {
-                    // Cập nhật DOM
-                    if (data.updated_seats) {
-                        data.updated_seats.forEach(item => {
-                            console.log('Updating seat:', item.id, 'to', item.trang_thai);
-                            const el = findSeatEl(item.id);
-                            if (el) {
-                                el.dataset.trangThai = item.trang_thai;
-                                // Thêm thuộc tính thời gian bảo trì
-                                if (data.schedules) {
-                                    const schedule = data.schedules.find(s => s.ghe_id === item.id);
-                                    if (schedule) {
-                                        el.dataset.lichBaoTri = schedule.lich_id;
-                                        el.dataset.thoiGianKetThuc = schedule.thoi_gian_ket_thuc || '';
-                                    }
+                        if (el) {
+                            el.dataset.trangThai = item.trang_thai;
+                            if (data.schedules) {
+                                const schedule = data.schedules.find(s => s.ghe_id === item.id);
+                                if (schedule) {
+                                    el.dataset.lichBaoTri = schedule.lich_id;
+                                    el.dataset.thoiGianKetThuc = schedule.thoi_gian_ket_thuc || '';
                                 }
-                                updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
                             }
-                        });
-                    }
-                    selectedSeats.clear();
-                    document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
-                    updateBulkToolbar();
+                            updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
+                        }
+                    });
+                }
+                selectedSeats.clear();
+                document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
+                updateBulkToolbar();
 
-                    // Cập nhật danh sách lịch bảo trì
-                    if (data.schedules && data.schedules.length > 0) {
-                        updateLichBaoTriList(data.schedules);
-                    }
+                if (data.schedules && data.schedules.length > 0) {
+                    updateLichBaoTriList(data.schedules);
+                }
 
-                    // Hiện lỗi nếu có
+                const errorsDiv = document.getElementById('maintenanceErrors');
+                const errorsList = document.getElementById('maintenanceErrorsList');
+                if (data.errors && data.errors.length > 0) {
+                    if (errorsList) errorsList.innerHTML = data.errors.map(e => `<div class="mb-1">• ${e}</div>`).join('');
+                    if (errorsDiv) errorsDiv.classList.remove('hidden');
+                    window.showToast('Một số ghế không thể bảo trì. Xem chi tiết bên dưới.', 'warning');
+                } else {
+                    if (errorsDiv) errorsDiv.classList.add('hidden');
+                    window.showToast(data.message || 'Đã lên lịch bảo trì.', 'success');
+                }
+                maintenanceModal?.classList.add('hidden');
+                pendingMaintenanceSeats = [];
+            } else {
+                if (data.errors && data.errors.length > 0) {
                     const errorsDiv = document.getElementById('maintenanceErrors');
                     const errorsList = document.getElementById('maintenanceErrorsList');
-                    if (data.errors && data.errors.length > 0) {
-                        if (errorsList) errorsList.innerHTML = data.errors.map(e => `<div class="mb-1">• ${e}</div>`).join('');
-                        if (errorsDiv) errorsDiv.classList.remove('hidden');
-                        showToast('Một số ghế không thể bảo trì. Xem chi tiết bên dưới.', 'warning');
-                    } else {
-                        if (errorsDiv) errorsDiv.classList.add('hidden');
-                        showToast(data.message || 'Đã lên lịch bảo trì.', 'success');
-                    }
-                } else {
-                    // Có thể có validation errors trong response
-                    if (data.errors && data.errors.length > 0) {
-                        const errorsDiv = document.getElementById('maintenanceErrors');
-                        const errorsList = document.getElementById('maintenanceErrorsList');
-                        if (errorsList) errorsList.innerHTML = data.errors.map(e => `<div class="mb-1">• ${e}</div>`).join('');
-                        if (errorsDiv) errorsDiv.classList.remove('hidden');
-                    }
-                    showToast(data.message || 'Có lỗi xảy ra', 'error');
+                    if (errorsList) errorsList.innerHTML = data.errors.map(e => `<div class="mb-1">• ${e}</div>`).join('');
+                    if (errorsDiv) errorsDiv.classList.remove('hidden');
                 }
-            } catch (err) {
-                console.error(err);
-                showToast('Có lỗi xảy ra', 'error');
+                window.showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
+        } catch (err) {
+            console.error(err);
+            window.showToast('Có lỗi xảy ra khi gọi dịch vụ bảo trì.', 'error');
+        } finally {
+            setBtnLoading(btn, false, '<i class="fa-solid fa-wrench mr-1.5"></i>Xác nhận bảo trì');
+            updateBulkMaintenanceBtnLabel();
         }
-
-        maintenanceModal?.classList.add('hidden');
-        pendingMaintenanceSeats = [];
-        setBtnLoading(btn, false, '<i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì');
-        updateBulkMaintenanceBtnLabel();
     });
 
-    // Hàm kiểm tra ghế hết hạn bảo trì
     async function checkExpiredMaintenance() {
         try {
             const res = await fetch(`/admin/phong-chieus/${phongChieuId}/check-expired-maintenance`);
@@ -3425,28 +2813,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
                     }
                 });
-                console.log('Đã tự động cập nhật', data.updated_seats.length, 'ghế hết hạn bảo trì');
             }
         } catch (err) {
             console.error('Lỗi kiểm tra bảo trì hết hạn:', err);
         }
     }
 
-    // Gọi ngay khi load trang
     checkExpiredMaintenance();
-
-    // Tự động kiểm tra mỗi phút
     setInterval(checkExpiredMaintenance, 60000);
 
     // --- Bulk Xóa ghế ---
     const btnBulkDeleteSeats = document.getElementById('btnBulkDeleteSeats');
     btnBulkDeleteSeats?.addEventListener('click', function() {
         if (selectedSeats.size === 0) {
-            showToast('Vui lòng chọn ít nhất 1 ghế để xóa.', 'warning');
+            window.showToast('Vui lòng chọn ít nhất 1 ghế để xóa.', 'warning');
             return;
         }
 
-        // Mở rộng couple: nếu chọn 1 trong 2 ghế couple thì xóa cả cặp
         const expandedIds = expandCoupleIds(Array.from(selectedSeats));
         const soGhe = expandedIds.length;
 
@@ -3462,7 +2845,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': getCsrfToken(),
+                'X-CSRF-TOKEN': window.getCsrfToken(),
                 'Accept': 'application/json'
             },
             body: JSON.stringify({
@@ -3474,365 +2857,42 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(({ status, ct, body }) => {
             const data = ct.includes('application/json') ? JSON.parse(body) : { success: false, message: body };
             if (data.success) {
-                // Xóa DOM các ghế đã xóa (server trả updated_seats rỗng cho delete; tự loại theo expandedIds)
                 expandedIds.forEach(id => {
                     document.querySelectorAll(`.seat-interactive[data-ghe-id="${id}"]`).forEach(el => el.remove());
                 });
                 selectedSeats.clear();
                 document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
                 updateBulkToolbar();
-                showToast(data.message || `Đã xóa ${soGhe} ghế.`, 'success');
+                window.showToast(data.message || `Đã xóa ${soGhe} ghế.`, 'success');
             } else {
-                showToast(data.message || 'Có lỗi xảy ra', 'error');
+                window.showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
-        .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
+        .catch(err => { console.error(err); window.showToast('Có lỗi xảy ra', 'error'); })
         .finally(() => { setBtnLoading(this, false, '<i class="fa-solid fa-trash-can mr-1.5"></i>Xóa ghế'); });
     });
 
-    // Cập nhật nhãn nút bảo trì/hoạt động trong bulk toolbar theo trạng thái các ghế đã chọn
-    function updateBulkMaintenanceBtnLabel() {
-        const btn = btnToggleMaintenance;
-        if (!btn) return;
-        if (selectedSeats.size === 0) {
-            btn.innerHTML = '<i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì';
-            btn.dataset.bulkAction = '';
-            return;
-        }
-        // Đếm trạng thái các ghế đã chọn (data-trang-thai lưu trên DOM)
-        let soBaoTri = 0;
-        let soHoatDong = 0;
-        selectedSeats.forEach(id => {
-            const el = document.querySelector(`.seat-interactive[data-ghe-id="${id}"]`);
-            if (!el) return;
-            const st = el.dataset.trangThai || 'hoat_dong';
-            if (st === 'bao_tri') soBaoTri++;
-            else soHoatDong++;
-        });
-        // Quy tắc nhãn:
-        //   - Tất cả bảo trì  → "Kích hoạt" (action = activate)
-        //   - Còn lại (đang hoạt động hoặc hỗn hợp) → "Bảo trì" (action = maintenance)
-        if (soBaoTri > 0 && soHoatDong === 0) {
-            btn.innerHTML = '<i class="fa-solid fa-circle-play mr-1.5"></i>Kích hoạt';
-            btn.dataset.bulkAction = 'activate';
-            btn.classList.add('border-emerald-500/40', 'text-emerald-300', 'bg-emerald-500/10');
-            btn.classList.remove('border-white/10', 'text-white', 'bg-white/5');
-        } else {
-            btn.innerHTML = '<i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì';
-            btn.dataset.bulkAction = 'maintenance';
-            btn.classList.remove('border-emerald-500/40', 'text-emerald-300', 'bg-emerald-500/10');
-            btn.classList.add('border-white/10', 'text-white', 'bg-white/5');
-        }
-    }
 
-    // --- Seat Click ---
-    const hoverTooltip = document.getElementById('seatHoverTooltip');
-    const hoverMaGhe = document.getElementById('hoverMaGhe');
-    const hoverLoaiGhe = document.getElementById('hoverLoaiGhe');
-
-    function positionHoverTooltip(seatEl) {
-        const rect = seatEl.getBoundingClientRect();
-        const tipWidth = 160;
-        let left = rect.left + rect.width / 2 - tipWidth / 2;
-        let top = rect.top - 50; // hiện phía trên ghế
-
-        // Đảm bảo không tràn mép
-        if (left < 8) left = 8;
-        if (left + tipWidth > window.innerWidth - 8) left = window.innerWidth - tipWidth - 8;
-        if (top < 8) top = rect.bottom + 12; // đảo xuống dưới nếu sát mép trên
-
-        hoverTooltip.style.left = left + 'px';
-        hoverTooltip.style.top = top + 'px';
-    }
-
-    function showHoverTooltip(seatEl) {
-        if (!hoverTooltip) return;
-        hoverMaGhe.textContent = seatEl.dataset.maGhe;
-        hoverLoaiGhe.textContent = (seatEl.dataset.loaiGhe || 'Ghế').toUpperCase() +
-            (seatEl.dataset.trangThai === 'bao_tri' ? ' · Bảo trì' : '');
-        positionHoverTooltip(seatEl);
-        hoverTooltip.classList.add('is-visible');
-    }
-
-    function hideHoverTooltip() {
-        if (!hoverTooltip) return;
-        hoverTooltip.classList.remove('is-visible');
-    }
-
-    /**
-     * Lấy tất cả ID ghế thuộc cùng 1 cặp couple (từ data-couple-siblings)
-     * Nếu không phải couple, trả về [id hiện tại]
-     * Trả về mảng các id DB (1 hoặc 2 phần tử)
-     */
-    function getCoupleSiblings(seatEl) {
-        const raw = seatEl.dataset.coupleSiblings;
-        if (!raw) return [seatEl.dataset.gheId];
-        try {
-            const arr = (JSON.parse(raw) || []).filter(id => id !== null && id !== undefined && id !== '');
-            return Array.isArray(arr) && arr.length > 0 ? arr : [seatEl.dataset.gheId];
-        } catch (e) {
-            return [seatEl.dataset.gheId];
-        }
-    }
-
-    /**
-     * Lấy DOM elements thuộc cùng cặp couple.
-     * Vì hiện tại mỗi cặp couple chỉ render 1 DOM node duy nhất, trả về [seatEl].
-     * (Giữ hàm này cho tương thích - mọi highlight sẽ áp dụng lên chính node đó)
-     */
-    function getCoupleDOMElements(seatEl) {
-        return [seatEl];
-    }
-
-    /**
-     * Mở rộng danh sách ghế đã chọn: nếu 1 ghế couple được chọn, tự thêm cả cặp
-     * Cũng tự đánh dấu .selected trên DOM tương ứng
-     */
-    function expandCoupleIds(ids) {
-        const expanded = new Set(ids);
-        ids.forEach(id => {
-            const el = document.querySelector(`.seat-interactive[data-ghe-id="${id}"]`);
-            if (!el) return;
-            const siblingsIds = getCoupleSiblings(el);
-            siblingsIds.forEach(sid => expanded.add(sid));
-            // Đánh dấu selected trên chính DOM node couple (1 node = 1 cặp)
-            if (siblingsIds.length > 1) {
-                el.classList.add('selected');
-                syncSeatCheckMark(el);
-            }
-        });
-        return Array.from(expanded);
-    }
-
-    document.querySelectorAll('.seat-interactive').forEach(seat => {
-        seat.addEventListener('click', function(e) {
-            // Lấy tất cả ID ghế cùng cặp (1 hoặc 2 id)
-            const siblingIds = getCoupleSiblings(this);
-            const seatId = this.dataset.gheId;
-            const isCoupleSeat = siblingIds.length > 1;
-
-            if (e.ctrlKey || e.metaKey) {
-                // Multi-select
-                if (isCoupleSeat) {
-                    // Toggle nguyên cặp: kiểm tra xem TẤT CẢ ghế trong cặp đã được chọn chưa
-                    const allSelected = siblingIds.every(id => selectedSeats.has(id));
-                    if (allSelected) {
-                        // Bỏ chọn cả cặp
-                        siblingIds.forEach(id => selectedSeats.delete(id));
-                        this.classList.remove('selected');
-                        syncSeatCheckMark(this);
-                    } else {
-                        // Chọn cả cặp
-                        siblingIds.forEach(id => selectedSeats.add(id));
-                        this.classList.add('selected');
-                        syncSeatCheckMark(this);
-                    }
-                } else {
-                    if (selectedSeats.has(seatId)) {
-                        selectedSeats.delete(seatId);
-                        this.classList.remove('selected');
-                        syncSeatCheckMark(this);
-                    } else {
-                        selectedSeats.add(seatId);
-                        this.classList.add('selected');
-                        syncSeatCheckMark(this);
-                    }
-                }
-                updateBulkToolbar();
-            } else {
-                // Single click - show popover
-                currentSeatId = seatId;
-                currentSeatSiblings = siblingIds; // mảng 1 hoặc 2 id
-                showPopover(this);
-            }
-        });
-
-        seat.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            currentSeatId = this.dataset.gheId;
-            currentSeatSiblings = getCoupleSiblings(this);
-            showPopover(this);
-        });
-    });
-
-    // --- Popover Actions ---
-    // (Đã bỏ: Đổi loại / Bảo trì / Xóa trong popover — dùng thanh bulk action)
-
-    // Hide popover on outside click
     document.addEventListener('click', function(e) {
-        if (!popover.contains(e.target) && !e.target.classList.contains('seat-interactive')) {
+        if (popover && !popover.contains(e.target) && !e.target.classList.contains('seat-interactive')) {
             hidePopover();
         }
     });
 
-    // Ẩn hover tooltip khi click chuột (vì popover sẽ hiện)
-    document.addEventListener('mousedown', hideHoverTooltip);
+    /* ================================================================ */
+    /* MODAL HÀNG GHẾ (CHỈNH SỬA LOẠI GHẾ & BẢO TRÌ NGUYÊN HÀNG)        */
+    /* ================================================================ */
 
-    // --- Row Click Modal ---
-    document.querySelectorAll('.seat-row__label--clickable').forEach(label => {
-        label.addEventListener('click', function() {
-            const row = this.closest('.seat-row');
-            currentRowHangId = row.dataset.hangGheId;
-            const tenHang = row.dataset.hang;
-
-            document.getElementById('rowChangeModalTenHang').textContent = tenHang;
-            const allRows = Array.from(document.querySelectorAll('.seat-row'));
-            const rowIndex = allRows.indexOf(row);
-            document.getElementById('rowChangeModalRowIndex').textContent = 'Hàng thứ ' + (rowIndex + 1);
-
-            // Tính thống kê bảo trì trong hàng
-            const seatsInRow = row.querySelectorAll('.seat-interactive');
-            let soHoatDong = 0, soBaoTri = 0;
-            seatsInRow.forEach(s => {
-                if (s.dataset.trangThai === 'bao_tri') soBaoTri++;
-                else soHoatDong++;
-            });
-            const total = seatsInRow.length;
-            const statsEl = document.getElementById('rowMaintenanceStats');
-            const btnEl = document.getElementById('rowMaintenanceBtn');
-            if (total === 0) {
-                statsEl.innerHTML = 'Hàng chưa có ghế';
-            } else {
-                statsEl.innerHTML = `<span class="text-emerald-400 font-semibold">${soHoatDong}</span> hoạt động · <span class="text-red-400 font-semibold">${soBaoTri}</span> bảo trì / ${total}`;
-            }
-            // Reset trạng thái nút (nếu lần trước bị disable)
-            btnEl.disabled = false;
-            // Nhãn nút: nếu tất cả đang bảo trì → "Kích hoạt" (xanh), ngược lại "Bảo trì" (cam)
-            if (total > 0 && soHoatDong === 0) {
-                btnEl.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>Kích hoạt';
-                btnEl.className = 'rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/25 hover:border-emerald-500/60';
-            } else {
-                btnEl.innerHTML = '<i class="fa-solid fa-wrench mr-1"></i>Bảo trì';
-                btnEl.className = 'rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300 transition hover:bg-orange-500/25 hover:border-orange-500/60';
-            }
-
-            // --- Ràng buộc đổi loại: 3 hàng gần màn chiếu chỉ được ghế Thường, 3 hàng cuối chỉ được VIP/Couple ---
-            const totalRows = allRows.length;
-            const isTopThree = rowIndex < 3;
-            const isLastTwo = rowIndex >= totalRows - 2;
-            const restrictionWarning = document.getElementById('rowTypeRestrictionWarning');
-            const restrictionDetail = document.getElementById('rowRestrictionDetail');
-            const applyBtn = document.getElementById('rowChangeModalApply');
-            const loaiSelect = document.getElementById('rowChangeModalLoaiGhe');
-            const colorPreview = document.getElementById('rowModalColorPreview');
-            const textEl = document.getElementById('rowModalLoaiGheText');
-
-            if (restrictionWarning) restrictionWarning.classList.add('hidden');
-            if (applyBtn) applyBtn.disabled = false;
-
-            if (isTopThree) {
-                if (restrictionWarning) {
-                    restrictionWarning.classList.remove('hidden');
-                    restrictionDetail.textContent = '3 hàng gần màn chiếu chỉ được đặt ghế Thường.';
-                }
-                if (applyBtn) applyBtn.disabled = true;
-            } else if (isLastTwo) {
-                if (restrictionWarning) {
-                    restrictionWarning.classList.remove('hidden');
-                    restrictionDetail.textContent = '2 hàng cuối chỉ được đặt ghế Couple.';
-                }
-            } else {
-                if (restrictionWarning) restrictionWarning.classList.add('hidden');
-            }
-
-            // Reset dropdown về option đầu tiên
-            const colorDot = document.getElementById('rowModalColorDot');
-            if (loaiSelect && loaiSelect.options.length > 0) {
-                loaiSelect.selectedIndex = 0;
-                const firstOpt = loaiSelect.options[0];
-                if (colorDot) colorDot.style.backgroundColor = firstOpt.dataset.color || '#666';
-            }
-
-            rowChangeModal.classList.remove('hidden');
-        });
-    });
-
-    // Mở modal đổi loại hàng từ nút "Đổi loại" trong bảng danh sách hàng ghế
-    document.querySelectorAll('[data-row-trigger]').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const hangGheId = this.dataset.hangGheId;
-            const tenHang = this.dataset.hang;
-            if (!hangGheId) return;
-
-            currentRowHangId = hangGheId;
-            document.getElementById('rowChangeModalTenHang').textContent = tenHang;
-            document.getElementById('rowChangeModalRowIndex').textContent = '';
-
-            // Thống kê bảo trì dựa trên DOM đã render
-            const rowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${hangGheId}"]`);
-            const seatsInRow = rowEl ? rowEl.querySelectorAll('.seat-interactive') : [];
-            let soHoatDong = 0, soBaoTri = 0;
-            seatsInRow.forEach(s => {
-                if (s.dataset.trangThai === 'bao_tri') soBaoTri++;
-                else soHoatDong++;
-            });
-            const total = seatsInRow.length;
-            const statsEl = document.getElementById('rowMaintenanceStats');
-            const btnEl = document.getElementById('rowMaintenanceBtn');
-            if (total === 0) {
-                statsEl.innerHTML = 'Hàng chưa có ghế';
-            } else {
-                statsEl.innerHTML = `<span class="text-emerald-400 font-semibold">${soHoatDong}</span> hoạt động · <span class="text-red-400 font-semibold">${soBaoTri}</span> bảo trì / ${total}`;
-            }
-            btnEl.disabled = false;
-            if (total > 0 && soHoatDong === 0) {
-                btnEl.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>Kích hoạt';
-                btnEl.className = 'rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/25 hover:border-emerald-500/60';
-            } else {
-                btnEl.innerHTML = '<i class="fa-solid fa-wrench mr-1"></i>Bảo trì';
-                btnEl.className = 'rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300 transition hover:bg-orange-500/25 hover:border-orange-500/60';
-            }
-
-            // --- Ràng buộc đổi loại: 3 hàng gần màn chiếu chỉ được ghế Thường, 2 hàng cuối chỉ được Couple ---
-            const allRows = Array.from(document.querySelectorAll('.seat-row'));
-            const rowIndex = allRows.findIndex(r => r.dataset.hangGheId === hangGheId);
-            const totalRows = allRows.length;
-            const isTopThree = rowIndex >= 0 && rowIndex < 3;
-            const isLastTwo = rowIndex >= 0 && rowIndex >= totalRows - 2;
-            const restrictionWarning = document.getElementById('rowTypeRestrictionWarning');
-            const restrictionDetail = document.getElementById('rowRestrictionDetail');
-            const applyBtn = document.getElementById('rowChangeModalApply');
-
-            if (restrictionWarning) restrictionWarning.classList.add('hidden');
-            if (applyBtn) applyBtn.disabled = false;
-
-            if (isTopThree) {
-                if (restrictionWarning) {
-                    restrictionWarning.classList.remove('hidden');
-                    restrictionDetail.textContent = '3 hàng gần màn chiếu chỉ được đặt ghế Thường.';
-                }
-            } else if (isLastTwo) {
-                if (restrictionWarning) {
-                    restrictionWarning.classList.remove('hidden');
-                    restrictionDetail.textContent = '2 hàng cuối chỉ được đặt ghế Couple.';
-                }
-            }
-
-            // Set first option as default
-            const select = document.getElementById('rowChangeModalLoaiGhe');
-            const colorDot = document.getElementById('rowModalColorDot');
-            if (select && select.options.length > 0) {
-                select.selectedIndex = 0;
-                const firstOpt = select.options[0];
-                if (colorDot) colorDot.style.backgroundColor = firstOpt.dataset.color || '#666';
-            }
-
-            rowChangeModal.classList.remove('hidden');
-        });
-    });
-
-    document.getElementById('rowChangeModalCancel').addEventListener('click', function() {
-        rowChangeModal.classList.add('hidden');
+    document.getElementById('rowChangeModalCancel')?.addEventListener('click', function() {
+        if (rowChangeModal) rowChangeModal.classList.add('hidden');
     });
     document.getElementById('rowChangeModalCancelHeader')?.addEventListener('click', function() {
-        rowChangeModal.classList.add('hidden');
+        if (rowChangeModal) rowChangeModal.classList.add('hidden');
     });
 
-    // Select loại ghế - update color dot
     const loaiGheSelect = document.getElementById('rowChangeModalLoaiGhe');
     const colorDot = document.getElementById('rowModalColorDot');
 
-    // Handler for custom select changes
     window.handleRowLoaiGheChange = function(data) {
         const value = data.value || data.target?.value;
         const select = document.getElementById('rowChangeModalLoaiGhe');
@@ -3840,7 +2900,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const color = option?.dataset?.color || '#666';
         if (colorDot) colorDot.style.backgroundColor = color;
 
-        // === Validation: 3 hàng đầu chỉ được ghế Thường ===
         if (currentRowHangId && option) {
             const allRows = Array.from(document.querySelectorAll('.seat-row'));
             const currentRowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${currentRowHangId}"]`);
@@ -3852,19 +2911,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const loaiTen = option?.textContent?.toLowerCase() || '';
                 const isVipSelected = loaiTen.includes('vip');
 
-                if (isCoupleOption) {
-                    showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế Couple.', 'error');
-                    // Reset về option đầu tiên
-                    if (select && select.options.length > 0) {
-                        select.selectedIndex = 0;
-                        const firstOpt = select.options[0];
-                        if (colorDot) colorDot.style.backgroundColor = firstOpt.dataset.color || '#666';
-                    }
-                    return;
-                }
-                if (isVipSelected) {
-                    showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP.', 'error');
-                    // Reset về option đầu tiên
+                if (isCoupleOption || isVipSelected) {
+                    window.showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường.', 'error');
                     if (select && select.options.length > 0) {
                         select.selectedIndex = 0;
                         const firstOpt = select.options[0];
@@ -3891,71 +2939,42 @@ document.addEventListener('DOMContentLoaded', function() {
             const color = this.options[this.selectedIndex]?.dataset?.color || '#666';
             if (colorDot) colorDot.style.backgroundColor = color;
         });
-        // Init color
         const initColor = loaiGheSelect.options[loaiGheSelect.selectedIndex]?.dataset?.color || '#666';
         if (colorDot) colorDot.style.backgroundColor = initColor;
     }
 
-    document.getElementById('rowChangeModalApply').addEventListener('click', function() {
-        const select = document.getElementById('rowChangeModalLoaiGhe');
+    document.getElementById('rowChangeModalApply')?.addEventListener('click', function() {
+        if (!loaiGheSelect) return;
         const loaiGheId = loaiGheSelect.value;
         const selectedOption = loaiGheSelect.options[loaiGheSelect.selectedIndex];
-        
-        // Lấy thông tin từ data attributes
         const isCoupleOption = selectedOption?.dataset?.laCouple === 'true' || selectedOption?.dataset?.laCouple === '1';
         const loaiTen = selectedOption ? selectedOption.textContent.toLowerCase() : '';
         const isVipSelected = loaiTen.includes('vip');
 
-        // --- Validation: 3 hàng gần màn chiếu chỉ được đặt ghế Thường, 2 hàng cuối chỉ được Couple ---
         const allRows = Array.from(document.querySelectorAll('.seat-row'));
         const currentRowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${currentRowHangId}"]`);
         const rowIndex = currentRowEl ? allRows.indexOf(currentRowEl) : -1;
         const totalRows = allRows.length;
 
         if (rowIndex >= 0) {
-            const isTopThree = rowIndex < 3;  // Hàng 1, 2, 3
-            const isLastTwo = rowIndex >= totalRows - 2;  // 2 hàng cuối
-            const isMiddle = !isTopThree && !isLastTwo;  // Hàng 4 trở đi (không phải 2 hàng cuối)
+            const isTopThree = rowIndex < 3;
+            const isLastTwo = rowIndex >= totalRows - 2;
+            const isMiddle = !isTopThree && !isLastTwo;
 
-            // 3 hàng gần màn chiếu: CHỈ được ghế Thường (không phải VIP, không phải Couple)
-            if (isTopThree) {
-                if (isCoupleOption) {
-                    showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế Couple.', 'error');
-                    setBtnLoading(this, false);
-                    return;
-                }
-                if (isVipSelected) {
-                    showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP.', 'error');
-                    setBtnLoading(this, false);
-                    return;
-                }
+            if (isTopThree && (isCoupleOption || isVipSelected)) {
+                window.showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường.', 'error');
+                setBtnLoading(this, false);
+                return;
             }
-            
-            // Hàng giữa (hàng 4 trở đi, không tính 2 hàng cuối): CHỈ được ghế VIP
-            if (isMiddle) {
-                if (isCoupleOption) {
-                    showToast('Hàng ghế này chỉ được đặt ghế VIP. Không thể đặt ghế Couple.', 'error');
-                    setBtnLoading(this, false);
-                    return;
-                }
-                if (!isVipSelected) {
-                    showToast('Hàng ghế này chỉ được đặt ghế VIP. Không thể đặt ghế Thường.', 'error');
-                    setBtnLoading(this, false);
-                    return;
-                }
+            if (isMiddle && (isCoupleOption || !isVipSelected)) {
+                window.showToast('Hàng ghế này chỉ được đặt ghế VIP.', 'error');
+                setBtnLoading(this, false);
+                return;
             }
-            
-            // 2 hàng cuối: CHỈ được ghế Couple
-            if (isLastTwo) {
-                if (!isCoupleOption) {
-                    if (isVipSelected) {
-                        showToast('2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế VIP.', 'error');
-                    } else {
-                        showToast('2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế Thường.', 'error');
-                    }
-                    setBtnLoading(this, false);
-                    return;
-                }
+            if (isLastTwo && !isCoupleOption) {
+                window.showToast('2 hàng cuối chỉ được đặt ghế Couple.', 'error');
+                setBtnLoading(this, false);
+                return;
             }
         }
 
@@ -3966,7 +2985,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': getCsrfToken()
+                'X-CSRF-TOKEN': window.getCsrfToken()
             },
             body: JSON.stringify({ hang_ghe_id: currentRowHangId, loai_ghe_id: loaiGheId })
         })
@@ -3979,166 +2998,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 setTimeout(() => location.reload(), 300);
             } else {
-                showToast(data.message || 'Có lỗi xảy ra', 'error');
+                window.showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
-        .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
-        .finally(() => { setBtnLoading(btn, false, '<i class="fa-solid fa-check mr-1.5"></i>Áp dụng'); rowChangeModal.classList.add('hidden'); });
+        .catch(err => { console.error(err); window.showToast('Có lỗi xảy ra', 'error'); })
+        .finally(() => { 
+            setBtnLoading(btn, false, '<i class="fa-solid fa-check mr-1.5"></i>Áp dụng'); 
+            if (rowChangeModal) rowChangeModal.classList.add('hidden'); 
+        });
     });
 
-    rowChangeModal.addEventListener('click', function(e) {
+    rowChangeModal?.addEventListener('click', function(e) {
         if (e.target === this) this.classList.add('hidden');
     });
 
-    // --- Bảo trì cả hàng (toggle) ---
-    // CSRF helper đã được định nghĩa ở đầu script (xem trên cùng)
-    console.log('[DEBUG] CSRF token =', getCsrfToken().substring(0, 10) + '...');
-
-    // Helper fetch an toàn:
-    //   - Tự đính X-CSRF-TOKEN, X-Requested-With, Accept JSON
-    //   - Nếu server trả 419 (CSRF token hết hạn) thì reload meta tag từ server (gọi /csrf-token) rồi retry 1 lần
-    async function adminFetch(url, options = {}) {
-        options.method = options.method || 'POST';
-        options.credentials = options.credentials || 'same-origin';
-        options.headers = Object.assign({
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': getCsrfToken(),
-            'X-Requested-With': 'XMLHttpRequest'
-        }, options.headers || {});
-
-        let res = await fetch(url, options);
-
-        if (res.status === 419) {
-            // CSRF token mismatch → thử lấy token mới rồi gọi lại
-            try {
-                const refresh = await fetch('/admin/csrf-token', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
-                if (refresh.ok) {
-                    const data = await refresh.json();
-                    if (data && data.csrf_token) {
-                        const meta = document.querySelector('meta[name="csrf-token"]');
-                        if (meta) meta.setAttribute('content', data.csrf_token);
-                    }
-                }
-            } catch (e) { /* ignore */ }
-            options.headers['X-CSRF-TOKEN'] = getCsrfToken();
-            res = await fetch(url, options);
-        }
-
-        return res;
-    }
-
-    // Hàm được gọi bởi onclick inline trên nút #rowMaintenanceBtn
-    // (Đặt trên window để inline onclick truy cập được)
-    window.__rowMaintClick = async function(ev) {
-        // ev có thể là event từ icon bên trong button
-        const btn = ev.target.closest('#rowMaintenanceBtn') || document.getElementById('rowMaintenanceBtn');
-        if (!btn) return;
-
-        console.log('[rowMaintenanceBtn] click | hang=', currentRowHangId);
-
-        if (!currentRowHangId) {
-            showToast('Vui lòng chọn hàng ghế trước.', 'warning');
-            return;
-        }
-
-            const isAllMaint = /Kích hoạt/i.test(btn.textContent);
-            const action = isAllMaint ? 'activate' : 'maintenance';
-            const confirmMsg = isAllMaint
-                ? 'Kích hoạt lại toàn bộ ghế trong hàng này?'
-                : 'Chuyển toàn bộ ghế trong hàng sang bảo trì?';
-            if (!confirm(confirmMsg)) return;
-
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang xử lý...';
-
-        try {
-            const url = `/admin/phong-chieus/${phongChieuId}/toggle-row-maintenance`;
-            console.log('[rowMaintenanceBtn] fetch', url, { hang_ghe_id: currentRowHangId });
-
-            const res = await fetch(url, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': getCsrfToken(),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ hang_ghe_id: currentRowHangId, action: action })
-            });
-
-            console.log('[rowMaintenanceBtn] response status', res.status);
-            const contentType = res.headers.get('content-type') || '';
-            let data;
-            if (contentType.includes('application/json')) {
-                data = await res.json();
-            } else {
-                // Server trả về HTML (có thể do CSRF/auth/404) → đọc text để debug
-                const text = await res.text();
-                console.error('[rowMaintenanceBtn] Non-JSON response (status ' + res.status + '):', text.substring(0, 500));
-                showToast('Server trả về HTML (status ' + res.status + '). Có thể CSRF token sai hoặc session hết hạn. Xem Console.', 'error');
-                btn.innerHTML = originalHtml;
-                return;
-            }
-            console.log('[rowMaintenanceBtn] data', data);
-
-            if (!data.success) {
-                showToast(data.message || 'Có lỗi xảy ra', 'error');
-                btn.innerHTML = originalHtml;
-                return;
-            }
-
-            // Cập nhật DOM cho từng ghế
-            (data.updated_seats || []).forEach(s => {
-                const el = findSeatEl(s.id);
-                if (!el) return;
-                el.dataset.trangThai = s.trang_thai;
-                if (s.trang_thai === 'bao_tri') {
-                    el.classList.add('seat-chip--maintenance');
-                    el.removeAttribute('style');
-                    el.style.color = '#991b1b';
-                } else {
-                    el.classList.remove('seat-chip--maintenance');
-                    const mauSac = el.dataset.mauSac || '#666';
-                    el.removeAttribute('style');
-                    el.style.backgroundColor = mauSac;
-                    el.style.color = '#1a0b04';
-                }
-            });
-
-            // Cập nhật stats + đổi nhãn nút
-            const statsEl = document.getElementById('rowMaintenanceStats');
-            const row = document.querySelector(`.seat-row[data-hang-ghe-id="${currentRowHangId}"]`);
-            if (statsEl && row) {
-                const seatsInRow = row.querySelectorAll('.seat-interactive');
-                let soHoatDong = 0, soBaoTri = 0;
-                seatsInRow.forEach(s => {
-                    if (s.dataset.trangThai === 'bao_tri') soBaoTri++;
-                    else soHoatDong++;
-                });
-                statsEl.innerHTML = `<span class="text-emerald-400 font-semibold">${soHoatDong}</span> hoạt động · <span class="text-red-400 font-semibold">${soBaoTri}</span> bảo trì / ${seatsInRow.length}`;
-                if (seatsInRow.length > 0 && soHoatDong === 0) {
-                    btn.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>Kích hoạt';
-                    btn.className = 'rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/25 hover:border-emerald-500/60';
-                } else {
-                    btn.innerHTML = '<i class="fa-solid fa-wrench mr-1"></i>Bảo trì';
-                    btn.className = 'rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300 transition hover:bg-orange-500/25 hover:border-orange-500/60';
-                }
-            }
-        } catch (err) {
-            console.error('[rowMaintenanceBtn] error', err);
-            showToast('Có lỗi xảy ra: ' + (err.message || err), 'error');
-            btn.innerHTML = originalHtml;
-        } finally {
-            btn.disabled = false;
-        }
-    };
-    console.log('[OK] window.__rowMaintClick ready');
-
     // --- Xóa cả hàng ---
-    document.getElementById('rowChangeModalDelete').addEventListener('click', function() {
+    document.getElementById('rowChangeModalDelete')?.addEventListener('click', function() {
         if (!currentRowHangId) return;
         const btn = this;
         if (!confirm('Xóa cả hàng ghế này? Tất cả ghế trong hàng sẽ bị xóa vĩnh viễn. Hành động này không thể hoàn tác.')) return;
@@ -4149,7 +3024,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': getCsrfToken()
+                'X-CSRF-TOKEN': window.getCsrfToken()
             },
             body: JSON.stringify({ hang_ghe_id: currentRowHangId })
         })
@@ -4158,45 +3033,42 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 location.reload();
             } else {
-                showToast(data.message || 'Có lỗi xảy ra', 'error');
+                window.showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
-        .catch(err => { console.error(err); showToast('Có lỗi xảy ra', 'error'); })
+        .catch(err => { console.error(err); window.showToast('Có lỗi xảy ra', 'error'); })
         .finally(() => { setBtnLoading(btn, false, '<i class="fa-solid fa-trash-can mr-1.5"></i>Xóa hàng'); });
     });
 });
 </script>
 
-{{-- TOOLTIP element để hover hiển thị thông tin ghế --}}
-<div id="seatTooltip" style="position: fixed; z-index: 99999; background: #141414; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.15s; border: 1px solid #d99a32; box-shadow: 0 4px 12px rgba(0,0,0,0.5); max-width: 220px;">
-    <div id="seatTooltipMaGhe" style="font-weight: 900; font-size: 14px; color: #f4c56a; margin-bottom: 2px;"></div>
-    <div id="seatTooltipLoai" style="font-size: 11px; opacity: 0.9;"></div>
-    <div id="seatTooltipPhuThu" style="font-size: 11px; opacity: 0.8;"></div>
-</div>
 
 <script>
-(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        
     const tooltip = document.getElementById('seatTooltip');
     const ttMaGhe = document.getElementById('seatTooltipMaGhe');
     const ttLoai = document.getElementById('seatTooltipLoai');
     const ttPhuThu = document.getElementById('seatTooltipPhuThu');
     let currentTooltipSeat = null;
 
+    if (!tooltip) return;
+
     document.addEventListener('mouseover', function(e) {
         const seat = e.target.closest('.seat-interactive');
         if (!seat) return;
-        if (seat === currentTooltipSeat) return; // đã hiện rồi, không hiện lại
+        if (seat === currentTooltipSeat) return;
         currentTooltipSeat = seat;
         const maGhe = seat.dataset.maGhe || '';
         const loaiGhe = seat.dataset.loaiGhe || 'Thường';
-        const phuThu = parseInt(seat.dataset.phuThu || 0);
+        const phuThu = parseInt(seat.dataset.phuThu || 0, 10);
         const trangThai = seat.dataset.trangThai || '';
 
-        ttMaGhe.textContent = 'Ghế ' + maGhe;
+        if (ttMaGhe) ttMaGhe.textContent = 'Ghế ' + maGhe;
         let loaiText = 'Loại: ' + loaiGhe;
         if (trangThai === 'bao_tri') loaiText += ' (Bảo trì)';
-        ttLoai.textContent = loaiText;
-        ttPhuThu.textContent = 'Phụ thu: ' + phuThu.toLocaleString() + 'đ';
+        if (ttLoai) ttLoai.textContent = loaiText;
+        if (ttPhuThu) ttPhuThu.textContent = 'Phụ thu: ' + phuThu.toLocaleString() + 'đ';
 
         tooltip.style.opacity = '1';
     });
@@ -4207,7 +3079,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const offsetY = 14;
         let x = e.clientX + offsetX;
         let y = e.clientY + offsetY;
-        // Đảm bảo tooltip không tràn ra ngoài viewport
         const rect = tooltip.getBoundingClientRect();
         if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - offsetX;
         if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - offsetY;
@@ -4218,11 +3089,443 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('mouseout', function(e) {
         const seat = e.target.closest('.seat-interactive');
         if (!seat) return;
-        // Chỉ ẩn khi chuột rời hoàn toàn khỏi ghế (không phải di chuyển vào phần tử con)
         const related = e.relatedTarget;
         if (seat.contains(related)) return;
         tooltip.style.opacity = '0';
         currentTooltipSeat = null;
+    });
+    });
+    </script>
+<script>
+
+
+/**
+ * Hiển thị toast notification
+ */
+window.showToast = function(message, type = 'error') {
+    var variant = {
+        error:   { bg: 'bg-red-500/15', border: 'border-red-500/40', icon: 'fa-circle-exclamation', iconColor: 'text-red-300', text: 'text-red-100' },
+        success: { bg: 'bg-emerald-500/15', border: 'border-emerald-500/40', icon: 'fa-circle-check', iconColor: 'text-emerald-300', text: 'text-emerald-100' },
+        warning: { bg: 'bg-amber-500/15', border: 'border-amber-500/40', icon: 'fa-triangle-exclamation', iconColor: 'text-amber-300', text: 'text-amber-100' },
+        info:    { bg: 'bg-white/10', border: 'border-white/20', icon: 'fa-circle-info', iconColor: 'text-[#d99a32]', text: 'text-white' },
+    };
+    var v = variant[type] || variant.info;
+
+    var toast = document.createElement('div');
+    toast.setAttribute('data-admin-toast', '');
+    toast.className = 'admin-toast';
+    toast.innerHTML =
+        '<div class="flex items-start gap-3 rounded-2xl border ' + v.border + ' ' + v.bg + ' bg-[#101010]/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-xl">' +
+            '<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">' +
+                '<i class="fa-solid ' + v.icon + ' ' + v.iconColor + ' text-lg"></i>' +
+            '</div>' +
+            '<p class="' + v.text + ' min-w-0 flex-1 break-words pt-1 text-sm font-bold leading-snug">' + message + '</p>' +
+            '<button type="button" data-toast-close class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-white/70 transition hover:bg-white/20 hover:text-white">' +
+                '<i class="fa-solid fa-xmark text-sm"></i>' +
+            '</button>' +
+        '</div>';
+
+    var container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'fixed top-4 right-4 z-[99999] flex flex-col gap-2 pointer-events-none';
+        document.body.appendChild(container);
+    }
+    container.appendChild(toast);
+
+    requestAnimationFrame(function() {
+        toast.style.animation = 'adminToastIn 0.28s ease both';
+    });
+
+    function dismiss() {
+        toast.classList.add('is-hiding');
+        setTimeout(function() { if (toast.parentElement) toast.remove(); }, 300);
+    }
+
+    toast.querySelector('[data-toast-close]')?.addEventListener('click', dismiss);
+    setTimeout(dismiss, 4000);
+};
+
+// === RESET SEATS FUNCTION ===
+window.confirmResetSeats = function() {
+    if (confirm('Bạn có chắc muốn xóa toàn bộ ghế trong phòng này?\n\nHành động này không thể hoàn tác!')) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ route('admin.phong-chieus.generate-seats', $phongChieu) }}';
+
+        var csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = window.getCsrfToken();
+        form.appendChild(csrfInput);
+
+        var methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+
+        var resetInput = document.createElement('input');
+        resetInput.type = 'hidden';
+        resetInput.name = 'reset_all';
+        resetInput.value = '1';
+        form.appendChild(resetInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+};
+
+// === CUSTOM SELECT DROPDOWN (GLOBAL FUNCTIONS) ===
+function toggleCustomSelect(trigger) {
+    if (window.event) {
+        window.event.preventDefault();
+        window.event.stopPropagation();
+    }
+
+    const wrapper = trigger.closest('.custom-select');
+    const dropdown = wrapper.querySelector('.custom-select__dropdown');
+    const isActive = trigger.classList.contains('active');
+
+    document.querySelectorAll('.custom-select__trigger.active').forEach(t => {
+        t.classList.remove('active');
+    });
+    document.querySelectorAll('.custom-select__dropdown').forEach(d => {
+        d.style.display = 'none';
+    });
+
+    if (!isActive) {
+        trigger.classList.add('active');
+        dropdown.style.display = 'block';
+    }
+}
+
+function selectCustomOption(option) {
+    if (window.event) {
+        window.event.preventDefault();
+        window.event.stopPropagation();
+    }
+
+    const wrapper = option.closest('.custom-select');
+    const trigger = wrapper.querySelector('.custom-select__trigger');
+    const select = wrapper.querySelector('select');
+    const value = option.dataset.value;
+    const text = option.querySelector('.custom-select__option-label').textContent;
+
+    const valueDiv = trigger.querySelector('.custom-select__value');
+    valueDiv.innerHTML = '';
+
+    const colorDot = option.querySelector('.custom-select__option-color');
+    if (colorDot) {
+        const dot = document.createElement('div');
+        dot.className = 'custom-select__color-dot';
+        dot.style.backgroundColor = colorDot.style.backgroundColor;
+        valueDiv.appendChild(dot);
+    }
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'custom-select__text';
+    textSpan.textContent = text;
+    valueDiv.appendChild(textSpan);
+
+    if (select) {
+        select.value = value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    wrapper.querySelectorAll('.custom-select__option').forEach(o => o.classList.remove('selected'));
+    option.classList.add('selected');
+
+    trigger.classList.remove('active');
+    const dropdown = wrapper.querySelector('.custom-select__dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+
+    const selectId = wrapper.dataset.selectId;
+    if (selectId === 'rowChangeModalLoaiGhe') {
+        if (typeof window.handleRowLoaiGheChange === 'function') window.handleRowLoaiGheChange({ value });
+    } else if (selectId === 'bulkLoaiGhe') {
+        if (typeof window.handleBulkLoaiGheChange === 'function') window.handleBulkLoaiGheChange({ value });
+    }
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.custom-select')) {
+        document.querySelectorAll('.custom-select__trigger.active').forEach(t => {
+            t.classList.remove('active');
+        });
+        document.querySelectorAll('.custom-select__dropdown').forEach(d => {
+            d.style.display = 'none';
+        });
+    }
+});
+
+/* === MAIN LOGIC ON DOM LOAD === */
+document.addEventListener('DOMContentLoaded', function() {
+    const phongChieuId = {{ $phongChieu->id }};
+
+    let selectedSeats = new Set();
+    let currentSeatId = null;
+    let currentRowHangId = null;
+    let currentSeatEl = null;
+    let currentSeatSiblings = [];
+
+    // --- Helper UI ---
+    function findSeatEl(gheId) {
+        return document.querySelector(`.seat-interactive[data-ghe-id="${gheId}"]`);
+    }
+
+    function setBtnLoading(btn, loading, originalText) {
+        if (!btn) return;
+        if (loading) {
+            btn.disabled = true;
+            btn.dataset.originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang xử lý...';
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = btn.dataset.originalText || originalText || '';
+        }
+    }
+
+    function getLuminance(hexColor) {
+        const hex = hexColor.replace('#', '');
+        const r = parseInt(hex.substr(0, 2), 16);
+        const g = parseInt(hex.substr(2, 2), 16);
+        const b = parseInt(hex.substr(4, 2), 16);
+        const a = [r, g, b].map(v => {
+            v /= 255;
+            return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+    }
+
+    function applyAutoContrast() {
+        document.querySelectorAll('.seat-interactive').forEach(seat => {
+            if (seat.classList.contains('seat-chip--maintenance')) return;
+            const mauSac = seat.dataset.mauSac; 
+            if (!mauSac) return;
+            const lum = getLuminance(mauSac);
+            if (lum > 0.5) {
+                seat.classList.add('seat-light-bg');
+                seat.classList.remove('seat-dark-bg');
+            } else {
+                seat.classList.add('seat-dark-bg');
+                seat.classList.remove('seat-light-bg');
+            }
+        });
+    }
+    applyAutoContrast();
+
+    // --- Popover helper ---
+    const popover = document.getElementById('seatInfoPopover');
+
+    function positionPopover(seatEl) {
+        if (!popover) return;
+        const rect = seatEl.getBoundingClientRect();
+        const popoverW = 260;
+        const popoverH = 320;
+        let left = rect.right + 14;
+        let top = rect.top - 20;
+
+        if (left + popoverW > window.innerWidth - 16) {
+            left = rect.left - popoverW - 14;
+        }
+        if (top + popoverH > window.innerHeight - 16) {
+            top = window.innerHeight - popoverH - 16;
+        }
+        if (top < 16) top = 16;
+
+        popover.style.left = left + 'px';
+        popover.style.top = top + 'px';
+    }
+
+    function showPopover(seatEl) {
+        if (!popover) return;
+        currentSeatEl = seatEl;
+        currentSeatId = seatEl.dataset.gheId;
+        const maGhe = seatEl.dataset.maGhe;
+        const loaiGhe = seatEl.dataset.loaiGhe || 'Thường';
+        const mauSac = seatEl.dataset.mauSac || '#666666';
+        const phuThu = Number(seatEl.dataset.phuThu || 0);
+        const trangThai = seatEl.dataset.trangThai;
+
+        const elMaGhe = document.getElementById('popoverMaGhe');
+        const elLoaiGhe = document.getElementById('popoverLoaiGhe');
+        const elPhuThu = document.getElementById('popoverPhuThu');
+        const elHeaderMaGhe = document.getElementById('popoverHeaderMaGhe');
+
+        if (elMaGhe) elMaGhe.textContent = maGhe;
+        if (elLoaiGhe) elLoaiGhe.textContent = loaiGhe.toUpperCase();
+        if (elPhuThu) elPhuThu.textContent = phuThu > 0 ? '+' + phuThu.toLocaleString() + 'đ' : 'Miễn phí';
+        if (elHeaderMaGhe) elHeaderMaGhe.textContent = maGhe;
+
+        popover.style.setProperty('--popover-color', mauSac);
+
+        const statusEl = document.getElementById('popoverStatus');
+        const maintInfoEl = document.getElementById('popoverMaintenanceInfo');
+        const maintTimeEl = document.getElementById('popoverMaintenanceTime');
+        const maintReasonEl = document.getElementById('popoverMaintenanceReason');
+
+        if (trangThai === 'bao_tri' || trangThai === 'sap_bao_tri') {
+            if (statusEl) statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-[11px] font-bold text-red-400"><i class="fa-solid fa-wrench text-[10px]"></i> Đang bảo trì</span>';
+
+            const lichId = seatEl.dataset.lichId;
+            const thoiGianKetThuc = seatEl.dataset.thoiGianKetThuc || seatEl.dataset.thoiGianKetThucRaw;
+
+            if (lichId && thoiGianKetThuc) {
+                maintInfoEl?.classList.remove('hidden');
+                if (maintTimeEl) maintTimeEl.textContent = '⏰ Hết hạn: ' + thoiGianKetThuc;
+                if (maintReasonEl) maintReasonEl.textContent = 'Bảo trì có thời hạn';
+            } else {
+                maintInfoEl?.classList.add('hidden');
+            }
+        } else {
+            if (statusEl) statusEl.innerHTML = '<span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-400"><i class="fa-solid fa-check-circle text-[10px]"></i> Đang hoạt động</span>';
+            maintInfoEl?.classList.add('hidden');
+        }
+
+        positionPopover(seatEl);
+        popover.classList.add('is-visible');
+    }
+
+    function hidePopover() {
+        if (popover) popover.classList.remove('is-visible');
+        currentSeatEl = null;
+    }
+
+    document.addEventListener('click', function(e) {
+        if (popover && !popover.contains(e.target) && !e.target.classList.contains('seat-interactive')) {
+            hidePopover();
+        }
+    });
+
+    /* ============================================ */
+    /* LẮNG NGHE SỰ KIỆN CLICK GHẾ & HÀNG (QUAN TRỌNG) */
+    /* ============================================ */
+    function getCoupleSiblings(seatEl) {
+        const raw = seatEl.dataset.coupleSiblings;
+        if (!raw) return [seatEl.dataset.gheId];
+        try {
+            const arr = (JSON.parse(raw) || []).filter(id => id !== null && id !== undefined && id !== '');
+            return Array.isArray(arr) && arr.length > 0 ? arr : [seatEl.dataset.gheId];
+        } catch (e) {
+            return [seatEl.dataset.gheId];
+        }
+    }
+
+    function expandCoupleIds(ids) {
+        const expanded = new Set(ids);
+        ids.forEach(id => {
+            const el = document.querySelector(`.seat-interactive[data-ghe-id="${id}"]`);
+            if (!el) return;
+            const siblingsIds = getCoupleSiblings(el);
+            siblingsIds.forEach(sid => expanded.add(sid));
+            if (siblingsIds.length > 1) {
+                el.classList.add('selected');
+                syncSeatCheckMark(el);
+            }
+        });
+        return Array.from(expanded);
+    }
+
+    // Sự kiện click chọn GHẾ
+    document.querySelectorAll('.seat-interactive').forEach(seat => {
+        seat.addEventListener('click', function(e) {
+            const siblingIds = getCoupleSiblings(this);
+            const seatId = this.dataset.gheId;
+            const isCoupleSeat = siblingIds.length > 1;
+
+            if (e.ctrlKey || e.metaKey) {
+                if (isCoupleSeat) {
+                    const allSelected = siblingIds.every(id => selectedSeats.has(id));
+                    if (allSelected) {
+                        siblingIds.forEach(id => selectedSeats.delete(id));
+                        this.classList.remove('selected');
+                        syncSeatCheckMark(this);
+                    } else {
+                        siblingIds.forEach(id => selectedSeats.add(id));
+                        this.classList.add('selected');
+                        syncSeatCheckMark(this);
+                    }
+                } else {
+                    if (selectedSeats.has(seatId)) {
+                        selectedSeats.delete(seatId);
+                        this.classList.remove('selected');
+                        syncSeatCheckMark(this);
+                    } else {
+                        selectedSeats.add(seatId);
+                        this.classList.add('selected');
+                        syncSeatCheckMark(this);
+                    }
+                }
+                updateBulkToolbar();
+            } else {
+                currentSeatId = seatId;
+                currentSeatSiblings = siblingIds;
+                showPopover(this);
+            }
+        });
+
+        seat.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            currentSeatId = this.dataset.gheId;
+            currentSeatSiblings = getCoupleSiblings(this);
+            showPopover(this);
+        });
+    });
+
+    // Sự kiện click chọn HÀNG
+    function updateRowModalStatsAndButton(rowEl) {
+        if (!rowEl) return;
+        const seatsInRow = rowEl.querySelectorAll('.seat-interactive');
+        let soHoatDong = 0, soBaoTri = 0;
+        seatsInRow.forEach(s => {
+            if (s.dataset.trangThai === 'bao_tri') soBaoTri++;
+            else soHoatDong++;
+        });
+        const total = seatsInRow.length;
+        const statsEl = document.getElementById('rowMaintenanceStats');
+        const btnEl = document.getElementById('rowMaintenanceBtn');
+
+        if (statsEl) {
+            if (total === 0) {
+                statsEl.innerHTML = 'Hàng chưa có ghế';
+            } else {
+                statsEl.innerHTML = `<span class="text-emerald-400 font-semibold">${soHoatDong}</span> hoạt động · <span class="text-red-400 font-semibold">${soBaoTri}</span> bảo trì / ${total}`;
+            }
+        }
+
+        if (btnEl) {
+            btnEl.disabled = (total === 0);
+            if (total > 0 && soHoatDong === 0) {
+                btnEl.innerHTML = '<i class="fa-solid fa-rotate mr-1"></i>Kích hoạt';
+                btnEl.className = 'rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/25 hover:border-emerald-500/60';
+            } else {
+                btnEl.innerHTML = '<i class="fa-solid fa-wrench mr-1"></i>Bảo trì';
+                btnEl.className = 'rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-bold text-orange-300 transition hover:bg-orange-500/25 hover:border-orange-500/60';
+            }
+        }
+    }
+
+    const rowChangeModal = document.getElementById('rowChangeModal');
+
+
+
+    document.querySelectorAll('[data-row-trigger]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const hangGheId = this.dataset.hangGheId;
+            const tenHang = this.dataset.hang;
+            if (!hangGheId) return;
+
+            currentRowHangId = hangGheId;
+            const elTenHang = document.getElementById('rowChangeModalTenHang');
+            if (elTenHang) elTenHang.textContent = tenHang;
+
+            const rowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${hangGheId}"]`);
+            updateRowModalStatsAndButton(rowEl);
+
+            if (rowChangeModal) rowChangeModal.classList.remove('hidden');
+        });
     });
 
     /* ============================================ */
@@ -4236,68 +3539,47 @@ document.addEventListener('DOMContentLoaded', function() {
     const addSeatCot = document.getElementById('addSeatCot');
     const addSeatLoaiGhe = document.getElementById('addSeatLoaiGhe');
     const addSeatTrangThai = document.getElementById('addSeatTrangThai');
-    const phongChieuIdAddSeat = document.getElementById('btnOpenAddSeat')?.dataset.phongId;
-
-    function openAddSeatModal() {
-        if (!addSeatModal) return;
-        addSeatForm.reset();
-        addSeatErrors.classList.add('hidden');
-        addSeatErrors.innerHTML = '';
-        addSeatModal.classList.remove('hidden');
-        // Auto-suggest cột kế tiếp nếu đã chọn hàng
-        addSeatHangGhe.dispatchEvent(new Event('change'));
-    }
-
-    function closeAddSeatModal() {
-        addSeatModal.classList.add('hidden');
-    }
 
     function showAddSeatErrors(errors) {
+        if (!addSeatErrors) return;
         addSeatErrors.classList.remove('hidden');
         const html = Object.values(errors).flat().map(e => `<div>• ${e}</div>`).join('');
         addSeatErrors.innerHTML = html;
     }
 
-    // Tự động gợi ý cột kế tiếp + mã ghế khi chọn hàng
     addSeatHangGhe?.addEventListener('change', async function() {
         const hangId = this.value;
-        if (!hangId || !phongChieuIdAddSeat) {
-            addSeatCot.value = 1;
-            addSeatMaGhe.value = '';
+        if (!hangId || !phongChieuId) {
+            if (addSeatCot) addSeatCot.value = 1;
+            if (addSeatMaGhe) addSeatMaGhe.value = '';
             return;
         }
-        // Lấy danh sách hàng để biết tên hàng + số ghế hiện tại
         try {
-            const res = await fetch(`/admin/phong-chieus/${phongChieuIdAddSeat}/hang-ghes`, {
+            const res = await fetch(`/admin/phong-chieus/${phongChieuId}/hang-ghes`, {
                 headers: { 'Accept': 'application/json' }
             });
             const json = await res.json();
             const hang = (json.data || []).find(h => String(h.id) === String(hangId));
             if (hang) {
                 const nextCol = (hang.so_ghe || 0) + 1;
-                addSeatCot.value = nextCol;
-                addSeatMaGhe.value = hang.ten_hang + nextCol;
+                if (addSeatCot) addSeatCot.value = nextCol;
+                if (addSeatMaGhe) addSeatMaGhe.value = hang.ten_hang + nextCol;
             }
         } catch (e) {
             console.error('Lỗi tải hàng:', e);
         }
     });
 
-    document.getElementById('btnOpenAddSeat')?.addEventListener('click', openAddSeatModal);
-    document.getElementById('addSeatModalClose')?.addEventListener('click', closeAddSeatModal);
-    document.getElementById('addSeatCancel')?.addEventListener('click', closeAddSeatModal);
+    document.getElementById('btnOpenAddSeat')?.addEventListener('click', window.openAddSeatModal);
+    document.getElementById('addSeatModalClose')?.addEventListener('click', window.closeAddSeatModal);
+    document.getElementById('addSeatCancel')?.addEventListener('click', window.closeAddSeatModal);
     addSeatModal?.addEventListener('click', function(e) {
-        if (e.target === addSeatModal) closeAddSeatModal();
+        if (e.target === addSeatModal) window.closeAddSeatModal();
     });
 
     addSeatForm?.addEventListener('submit', async function(e) {
         e.preventDefault();
-        addSeatErrors.classList.add('hidden');
-
-        if (!phongChieuIdAddSeat) {
-            showAddSeatErrors({ _global: ['Không xác định được ID phòng chiếu. Vui lòng tải lại trang.'] });
-            return;
-        }
+        if (addSeatErrors) addSeatErrors.classList.add('hidden');
 
         const payload = {
             hang_ghe_id: addSeatHangGhe.value,
@@ -4312,14 +3594,12 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Validate: check trùng mã ghế trong DOM
         var existingSeat = document.querySelector(`.seat-interactive[data-ma-ghe="${payload.ma_ghe}"]`);
         if (existingSeat) {
             showAddSeatErrors({ _global: [`Ghế "${payload.ma_ghe}" đã tồn tại trong phòng.`] });
             return;
         }
 
-        // Validate: check trùng cột trong hàng
         var rowForColCheck = document.querySelector(`.seat-row[data-hang-ghe-id="${payload.hang_ghe_id}"]`);
         if (rowForColCheck) {
             var existingCol = rowForColCheck.querySelector(`.seat-interactive[data-cot="${payload.cot}"]`);
@@ -4329,7 +3609,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Validate: check ràng buộc theo vị trí hàng
         var allRows = Array.from(document.querySelectorAll('.seat-row'));
         var rowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${payload.hang_ghe_id}"]`);
         var rowIndex = rowEl ? allRows.indexOf(rowEl) : -1;
@@ -4347,20 +3626,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const csrfToken = getCsrfToken();
-        if (!csrfToken) {
-            showAddSeatErrors({ _global: ['Không tìm thấy CSRF token. Vui lòng tải lại trang (F5).'] });
-            return;
-        }
-
+        const csrfToken = window.getCsrfToken();
         const btn = document.getElementById('addSeatSubmit');
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang thêm...';
+        const originalHtml = btn ? btn.innerHTML : '';
+        if (btn) setBtnLoading(btn, true);
 
         try {
-            const url = `/admin/phong-chieus/${phongChieuIdAddSeat}/create-seat`;
-            console.log('[AddSeat] POST', url, payload);
+            const url = `/admin/phong-chieus/${phongChieuId}/create-seat`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -4369,26 +3641,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRF-TOKEN': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify(payload),
-                credentials: 'same-origin'
+                body: JSON.stringify(payload)
             });
-            console.log('[AddSeat] Response status:', res.status);
             const data = await res.json().catch(() => ({ success: false, message: 'Server trả về response không phải JSON' }));
             if (!res.ok || !data.success) {
                 if (data.errors) showAddSeatErrors(data.errors);
                 else showAddSeatErrors({ _global: [data.message || `Lỗi HTTP ${res.status}`] });
-                if (data.message) showToast(data.message, 'error');
+                if (data.message) window.showToast(data.message, 'error');
                 return;
             }
-            closeAddSeatModal();
+            window.closeAddSeatModal();
             location.reload();
         } catch (err) {
             console.error('[AddSeat] Fetch error:', err);
             const msg = err && err.message ? err.message : String(err);
             showAddSeatErrors({ _global: [`Lỗi kết nối: ${msg}. Vui lòng kiểm tra mạng và thử lại (F5 nếu cần).`] });
         } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
+            if (btn) setBtnLoading(btn, false, originalHtml);
         }
     });
 
@@ -4408,13 +3677,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const addRowLoaiGhe = document.getElementById('addRowLoaiGhe');
     const addRowTrangThai = document.getElementById('addRowTrangThai');
     const addRowPreview = document.getElementById('addRowPreview');
-    const phongChieuIdAddRow = document.getElementById('btnOpenAddRow')?.dataset.phongId;
 
-    function updateAddRowPreview() {
+    window.updateAddRowPreview = function() {
         if (!addRowPreview) return;
-        const ten = (addRowTenHang.value || 'A').trim();
-        const so = parseInt(addRowSoGhe.value, 10) || 0;
-        const start = parseInt(addRowCotBatDau.value, 10) || 1;
+        const ten = (addRowTenHang?.value || 'A').trim();
+        const so = parseInt(addRowSoGhe?.value, 10) || 0;
+        const start = parseInt(addRowCotBatDau?.value, 10) || 1;
         if (so <= 0) { addRowPreview.textContent = `${ten}1, ${ten}2, ...`; return; }
         if (so <= 3) {
             const codes = [];
@@ -4423,71 +3691,71 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             addRowPreview.textContent = `${ten}${start}, ${ten}${start + 1}, ... ${ten}${start + so - 1}`;
         }
-    }
+    };
+    window.updateAddRowPreviewDirect = window.updateAddRowPreview;
 
     function updateAddRowAutoBox() {
         if (!addRowAutoBox) return;
-        if (addRowAuto.checked) {
+        if (addRowAuto?.checked) {
             addRowAutoBox.classList.remove('opacity-50', 'pointer-events-none');
         } else {
             addRowAutoBox.classList.add('opacity-50', 'pointer-events-none');
         }
     }
 
-    function openAddRowModal() {
+    window.openAddRowModal = function() {
         if (!addRowModal) return;
-        addRowForm.reset();
-        addRowAuto.checked = true;
-        addRowErrors.classList.add('hidden');
-        addRowErrors.innerHTML = '';
+        if (addRowForm) addRowForm.reset();
+        if (addRowAuto) addRowAuto.checked = true;
+        if (addRowErrors) {
+            addRowErrors.classList.add('hidden');
+            addRowErrors.innerHTML = '';
+        }
         updateAddRowAutoBox();
-        updateAddRowPreview();
+        window.updateAddRowPreview();
         addRowModal.classList.remove('hidden');
-    }
+    };
+    window.openAddRowModalDirect = window.openAddRowModal;
 
-    function closeAddRowModal() {
-        addRowModal.classList.add('hidden');
-    }
+    window.closeAddRowModal = function() {
+        if (addRowModal) addRowModal.classList.add('hidden');
+    };
+    window.closeAddRowModalDirect = window.closeAddRowModal;
 
     function showAddRowErrors(errors) {
+        if (!addRowErrors) return;
         addRowErrors.classList.remove('hidden');
         const html = Object.values(errors).flat().map(e => `<div>• ${e}</div>`).join('');
         addRowErrors.innerHTML = html;
     }
 
-    document.getElementById('btnOpenAddRow')?.addEventListener('click', openAddRowModal);
-    document.getElementById('addRowModalClose')?.addEventListener('click', closeAddRowModal);
-    document.getElementById('addRowCancel')?.addEventListener('click', closeAddRowModal);
+    document.getElementById('btnOpenAddRow')?.addEventListener('click', window.openAddRowModal);
+    document.getElementById('addRowModalClose')?.addEventListener('click', window.closeAddRowModal);
+    document.getElementById('addRowCancel')?.addEventListener('click', window.closeAddRowModal);
     addRowModal?.addEventListener('click', function(e) {
-        if (e.target === addRowModal) closeAddRowModal();
+        if (e.target === addRowModal) window.closeAddRowModal();
     });
 
-    addRowTenHang?.addEventListener('input', updateAddRowPreview);
-    addRowSoGhe?.addEventListener('input', updateAddRowPreview);
-    addRowCotBatDau?.addEventListener('input', updateAddRowPreview);
+    addRowTenHang?.addEventListener('input', window.updateAddRowPreview);
+    addRowSoGhe?.addEventListener('input', window.updateAddRowPreview);
+    addRowCotBatDau?.addEventListener('input', window.updateAddRowPreview);
     addRowAuto?.addEventListener('change', updateAddRowAutoBox);
 
     addRowForm?.addEventListener('submit', async function(e) {
         e.preventDefault();
-        addRowErrors.classList.add('hidden');
+        if (addRowErrors) addRowErrors.classList.add('hidden');
 
-        if (!phongChieuIdAddRow) {
-            showAddRowErrors({ _global: ['Không xác định được ID phòng chiếu. Vui lòng tải lại trang.'] });
-            return;
-        }
+        const tuDong = addRowAuto ? addRowAuto.checked : false;
+        const soGhe = parseInt(addRowSoGhe?.value, 10) || 0;
+        const loaiGheId = addRowLoaiGhe?.value;
 
-        const tuDong = addRowAuto.checked;
-        const soGhe = parseInt(addRowSoGhe.value, 10) || 0;
-        const loaiGheId = addRowLoaiGhe.value;
-
-        if (!addRowTenHang.value.trim()) {
+        if (!addRowTenHang?.value.trim()) {
             showAddRowErrors({ ten_hang: ['Vui lòng nhập tên hàng.'] });
             return;
         }
 
-        // Validate: check trùng tên hàng trong DOM
         var tenHangVal = addRowTenHang.value.trim().toUpperCase();
-        var existingRow = document.querySelector(`.seat-row[data-hang="'${tenHangVal}'"]`);
+        var existingRow = document.querySelector(`.seat-row[data-hang="${tenHangVal}"]`);
         if (existingRow) {
             showAddRowErrors({ ten_hang: [`Hàng "${tenHangVal}" đã tồn tại trong phòng.`] });
             return;
@@ -4502,16 +3770,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Validate: check vị trí hàng mới dựa trên loại ghế
         var allRows = Array.from(document.querySelectorAll('.seat-row'));
         var totalRows = allRows.length;
-        if (tuDong && loaiGheId) {
+        if (tuDong && loaiGheId && addRowLoaiGhe) {
             var selectedLoai = addRowLoaiGhe.options[addRowLoaiGhe.selectedIndex].textContent.toLowerCase();
             var isCouple = selectedLoai.includes('couple');
-            var isVip = selectedLoai.includes('vip');
             var isNormal = selectedLoai.includes('thường') || selectedLoai.includes('normal');
 
-            // Hàng mới sẽ ở cuối
             var newRowIndex = totalRows;
             var isTopThree = newRowIndex < 3;
             var isLastTwo = newRowIndex >= totalRows - 2;
@@ -4528,29 +3793,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const payload = {
             ten_hang: addRowTenHang.value.trim(),
-            la_hang_couple: addRowIsCouple.checked,
-            loai_ghe_mac_dinh_id: addRowLoaiMacDinh.value || null,
+            la_hang_couple: addRowIsCouple ? addRowIsCouple.checked : false,
+            loai_ghe_mac_dinh_id: addRowLoaiMacDinh?.value || null,
             tu_dong_tao_ghe: tuDong,
             so_ghe: tuDong ? soGhe : 0,
-            cot_bat_dau: parseInt(addRowCotBatDau.value, 10) || 1,
+            cot_bat_dau: parseInt(addRowCotBatDau?.value, 10) || 1,
             loai_ghe_id: tuDong ? loaiGheId : null,
-            trang_thai: addRowTrangThai.value || 'hoat_dong',
+            trang_thai: addRowTrangThai?.value || 'hoat_dong',
         };
 
-        const csrfToken = getCsrfToken();
-        if (!csrfToken) {
-            showAddRowErrors({ _global: ['Không tìm thấy CSRF token. Vui lòng tải lại trang (F5).'] });
-            return;
-        }
-
+        const csrfToken = window.getCsrfToken();
         const btn = document.getElementById('addRowSubmit');
-        const originalHtml = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Đang thêm...';
+        const originalHtml = btn ? btn.innerHTML : '';
+        if (btn) setBtnLoading(btn, true);
 
         try {
-            const url = `/admin/phong-chieus/${phongChieuIdAddRow}/create-row`;
-            console.log('[AddRow] POST', url, payload);
+            const url = `/admin/phong-chieus/${phongChieuId}/create-row`;
             const res = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -4559,51 +3817,865 @@ document.addEventListener('DOMContentLoaded', function() {
                     'X-CSRF-TOKEN': csrfToken,
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify(payload),
-                credentials: 'same-origin'
+                body: JSON.stringify(payload)
             });
-            console.log('[AddRow] Response status:', res.status);
             const data = await res.json().catch(() => ({ success: false, message: 'Server trả về response không phải JSON' }));
             if (!res.ok || !data.success) {
                 if (data.errors) showAddRowErrors(data.errors);
                 else showAddRowErrors({ _global: [data.message || `Lỗi HTTP ${res.status}`] });
-                if (data.message) showToast(data.message, 'error');
+                if (data.message) window.showToast(data.message, 'error');
                 return;
             }
-            closeAddRowModal();
+            window.closeAddRowModal();
             location.reload();
         } catch (err) {
             console.error('[AddRow] Fetch error:', err);
             const msg = err && err.message ? err.message : String(err);
             showAddRowErrors({ _global: [`Lỗi kết nối: ${msg}. Vui lòng kiểm tra mạng và thử lại (F5 nếu cần).`] });
         } finally {
+            if (btn) setBtnLoading(btn, false, originalHtml);
+        }
+    });
+
+    /* ============================================ */
+    /* QUẢN LÝ LỊCH BẢO TRÌ & SƠ ĐỒ GHẾ              */
+    /* ============================================ */
+    function removeLichBaoTriItemsFromDOM(scheduleIds) {
+        if (!Array.isArray(scheduleIds) || scheduleIds.length === 0) return;
+
+        scheduleIds.forEach(id => {
+            const item = document.querySelector(`.lich-bao-tri-item[data-lich-id="${id}"]`) 
+                      || document.querySelector(`[data-lich-id="${id}"]`);
+            if (item) {
+                item.style.transition = 'all 0.3s ease';
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(-10px)';
+                setTimeout(() => item.remove(), 300);
+            }
+        });
+
+        setTimeout(() => {
+            const list = document.getElementById('lichBaoTriList');
+            const countSpan = document.getElementById('lichBaoTriCount');
+            if (list && countSpan) {
+                const remainingItems = list.querySelectorAll('.lich-bao-tri-item, [data-lich-id]').length;
+                countSpan.textContent = remainingItems;
+                if (remainingItems === 0) {
+                    const container = document.getElementById('lichBaoTriContainer');
+                    if (container) container.innerHTML = '';
+                }
+            }
+        }, 350);
+    }
+
+    async function checkExpiredMaintenance() {
+        try {
+            const res = await fetch(`/admin/phong-chieus/${phongChieuId}/check-expired-maintenance`);
+            const data = await res.json();
+            if (data.success) {
+                if (data.updated_seats && data.updated_seats.length > 0) {
+                    data.updated_seats.forEach(item => {
+                        const el = findSeatEl(item.id);
+                        if (el) {
+                            el.dataset.trangThai = item.trang_thai;
+                            updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
+                        }
+                    });
+                }
+                const idsToRemove = data.removed_schedule_ids || data.expired_schedule_ids || data.started_schedule_ids;
+                if (idsToRemove && idsToRemove.length > 0) {
+                    removeLichBaoTriItemsFromDOM(idsToRemove);
+                }
+            }
+        } catch (err) {
+            console.error('Lỗi tự động kiểm tra bảo trì:', err);
+        }
+    }
+
+    checkExpiredMaintenance();
+    setInterval(checkExpiredMaintenance, 15000);
+
+    function updateSeatDOM(seatEl, loaiGhe, mauSac, trangThai, phuThu) {
+        if (!seatEl) return;
+        const maGhe = seatEl.dataset.maGhe;
+        const isSelected = seatEl.classList.contains('selected');
+        const isCouple = seatEl.classList.contains('seat-chip--couple');
+
+        seatEl.dataset.loaiGhe = loaiGhe;
+        seatEl.dataset.mauSac = mauSac;
+        seatEl.dataset.trangThai = trangThai;
+        seatEl.dataset.phuThu = phuThu;
+        seatEl.title = maGhe + ' - ' + loaiGhe + ' (' + Number(phuThu).toLocaleString() + 'đ)';
+
+        let className = 'seat-chip seat-interactive';
+        if (trangThai === 'bao_tri') className += ' seat-chip--maintenance';
+        else if (trangThai === 'sap_bao_tri') className += ' seat-chip--pending';
+        if (isCouple) className += ' seat-chip--couple';
+        if (isSelected) className += ' selected';
+        seatEl.className = className;
+
+        if (trangThai === 'bao_tri') {
+            seatEl.style.backgroundColor = '#dc2626';
+            seatEl.style.color = '#ffffff';
+        } else if (trangThai === 'sap_bao_tri') {
+            seatEl.style.backgroundColor = '#fef3c7';
+            seatEl.style.color = '#92400e';
+        } else {
+            seatEl.style.backgroundColor = mauSac;
+            seatEl.style.color = '#1a0b04';
+        }
+
+        const labelSpans = seatEl.querySelectorAll('.seat-label, .seat-couple-left, .seat-couple-right');
+        labelSpans.forEach(s => {
+            if (trangThai === 'bao_tri') {
+                s.style.color = '#ffffff';
+            } else if (trangThai === 'sap_bao_tri') {
+                s.style.color = '#92400e';
+            } else {
+                s.style.color = '#1a0b04';
+            }
+        });
+    }
+
+    function syncSeatCheckMark(seatEl) {
+        if (!seatEl) return;
+        const existing = seatEl.querySelector('.seat-check-mark');
+        if (seatEl.classList.contains('selected')) {
+            if (!existing) {
+                const mark = document.createElement('span');
+                mark.className = 'seat-check-mark';
+                seatEl.appendChild(mark);
+            }
+            seatEl.style.setProperty('transform', 'scale(1.15) translateY(-8px)', 'important');
+            seatEl.style.setProperty('z-index', '9999', 'important');
+            seatEl.style.setProperty('filter', 'brightness(1.35) saturate(1.25) drop-shadow(0 0 8px rgba(244,197,106,0.9))', 'important');
+            seatEl.style.setProperty('outline', '3px solid #fde68a', 'important');
+            seatEl.style.setProperty('outline-offset', '3px', 'important');
+            seatEl.style.setProperty('animation', 'seatPulse 1.4s ease-in-out infinite', 'important');
+        } else {
+            if (existing) existing.remove();
+            seatEl.style.removeProperty('transform');
+            seatEl.style.removeProperty('z-index');
+            seatEl.style.removeProperty('filter');
+            seatEl.style.removeProperty('outline');
+            seatEl.style.removeProperty('outline-offset');
+            seatEl.style.removeProperty('animation');
+        }
+    }
+    document.querySelectorAll('.seat-interactive').forEach(syncSeatCheckMark);
+
+    function updateBulkToolbar() {
+        const count = selectedSeats.size;
+        const bulkActionsToolbar = document.getElementById('bulkActionsToolbar');
+        const selectedCount = document.getElementById('selectedCount');
+        if (count > 0) {
+            if (bulkActionsToolbar) bulkActionsToolbar.classList.remove('hidden');
+            if (selectedCount) selectedCount.textContent = count;
+        } else {
+            if (bulkActionsToolbar) bulkActionsToolbar.classList.add('hidden');
+        }
+        updateBulkMaintenanceBtnLabel();
+    }
+
+    function updateBulkMaintenanceBtnLabel() {
+        const btn = document.getElementById('btnToggleMaintenance');
+        if (!btn) return;
+        if (selectedSeats.size === 0) {
+            btn.innerHTML = '<i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì';
+            btn.dataset.bulkAction = '';
+            return;
+        }
+
+        let soBaoTri = 0, soHoatDong = 0;
+        selectedSeats.forEach(id => {
+            const el = document.querySelector(`.seat-interactive[data-ghe-id="${id}"]`);
+            if (!el) return;
+            if (el.dataset.trangThai === 'bao_tri') soBaoTri++;
+            else soHoatDong++;
+        });
+
+        if (soBaoTri > 0 && soHoatDong === 0) {
+            btn.innerHTML = '<i class="fa-solid fa-circle-play mr-1.5"></i>Kích hoạt';
+            btn.dataset.bulkAction = 'activate';
+        } else {
+            btn.innerHTML = '<i class="fa-solid fa-wrench mr-1.5"></i>Bảo trì';
+            btn.dataset.bulkAction = 'maintenance';
+        }
+    }
+
+    // --- NÚT BẢO TRÌ / KÍCH HOẠT NHIỀU GHẾ ---
+    const btnToggleMaintenance = document.getElementById('btnToggleMaintenance');
+    btnToggleMaintenance?.addEventListener('click', function(e) {
+        if (e) e.preventDefault();
+
+        if (!selectedSeats || selectedSeats.size === 0) {
+            window.showToast('Vui lòng chọn ít nhất 1 ghế trên sơ đồ.', 'warning');
+            return;
+        }
+
+        const action = this.dataset.bulkAction || 'maintenance';
+        let seatIds = Array.from(selectedSeats);
+        try { seatIds = expandCoupleIds(seatIds); } catch (err) { console.warn(err); }
+
+        if (action === 'activate') {
+            setBtnLoading(this, true);
+
+            fetch(`/admin/phong-chieus/${phongChieuId}/bulk-update-seats`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': window.getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ ghe_ids: seatIds, action: 'activate' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.updated_seats) {
+                        data.updated_seats.forEach(item => {
+                            const el = findSeatEl(item.id);
+                            if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
+                        });
+                    }
+                    if (data.removed_schedule_ids) {
+                        removeLichBaoTriItemsFromDOM(data.removed_schedule_ids);
+                    }
+                    selectedSeats.clear();
+                    document.querySelectorAll('.seat-interactive.selected').forEach(el => {
+                        el.classList.remove('selected');
+                        syncSeatCheckMark(el);
+                    });
+                    updateBulkToolbar();
+                    window.showToast(data.message || 'Đã kích hoạt ghế thành công.', 'success');
+                } else {
+                    window.showToast(data.message || 'Có lỗi xảy ra', 'error');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                window.showToast('Lỗi kết nối máy chủ', 'error');
+            })
+            .finally(() => {
+                updateBulkMaintenanceBtnLabel();
+                setBtnLoading(this, false);
+            });
+            return;
+        }
+
+        window.pendingMaintenanceSeatIds = seatIds;
+        const seatNames = seatIds.map(id => {
+            const seatEl = findSeatEl(id);
+            return seatEl ? (seatEl.dataset.maGhe || `Ghế #${id}`) : '';
+        }).filter(Boolean);
+
+        window.openMaintenanceModal(seatIds, seatNames);
+    });
+
+    /* ================================================================ */
+    /* MODAL LÊN LỊCH BẢO TRÌ GHẾ                                       */
+    /* ================================================================ */
+    const maintenanceModal = document.getElementById('maintenanceModal');
+
+    window.openMaintenanceModal = function(seatIds = [], seatNames = []) {
+        window.pendingMaintenanceSeatIds = seatIds;
+        if (!maintenanceModal) return;
+
+        const countEl = document.getElementById('maintModalSeatCount');
+        if (countEl) {
+            countEl.textContent = seatNames.length > 0 ? `${seatNames.length} ghế` : '1 ghế';
+        }
+
+        const badgeContainer = document.getElementById('maintModalSeatBadges');
+        if (badgeContainer) {
+            if (seatNames.length > 0) {
+                badgeContainer.innerHTML = seatNames.map(name => 
+                    `<span class="px-3 py-1 text-xs font-bold rounded-xl bg-[#f4c56a]/20 text-[#f4c56a] border border-[#f4c56a]/30">${name}</span>`
+                ).join('');
+            } else {
+                badgeContainer.innerHTML = `<span class="text-xs text-gray-500">Chưa chọn</span>`;
+            }
+        }
+
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        const nowStr = now.toISOString().slice(0, 16);
+
+        const batDauInput = document.getElementById('maintBatDau') || document.getElementById('maintenanceStartTime');
+        if (batDauInput) batDauInput.value = nowStr;
+
+        maintenanceModal.classList.remove('hidden');
+    };
+
+    window.closeMaintenanceModal = function() {
+        if (maintenanceModal) maintenanceModal.classList.add('hidden');
+    };
+
+    document.getElementById('btnCloseMaintModal')?.addEventListener('click', window.closeMaintenanceModal);
+    document.getElementById('btnCancelMaintModal')?.addEventListener('click', window.closeMaintenanceModal);
+    document.getElementById('maintenanceModalCloseHeader')?.addEventListener('click', window.closeMaintenanceModal);
+
+    const btnSubmitMaint = document.getElementById('btnSubmitMaintenance') || document.getElementById('maintenanceModalApply');
+    btnSubmitMaint?.addEventListener('click', async function() {
+        const ids = window.pendingMaintenanceSeatIds || Array.from(selectedSeats);
+        if (!ids || ids.length === 0) {
+            window.showToast('Vui lòng chọn ghế cần bảo trì.', 'warning');
+            return;
+        }
+
+        const batDau = (document.getElementById('maintBatDau') || document.getElementById('maintenanceStartTime'))?.value;
+        const ketThuc = (document.getElementById('maintKetThuc') || document.getElementById('maintenanceEndTime'))?.value || null;
+        const lyDo = (document.getElementById('maintLyDo') || document.getElementById('maintenanceReason'))?.value?.trim();
+
+        if (!batDau) {
+            window.showToast('Vui lòng chọn thời gian bắt đầu bảo trì.', 'warning');
+            return;
+        }
+        if (!lyDo) {
+            window.showToast('Vui lòng nhập lý do bảo trì.', 'warning');
+            return;
+        }
+
+        const btn = this;
+        setBtnLoading(btn, true);
+
+        try {
+            const res = await fetch(`/admin/phong-chieus/${phongChieuId}/schedule-seat-maintenance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': window.getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    ghe_ids: ids,
+                    thoi_gian_bat_dau: batDau,
+                    thoi_gian_ket_thuc: ketThuc,
+                    ly_do: lyDo
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                window.showToast(data.message || 'Lỗi khi đặt lịch bảo trì ghế.', 'error');
+                return;
+            }
+
+            window.showToast(data.message || 'Đã lên lịch bảo trì ghế thành công!', 'success');
+
+            if (data.updated_seats) {
+                data.updated_seats.forEach(s => {
+                    const el = findSeatEl(s.id);
+                    if (el) {
+                        el.dataset.trangThai = s.trang_thai;
+                        updateSeatDOM(el, s.loai_ghe, s.mau_sac, s.trang_thai, s.phu_thu);
+                    }
+                });
+            }
+
+            window.closeMaintenanceModal();
+            setTimeout(() => location.reload(), 300);
+
+        } catch (err) {
+            console.error('[btnSubmitMaintenance] Error:', err);
+            window.showToast('Có lỗi kết nối đến máy chủ.', 'error');
+        } finally {
+            setBtnLoading(btn, false, '<i class="fa-solid fa-wrench mr-1.5"></i>Xác nhận bảo trì');
+        }
+    });
+
+    /* ================================================================ */
+    /* BẢO TRÌ CẢ HÀNG GHẾ                                              */
+    /* ================================================================ */
+    window.__rowMaintClick = async function(ev) {
+        const btn = ev?.target?.closest('#rowMaintenanceBtn') || document.getElementById('rowMaintenanceBtn');
+        if (!btn) return;
+
+        if (!currentRowHangId) {
+            window.showToast('Vui lòng chọn hàng ghế trước.', 'warning');
+            return;
+        }
+
+        const isAllMaint = /Kích hoạt/i.test(btn.textContent);
+        const action = isAllMaint ? 'activate' : 'maintenance';
+
+        const batDau = document.getElementById('rowMaintBatDau')?.value;
+        const ketThuc = document.getElementById('rowMaintKetThuc')?.value || null;
+        const lyDo = document.getElementById('rowMaintLyDo')?.value?.trim() || '';
+
+        if (action === 'maintenance') {
+            if (!batDau) {
+                window.showToast('Vui lòng chọn thời gian bắt đầu bảo trì.', 'warning');
+                return;
+            }
+            if (!lyDo) {
+                window.showToast('Vui lòng nhập lý do bảo trì.', 'warning');
+                return;
+            }
+        }
+
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i>Đang xử lý...';
+
+        try {
+            const url = (action === 'maintenance' && batDau)
+                ? `/admin/phong-chieus/${phongChieuId}/schedule-row-maintenance`
+                : `/admin/phong-chieus/${phongChieuId}/toggle-row-maintenance`;
+
+            const payload = {
+                hang_ghe_id: currentRowHangId,
+                action: action,
+                thoi_gian_bat_dau: batDau,
+                thoi_gian_ket_thuc: ketThuc,
+                ly_do: lyDo
+            };
+
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': window.getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                window.showToast(data.message || 'Có lỗi xảy ra khi xử lý bảo trì hàng.', 'error');
+                return;
+            }
+
+            window.showToast(data.message || 'Cập nhật trạng thái hàng thành công!', 'success');
+
+            if (data.updated_seats) {
+                data.updated_seats.forEach(s => {
+                    const el = findSeatEl(s.id);
+                    if (el) {
+                        el.dataset.trangThai = s.trang_thai;
+                        updateSeatDOM(el, s.loai_ghe, s.mau_sac, s.trang_thai, s.phu_thu);
+                    }
+                });
+            }
+
+            if (data.removed_schedule_ids || data.expired_schedule_ids) {
+                removeLichBaoTriItemsFromDOM(data.removed_schedule_ids || data.expired_schedule_ids);
+            }
+
+            if (rowChangeModal) rowChangeModal.classList.add('hidden');
+            setTimeout(() => location.reload(), 300);
+
+        } catch (err) {
+            console.error('[rowMaintenanceBtn] error:', err);
+            window.showToast('Có lỗi xảy ra khi kết nối máy chủ.', 'error');
+        } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;
         }
-    });
+    };
 
-    // ESC để đóng modal
+    document.getElementById('rowMaintenanceBtn')?.addEventListener('click', window.__rowMaintClick);
+
+    /* ================================================================ */
+    /* SỰ KIỆN PHÍM ESC MỞ/ĐÓNG MODAL                                   */
+    /* ================================================================ */
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            var addSeatModal = document.getElementById('addSeatModal');
-            var addRowModal = document.getElementById('addRowModal');
-            var rowChangeModal = document.getElementById('rowChangeModal');
             if (addSeatModal) addSeatModal.classList.add('hidden');
             if (addRowModal) addRowModal.classList.add('hidden');
             if (rowChangeModal) rowChangeModal.classList.add('hidden');
+            if (maintenanceModal) maintenanceModal.classList.add('hidden');
         }
     });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.custom-select')) {
-            document.querySelectorAll('.custom-select__trigger.active').forEach(t => {
-                t.classList.remove('active');
-            });
-            document.querySelectorAll('.custom-select__dropdown').forEach(d => {
-                d.style.display = 'none';
-            });
-        }
-    });
+});
 </script>
 
+<!-- TOOLTIP ELEMENT ĐỂ HOVER HIỂN THỊ THÔNG TIN GHẾ -->
+<div id="seatTooltip" class="fixed z-[99999] pointer-events-none opacity-0 transition-opacity duration-150 rounded-xl border border-[#f4c56a]/40 bg-[#141414]/95 p-3 text-white shadow-2xl backdrop-blur-md max-w-[220px]">
+    <div id="seatTooltipMaGhe" class="font-black text-sm text-[#f4c56a] mb-0.5"></div>
+    <div id="seatTooltipLoai" class="text-xs text-gray-300"></div>
+    <div id="seatTooltipPhuThu" class="text-xs text-gray-400"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltip = document.getElementById('seatTooltip');
+    const ttMaGhe = document.getElementById('seatTooltipMaGhe');
+    const ttLoai = document.getElementById('seatTooltipLoai');
+    const ttPhuThu = document.getElementById('seatTooltipPhuThu');
+    let currentTooltipSeat = null;
+
+    if (!tooltip) return;
+
+    document.addEventListener('mouseover', function(e) {
+        const seat = e.target.closest('.seat-interactive');
+        if (!seat) return;
+        if (seat === currentTooltipSeat) return;
+        currentTooltipSeat = seat;
+        const maGhe = seat.dataset.maGhe || '';
+        const loaiGhe = seat.dataset.loaiGhe || 'Thường';
+        const phuThu = parseInt(seat.dataset.phuThu || 0, 10);
+        const trangThai = seat.dataset.trangThai || '';
+
+        if (ttMaGhe) ttMaGhe.textContent = 'Ghế ' + maGhe;
+        let loaiText = 'Loại: ' + loaiGhe;
+        if (trangThai === 'bao_tri') loaiText += ' (Bảo trì)';
+        if (ttLoai) ttLoai.textContent = loaiText;
+        if (ttPhuThu) ttPhuThu.textContent = 'Phụ thu: ' + phuThu.toLocaleString() + 'đ';
+
+        tooltip.style.opacity = '1';
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (tooltip.style.opacity === '0') return;
+        const offsetX = 14;
+        const offsetY = 14;
+        let x = e.clientX + offsetX;
+        let y = e.clientY + offsetY;
+        const rect = tooltip.getBoundingClientRect();
+        if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - offsetX;
+        if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - offsetY;
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+    });
+
+    document.addEventListener('mouseout', function(e) {
+        const seat = e.target.closest('.seat-interactive');
+        if (!seat) return;
+        const related = e.relatedTarget;
+        if (seat.contains(related)) return;
+        tooltip.style.opacity = '0';
+        currentTooltipSeat = null;
+    });
+});
+
+/* ================================================================ */
+/* 1. HÀM KIỂM TRA QUY TẮC LOẠI GHẾ THEO VỊ TRÍ HÀNG                */
+/* ================================================================ */
+function validateRowSeatType(rowIndex, totalRows, optionEl) {
+    if (!optionEl) return { valid: true, msg: '' };
+    
+    const isCouple = optionEl.dataset.laCouple === 'true';
+    const labelText = (optionEl.querySelector('.custom-select__option-label')?.textContent || '').toLowerCase();
+    const isVip = labelText.includes('vip');
+    const isThuong = labelText.includes('thường') || labelText.includes('thuong');
+
+    const isTopThree = rowIndex < 3;
+    const isLastTwo = rowIndex >= totalRows - 2;
+    const isMiddle = !isTopThree && !isLastTwo;
+
+    if (isTopThree && !isThuong) {
+        return { valid: false, msg: '3 hàng gần màn chiếu chỉ được đặt ghế Thường.' };
+    }
+    if (isMiddle && !isVip) {
+        return { valid: false, msg: 'Các hàng ở giữa chỉ được đặt ghế VIP.' };
+    }
+    if (isLastTwo && !isCouple) {
+        return { valid: false, msg: '2 hàng cuối chỉ được đặt ghế Couple.' };
+    }
+    return { valid: true, msg: '' };
+}
+
+/* ================================================================ */
+/* 2. CÁC HÀM CUSTOM SELECT GLOBAL (BẤM MỞ DROP DOWN)               */
+/* ================================================================ */
+
+/* ================================================================ */
+/* 1. QUY TẮC KIỂM TRA LOẠI GHẾ THEO VỊ TRÍ HÀNG                    */
+/* ================================================================ */
+function validateRowSeatType(rowIndex, totalRows, optionEl) {
+    if (!optionEl) return { valid: true, msg: '' };
+    
+    const isCouple = optionEl.dataset.laCouple === 'true';
+    const labelText = (optionEl.querySelector('.custom-select__option-label')?.textContent || optionEl.textContent || '').toLowerCase();
+    const isVip = labelText.includes('vip');
+    const isThuong = labelText.includes('thường') || labelText.includes('thuong');
+
+    const isTopThree = rowIndex < 3;
+    const isLastTwo = rowIndex >= totalRows - 2;
+    const isMiddle = !isTopThree && !isLastTwo;
+
+    if (isTopThree && !isThuong) {
+        return { valid: false, msg: '3 hàng gần màn chiếu chỉ được đặt ghế Thường.' };
+    }
+    if (isMiddle && !isVip) {
+        return { valid: false, msg: 'Các hàng ở giữa chỉ được đặt ghế VIP.' };
+    }
+    if (isLastTwo && !isCouple) {
+        return { valid: false, msg: '2 hàng cuối chỉ được đặt ghế Couple.' };
+    }
+    return { valid: true, msg: '' };
+}
+
+/* ================================================================ */
+/* 2. BỘ XỬ LÝ DÙNG CHUNG CHO ALL CUSTOM SELECT (TOOLAR & MODAL)   */
+/* ================================================================ */
+
+// Hàm bật / tắt Dropdown
+window.toggleCustomSelect = function(trigger) {
+    if (window.event) {
+        window.event.preventDefault();
+        window.event.stopPropagation();
+    }
+    const wrapper = trigger.closest('.custom-select');
+    if (!wrapper) return;
+    const dropdown = wrapper.querySelector('.custom-select__dropdown');
+    if (!dropdown) return;
+
+    const isHidden = dropdown.classList.contains('hidden');
+
+    // Đóng tất cả dropdown khác đang mở
+    document.querySelectorAll('.custom-select__dropdown').forEach(d => d.classList.add('hidden'));
+
+    if (isHidden) {
+        dropdown.classList.remove('hidden');
+    }
+};
+
+// Hàm chọn Option
+window.selectCustomOption = function(option) {
+    if (window.event) {
+        window.event.preventDefault();
+        window.event.stopPropagation();
+    }
+
+    const wrapper = option.closest('.custom-select');
+    if (!wrapper) return;
+
+    const trigger = wrapper.querySelector('.custom-select__trigger');
+    const select = wrapper.querySelector('select');
+    const value = option.dataset.value;
+    const text = option.querySelector('.custom-select__option-label')?.textContent || option.textContent.trim();
+
+    // Cập nhật hiển thị ô Trigger
+    const valueDiv = trigger?.querySelector('.custom-select__value');
+    if (valueDiv) {
+        valueDiv.innerHTML = '';
+        const colorDot = option.querySelector('.custom-select__option-color');
+        if (colorDot) {
+            const dot = document.createElement('div');
+            dot.className = 'custom-select__color-dot h-3 w-3 rounded-full';
+            dot.style.backgroundColor = colorDot.style.backgroundColor;
+            valueDiv.appendChild(dot);
+        }
+        const textSpan = document.createElement('span');
+        textSpan.className = 'custom-select__text font-medium text-white';
+        textSpan.textContent = text;
+        valueDiv.appendChild(textSpan);
+    }
+
+    // Cập nhật value thẻ select ẩn
+    if (select) {
+        select.value = value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    wrapper.querySelectorAll('.custom-select__option').forEach(o => o.classList.remove('bg-white/10'));
+    option.classList.add('bg-white/10');
+
+    // Đóng dropdown
+    const dropdown = wrapper.querySelector('.custom-select__dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+
+    // trường hợp A: Chọn trong Modal Hàng ghế
+    if (wrapper.dataset.selectId === 'rowChangeModalLoaiGhe' && window.currentRowIndex !== undefined) {
+        const check = validateRowSeatType(window.currentRowIndex, window.currentTotalRows, option);
+        const warningEl = document.getElementById('rowTypeRestrictionWarning');
+        const detailEl = document.getElementById('rowRestrictionDetail');
+        const applyBtn = document.getElementById('rowChangeModalApply');
+
+        if (!check.valid) {
+            if (warningEl) warningEl.classList.remove('hidden');
+            if (detailEl) detailEl.textContent = check.msg;
+            if (applyBtn) applyBtn.disabled = true;
+        } else {
+            if (warningEl) warningEl.classList.add('hidden');
+            if (applyBtn) applyBtn.disabled = false;
+        }
+    }
+
+    // Trường hợp B: Chọn trên Thanh thao tác ghế lẻ (1 ghế đã chọn)
+    if (wrapper.id === 'bulkLoaiGheSelect' || wrapper.dataset.selectId === 'bulkLoaiGheSelect' || wrapper.closest('#bulkActionsToolbar') || wrapper.closest('.bulk-actions-bar')) {
+        if (typeof window.handleBulkSeatTypeChange === 'function') {
+            window.handleBulkSeatTypeChange(value);
+        }
+    }
+};
+
+/* ================================================================ */
+/* 3. LẮNG NGHE SỰ KIỆN CLICK TOÀN TRANG (EVENT DELEGATION)         */
+/* ================================================================ */
+document.addEventListener('click', function(e) {
+    // 1. Nếu click vào nút kích hoạt ô Select Custom
+    const trigger = e.target.closest('.custom-select__trigger');
+    if (trigger) {
+        window.toggleCustomSelect(trigger);
+        return;
+    }
+
+    // 2. Nếu click vào 1 Option trong danh sách thả xuống
+    const option = e.target.closest('.custom-select__option');
+    if (option) {
+        window.selectCustomOption(option);
+        return;
+    }
+
+    // 3. Nếu click ra ngoài -> Đóng tất cả dropdown
+    if (!e.target.closest('.custom-select')) {
+        document.querySelectorAll('.custom-select__dropdown').forEach(d => d.classList.add('hidden'));
+    }
+});
+
+/* ================================================================ */
+/* 4. SỰ KIỆN MỞ MODAL HÀNG GHẾ                                    */
+/* ================================================================ */
+document.addEventListener('DOMContentLoaded', function() {
+    const rowChangeModal = document.getElementById('rowChangeModal');
+
+    document.querySelectorAll('.seat-row__label--clickable').forEach(label => {
+        label.addEventListener('click', function() {
+            const row = this.closest('.seat-row');
+            if (!row) return;
+
+            window.currentRowHangId = row.dataset.hangGheId;
+            const tenHang = row.dataset.hang;
+
+            const elTenHang = document.getElementById('rowChangeModalTenHang');
+            if (elTenHang) elTenHang.textContent = tenHang;
+
+            const allRows = Array.from(document.querySelectorAll('.seat-row'));
+            const rowIndex = allRows.indexOf(row);
+            const totalRows = allRows.length;
+
+            window.currentRowIndex = rowIndex;
+            window.currentTotalRows = totalRows;
+
+            const elRowIndex = document.getElementById('rowChangeModalRowIndex');
+            if (elRowIndex) elRowIndex.textContent = 'Hàng thứ ' + (rowIndex + 1);
+
+            if (typeof updateRowModalStatsAndButton === 'function') {
+                updateRowModalStatsAndButton(row);
+            }
+
+            // Đồng bộ loại ghế hợp lệ cho Modal hàng
+            const wrapper = document.querySelector('.custom-select[data-select-id="rowChangeModalLoaiGhe"]');
+            if (wrapper) {
+                const allOptions = Array.from(wrapper.querySelectorAll('.custom-select__option'));
+                let targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid);
+                if (!targetOption) targetOption = allOptions[0];
+
+                if (targetOption) {
+                    window.selectCustomOption(targetOption);
+                }
+            }
+
+            if (rowChangeModal) rowChangeModal.classList.remove('hidden');
+        });
+    });
+});
+
+/* ================================================================ */
+/* 5. HÀM ĐỔI LOẠI GHẾ LẺ (DÙNG CHO THANH CÔNG CỤ TOOLBAR)         */
+/* ================================================================ */
+window.handleBulkSeatTypeChange = async function(loaiGheId) {
+    if (!loaiGheId) return;
+
+    // Lấy tất cả ID ghế đang chọn
+    const selectedSeats = Array.from(document.querySelectorAll('.seat-interactive.is-selected, .seat-checkbox:checked'));
+    const gheIds = selectedSeats.map(el => el.dataset.seatId || el.value).filter(Boolean);
+
+    if (gheIds.length === 0) {
+        if (typeof window.showToast === 'function') window.showToast('Vui lòng chọn ít nhất 1 ghế.', 'warning');
+        return;
+    }
+
+    try {
+        const res = await fetch(`/admin/phong-chieus/${phongChieuId}/bulk-update-seats`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': window.getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                ghe_ids: gheIds,
+                action: 'update_type',
+                loai_ghe_id: loaiGheId
+            })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            if (typeof window.showToast === 'function') window.showToast(data.message || 'Lỗi cập nhật loại ghế.', 'error');
+            return;
+        }
+
+        if (typeof window.showToast === 'function') window.showToast(data.message || 'Cập nhật loại ghế thành công!', 'success');
+        setTimeout(() => location.reload(), 300);
+
+    } catch (err) {
+        console.error(err);
+        if (typeof window.showToast === 'function') window.showToast('Lỗi kết nối máy chủ.', 'error');
+    }
+};
+/* ================================================================ */
+/* 3. SỰ KIỆN CLICK CHỌN HÀNG GHẾ ĐỂ MỞ MODAL                       */
+/* ================================================================ */
+document.addEventListener('DOMContentLoaded', function() {
+    const rowChangeModal = document.getElementById('rowChangeModal');
+
+    document.querySelectorAll('.seat-row__label--clickable').forEach(label => {
+        label.addEventListener('click', function() {
+            const row = this.closest('.seat-row');
+            if (!row) return;
+
+            window.currentRowHangId = row.dataset.hangGheId;
+            const tenHang = row.dataset.hang;
+
+            // Cập nhật tiêu đề hàng
+            const elTenHang = document.getElementById('rowChangeModalTenHang');
+            if (elTenHang) elTenHang.textContent = tenHang;
+
+            // Lấy chỉ số vị trí hàng
+            const allRows = Array.from(document.querySelectorAll('.seat-row'));
+            const rowIndex = allRows.indexOf(row);
+            const totalRows = allRows.length;
+
+            window.currentRowIndex = rowIndex;
+            window.currentTotalRows = totalRows;
+
+            const elRowIndex = document.getElementById('rowChangeModalRowIndex');
+            if (elRowIndex) elRowIndex.textContent = 'Hàng thứ ' + (rowIndex + 1);
+
+            // Cập nhật thông số bảo trì
+            if (typeof updateRowModalStatsAndButton === 'function') {
+                updateRowModalStatsAndButton(row);
+            }
+
+            // TỰ ĐỘNG LỰA CHỌN LOẠI GHẾ HỢP LỆ VỚI VỊ TRÍ HÀNG
+            const wrapper = document.querySelector('.custom-select[data-select-id="rowChangeModalLoaiGhe"]');
+            if (wrapper) {
+                const allOptions = Array.from(wrapper.querySelectorAll('.custom-select__option'));
+                
+                // Tìm option hợp lệ với hàng hiện tại (VD: Hàng B là 3 hàng đầu -> Tự chọn 'Thường')
+                let targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid);
+
+                if (!targetOption) targetOption = allOptions[0];
+
+                if (targetOption) {
+                    window.selectCustomOption(targetOption);
+                }
+            }
+
+            // Mở Modal
+            if (rowChangeModal) rowChangeModal.classList.remove('hidden');
+        });
+    });
+});
+</script>
