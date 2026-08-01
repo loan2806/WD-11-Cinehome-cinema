@@ -311,6 +311,7 @@ Route::middleware(['auth'])
             Route::post('phong-chieus/{phong_chieu}/toggle-row-maintenance', [AdminPhongChieuController::class, 'toggleRowMaintenance'])->name('phong-chieus.toggle-row-maintenance');
             Route::post('phong-chieus/{phong_chieu}/create-seat', [AdminPhongChieuController::class, 'createSeat'])->name('phong-chieus.create-seat');
             Route::post('phong-chieus/{phong_chieu}/create-row', [AdminPhongChieuController::class, 'createRow'])->name('phong-chieus.create-row');
+            Route::post('phong-chieus/{phongChieu}/schedule-row-maintenance', [AdminPhongChieuController::class, 'scheduleRowMaintenance'])->name('admin.phong-chieus.schedule-row-maintenance');
         });
 
         Route::middleware(['quyen:loai_ghe.xem'])->group(function () {

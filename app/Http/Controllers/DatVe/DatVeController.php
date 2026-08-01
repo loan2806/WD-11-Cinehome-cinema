@@ -88,7 +88,8 @@ class DatVeController extends Controller
             ];
         });
 
-        $danhSachSuatChieu = SuatChieu::with(['phim.genres', 'rapChieuPhim', 'phongChieu', 'veXemPhims'])
+        // EAGER LOADING Thêm phongChieu.gheNgois
+        $danhSachSuatChieu = SuatChieu::with(['phim.genres', 'rapChieuPhim', 'phongChieu.gheNgois', 'veXemPhims'])
             ->where('rap_chieu_phim_id', $rap->id)
             ->whereDate('thoi_gian_chieu', $selectedDate)
             ->when($selectedDate->isToday(), fn($query) => $query->where('thoi_gian_chieu', '>=', $now))
@@ -100,12 +101,38 @@ class DatVeController extends Controller
 
         foreach ($suatChieuTheoPhim as $suatChieus) {
             foreach ($suatChieus as $suat) {
-                $tongGhe = $suat->phongChieu->gheNgois->where('trang_thai', 'hoat_dong')->count();
-                $gheDaDat = $suat->veXemPhims->whereIn('trang_thai', ['da_dat', 'da_thanh_toan'])->count();
+                // 1. Tổng số ghế đang HOẠT ĐỘNG trong phòng chiếu
+                $tongGhe = $suat->phongChieu?->gheNgois?->where('trang_thai', 'hoat_dong')->count() ?? 0;
+
+                // 2. Lọc các vé hợp lệ đang chiếm giữ ghế (bao gồm đơn chờ thanh toán chưa hết hạn)
+                $validTickets = $suat->veXemPhims->filter(function ($ve) {
+                    if (in_array($ve->trang_thai, ['da_dat', 'da_thanh_toan', 'da_su_dung'])) {
+                        return true;
+                    }
+                    if ($ve->trang_thai === 'cho_thanh_toan' && $ve->thoi_gian_het_han && Carbon::parse($ve->thoi_gian_het_han)->isFuture()) {
+                        return true;
+                    }
+                    return false;
+                });
+
+                // 3. Tách các mã ghế trong từng vé (ví dụ "A1, A2") để đếm tổng số ghế đã giữ/đặt
+                $bookedSeats = collect();
+                foreach ($validTickets as $ve) {
+                    if (!empty($ve->ma_ghe)) {
+                        foreach (explode(',', (string) $ve->ma_ghe) as $code) {
+                            $seatCode = strtoupper(trim($code));
+                            if ($seatCode !== '') {
+                                $bookedSeats->push($seatCode);
+                            }
+                        }
+                    }
+                }
+
+                $gheDaDatCount = $bookedSeats->unique()->count();
 
                 $suat->tong_ghe = $tongGhe;
-                $suat->ghe_da_dat = $gheDaDat;
-                $suat->ghe_trong = max(0, $tongGhe - $gheDaDat);
+                $suat->ghe_da_dat = $gheDaDatCount;
+                $suat->ghe_trong = max(0, $tongGhe - $gheDaDatCount);
             }
         }
 
@@ -140,7 +167,6 @@ class DatVeController extends Controller
             return redirect()->route('dat_ve.chon_phim')->with('error', 'Không tìm thấy suất chiếu phù hợp.');
         }
 
-        // 🌟 KIỂM TRA: Nếu đang có đơn chờ ở SUẤT CHIẾU KHÁC -> Đẩy về "Vé của tôi" và báo lỗi ngay
         if (Auth::check()) {
             $otherPending = VeXemPhim::where('nguoi_dung_id', Auth::id())
                 ->where('trang_thai', 'cho_thanh_toan')
@@ -156,7 +182,6 @@ class DatVeController extends Controller
             }
         }
 
-        // NẾU NGƯỜI DÙNG BẤM "CHỌN LẠI GHẾ" (reset=1) -> XÓA SẠCH ĐƠN PENDING CỦA SUẤT NÀY
         if (request()->boolean('reset') && Auth::check()) {
             $oldTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
                 ->where('suat_chieu_id', $suatChieu->id)
@@ -1071,9 +1096,6 @@ class DatVeController extends Controller
         Cache::forget("pending_ve:{$maVe}");
     }
 
-    /**
-     * 🌟 GIẢI PHÓNG VÉ PENDING: Xóa luôn khỏi CSDL thay vì sửa thành 'da_huy'
-     */
     private function giaiPhongVePending(VeXemPhim $ve): void
     {
         $seats = explode(',', (string) $ve->ma_ghe);
@@ -1084,7 +1106,6 @@ class DatVeController extends Controller
             }
         }
 
-        // Xóa sạch vé pending nháp khỏi Database
         $ve->delete();
     }
 
