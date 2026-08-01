@@ -9371,6 +9371,116 @@ body {
     color: #ffffff;
 }
 
+/* CUSTOM STATUS DROPDOWN (thay cho <select> gốc trình duyệt) */
+.genre-status-select {
+    position: relative;
+    width: 100%;
+}
+
+.genre-status-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 50px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.055);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.genre-status-trigger i:first-child {
+    color: #f6ba4c;
+}
+
+.genre-status-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.genre-status-select.is-open .genre-status-trigger {
+    border-color: rgba(255, 47, 69, 0.52);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(255, 47, 69, 0.12);
+}
+
+.genre-status-trigger .label {
+    flex: 1;
+    text-align: left;
+}
+
+.genre-status-trigger .chevron {
+    color: #7f8898;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.genre-status-select.is-open .chevron {
+    transform: rotate(180deg);
+}
+
+.genre-status-menu {
+    position: fixed;
+    z-index: 3000;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #14141c;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.genre-status-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 14px;
+    border: 0;
+    background: transparent;
+    color: #c3c9d6;
+    font-size: 14px;
+    font-weight: 750;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.genre-status-option:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.genre-status-option i {
+    color: #7f8898;
+    width: 16px;
+    text-align: center;
+}
+
+.genre-status-option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+.genre-status-option.is-selected {
+    background: rgba(255, 47, 69, 0.12);
+    color: #ffffff;
+}
+
+.genre-status-option.is-selected i {
+    color: #ff3b46;
+}
+
+.genre-status-option[data-value="1"] i {
+    color: #22c55e;
+}
+
+.genre-status-option[data-value="0"] i {
+    color: #f6ba4c;
+}
+
 .genre-filter-actions {
     display: flex;
     align-items: center;

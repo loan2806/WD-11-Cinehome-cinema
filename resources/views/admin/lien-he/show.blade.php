@@ -13,7 +13,7 @@
 
     .contact-detail-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 380px;
+        grid-template-columns: minmax(0, 1fr) 400px;
         gap: 22px;
         align-items: start;
     }
@@ -79,41 +79,69 @@
 
     .contact-info-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-        margin-bottom: 20px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px 14px;
+        margin-bottom: 22px;
+        padding-bottom: 22px;
+        border-bottom: 1px solid var(--cinema-line);
     }
 
     .contact-info-row {
         display: flex;
         align-items: flex-start;
-        gap: 10px;
+        gap: 12px;
     }
 
-    .contact-info-row .icon-svg {
+    .contact-info-icon-box {
+        position: relative;
+        display: inline-block;
+        flex: 0 0 auto;
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+        background: rgba(255, 59, 70, 0.12);
+    }
+
+    .contact-info-icon-box .icon-svg {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         width: 16px;
         height: 16px;
-        margin-top: 2px;
         color: var(--cinema-red-soft);
     }
 
     .contact-info-row small {
         display: block;
+        margin-top: 2px;
         color: var(--cinema-muted);
-        font-size: 11.5px;
+        font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.04em;
     }
 
     .contact-info-row strong {
         display: block;
+        margin-top: 3px;
         color: #ffffff;
         font-size: 13.5px;
         font-weight: 700;
         word-break: break-word;
     }
 
+    .contact-message-label {
+        display: block;
+        margin-bottom: 10px;
+        color: var(--cinema-muted);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
     .contact-message-box {
+        min-height: 100px;
         padding: 18px;
         border-radius: 14px;
         border-left: 3px solid var(--cinema-red-soft);
@@ -163,7 +191,7 @@
         display: inline-flex;
         align-items: center;
         gap: 10px;
-        margin-top: 22px;
+        margin-bottom: 18px;
         padding: 10px 20px 10px 10px;
         border-radius: 999px;
         border: 1px solid var(--cinema-line);
@@ -317,9 +345,181 @@
         color: #ffffff;
     }
 
+    .contact-side-stack {
+        display: grid;
+        gap: 22px;
+    }
+
+    .contact-voucher-card {
+        border: 1px solid var(--cinema-line);
+        border-radius: 20px;
+        background: var(--cinema-card);
+        box-shadow: var(--cinema-shadow);
+    }
+
+    .contact-voucher-body {
+        padding: 22px;
+        display: grid;
+        gap: 14px;
+    }
+
+    .contact-voucher-body > p {
+        margin: 0;
+        color: var(--cinema-muted);
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .contact-voucher-empty {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px dashed var(--cinema-line);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--cinema-muted);
+        font-size: 12.5px;
+        line-height: 1.6;
+    }
+
+    .contact-voucher-empty .icon-svg {
+        width: 15px;
+        height: 15px;
+        margin-top: 1px;
+        color: var(--cinema-muted);
+    }
+
+    .contact-voucher-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 12px;
+        border: 0;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--cinema-gold), #d99a32);
+        color: #201002;
+        font-size: 14px;
+        font-weight: 900;
+        cursor: pointer;
+        transition: transform 0.2s var(--cinema-ease), box-shadow 0.2s var(--cinema-ease);
+    }
+
+    .contact-voucher-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 26px rgba(247, 184, 75, 0.28);
+    }
+
+    .contact-voucher-btn .icon-svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    /* CUSTOM VOUCHER DROPDOWN */
+    .contact-voucher-select {
+        position: relative;
+    }
+
+    .contact-voucher-select-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        padding: 11px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--cinema-line);
+        background: rgba(255, 255, 255, 0.04);
+        color: #ffffff;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        text-align: left;
+        transition: border-color 0.2s var(--cinema-ease), background 0.2s var(--cinema-ease);
+    }
+
+    .contact-voucher-select-trigger .label.is-placeholder {
+        color: rgba(255, 255, 255, 0.4);
+        font-weight: 500;
+    }
+
+    .contact-voucher-select-trigger:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .contact-voucher-select.is-open .contact-voucher-select-trigger {
+        border-color: var(--cinema-gold);
+        box-shadow: 0 0 0 3px rgba(247, 184, 75, 0.16);
+    }
+
+    .contact-voucher-select-trigger .icon-svg {
+        width: 14px;
+        height: 14px;
+        color: var(--cinema-muted);
+        flex-shrink: 0;
+        transition: transform 0.2s var(--cinema-ease);
+    }
+
+    .contact-voucher-select.is-open .contact-voucher-select-trigger .icon-svg {
+        transform: rotate(180deg);
+    }
+
+    .contact-voucher-select-menu {
+        position: fixed;
+        z-index: 3000;
+        overflow: hidden;
+        border-radius: 14px;
+        border: 1px solid var(--cinema-line);
+        background: var(--cinema-surface-2);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+        max-height: 260px;
+        overflow-y: auto;
+    }
+
+    .contact-voucher-option {
+        display: block;
+        width: 100%;
+        padding: 11px 14px;
+        border: 0;
+        background: transparent;
+        color: var(--cinema-muted);
+        font-size: 13px;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s var(--cinema-ease), color 0.15s var(--cinema-ease);
+    }
+
+    .contact-voucher-option:not(:last-child) {
+        border-bottom: 1px solid var(--cinema-line);
+    }
+
+    .contact-voucher-option:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #ffffff;
+    }
+
+    .contact-voucher-option.is-selected {
+        background: rgba(247, 184, 75, 0.1);
+        color: var(--cinema-gold);
+        font-weight: 800;
+    }
+
+    @media (max-width: 1200px) {
+        .contact-info-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
     @media (max-width: 900px) {
         .contact-detail-grid {
             grid-template-columns: 1fr;
+        }
+
+        .contact-detail-card {
+            min-height: 0;
         }
 
         .contact-info-grid {
@@ -343,6 +543,7 @@
     $iconInfo = $svg('<path d="M11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />');
     $iconArrowLeft = $svg('<path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />');
     $iconChevron = $svg('<path d="m19.5 8.25-7.5 7.5-7.5-7.5" />');
+    $iconGift = $svg('<path d="M12 8.25v13.5m0-13.5H6.375a2.625 2.625 0 0 1 0-5.25c1.5 0 2.625 1.5 3.375 3 .75-1.5 1.875-3 3.375-3a2.625 2.625 0 0 1 0 5.25H12m-9 0h18M4.5 8.25v10.5A2.25 2.25 0 0 0 6.75 21h10.5A2.25 2.25 0 0 0 19.5 18.75V8.25" />');
 
     $statusOptions = [
         'cho_xu_ly' => ['class' => 'is-pending', 'label' => 'Chờ xử lý', 'icon' => $iconClock],
@@ -355,6 +556,11 @@
 @section('content')
 @include('admin.partials.flash')
 
+<a href="{{ route('admin.lien-he.index') }}" class="contact-back-link">
+    <span class="icon-circle">{!! $iconArrowLeft !!}</span>
+    Quay lại danh sách
+</a>
+
 <div class="contact-detail-grid">
     <div class="contact-detail-card">
         <div class="contact-detail-head">
@@ -364,35 +570,35 @@
         <div class="contact-detail-body">
             <div class="contact-info-grid">
                 <div class="contact-info-row">
-                    {!! $iconUser !!}
+                    <span class="contact-info-icon-box">{!! $iconUser !!}</span>
                     <div>
                         <small>Họ tên</small>
                         <strong>{{ $lienHe->ho_ten }}</strong>
                     </div>
                 </div>
                 <div class="contact-info-row">
-                    {!! $iconEnvelope !!}
+                    <span class="contact-info-icon-box">{!! $iconEnvelope !!}</span>
                     <div>
                         <small>Email</small>
                         <strong>{{ $lienHe->email }}</strong>
                     </div>
                 </div>
                 <div class="contact-info-row">
-                    {!! $iconPhone !!}
+                    <span class="contact-info-icon-box">{!! $iconPhone !!}</span>
                     <div>
                         <small>Số điện thoại</small>
                         <strong>{{ $lienHe->so_dien_thoai ?? 'Không cung cấp' }}</strong>
                     </div>
                 </div>
                 <div class="contact-info-row">
-                    {!! $iconTag !!}
+                    <span class="contact-info-icon-box">{!! $iconTag !!}</span>
                     <div>
                         <small>Chủ đề</small>
                         <strong>{{ $lienHe->chu_de }}</strong>
                     </div>
                 </div>
                 <div class="contact-info-row">
-                    {!! $iconCalendar !!}
+                    <span class="contact-info-icon-box">{!! $iconCalendar !!}</span>
                     <div>
                         <small>Ngày gửi</small>
                         <strong>{{ $lienHe->created_at->format('d/m/Y H:i') }}</strong>
@@ -400,7 +606,7 @@
                 </div>
                 @if($lienHe->nguoiDung)
                     <div class="contact-info-row">
-                        {!! $iconUser !!}
+                        <span class="contact-info-icon-box">{!! $iconUser !!}</span>
                         <div>
                             <small>Tài khoản</small>
                             <strong>{{ $lienHe->nguoiDung->ho_ten }} (#{{ $lienHe->nguoiDung->id }})</strong>
@@ -409,10 +615,12 @@
                 @endif
             </div>
 
+            <span class="contact-message-label">Nội dung yêu cầu</span>
             <div class="contact-message-box">{{ $lienHe->noi_dung }}</div>
         </div>
     </div>
 
+    <div class="contact-side-stack">
     <form method="POST" action="{{ route('admin.lien-he.update', $lienHe) }}" class="contact-reply-card">
         @csrf
         @method('PATCH')
@@ -461,12 +669,70 @@
             <button class="btn-admin w-full" type="submit">Lưu cập nhật</button>
         </div>
     </form>
-</div>
 
-<a href="{{ route('admin.lien-he.index') }}" class="contact-back-link">
-    <span class="icon-circle">{!! $iconArrowLeft !!}</span>
-    Quay lại danh sách
-</a>
+    <div class="contact-voucher-card">
+        <div class="contact-detail-head">
+            <h3>Tặng voucher</h3>
+        </div>
+        <div class="contact-voucher-body">
+            @if(!$duocTangVoucher)
+                <div class="contact-voucher-empty">
+                    {!! $iconInfo !!}
+                    <span>Chủ đề "<strong>{{ $lienHe->chu_de }}</strong>" không thuộc nhóm sự cố nên không thể tặng voucher. Chỉ áp dụng cho Lỗi đặt vé, Lỗi thanh toán, Lỗi tài khoản, Khác.</span>
+                </div>
+            @elseif($lienHe->nguoiDung)
+                <p>Gửi tặng khách một voucher ưu đãi nếu vấn đề gặp phải quá nghiêm trọng. Voucher sẽ vào thẳng tài khoản khách và gửi kèm email thông báo.</p>
+
+                @if($activeVouchers->isEmpty())
+                    <div class="contact-voucher-empty">
+                        {!! $iconInfo !!}
+                        <span>Chưa có voucher nào đang bật. Vào <strong>Khuyến mãi &amp; Voucher</strong> để tạo trước.</span>
+                    </div>
+                @else
+                    <form method="POST" action="{{ route('admin.lien-he.tang-voucher', $lienHe) }}" onsubmit="return confirm('Xác nhận tặng voucher này cho {{ $lienHe->ho_ten }}?')">
+                        @csrf
+
+                        @php $selectedVoucherId = old('voucher_id', ''); @endphp
+                        <div class="contact-voucher-select" data-value="{{ $selectedVoucherId }}">
+                            <input type="hidden" name="voucher_id" value="{{ $selectedVoucherId }}" required>
+
+                            <button type="button" class="contact-voucher-select-trigger">
+                                <span class="label is-placeholder">-- Chọn voucher --</span>
+                                {!! $iconChevron !!}
+                            </button>
+
+                            <div class="contact-voucher-select-menu hidden">
+                                @foreach ($activeVouchers as $voucher)
+                                    <button
+                                        type="button"
+                                        class="contact-voucher-option"
+                                        data-value="{{ $voucher->id }}"
+                                        data-label="{{ $voucher->ten_voucher }} - Giảm {{ number_format((float) $voucher->gia_tri_giam, 0, ',', '.') }}đ"
+                                    >
+                                        {{ $voucher->ten_voucher }} - Giảm {{ number_format((float) $voucher->gia_tri_giam, 0, ',', '.') }}đ
+                                        <br>
+                                        <small style="color: var(--cinema-muted); font-weight: 500;">HSD {{ $voucher->ngay_het_han->format('d/m/Y') }}</small>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <button class="contact-voucher-btn" type="submit" style="margin-top: 14px;">
+                            {!! $iconGift !!}
+                            Tặng voucher cho khách
+                        </button>
+                    </form>
+                @endif
+            @else
+                <div class="contact-voucher-empty">
+                    {!! $iconInfo !!}
+                    <span>Khách hàng này gửi liên hệ mà không đăng nhập tài khoản, nên chưa thể tặng voucher trực tiếp vào tài khoản.</span>
+                </div>
+            @endif
+        </div>
+    </div>
+    </div>
+</div>
 
 @push('scripts')
 <script>
@@ -513,6 +779,72 @@
 
             document.addEventListener('click', function (event) {
                 if (!wrap.contains(event.target)) {
+                    closeMenu();
+                }
+            });
+        });
+
+        document.querySelectorAll('.contact-voucher-select').forEach(function (wrap) {
+            const trigger = wrap.querySelector('.contact-voucher-select-trigger');
+            const menu = wrap.querySelector('.contact-voucher-select-menu');
+            const hiddenInput = wrap.querySelector('input[type="hidden"]');
+            const labelEl = trigger.querySelector('.label');
+            const options = wrap.querySelectorAll('.contact-voucher-option');
+
+            // Đưa menu ra làm con trực tiếp của <body> để tránh bị các
+            // container cha (overflow/backdrop-filter) làm lệch hoặc cắt mất.
+            document.body.appendChild(menu);
+
+            function closeMenu() {
+                wrap.classList.remove('is-open');
+                menu.classList.add('hidden');
+            }
+
+            function positionMenu() {
+                const rect = trigger.getBoundingClientRect();
+                menu.style.left = rect.left + 'px';
+                menu.style.width = rect.width + 'px';
+
+                // Đo chiều cao thực tế của menu (chỉ đo được sau khi đã hiện ra),
+                // rồi tự lật lên trên nút bấm nếu không đủ chỗ bên dưới màn hình.
+                const menuHeight = menu.offsetHeight;
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+
+                if (spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow) {
+                    menu.style.top = (rect.top - menuHeight - 8) + 'px';
+                } else {
+                    menu.style.top = (rect.bottom + 8) + 'px';
+                }
+            }
+
+            trigger.addEventListener('click', function (event) {
+                event.stopPropagation();
+                const willOpen = menu.classList.contains('hidden');
+                closeMenu();
+                if (willOpen) {
+                    wrap.classList.add('is-open');
+                    menu.classList.remove('hidden');
+                    positionMenu();
+                }
+            });
+
+            window.addEventListener('scroll', closeMenu, true);
+            window.addEventListener('resize', closeMenu);
+
+            options.forEach(function (opt) {
+                opt.addEventListener('click', function () {
+                    hiddenInput.value = opt.dataset.value;
+                    labelEl.textContent = opt.dataset.label;
+                    labelEl.classList.remove('is-placeholder');
+
+                    options.forEach((o) => o.classList.toggle('is-selected', o === opt));
+                    closeMenu();
+                });
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!wrap.contains(event.target) && !menu.contains(event.target)) {
                     closeMenu();
                 }
             });

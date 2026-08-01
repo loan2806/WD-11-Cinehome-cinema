@@ -4,14 +4,26 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\LienHePhanHoiMail;
+use App\Mail\VoucherUuDaiMail;
 use App\Models\LienHe;
+use App\Models\NguoiDungVoucher;
+use App\Models\Voucher;
 use App\Traits\Loggable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class LienHeController extends Controller
 {
     use Loggable;
+
+    /**
+     * Chỉ những liên hệ thuộc các chủ đề lỗi thực sự mới được tặng voucher.
+     * "Góp ý" là phản hồi tích cực/đề xuất, không phải sự cố nên không tặng.
+     */
+    private const CHU_DE_DUOC_TANG_VOUCHER = ['Lỗi đặt vé', 'Lỗi thanh toán', 'Lỗi tài khoản', 'Khác'];
 
     public function index(Request $request)
     {
@@ -48,7 +60,14 @@ class LienHeController extends Controller
     {
         $lienHe->load(['nguoiDung', 'nguoiXuLy']);
 
-        return view('admin.lien-he.show', compact('lienHe'));
+        $activeVouchers = Voucher::where('trang_thai', true)
+            ->whereDate('ngay_het_han', '>=', today())
+            ->orderBy('ten_voucher')
+            ->get();
+
+        $duocTangVoucher = in_array($lienHe->chu_de, self::CHU_DE_DUOC_TANG_VOUCHER, true);
+
+        return view('admin.lien-he.show', compact('lienHe', 'activeVouchers', 'duocTangVoucher'));
     }
 
     public function update(Request $request, LienHe $lienHe)
@@ -78,6 +97,62 @@ class LienHeController extends Controller
         return back()->with('success', $daGuiEmail
             ? 'Đã cập nhật liên hệ và gửi email phản hồi tới khách hàng.'
             : 'Đã cập nhật liên hệ.');
+    }
+
+    public function tangVoucher(Request $request, LienHe $lienHe)
+    {
+        if (!$lienHe->nguoi_dung_id) {
+            return back()->with('error', 'Khách hàng này chưa đăng nhập tài khoản nên không thể tặng voucher trực tiếp.');
+        }
+
+        if (!in_array($lienHe->chu_de, self::CHU_DE_DUOC_TANG_VOUCHER, true)) {
+            return back()->with('error', 'Chỉ có thể tặng voucher cho liên hệ thuộc nhóm lỗi (đặt vé, thanh toán, tài khoản, khác). "Góp ý" không được tặng voucher.');
+        }
+
+        $data = $request->validate([
+            'voucher_id' => ['required', 'exists:vouchers,id'],
+        ]);
+
+        $voucher = Voucher::findOrFail($data['voucher_id']);
+
+        if (!$voucher->trang_thai || $voucher->ngay_het_han->lt(today())) {
+            throw ValidationException::withMessages([
+                'voucher_id' => 'Voucher này đang tắt hoặc đã hết hạn, không thể tặng cho khách.',
+            ]);
+        }
+
+        $nguoiDungVoucher = DB::transaction(function () use ($voucher, $lienHe) {
+            return NguoiDungVoucher::create([
+                'nguoi_dung_id' => $lienHe->nguoi_dung_id,
+                'voucher_id' => $voucher->id,
+                'ma_voucher_ca_nhan' => $this->maVoucherCaNhan($voucher),
+                'loai_cap_phat' => 'admin_tang',
+                'nam_ap_dung' => now()->year,
+                'da_su_dung' => false,
+                'ngay_nhan' => now(),
+                'ngay_het_han' => $voucher->ngay_het_han->copy()->endOfDay(),
+            ]);
+        });
+
+        Mail::to($lienHe->email)->send(new VoucherUuDaiMail($lienHe, $nguoiDungVoucher));
+
+        $this->ghiNhatKy(
+            $request,
+            'Tặng voucher từ liên hệ khách hàng',
+            'Quản lý liên hệ',
+            "Tặng voucher {$voucher->ma_voucher} cho {$lienHe->ho_ten} (liên hệ #{$lienHe->id})"
+        );
+
+        return back()->with('success', "Đã tặng voucher {$nguoiDungVoucher->ma_voucher_ca_nhan} cho khách hàng và gửi email thông báo.");
+    }
+
+    private function maVoucherCaNhan(Voucher $voucher): string
+    {
+        do {
+            $code = Str::upper($voucher->ma_voucher . '-' . Str::random(8));
+        } while (NguoiDungVoucher::where('ma_voucher_ca_nhan', $code)->exists());
+
+        return $code;
     }
 
     public function destroy(Request $request, LienHe $lienHe)

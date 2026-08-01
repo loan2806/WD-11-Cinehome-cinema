@@ -438,6 +438,7 @@ Route::middleware(['auth'])
             Route::get('/lien-he', [AdminLienHeController::class, 'index'])->name('lien-he.index');
             Route::get('/lien-he/{lienHe}', [AdminLienHeController::class, 'show'])->name('lien-he.show');
             Route::patch('/lien-he/{lienHe}', [AdminLienHeController::class, 'update'])->name('lien-he.update');
+            Route::post('/lien-he/{lienHe}/tang-voucher', [AdminLienHeController::class, 'tangVoucher'])->name('lien-he.tang-voucher');
             Route::delete('/lien-he/{lienHe}', [AdminLienHeController::class, 'destroy'])->name('lien-he.destroy');
         });
 

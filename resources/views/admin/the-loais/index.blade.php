@@ -88,15 +88,43 @@
                 </div>
             </label>
 
+            @php
+                $genreStatusOptions = [
+                    '' => ['label' => 'Tất cả trạng thái', 'icon' => 'fa-sliders'],
+                    '1' => ['label' => 'Đang kích hoạt', 'icon' => 'fa-circle-check'],
+                    '0' => ['label' => 'Tạm ẩn', 'icon' => 'fa-circle-pause'],
+                ];
+                $currentGenreStatus = (string) request('status', '');
+                if (!isset($genreStatusOptions[$currentGenreStatus])) {
+                    $currentGenreStatus = '';
+                }
+            @endphp
+
             <label class="genre-filter-field is-status">
                 <span>Trạng thái</span>
-                <div class="genre-filter-control">
-                    <i class="fa-solid fa-sliders"></i>
-                    <select name="status">
-                        <option value="">Tất cả trạng thái</option>
-                        <option value="1" @selected(request('status') === '1')>Đang kích hoạt</option>
-                        <option value="0" @selected(request('status') === '0')>Tạm ẩn</option>
-                    </select>
+                <div class="genre-status-select" data-value="{{ $currentGenreStatus }}">
+                    <input type="hidden" name="status" value="{{ $currentGenreStatus }}">
+
+                    <button type="button" class="genre-status-trigger">
+                        <i class="fa-solid {{ $genreStatusOptions[$currentGenreStatus]['icon'] }}"></i>
+                        <span class="label">{{ $genreStatusOptions[$currentGenreStatus]['label'] }}</span>
+                        <i class="fa-solid fa-chevron-down chevron"></i>
+                    </button>
+
+                    <div class="genre-status-menu hidden">
+                        @foreach ($genreStatusOptions as $value => $meta)
+                            <button
+                                type="button"
+                                class="genre-status-option {{ $value === $currentGenreStatus ? 'is-selected' : '' }}"
+                                data-value="{{ $value }}"
+                                data-label="{{ $meta['label'] }}"
+                                data-icon="{{ $meta['icon'] }}"
+                            >
+                                <i class="fa-solid {{ $meta['icon'] }}"></i>
+                                <span>{{ $meta['label'] }}</span>
+                            </button>
+                        @endforeach
+                    </div>
                 </div>
             </label>
 
@@ -246,4 +274,76 @@
             </div>
         </section>
     </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.genre-status-select').forEach(function (wrap) {
+                const trigger = wrap.querySelector('.genre-status-trigger');
+                const menu = wrap.querySelector('.genre-status-menu');
+                const hiddenInput = wrap.querySelector('input[type="hidden"]');
+                const labelEl = trigger.querySelector('.label');
+                const iconEl = trigger.querySelector('i:first-child');
+                const options = wrap.querySelectorAll('.genre-status-option');
+
+                // Đưa menu ra làm con trực tiếp của <body> để thoát khỏi các
+                // container cha có backdrop-filter/overflow:hidden (khiến
+                // position:fixed bị "nhốt" lại bên trong thay vì bám viewport).
+                document.body.appendChild(menu);
+
+                function closeMenu() {
+                    wrap.classList.remove('is-open');
+                    menu.classList.add('hidden');
+                }
+
+                function positionMenu() {
+                    const rect = trigger.getBoundingClientRect();
+                    menu.style.left = rect.left + 'px';
+                    menu.style.width = rect.width + 'px';
+
+                    const menuHeight = menu.offsetHeight;
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    const spaceAbove = rect.top;
+
+                    if (spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow) {
+                        menu.style.top = (rect.top - menuHeight - 8) + 'px';
+                    } else {
+                        menu.style.top = (rect.bottom + 8) + 'px';
+                    }
+                }
+
+                trigger.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    const willOpen = menu.classList.contains('hidden');
+                    closeMenu();
+                    if (willOpen) {
+                        wrap.classList.add('is-open');
+                        menu.classList.remove('hidden');
+                        positionMenu();
+                    }
+                });
+
+                window.addEventListener('scroll', closeMenu, true);
+                window.addEventListener('resize', closeMenu);
+
+                options.forEach(function (opt) {
+                    opt.addEventListener('click', function () {
+                        hiddenInput.value = opt.dataset.value;
+                        labelEl.textContent = opt.dataset.label;
+                        iconEl.className = 'fa-solid ' + opt.dataset.icon;
+
+                        options.forEach((o) => o.classList.toggle('is-selected', o === opt));
+                        closeMenu();
+                    });
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!wrap.contains(event.target) && !menu.contains(event.target)) {
+                        closeMenu();
+                    }
+                });
+            });
+        });
+    </script>
+    @endpush
 @endsection

@@ -275,6 +275,92 @@
         color: #ffffff;
     }
 
+    /* CUSTOM SELECT (thay cho <select> gốc trình duyệt) */
+    .contact-select {
+        position: relative;
+    }
+
+    .contact-select-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--cinema-line);
+        background: rgba(255, 255, 255, 0.04);
+        color: #ffffff;
+        font-size: 14.5px;
+        cursor: pointer;
+        transition: border-color 0.2s var(--cinema-ease), box-shadow 0.2s var(--cinema-ease), background 0.2s var(--cinema-ease);
+    }
+
+    .contact-select-trigger .label.is-placeholder {
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .contact-select-trigger:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .contact-select.is-open .contact-select-trigger {
+        border-color: var(--cinema-gold);
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: 0 0 0 3px rgba(247, 184, 75, 0.16);
+    }
+
+    .contact-select-trigger .icon-svg {
+        width: 15px;
+        height: 15px;
+        color: var(--cinema-muted);
+        transition: transform 0.2s var(--cinema-ease);
+    }
+
+    .contact-select.is-open .contact-select-trigger .icon-svg {
+        transform: rotate(180deg);
+    }
+
+    .contact-select-menu {
+        position: fixed;
+        z-index: 3000;
+        overflow: hidden;
+        border-radius: 14px;
+        border: 1px solid var(--cinema-line);
+        background: var(--cinema-surface-2);
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+
+    .contact-select-option {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 11px 14px;
+        border: 0;
+        background: transparent;
+        color: var(--cinema-muted);
+        font-size: 14px;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s var(--cinema-ease), color 0.15s var(--cinema-ease);
+    }
+
+    .contact-select-option:not(:last-child) {
+        border-bottom: 1px solid var(--cinema-line);
+    }
+
+    .contact-select-option:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #ffffff;
+    }
+
+    .contact-select-option.is-selected {
+        background: rgba(247, 184, 75, 0.1);
+        color: var(--cinema-gold);
+        font-weight: 800;
+    }
+
     .contact-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -363,6 +449,20 @@
     $iconTag = $svg('<path d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z M6 6h.008v.008H6V6Z" />');
     $iconMessage = $svg('<path d="M4.5 5.25h15a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H9l-4.5 3v-3H4.5A1.5 1.5 0 0 1 3 15.75v-9a1.5 1.5 0 0 1 1.5-1.5Z" />');
     $iconSend = $svg('<path d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />');
+    $iconChevron = $svg('<path d="m19.5 8.25-7.5 7.5-7.5-7.5" />');
+
+    $chuDeOptions = [
+        '' => '-- Chọn chủ đề --',
+        'Lỗi đặt vé' => 'Lỗi đặt vé',
+        'Lỗi thanh toán' => 'Lỗi thanh toán',
+        'Lỗi tài khoản' => 'Lỗi tài khoản',
+        'Góp ý' => 'Góp ý',
+        'Khác' => 'Khác',
+    ];
+    $currentChuDe = (string) old('chu_de', '');
+    if (!isset($chuDeOptions[$currentChuDe])) {
+        $currentChuDe = '';
+    }
 @endphp
 
 @section('content')
@@ -462,14 +562,27 @@
 
                     <div class="contact-field">
                         <label>{!! $iconTag !!} Chủ đề</label>
-                        <select name="chu_de" class="form-select" required>
-                            <option value="">-- Chọn chủ đề --</option>
-                            <option value="Lỗi đặt vé" {{ old('chu_de') === 'Lỗi đặt vé' ? 'selected' : '' }}>Lỗi đặt vé</option>
-                            <option value="Lỗi thanh toán" {{ old('chu_de') === 'Lỗi thanh toán' ? 'selected' : '' }}>Lỗi thanh toán</option>
-                            <option value="Lỗi tài khoản" {{ old('chu_de') === 'Lỗi tài khoản' ? 'selected' : '' }}>Lỗi tài khoản</option>
-                            <option value="Góp ý" {{ old('chu_de') === 'Góp ý' ? 'selected' : '' }}>Góp ý</option>
-                            <option value="Khác" {{ old('chu_de') === 'Khác' ? 'selected' : '' }}>Khác</option>
-                        </select>
+                        <div class="contact-select" data-value="{{ $currentChuDe }}">
+                            <input type="hidden" name="chu_de" value="{{ $currentChuDe }}" required>
+
+                            <button type="button" class="contact-select-trigger">
+                                <span class="label {{ $currentChuDe === '' ? 'is-placeholder' : '' }}">{{ $chuDeOptions[$currentChuDe] }}</span>
+                                {!! $iconChevron !!}
+                            </button>
+
+                            <div class="contact-select-menu hidden">
+                                @foreach ($chuDeOptions as $value => $label)
+                                    <button
+                                        type="button"
+                                        class="contact-select-option {{ $value === $currentChuDe ? 'is-selected' : '' }}"
+                                        data-value="{{ $value }}"
+                                        data-label="{{ $label }}"
+                                    >
+                                        {{ $label }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -490,4 +603,74 @@
     </div>
 
 </div>
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.contact-select').forEach(function (wrap) {
+            const trigger = wrap.querySelector('.contact-select-trigger');
+            const menu = wrap.querySelector('.contact-select-menu');
+            const hiddenInput = wrap.querySelector('input[type="hidden"]');
+            const labelEl = trigger.querySelector('.label');
+            const options = wrap.querySelectorAll('.contact-select-option');
+
+            // Đưa menu ra làm con trực tiếp của <body> để tránh bị các
+            // container cha (overflow/backdrop-filter) làm lệch hoặc cắt mất.
+            document.body.appendChild(menu);
+
+            function closeMenu() {
+                wrap.classList.remove('is-open');
+                menu.classList.add('hidden');
+            }
+
+            function positionMenu() {
+                const rect = trigger.getBoundingClientRect();
+                menu.style.left = rect.left + 'px';
+                menu.style.width = rect.width + 'px';
+
+                const menuHeight = menu.offsetHeight;
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+
+                if (spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow) {
+                    menu.style.top = (rect.top - menuHeight - 8) + 'px';
+                } else {
+                    menu.style.top = (rect.bottom + 8) + 'px';
+                }
+            }
+
+            trigger.addEventListener('click', function (event) {
+                event.stopPropagation();
+                const willOpen = menu.classList.contains('hidden');
+                closeMenu();
+                if (willOpen) {
+                    wrap.classList.add('is-open');
+                    menu.classList.remove('hidden');
+                    positionMenu();
+                }
+            });
+
+            window.addEventListener('scroll', closeMenu, true);
+            window.addEventListener('resize', closeMenu);
+
+            options.forEach(function (opt) {
+                opt.addEventListener('click', function () {
+                    hiddenInput.value = opt.dataset.value;
+                    labelEl.textContent = opt.dataset.label;
+                    labelEl.classList.toggle('is-placeholder', opt.dataset.value === '');
+
+                    options.forEach((o) => o.classList.toggle('is-selected', o === opt));
+                    closeMenu();
+                });
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!wrap.contains(event.target) && !menu.contains(event.target)) {
+                    closeMenu();
+                }
+            });
+        });
+    });
+</script>
+@endsection
 @endsection
