@@ -419,6 +419,9 @@ Route::middleware(['auth'])
             Route::get('/thong-ke', [ThongKeController::class, 'index'])->name('thong-ke.index');
             Route::get('/thong-ke/export-excel', [ThongKeController::class, 'exportExcel'])->name('thong-ke.export-excel');
             Route::get('/thong-ke/export-pdf', [ThongKeController::class, 'exportPdf'])->name('thong-ke.export-pdf');
+
+            // API endpoint cho thống kê
+            Route::get('/api/statistics', [ThongKeController::class, 'apiIndex'])->name('thong-ke.api');
         });
 
         Route::middleware(['quyen:nhat_ky.he_thong'])->group(function () {
