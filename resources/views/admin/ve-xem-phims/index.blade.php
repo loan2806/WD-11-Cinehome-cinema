@@ -38,6 +38,30 @@
             'truc_tuyen' => 'Online',
             'tai_quay' => 'Tại quầy',
         ];
+
+        $statusIcons = [
+            'cho_thanh_toan' => 'fa-clock',
+            'da_thanh_toan' => 'fa-circle-check',
+            'da_in' => 'fa-print',
+            'da_su_dung' => 'fa-ticket',
+            'da_huy' => 'fa-circle-xmark',
+            'het_han' => 'fa-hourglass-end',
+        ];
+
+        $typeIcons = [
+            'truc_tuyen' => 'fa-globe',
+            'tai_quay' => 'fa-store',
+        ];
+
+        $currentTrangThaiFilter = (string) request('trang_thai', '');
+        if ($currentTrangThaiFilter !== '' && !isset($statusLabels[$currentTrangThaiFilter])) {
+            $currentTrangThaiFilter = '';
+        }
+
+        $currentLoaiVeFilter = (string) request('loai_ve', '');
+        if ($currentLoaiVeFilter !== '' && !isset($typeLabels[$currentLoaiVeFilter])) {
+            $currentLoaiVeFilter = '';
+        }
     @endphp
 
     <div class="ticket-page">
@@ -151,31 +175,53 @@
 
                 <label class="ticket-filter-field">
                     <span>Trạng thái</span>
-                    <div class="ticket-filter-control">
-                        <i class="fa-solid fa-sliders"></i>
-                        <select name="trang_thai">
-                            <option value="">Tất cả trạng thái</option>
+                    <div class="ticket-filter-dropdown" data-value="{{ $currentTrangThaiFilter }}">
+                        <input type="hidden" name="trang_thai" value="{{ $currentTrangThaiFilter }}">
+
+                        <button type="button" class="ticket-filter-dropdown-trigger">
+                            <i class="fa-solid {{ $statusIcons[$currentTrangThaiFilter] ?? 'fa-sliders' }}"></i>
+                            <span class="label">{{ $statusLabels[$currentTrangThaiFilter] ?? 'Tất cả trạng thái' }}</span>
+                            <i class="fa-solid fa-chevron-down chevron"></i>
+                        </button>
+
+                        <div class="ticket-filter-dropdown-menu hidden">
+                            <button type="button" class="ticket-filter-dropdown-option {{ $currentTrangThaiFilter === '' ? 'is-selected' : '' }}" data-value="" data-label="Tất cả trạng thái" data-icon="fa-sliders">
+                                <i class="fa-solid fa-sliders"></i>
+                                <span>Tất cả trạng thái</span>
+                            </button>
                             @foreach ($statusLabels as $value => $label)
-                                <option value="{{ $value }}" @selected(request('trang_thai') === $value)>
-                                    {{ $label }}
-                                </option>
+                                <button type="button" class="ticket-filter-dropdown-option {{ $value === $currentTrangThaiFilter ? 'is-selected' : '' }}" data-value="{{ $value }}" data-label="{{ $label }}" data-icon="{{ $statusIcons[$value] }}">
+                                    <i class="fa-solid {{ $statusIcons[$value] }}"></i>
+                                    <span>{{ $label }}</span>
+                                </button>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
                 </label>
 
                 <label class="ticket-filter-field">
                     <span>Loại vé</span>
-                    <div class="ticket-filter-control">
-                        <i class="fa-solid fa-layer-group"></i>
-                        <select name="loai_ve">
-                            <option value="">Tất cả loại vé</option>
+                    <div class="ticket-filter-dropdown" data-value="{{ $currentLoaiVeFilter }}">
+                        <input type="hidden" name="loai_ve" value="{{ $currentLoaiVeFilter }}">
+
+                        <button type="button" class="ticket-filter-dropdown-trigger">
+                            <i class="fa-solid {{ $typeIcons[$currentLoaiVeFilter] ?? 'fa-layer-group' }}"></i>
+                            <span class="label">{{ $typeLabels[$currentLoaiVeFilter] ?? 'Tất cả loại vé' }}</span>
+                            <i class="fa-solid fa-chevron-down chevron"></i>
+                        </button>
+
+                        <div class="ticket-filter-dropdown-menu hidden">
+                            <button type="button" class="ticket-filter-dropdown-option {{ $currentLoaiVeFilter === '' ? 'is-selected' : '' }}" data-value="" data-label="Tất cả loại vé" data-icon="fa-layer-group">
+                                <i class="fa-solid fa-layer-group"></i>
+                                <span>Tất cả loại vé</span>
+                            </button>
                             @foreach ($typeLabels as $value => $label)
-                                <option value="{{ $value }}" @selected(request('loai_ve') === $value)>
-                                    {{ $label }}
-                                </option>
+                                <button type="button" class="ticket-filter-dropdown-option {{ $value === $currentLoaiVeFilter ? 'is-selected' : '' }}" data-value="{{ $value }}" data-label="{{ $label }}" data-icon="{{ $typeIcons[$value] }}">
+                                    <i class="fa-solid {{ $typeIcons[$value] }}"></i>
+                                    <span>{{ $label }}</span>
+                                </button>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
                 </label>
 
@@ -457,5 +503,74 @@
                 select.value = oldValue;
             }
         }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.ticket-filter-dropdown').forEach(function (wrap) {
+                const trigger = wrap.querySelector('.ticket-filter-dropdown-trigger');
+                const menu = wrap.querySelector('.ticket-filter-dropdown-menu');
+                const hiddenInput = wrap.querySelector('input[type="hidden"]');
+                const labelEl = trigger.querySelector('.label');
+                const iconEl = trigger.querySelector('i:first-child');
+                const options = wrap.querySelectorAll('.ticket-filter-dropdown-option');
+
+                // Đưa menu ra làm con trực tiếp của <body> để tránh bị các
+                // container cha (overflow/backdrop-filter) làm lệch hoặc cắt mất.
+                document.body.appendChild(menu);
+
+                function closeMenu() {
+                    wrap.classList.remove('is-open');
+                    menu.classList.add('hidden');
+                }
+
+                function positionMenu() {
+                    const rect = trigger.getBoundingClientRect();
+                    menu.style.left = rect.left + 'px';
+                    menu.style.width = rect.width + 'px';
+
+                    const menuHeight = menu.offsetHeight;
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    const spaceAbove = rect.top;
+
+                    if (spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow) {
+                        menu.style.top = (rect.top - menuHeight - 8) + 'px';
+                    } else {
+                        menu.style.top = (rect.bottom + 8) + 'px';
+                    }
+                }
+
+                trigger.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    const willOpen = menu.classList.contains('hidden');
+                    closeMenu();
+                    if (willOpen) {
+                        wrap.classList.add('is-open');
+                        menu.classList.remove('hidden');
+                        positionMenu();
+                    }
+                });
+
+                window.addEventListener('scroll', closeMenu, true);
+                window.addEventListener('resize', closeMenu);
+
+                options.forEach(function (opt) {
+                    opt.addEventListener('click', function () {
+                        hiddenInput.value = opt.dataset.value;
+                        labelEl.textContent = opt.dataset.label;
+                        iconEl.className = 'fa-solid ' + opt.dataset.icon;
+
+                        options.forEach((o) => o.classList.toggle('is-selected', o === opt));
+                        closeMenu();
+                    });
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!wrap.contains(event.target) && !menu.contains(event.target)) {
+                        closeMenu();
+                    }
+                });
+            });
+        });
     </script>
 @endsection

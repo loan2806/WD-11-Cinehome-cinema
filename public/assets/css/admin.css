@@ -10529,6 +10529,116 @@ body {
     color: #ffffff;
 }
 
+/* CUSTOM STATUS DROPDOWN (thay cho <select> gốc trình duyệt) */
+.country-status-select {
+    position: relative;
+    width: 100%;
+}
+
+.country-status-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 50px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.055);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.country-status-trigger i:first-child {
+    color: #f6ba4c;
+}
+
+.country-status-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.country-status-select.is-open .country-status-trigger {
+    border-color: rgba(255, 47, 69, 0.52);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(255, 47, 69, 0.12);
+}
+
+.country-status-trigger .label {
+    flex: 1;
+    text-align: left;
+}
+
+.country-status-trigger .chevron {
+    color: #7f8898;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.country-status-select.is-open .chevron {
+    transform: rotate(180deg);
+}
+
+.country-status-menu {
+    position: fixed;
+    z-index: 3000;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #14141c;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.country-status-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 14px;
+    border: 0;
+    background: transparent;
+    color: #c3c9d6;
+    font-size: 14px;
+    font-weight: 750;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.country-status-option:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.country-status-option i {
+    color: #7f8898;
+    width: 16px;
+    text-align: center;
+}
+
+.country-status-option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+.country-status-option.is-selected {
+    background: rgba(255, 47, 69, 0.12);
+    color: #ffffff;
+}
+
+.country-status-option.is-selected i {
+    color: #ff3b46;
+}
+
+.country-status-option[data-value="1"] i {
+    color: #22c55e;
+}
+
+.country-status-option[data-value="0"] i {
+    color: #f6ba4c;
+}
+
 .country-filter-actions {
     display: flex;
     align-items: center;
@@ -11631,6 +11741,117 @@ body {
 .ticket-filter-control select option {
     background: #11141b;
     color: #ffffff;
+}
+
+/* CUSTOM FILTER DROPDOWN (thay cho <select> gốc trình duyệt) */
+.ticket-filter-dropdown {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+.ticket-filter-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    height: 50px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.055);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ticket-filter-dropdown-trigger i:first-child {
+    color: #f6ba4c;
+}
+
+.ticket-filter-dropdown-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.ticket-filter-dropdown.is-open .ticket-filter-dropdown-trigger {
+    border-color: rgba(255, 47, 69, 0.52);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(255, 47, 69, 0.12);
+}
+
+.ticket-filter-dropdown-trigger .label {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ticket-filter-dropdown-trigger .chevron {
+    flex: 0 0 auto;
+    color: #7f8898;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.ticket-filter-dropdown.is-open .chevron {
+    transform: rotate(180deg);
+}
+
+.ticket-filter-dropdown-menu {
+    position: fixed;
+    z-index: 3000;
+    overflow: hidden;
+    overflow-y: auto;
+    max-height: 320px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #14141c;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.ticket-filter-dropdown-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 14px;
+    border: 0;
+    background: transparent;
+    color: #c3c9d6;
+    font-size: 14px;
+    font-weight: 750;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ticket-filter-dropdown-option:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.ticket-filter-dropdown-option i {
+    color: #7f8898;
+    width: 16px;
+    text-align: center;
+}
+
+.ticket-filter-dropdown-option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+.ticket-filter-dropdown-option.is-selected {
+    background: rgba(255, 47, 69, 0.12);
+    color: #ffffff;
+}
+
+.ticket-filter-dropdown-option.is-selected i {
+    color: #ff3b46;
 }
 
 .ticket-table-wrap {

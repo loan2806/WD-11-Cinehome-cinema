@@ -88,15 +88,43 @@
                 </div>
             </label>
 
+            @php
+                $countryStatusOptions = [
+                    '' => ['label' => 'Tất cả trạng thái', 'icon' => 'fa-sliders'],
+                    '1' => ['label' => 'Đang sử dụng', 'icon' => 'fa-circle-check'],
+                    '0' => ['label' => 'Tạm ẩn', 'icon' => 'fa-circle-pause'],
+                ];
+                $currentCountryStatus = (string) request('status', '');
+                if (!isset($countryStatusOptions[$currentCountryStatus])) {
+                    $currentCountryStatus = '';
+                }
+            @endphp
+
             <label class="country-filter-field is-status">
                 <span>Trạng thái</span>
-                <div class="country-filter-control">
-                    <i class="fa-solid fa-sliders"></i>
-                    <select name="status">
-                        <option value="">Tất cả trạng thái</option>
-                        <option value="1" @selected(request('status') === '1')>Đang sử dụng</option>
-                        <option value="0" @selected(request('status') === '0')>Tạm ẩn</option>
-                    </select>
+                <div class="country-status-select" data-value="{{ $currentCountryStatus }}">
+                    <input type="hidden" name="status" value="{{ $currentCountryStatus }}">
+
+                    <button type="button" class="country-status-trigger">
+                        <i class="fa-solid {{ $countryStatusOptions[$currentCountryStatus]['icon'] }}"></i>
+                        <span class="label">{{ $countryStatusOptions[$currentCountryStatus]['label'] }}</span>
+                        <i class="fa-solid fa-chevron-down chevron"></i>
+                    </button>
+
+                    <div class="country-status-menu hidden">
+                        @foreach ($countryStatusOptions as $value => $meta)
+                            <button
+                                type="button"
+                                class="country-status-option {{ $value === $currentCountryStatus ? 'is-selected' : '' }}"
+                                data-value="{{ $value }}"
+                                data-label="{{ $meta['label'] }}"
+                                data-icon="{{ $meta['icon'] }}"
+                            >
+                                <i class="fa-solid {{ $meta['icon'] }}"></i>
+                                <span>{{ $meta['label'] }}</span>
+                            </button>
+                        @endforeach
+                    </div>
                 </div>
             </label>
 
@@ -249,4 +277,76 @@
             </div>
         </section>
     </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.country-status-select').forEach(function (wrap) {
+                const trigger = wrap.querySelector('.country-status-trigger');
+                const menu = wrap.querySelector('.country-status-menu');
+                const hiddenInput = wrap.querySelector('input[type="hidden"]');
+                const labelEl = trigger.querySelector('.label');
+                const iconEl = trigger.querySelector('i:first-child');
+                const options = wrap.querySelectorAll('.country-status-option');
+
+                // Đưa menu ra làm con trực tiếp của <body> để thoát khỏi các
+                // container cha có backdrop-filter/overflow:hidden (khiến
+                // position:fixed bị "nhốt" lại bên trong thay vì bám viewport).
+                document.body.appendChild(menu);
+
+                function closeMenu() {
+                    wrap.classList.remove('is-open');
+                    menu.classList.add('hidden');
+                }
+
+                function positionMenu() {
+                    const rect = trigger.getBoundingClientRect();
+                    menu.style.left = rect.left + 'px';
+                    menu.style.width = rect.width + 'px';
+
+                    const menuHeight = menu.offsetHeight;
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    const spaceAbove = rect.top;
+
+                    if (spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow) {
+                        menu.style.top = (rect.top - menuHeight - 8) + 'px';
+                    } else {
+                        menu.style.top = (rect.bottom + 8) + 'px';
+                    }
+                }
+
+                trigger.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    const willOpen = menu.classList.contains('hidden');
+                    closeMenu();
+                    if (willOpen) {
+                        wrap.classList.add('is-open');
+                        menu.classList.remove('hidden');
+                        positionMenu();
+                    }
+                });
+
+                window.addEventListener('scroll', closeMenu, true);
+                window.addEventListener('resize', closeMenu);
+
+                options.forEach(function (opt) {
+                    opt.addEventListener('click', function () {
+                        hiddenInput.value = opt.dataset.value;
+                        labelEl.textContent = opt.dataset.label;
+                        iconEl.className = 'fa-solid ' + opt.dataset.icon;
+
+                        options.forEach((o) => o.classList.toggle('is-selected', o === opt));
+                        closeMenu();
+                    });
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!wrap.contains(event.target) && !menu.contains(event.target)) {
+                        closeMenu();
+                    }
+                });
+            });
+        });
+    </script>
+    @endpush
 @endsection

@@ -97,7 +97,7 @@
                                 <i class="fa-solid fa-chevron-down text-xs"></i>
                             </div>
                         </div>
-                        <div class="custom-select__dropdown">
+                        <div class="custom-select__dropdown hidden">
                             @foreach(\App\Models\LoaiGhe::all() as $loai)
                                 <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
                                     <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
@@ -111,15 +111,17 @@
                                 </div>
                             @endforeach
                         </div>
+                        {{-- select ẩn PHẢI nằm trong .custom-select để selectCustomOption()
+                             (dùng wrapper.querySelector('select')) tìm thấy và cập nhật value --}}
+                        <select id="bulkLoaiGhe" class="hidden" onchange="handleBulkLoaiGheChange(this)">
+                            <option value="">-- Chọn loại ghế --</option>
+                            @foreach(\App\Models\LoaiGhe::all() as $loai)
+                                <option value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}">
+                                    {{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
-                    <select id="bulkLoaiGhe" class="hidden" onchange="handleBulkLoaiGheChange(this)">
-                        <option value="">-- Chọn loại ghế --</option>
-                        @foreach(\App\Models\LoaiGhe::all() as $loai)
-                            <option value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}">
-                                {{ $loai->ten_loai }} (+{{ number_format($loai->phu_thu) }}đ)
-                            </option>
-                        @endforeach
-                    </select>
                     <div id="bulkColorPreview" class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 rounded-lg border border-white/10 shadow-sm" style="display: none;"></div>
                 </div>
             </div>
@@ -848,7 +850,7 @@
                     <input type="text" id="rowMaintLyDo" placeholder="Nhập lý do bảo trì..." class="w-full rounded-xl border border-white/10 bg-[#1a1a1a] px-3.5 py-2.5 text-xs text-white focus:border-orange-500 focus:outline-none">
                 </div>
 
-                <button type="button" id="rowMaintenanceBtn" onclick="window.__rowMaintClick(event)" class="w-full rounded-xl border border-orange-500/40 bg-orange-500/15 py-2.5 text-xs font-bold uppercase text-orange-300 hover:bg-orange-500/25 transition">
+                <button type="button" id="rowMaintenanceBtn" class="w-full rounded-xl border border-orange-500/40 bg-orange-500/15 py-2.5 text-xs font-bold uppercase text-orange-300 hover:bg-orange-500/25 transition">
                     <i class="fa-solid fa-wrench mr-1.5"></i>Xác nhận bảo trì hàng
                 </button>
             </div>
@@ -987,7 +989,7 @@
                                 <i class="fa-solid fa-chevron-down text-xs"></i>
                             </div>
                         </div>
-                        <div class="custom-select__dropdown">
+                        <div class="custom-select__dropdown hidden">
                             @foreach($phongChieu->hangGhes->sortBy('ten_hang') as $hang)
                                 <div class="custom-select__option" data-value="{{ $hang->id }}" data-la-couple="{{ $hang->la_hang_couple ? 1 : 0 }}" onclick="selectCustomOption(this)">
                                     <div class="custom-select__option-content">
@@ -1044,7 +1046,7 @@
                                 <i class="fa-solid fa-chevron-down text-xs"></i>
                             </div>
                         </div>
-                        <div class="custom-select__dropdown">
+                        <div class="custom-select__dropdown hidden">
                             @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
                                 <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
                                     <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
@@ -1081,7 +1083,7 @@
                                 <i class="fa-solid fa-chevron-down text-xs"></i>
                             </div>
                         </div>
-                        <div class="custom-select__dropdown">
+                        <div class="custom-select__dropdown hidden">
                             <div class="custom-select__option" data-value="hoat_dong" onclick="selectCustomOption(this)">
                                 <div class="custom-select__option-color" style="background-color: #10b981"></div>
                                 <div class="custom-select__option-content">
@@ -1177,7 +1179,7 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
-                            <div class="custom-select__dropdown">
+                            <div class="custom-select__dropdown hidden">
                                 @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
                                     <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
                                         <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
@@ -1251,7 +1253,7 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
-                            <div class="custom-select__dropdown">
+                            <div class="custom-select__dropdown hidden">
                                 @foreach(\App\Models\LoaiGhe::orderBy('ten_loai')->get() as $loai)
                                     <div class="custom-select__option" data-value="{{ $loai->id }}" data-color="{{ $loai->mau_sac ?? '#666' }}" data-la-couple="{{ $loai->la_couple ? '1' : '0' }}" onclick="selectCustomOption(this)">
                                         <div class="custom-select__option-color" style="background-color: {{ $loai->mau_sac ?? '#666' }}"></div>
@@ -1287,7 +1289,7 @@
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </div>
                             </div>
-                            <div class="custom-select__dropdown">
+                            <div class="custom-select__dropdown hidden">
                                 <div class="custom-select__option" data-value="hoat_dong" onclick="selectCustomOption(this)">
                                     <div class="custom-select__option-color" style="background-color: #10b981"></div>
                                     <div class="custom-select__option-content">
@@ -1564,6 +1566,14 @@ function closeModalHuyBaoTri() {
     }
 
     .custom-select__trigger.active + .custom-select__dropdown {
+        display: block !important;
+    }
+
+    /* JS thực tế đang chạy (window.toggleCustomSelect) bật/tắt bằng class
+       "hidden" trên chính .custom-select__dropdown, không phải class "active"
+       trên trigger như rule phía trên — nên cần thêm rule này để menu thật
+       sự mở ra được. */
+    .custom-select__dropdown:not(.hidden) {
         display: block !important;
     }
 
@@ -2372,7 +2382,7 @@ document.addEventListener('click', function(e) {
             t.classList.remove('active');
         });
         document.querySelectorAll('.custom-select__dropdown').forEach(d => {
-            d.style.display = 'none';
+            d.classList.add('hidden');
         });
     }
 });
@@ -2399,7 +2409,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let selectedSeats = new Set();
     let currentSeatId = null;
-    let currentRowHangId = null;
+    // currentRowHangId KHÔNG khai báo local ở đây nữa — dùng window.currentRowHangId
+    // (được set khi mở modal "Quản lý hàng ghế" ở khối script khác) để các handler
+    // Áp dụng/Xóa hàng bên dưới đọc đúng giá trị thay vì luôn null.
     let currentSeatEl = null;
     let currentSeatSiblings = [];
 
@@ -2590,7 +2602,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     applyBulkAction?.addEventListener('click', function() {
-        if (selectedSeats.size === 0) return;
+        // selectedSeats/findSeatEl/... của khối script này luôn rỗng/undefined
+        // (khai báo riêng, không liên quan tới UI chọn ghế thật) — dùng bản
+        // THẬT được export ra window ở khối script xử lý click chọn ghế.
+        const selectedSeats = window.selectedSeats;
+        const findSeatEl = window.findSeatEl;
+        const expandCoupleIds = window.expandCoupleIds;
+        const updateSeatDOM = window.updateSeatDOM;
+        const updateBulkToolbar = window.updateBulkToolbar;
+        const syncSeatCheckMark = window.syncSeatCheckMark;
+        const setBtnLoading = window.setBtnLoading;
+        if (!selectedSeats || selectedSeats.size === 0) return;
 
         const loaiGheId = bulkLoaiGheSelect?.value;
         if (!loaiGheId) {
@@ -2661,6 +2683,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelectorAll('.seat-interactive.selected').forEach(el => { el.classList.remove('selected'); syncSeatCheckMark(el); });
                 updateBulkToolbar();
                 if (bulkLoaiGheSelect) bulkLoaiGheSelect.value = '';
+                window.showToast(data.message || 'Đã cập nhật loại ghế thành công!', 'success');
                 setTimeout(() => location.reload(), 300);
             } else {
                 window.showToast(data.message || 'Có lỗi xảy ra', 'error');
@@ -2825,7 +2848,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- Bulk Xóa ghế ---
     const btnBulkDeleteSeats = document.getElementById('btnBulkDeleteSeats');
     btnBulkDeleteSeats?.addEventListener('click', function() {
-        if (selectedSeats.size === 0) {
+        // Xem giải thích ở handler applyBulkAction phía trên: phải đọc bản
+        // "selectedSeats" thật qua window vì bản cục bộ ở đây luôn rỗng.
+        const selectedSeats = window.selectedSeats;
+        const expandCoupleIds = window.expandCoupleIds;
+        const updateBulkToolbar = window.updateBulkToolbar;
+        const syncSeatCheckMark = window.syncSeatCheckMark;
+        const setBtnLoading = window.setBtnLoading;
+        if (!selectedSeats || selectedSeats.size === 0) {
             window.showToast('Vui lòng chọn ít nhất 1 ghế để xóa.', 'warning');
             return;
         }
@@ -2996,15 +3026,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     const el = findSeatEl(item.id);
                     if (el) updateSeatDOM(el, item.loai_ghe, item.mau_sac, item.trang_thai, item.phu_thu);
                 });
+                window.showToast(data.message || 'Đã đổi loại ghế cho cả hàng thành công!', 'success');
                 setTimeout(() => location.reload(), 300);
             } else {
                 window.showToast(data.message || 'Có lỗi xảy ra', 'error');
             }
         })
         .catch(err => { console.error(err); window.showToast('Có lỗi xảy ra', 'error'); })
-        .finally(() => { 
-            setBtnLoading(btn, false, '<i class="fa-solid fa-check mr-1.5"></i>Áp dụng'); 
-            if (rowChangeModal) rowChangeModal.classList.add('hidden'); 
+        .finally(() => {
+            setBtnLoading(btn, false, '<i class="fa-solid fa-check mr-1.5"></i>Áp dụng');
+            if (rowChangeModal) rowChangeModal.classList.add('hidden');
         });
     });
 
@@ -3114,6 +3145,7 @@ window.showToast = function(message, type = 'error') {
     var toast = document.createElement('div');
     toast.setAttribute('data-admin-toast', '');
     toast.className = 'admin-toast';
+    toast.style.pointerEvents = 'auto';
     toast.innerHTML =
         '<div class="flex items-start gap-3 rounded-2xl border ' + v.border + ' ' + v.bg + ' bg-[#101010]/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-xl">' +
             '<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10">' +
@@ -3255,7 +3287,7 @@ document.addEventListener('click', function(e) {
             t.classList.remove('active');
         });
         document.querySelectorAll('.custom-select__dropdown').forEach(d => {
-            d.style.display = 'none';
+            d.classList.add('hidden');
         });
     }
 });
@@ -3266,7 +3298,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let selectedSeats = new Set();
     let currentSeatId = null;
-    let currentRowHangId = null;
+    // currentRowHangId KHÔNG khai báo local ở đây nữa — dùng window.currentRowHangId
+    // (được set khi mở modal "Quản lý hàng ghế" ở khối script khác) để các handler
+    // Áp dụng/Xóa hàng/Bảo trì hàng bên dưới đọc đúng giá trị thay vì luôn null.
     let currentSeatEl = null;
     let currentSeatSiblings = [];
 
@@ -3517,7 +3551,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const tenHang = this.dataset.hang;
             if (!hangGheId) return;
 
-            currentRowHangId = hangGheId;
+            window.currentRowHangId = hangGheId;
             const elTenHang = document.getElementById('rowChangeModalTenHang');
             if (elTenHang) elTenHang.textContent = tenHang;
 
@@ -4003,6 +4037,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Expose ra window vì đây mới là bộ "selectedSeats"/helper THẬT được các
+    // sự kiện click chọn ghế cập nhật. Nút "Áp dụng"/"Xóa ghế" nằm ở một
+    // <script> khác (scope riêng, có "let selectedSeats" của RIÊNG nó luôn
+    // rỗng) nên phải đọc qua window.* mới thấy đúng ghế đang chọn.
+    window.selectedSeats = selectedSeats;
+    window.findSeatEl = findSeatEl;
+    window.expandCoupleIds = expandCoupleIds;
+    window.updateSeatDOM = updateSeatDOM;
+    window.updateBulkToolbar = updateBulkToolbar;
+    window.syncSeatCheckMark = syncSeatCheckMark;
+    window.setBtnLoading = setBtnLoading;
+
     // --- NÚT BẢO TRÌ / KÍCH HOẠT NHIỀU GHẾ ---
     const btnToggleMaintenance = document.getElementById('btnToggleMaintenance');
     btnToggleMaintenance?.addEventListener('click', function(e) {
@@ -4303,6 +4349,11 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <script>
+// ID phòng chiếu hiện tại — cần cho các hàm gọi API bên dưới (vd: handleBulkSeatTypeChange).
+// Khai báo riêng ở đây vì các khai báo "phongChieuId" ở những <script> khác trong file
+// đều nằm trong closure DOMContentLoaded riêng, không truy cập được từ khối script này.
+const phongChieuId = {{ $phongChieu->id }};
+
 document.addEventListener('DOMContentLoaded', function() {
     const tooltip = document.getElementById('seatTooltip');
     const ttMaGhe = document.getElementById('seatTooltipMaGhe');
@@ -4500,11 +4551,11 @@ window.selectCustomOption = function(option) {
     }
 
     // Trường hợp B: Chọn trên Thanh thao tác ghế lẻ (1 ghế đã chọn)
-    if (wrapper.id === 'bulkLoaiGheSelect' || wrapper.dataset.selectId === 'bulkLoaiGheSelect' || wrapper.closest('#bulkActionsToolbar') || wrapper.closest('.bulk-actions-bar')) {
-        if (typeof window.handleBulkSeatTypeChange === 'function') {
-            window.handleBulkSeatTypeChange(value);
-        }
-    }
+    // Lưu ý: KHÔNG tự áp dụng ngay ở đây — chỉ cập nhật giá trị <select> ẩn
+    // (đã làm ở trên qua dispatch 'change'). Việc áp dụng thật sự do nút
+    // "Áp dụng" (#applyBulkAction) đảm nhiệm, vì nút đó còn kiểm tra quy tắc
+    // vị trí ghế (VIP/Couple không được ở 3 hàng đầu, Thường không được ở
+    // 3 hàng cuối) trước khi gọi API — bỏ qua bước này sẽ áp dụng "lụi".
 };
 
 /* ================================================================ */
@@ -4585,9 +4636,9 @@ document.addEventListener('DOMContentLoaded', function() {
 window.handleBulkSeatTypeChange = async function(loaiGheId) {
     if (!loaiGheId) return;
 
-    // Lấy tất cả ID ghế đang chọn
-    const selectedSeats = Array.from(document.querySelectorAll('.seat-interactive.is-selected, .seat-checkbox:checked'));
-    const gheIds = selectedSeats.map(el => el.dataset.seatId || el.value).filter(Boolean);
+    // Lấy tất cả ID ghế đang chọn (khớp với cơ chế chọn ghế thật: class "selected" + data-ghe-id)
+    const selectedSeatEls = Array.from(document.querySelectorAll('.seat-interactive.selected'));
+    const gheIds = selectedSeatEls.map(el => el.dataset.gheId).filter(Boolean);
 
     if (gheIds.length === 0) {
         if (typeof window.showToast === 'function') window.showToast('Vui lòng chọn ít nhất 1 ghế.', 'warning');
