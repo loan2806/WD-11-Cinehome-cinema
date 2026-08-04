@@ -43,7 +43,7 @@
 
 @push('styles')
 <style>
-    /* 🌟 BỘ THẺ CUSTOM DROPDOWN SELECT CINEHOME (CARD POPUP CHUẨN MẪU 2) */
+    /* 🌟 BỘ THẺ CUSTOM DROPDOWN SELECT CINEHOME */
     .showtime-index-filter {
         position: relative !important;
         z-index: 100 !important;
@@ -96,7 +96,7 @@
         transform: rotate(180deg) !important;
     }
 
-    /* CARD MENU POPUP SỔ XUỐNG DẠNG NỔI (GIỐNG ẢNH 2) */
+    /* CARD MENU POPUP SỔ XUỐNG DẠNG NỔI */
     .cine-select-menu {
         position: absolute !important;
         top: calc(100% + 6px) !important;
@@ -350,7 +350,7 @@
                     $movieUpcomingCount = $movieShowtimes->filter(fn ($showtime) => $showtime->thoi_gian_chieu?->isFuture())->count();
                 @endphp
 
-                <details class="showtime-movie-card">
+                <details class="showtime-movie-card" open>
                     <summary class="showtime-movie-summary">
                         <div class="showtime-movie-title">
                             <img src="{{ $posterUrl($phim->poster) }}" alt="{{ $phim->ten_phim }}">
@@ -449,7 +449,7 @@
                                                         <button type="button" 
                                                                 class="movie-icon-btn is-delete" 
                                                                 title="Xóa suất chiếu"
-                                                                onclick="openDeleteModal('{{ route('admin.suat-chieus.destroy', $suat) }}', '{{ sprintf('%04d', $suat->id) }}', '{{ $phim->ten_phim }}')">
+                                                                onclick="openDeleteModal('{{ route('admin.suat-chieus.destroy', $suat) }}', '{{ sprintf('%04d', $suat->id) }}', '{{ $phim->ten_phim }}', '{{ $suat->thoi_gian_chieu?->format('d/m/Y H:i') }}')">
                                                             <i class="fa-solid fa-trash-can"></i>
                                                         </button>
                                                     </div>
@@ -500,6 +500,12 @@
             </div>
         </div>
 
+        <!-- Cảnh báo quy tắc xóa trước 3 ngày & chưa có vé -->
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 12.5px; color: #fcd34d;">
+            <i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i>
+            Chỉ cho phép xóa suất chiếu <strong>trước ít nhất 3 ngày</strong> và <strong>chưa có khách hàng đặt vé</strong>.
+        </div>
+
         <form id="deleteForm" method="POST" action="">
             @csrf
             @method('DELETE')
@@ -508,8 +514,8 @@
                 <label style="display: block; color: #d1d5db; font-size: 13px; font-weight: 600; margin-bottom: 8px;">
                     Lý do xóa / hủy suất chiếu <span style="color: #ef4444;">*</span>
                 </label>
-                <textarea name="ly_do_huy" required rows="3" placeholder="Ví dụ: Đổi lịch phòng, sự cố thiết bị, suất chiếu nhầm..." style="width: 100%; background: #111113; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 12px; padding: 12px; font-size: 14px; outline: none;"></textarea>
-                <small style="color: #6b7280; margin-top: 4px; display: block;">Thông tin này sẽ được lưu vào nhật ký vết hệ thống (Audit Log).</small>
+                <textarea name="ly_do_huy" id="ly_do_huy_input" required rows="3" placeholder="Ví dụ: Đổi lịch phòng, sự cố thiết bị, thay đổi khung giờ chiếu..." style="width: 100%; background: #111113; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 12px; padding: 12px; font-size: 14px; outline: none;"></textarea>
+                <small style="color: #6b7280; margin-top: 4px; display: block;">Lý do xóa sẽ được lưu lại nhật ký hệ thống (Audit Log).</small>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
@@ -578,9 +584,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function openDeleteModal(actionUrl, code, phimTitle) {
+function openDeleteModal(actionUrl, code, phimTitle, showTimeText) {
     document.getElementById('deleteForm').action = actionUrl;
-    document.getElementById('deleteModalSub').textContent = 'Suất chiếu #' + code + ' - Phim: ' + phimTitle;
+    document.getElementById('deleteModalSub').textContent = 'Suất chiếu #' + code + ' - Phim: ' + phimTitle + (showTimeText ? ' (' + showTimeText + ')' : '');
+    document.getElementById('ly_do_huy_input').value = '';
     document.getElementById('deleteModal').classList.add('active');
 }
 

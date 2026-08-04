@@ -79,6 +79,10 @@ class PhimsController extends Controller
     */
     public function home()
     {
+        $now = Carbon::now('Asia/Ho_Chi_Minh');
+        $startOfMonth = $now->copy()->startOfMonth();
+        $endOfMonth = $now->copy()->endOfMonth();
+
         $movies = Phims::with([
             'showtimes',
             'genres',
@@ -102,13 +106,29 @@ class PhimsController extends Controller
 
         $bannerMovies = $nowShowingMovies->take(5);
 
+        // 🌟 LẤY TOP 3 PHIM HOT CỦA THÁNG (TỰ ĐỘNG LÀM MỚI THEO THÁNG HIỆN TẠI)
+        $hotMovies = Phims::with(['genres', 'country', 'showtimes'])
+            ->visibleToUsers()
+            ->withCount(['showtimes as tong_ve_thang' => function ($query) use ($startOfMonth, $endOfMonth) {
+                $query->join('ve_xem_phims', 'suat_chieus.id', '=', 've_xem_phims.suat_chieu_id')
+                      ->whereIn('ve_xem_phims.trang_thai', ['da_thanh_toan', 'da_su_dung', 'cho_thanh_toan', 'da_dat'])
+                      ->whereBetween('ve_xem_phims.created_at', [$startOfMonth, $endOfMonth]);
+            }])
+            ->orderByDesc('tong_ve_thang')
+            ->take(3)
+            ->get();
+
+        $tenThangHienTai = $now->format('m/Y');
+
         return view(
             'user.home',
             compact(
                 'bannerMovies',
                 'nowShowingMovies',
                 'comingSoonMovies',
-                'comingLaterMovies'
+                'comingLaterMovies',
+                'hotMovies',
+                'tenThangHienTai'
             )
         );
     }

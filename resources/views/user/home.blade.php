@@ -2,6 +2,191 @@
 
 @section('title', 'CineHome - Đặt vé xem phim')
 
+@push('styles')
+<style>
+    /* 🌟 CSS BẢNG XẾP HẠNG TOP 3 PHIM HOT CỦA THÁNG */
+    .hot-movies-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-top: 24px;
+    }
+
+    @media (max-width: 1200px) {
+        .hot-movies-grid {
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+    }
+
+    .hot-movie-card {
+        background: #18181c;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 18px;
+        padding: 16px;
+        position: relative;
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-sizing: border-box;
+        cursor: pointer; /* Cho phép con trỏ bàn tay trên toàn bộ ô */
+    }
+
+    .hot-movie-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(250, 204, 21, 0.5);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(250, 204, 21, 0.12);
+    }
+
+    .hot-rank-badge {
+        position: absolute;
+        top: -12px;
+        left: 16px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 800;
+        z-index: 10;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .hot-movie-poster {
+        width: 100px;
+        height: 145px;
+        flex-shrink: 0;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        background: #27272a;
+    }
+
+    .hot-movie-poster img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .hot-custom-age-badge {
+        position: absolute !important;
+        bottom: 6px !important;
+        right: 6px !important;
+        background: rgba(0, 0, 0, 0.8) !important;
+        color: #facc15 !important;
+        font-size: 10px !important;
+        font-weight: 800 !important;
+        padding: 3px 6px !important;
+        border-radius: 6px !important;
+        border: 1px solid rgba(250, 204, 21, 0.4) !important;
+        line-height: 1 !important;
+        z-index: 5 !important;
+        width: auto !important;
+        height: auto !important;
+        display: inline-block !important;
+    }
+
+    .hot-movie-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        flex-grow: 1;
+        min-width: 0;
+        height: 145px;
+    }
+
+    .hot-movie-title {
+        color: #ffffff;
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .hot-movie-stats {
+        margin-bottom: 4px;
+    }
+
+    .hot-movie-stats .ticket-count {
+        color: #facc15;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(250, 204, 21, 0.12);
+        border: 1px solid rgba(250, 204, 21, 0.25);
+        padding: 3px 8px;
+        border-radius: 6px;
+    }
+
+    .hot-movie-genres {
+        color: #9ca3af;
+        font-size: 12px;
+        margin: 0 0 8px 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .hot-card-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+    }
+
+    .hot-card-actions .btn-hot-book {
+        background: #ef4444;
+        color: #ffffff !important;
+        padding: 7px 12px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        flex: 1;
+        transition: all 0.2s ease;
+        border: none;
+    }
+
+    .hot-card-actions .btn-hot-book:hover {
+        background: #dc2626;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    }
+
+    .hot-card-actions .btn-hot-detail {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #d1d5db !important;
+        padding: 7px 12px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .hot-card-actions .btn-hot-detail:hover {
+        background: rgba(255, 255, 255, 0.18);
+        color: #ffffff !important;
+    }
+</style>
+@endpush
+
 @section('content')
     @php
         $heroMovies = $bannerMovies
@@ -78,17 +263,7 @@
         <section class="booking-hero hero-slider" data-home-slider>
             @forelse ($heroMovies as $movie)
                 @php
-                    $nextShowtime = $movie->showtimes
-                        ->filter(
-                            fn($showtime) => $showtime->thoi_gian_chieu &&
-                                \Carbon\Carbon::parse($showtime->thoi_gian_chieu)->gte(now()),
-                        )
-                        ->sortBy('thoi_gian_chieu')
-                        ->first();
-
-                    $bookingUrl = $nextShowtime
-                        ? route('dat_ve.chon_ghe', $movie)
-                        : route('user.movies.show', $movie->slug);
+                    $detailUrlWithSchedule = route('user.movies.show', $movie->slug) . '#lich-chieu';
                 @endphp
 
                 <article class="hero-slide booking-hero-slide {{ $loop->first ? 'active' : '' }}"
@@ -126,17 +301,8 @@
                                 </span>
                             </div>
 
-                            <div class="booking-showtime-chip">
-                                <i class="fa-solid fa-calendar-check"></i>
-                                @if ($nextShowtime)
-                                    Suất gần nhất: {{ \Carbon\Carbon::parse($nextShowtime->thoi_gian_chieu)->format('H:i d/m') }}
-                                @else
-                                    Suất chiếu đang cập nhật
-                                @endif
-                            </div>
-
                             <div class="booking-hero-actions hero-buttons">
-                                <a href="{{ $bookingUrl }}" class="btn-book booking-primary-btn">
+                                <a href="{{ $detailUrlWithSchedule }}" class="btn-book booking-primary-btn">
                                     <i class="fa-solid fa-ticket"></i>
                                     Đặt vé ngay
                                 </a>
@@ -191,21 +357,6 @@
                                     Đặt vé ngay
                                 </a>
                             </div>
-
-                            <div class="booking-hero-stats">
-                                <div>
-                                    <strong>3</strong>
-                                    <span>Bước đặt vé</span>
-                                </div>
-                                <div>
-                                    <strong>QR</strong>
-                                    <span>Vé điện tử</span>
-                                </div>
-                                <div>
-                                    <strong>24/7</strong>
-                                    <span>Tự chọn ghế</span>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </article>
@@ -257,6 +408,76 @@
                     </a>
                 </section>
 
+                <!-- 🌟 SECTION TOP 3 PHIM HOT CỦA THÁNG -->
+                <section class="booking-section reveal-on-scroll" style="margin-top: 40px;">
+                    <div class="booking-section-head">
+                        <div>
+                            <p style="color: #facc15; font-weight: 700; margin-bottom: 4px;">
+                                <i class="fa-solid fa-fire" style="color: #ef4444; margin-right: 4px;"></i>
+                                BẢNG XẾP HẠNG THÁNG {{ $tenThangHienTai }}
+                            </p>
+                            <h2>Top 3 Phim Hot Của Tháng</h2>
+                        </div>
+                        <div class="booking-section-actions">
+                            <span style="color: #9ca3af; font-size: 13px;">
+                                <i class="fa-solid fa-rotate" style="margin-right: 4px;"></i> Tự động làm mới mỗi tháng
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="hot-movies-grid">
+                        @forelse ($hotMovies as $index => $movie)
+                            @php
+                                $rank = $index + 1;
+                                $badgeStyle = match($rank) {
+                                    1 => 'background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);',
+                                    2 => 'background: linear-gradient(135deg, #9ca3af, #4b5563); color: #fff;',
+                                    3 => 'background: linear-gradient(135deg, #b45309, #78350f); color: #fff;',
+                                    default => 'background: #374151; color: #fff;'
+                                };
+                                $detailUrlWithSchedule = route('user.movies.show', $movie->slug) . '#lich-chieu';
+                            @endphp
+
+                            <!-- Bấm vào bất kỳ vị trí nào trên ô đều sẽ chuyển trang đến lịch chiếu -->
+                            <div class="hot-movie-card" onclick="window.location.href='{{ $detailUrlWithSchedule }}'">
+                                <div class="hot-rank-badge" style="{{ $badgeStyle }}">
+                                    <i class="fa-solid fa-crown"></i> TOP {{ $rank }}
+                                </div>
+                                <div class="hot-movie-poster">
+                                    <img src="{{ asset('storage/movies/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}">
+                                    <span class="hot-custom-age-badge">{{ $movie->gioi_han_tuoi }}</span>
+                                </div>
+                                <div class="hot-movie-info">
+                                    <h3 class="hot-movie-title">{{ $movie->ten_phim }}</h3>
+                                    <div class="hot-movie-stats">
+                                        <span class="ticket-count">
+                                            <i class="fa-solid fa-ticket"></i>
+                                            <strong>{{ number_format($movie->tong_ve_thang ?? 0) }}</strong> vé đã đặt
+                                        </span>
+                                    </div>
+                                    <p class="hot-movie-genres">
+                                        <i class="fa-solid fa-tags"></i>
+                                        {{ $movie->genres->pluck('ten_the_loai')->take(2)->join(', ') ?: 'Điện ảnh' }}
+                                    </p>
+                                    <div class="hot-card-actions">
+                                        <a href="{{ $detailUrlWithSchedule }}" class="btn-hot-book" onclick="event.stopPropagation();">
+                                            <i class="fa-solid fa-ticket"></i> Đặt vé
+                                        </a>
+                                        <a href="{{ route('user.movies.show', $movie->slug) }}" class="btn-hot-detail" onclick="event.stopPropagation();">
+                                            Chi tiết
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="booking-empty-state" style="grid-column: 1 / -1;">
+                                <i class="fa-solid fa-fire"></i>
+                                Chưa có dữ liệu phim hot cho tháng này.
+                            </div>
+                        @endforelse
+                    </div>
+                </section>
+
                 <section class="booking-poster-wall reveal-on-scroll">
                     <div class="poster-wall-copy">
                         <span>
@@ -276,7 +497,7 @@
 
                     <div class="poster-wall-grid" aria-label="Poster phim nổi bật">
                         @foreach ($visualMovies as $movie)
-                            <a href="{{ route('user.movies.show', $movie->slug) }}"
+                            <a href="{{ route('user.movies.show', $movie->slug) }}#lich-chieu"
                                 class="poster-wall-card {{ $loop->first ? 'large' : '' }}">
                                 <img src="{{ asset('storage/movies/' . $movie->poster) }}"
                                     alt="{{ $movie->ten_phim }}">
@@ -370,21 +591,11 @@
                     <div class="booking-movie-rail">
                         @forelse ($nowShowingRail as $movie)
                             @php
-                                $nextShowtime = $movie->showtimes
-                                    ->filter(
-                                        fn($showtime) => $showtime->thoi_gian_chieu &&
-                                            \Carbon\Carbon::parse($showtime->thoi_gian_chieu)->gte(now()),
-                                    )
-                                    ->sortBy('thoi_gian_chieu')
-                                    ->first();
-
-                                $bookingUrl = $nextShowtime
-                                    ? route('dat_ve.chon_ghe', $movie)
-                                    : route('user.movies.show', $movie->slug);
+                                $detailUrlWithSchedule = route('user.movies.show', $movie->slug) . '#lich-chieu';
                             @endphp
 
                             <article class="booking-movie-card">
-                                <a href="{{ route('user.movies.show', $movie->slug) }}" class="booking-movie-poster">
+                                <a href="{{ $detailUrlWithSchedule }}" class="booking-movie-poster">
                                     <img src="{{ asset('storage/movies/' . $movie->poster) }}"
                                         alt="{{ $movie->ten_phim }}">
                                     <span class="movie-age-badge">{{ $movie->gioi_han_tuoi }}</span>
@@ -405,7 +616,7 @@
                                     </p>
 
                                     <div class="booking-card-actions">
-                                        <a href="{{ $bookingUrl }}" class="card-book-btn">
+                                        <a href="{{ $detailUrlWithSchedule }}" class="card-book-btn">
                                             <i class="fa-solid fa-ticket"></i>
                                             Đặt vé
                                         </a>
@@ -486,7 +697,7 @@
                             <i class="fa-solid fa-crown"></i>
                             Thành viên CineHome
                         </span>
-                        <h2>Đặt vé hôm nay, tích điểm cho lần xem tiếp theo</h2>
+                        ## Đặt vé hôm nay, tích điểm cho lần xem tiếp theo
                         <p>Nhận ưu đãi voucher, quản lý vé điện tử và theo dõi lịch sử đặt vé trong tài khoản của bạn.</p>
                     </div>
 

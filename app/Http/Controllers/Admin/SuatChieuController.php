@@ -27,13 +27,16 @@ class SuatChieuController extends Controller
     ];
 
     /**
-     * 🌟 HÀM INDEX: CHUẨN HÓA LOGIC LỌC SUẤT CHIẾU 100%
+     * HÀM INDEX: TỰ ĐỘNG XÓA SUẤT ĐÃ CHIẾU > 24H & LỌC DỮ LIỆU
      */
     public function index(Request $request): View
     {
         $now = Carbon::now();
 
-        // Cập nhật trạng thái các suất đã chiếu qua thời gian kết thúc
+        // 🌟 1. TỰ ĐỘNG XÓA CÁC SUẤT CHIẾU ĐÃ KẾT THÚC QUÁ 24 GIỜ ĐỂ DỌN SẠCH BỘ NHỚ
+        SuatChieu::where('thoi_gian_ket_thuc', '<=', $now->copy()->subHours(24))->delete();
+
+        // 🌟 2. Cập nhật trạng thái các suất đã chiếu xong (trong vòng 24h gần nhất)
         SuatChieu::where('trang_thai', '!=', 'huy')
             ->where('trang_thai', '!=', 'da_chieu')
             ->where('thoi_gian_ket_thuc', '<=', $now)
@@ -52,12 +55,10 @@ class SuatChieuController extends Controller
 
         $movieQuery = Phims::query();
 
-        // 1. Lọc trực tiếp theo ID phim nếu được chọn
         if ($request->filled('phim_id')) {
             $movieQuery->where('id', $request->phim_id);
         }
 
-        // 2. LỌC CHUẨN: Chỉ lấy những phim CÓ suất chiếu thỏa mãn điều kiện lọc
         if ($request->filled('phong_chieu_id') || $request->filled('trang_thai') || $request->filled('ngay_chieu')) {
             $movieQuery->whereHas('showtimes', function ($query) use ($request) {
                 if ($request->filled('trang_thai')) {
@@ -72,7 +73,6 @@ class SuatChieuController extends Controller
             });
         }
 
-        // 3. Eager load danh sách suất chiếu thỏa mãn bộ lọc
         $movieQuery->with(['showtimes' => function ($query) use ($request) {
             $query->with(['rapChieuPhim', 'phongChieu']);
             if ($request->filled('trang_thai')) {
@@ -219,7 +219,7 @@ class SuatChieuController extends Controller
         
         $chuoiGheDaDats = DB::table('ve_xem_phims')
             ->where('suat_chieu_id', $suatChieu->id)
-            ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'cho_thanh_toan'])
+            ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'cho_thanh_toan', 'da_dat'])
             ->pluck('ma_ghe')
             ->toArray();
 
@@ -336,30 +336,50 @@ class SuatChieuController extends Controller
         return redirect()->route('admin.suat-chieus.index')->with('success', 'Cập nhật thông tin suất chiếu thành công.');
     }
 
+    /**
+     * 🌟 HÀM XÓA SUẤT CHIẾU VỚI QUY TẮC BẮT BUỘC
+     */
     public function destroy(Request $request, SuatChieu $suatChieu) 
     {
+        // 1. Bắt buộc nhập lý do xóa
+        $request->validate([
+            'ly_do_huy' => 'required|string|max:500',
+        ], [
+            'ly_do_huy.required' => 'Vui lòng nhập lý do xóa suất chiếu.',
+        ]);
+
+        $now = Carbon::now();
+        $thoiGianChieu = Carbon::parse($suatChieu->thoi_gian_chieu);
+
+        // 2. Quy tắc 1: Phải xóa trước suất chiếu ít nhất 3 ngày (>= 72 giờ)
+        if ($thoiGianChieu->lt($now->copy()->addDays(3))) {
+            return redirect()->back()->with('error', 'Không thể xóa! Chỉ được phép xóa suất chiếu trước giờ chiếu ít nhất 3 ngày (ví dụ: ngày 4/8 chỉ được xóa từ 7/8 trở đi).');
+        }
+
+        // 3. Quy tắc 2: Chưa có người đặt vé
         $coNguoiDatVe = DB::table('ve_xem_phims')
             ->where('suat_chieu_id', $suatChieu->id)
-            ->whereIn('trang_thai', ['da_thanh_toan', 'cho_thanh_toan', 'da_su_dung'])
+            ->whereIn('trang_thai', ['da_thanh_toan', 'cho_thanh_toan', 'da_su_dung', 'da_dat'])
             ->exists();
 
         if ($coNguoiDatVe) {
             return redirect()->back()->with('error', 'Không thể xóa! Suất chiếu này đã có khách hàng đặt vé.');
         }
 
-        $lyDoHuy = $request->input('ly_do_huy', 'Không có lý do cụ thể');
+        $lyDoHuy = $request->input('ly_do_huy');
         $tenPhim = $suatChieu->phim->ten_phim ?? 'N/A';
 
+        // 4. Ghi nhật ký hệ thống
         $this->ghiNhatKy(
             $request, 
             'Xóa suất chiếu', 
             'Quản lý phim & lịch chiếu', 
-            "Xóa suất chiếu ID #{$suatChieu->id} (Phim: {$tenPhim}). Lý do hủy: {$lyDoHuy}"
+            "Xóa suất chiếu ID #{$suatChieu->id} (Phim: {$tenPhim}, Ngày chiếu: {$thoiGianChieu->format('d/m/Y H:i')}). Lý do: {$lyDoHuy}"
         );
 
         $suatChieu->delete(); 
 
-        return redirect()->route('admin.suat-chieus.index')->with('success', 'Xóa suất chiếu thành công và đã lưu vết nhật ký.');
+        return redirect()->route('admin.suat-chieus.index')->with('success', 'Đã xóa suất chiếu thành công và ghi nhận nhật ký.');
     }
 
     private function isNgayLe(Carbon $date): bool 

@@ -37,6 +37,9 @@ class VaiTroAndQuyenSeeder extends Seeder
             ['name' => 'quan_ly_cau_hinh_he_thong', 'description' => 'Cấu hình thông số hệ thống, thông báo và đánh giá phim'],
             ['name' => 'quan_ly_thong_bao_day', 'description' => 'Quản lý thông báo đẩy đến người dùng'],
 
+            // 🌟 Cụm Mới: Quản lý chăm sóc khách hàng & Phản hồi
+            ['name' => 'quan_ly_lien_he', 'description' => 'Xem, cập nhật trạng thái và xử lý các yêu cầu liên hệ từ khách hàng'],
+
             // Cụm 3: Vận hành rạp kinh doanh
             ['name' => 'thong_ke_doanh_thu', 'description' => 'Xem báo cáo và thống kê doanh thu rạp phim'],
             ['name' => 'quan_ly_ca_lam', 'description' => 'Quản lý lịch và chia ca làm việc cho nhân viên'],
@@ -63,7 +66,7 @@ class VaiTroAndQuyenSeeder extends Seeder
             ]);
         }
 
-        // Khởi tạo chuẩn xác cấu trúc 5 vai trò phục vụ mô hình vận hành độc lập thư mục view
+        // Khởi tạo chuẩn xác cấu trúc các vai trò
         $adminRole = Role::create(['name' => 'Quản trị viên', 'guard_name' => 'web']);
         $systemManagerRole = Role::create(['name' => 'Quản lý hệ thống', 'guard_name' => 'web']);
         $managerRole = Role::create(['name' => 'Quản lý', 'guard_name' => 'web']);
@@ -71,13 +74,14 @@ class VaiTroAndQuyenSeeder extends Seeder
         $customerRole = Role::create(['name' => 'Khách hàng', 'guard_name' => 'web']);
         $cinemaManagerRole = Role::create(['name' => 'Quản lý phòng chiếu', 'guard_name' => 'web']);
 
-        // 1. Quản trị viên: Nhận toàn quyền tối cao hệ thống (Sở hữu tất cả các quyền)
+        // 1. Quản trị viên: Nhận toàn quyền tối cao hệ thống
         $adminRole->syncPermissions(array_values($createdPermissions));
 
-        // 2. Quản lý hệ thống: Có mọi quyền vận hành kỹ thuật và doanh thu (Loại trừ 3 quyền can thiệp nhân sự cấp cao)
+        // 2. Quản lý hệ thống
         $systemManagerRole->syncPermissions([
             $createdPermissions['quan_ly_cau_hinh_he_thong'],
             $createdPermissions['quan_ly_thong_bao_day'],
+            $createdPermissions['quan_ly_lien_he'], // 🌟 Thêm quyền liên hệ
             $createdPermissions['thong_ke_doanh_thu'],
             $createdPermissions['quan_ly_ca_lam'],
             $createdPermissions['quan_ly_phim_suat_chieu'],
@@ -91,10 +95,11 @@ class VaiTroAndQuyenSeeder extends Seeder
             $createdPermissions['xem_nhat_ky_hoat_dong'],
         ]);
 
-        // 3. Quản lý rạp: Tập trung vào điều hành ca làm việc, phim ảnh và danh sách nhân sự tại quầy
+        // 3. Quản lý rạp
         $managerRole->syncPermissions([
             $createdPermissions['quan_ly_nhan_vien'],
             $createdPermissions['quan_ly_khach_hang'],
+            $createdPermissions['quan_ly_lien_he'], // 🌟 Thêm quyền liên hệ
             $createdPermissions['thong_ke_doanh_thu'],
             $createdPermissions['quan_ly_ca_lam'],
             $createdPermissions['quan_ly_phim_suat_chieu'],
@@ -107,21 +112,21 @@ class VaiTroAndQuyenSeeder extends Seeder
             $createdPermissions['khach_hang_huy_ve'],
         ]);
 
-        // 4. Nhân viên quầy: Chỉ thao tác quầy bán vé và quét mã soát vé phòng chiếu
+        // 4. Nhân viên quầy
         $staffRole->syncPermissions([
             $createdPermissions['ban_ve_tai_quay'],
             $createdPermissions['quan_ly_do_an_combo'],
             $createdPermissions['soat_ve_vao_cua'],
         ]);
 
-        // 5. Khách hàng: Mặc định giữ các quyền thao tác mua vé trên Website Frontend public
+        // 5. Khách hàng
         $customerRole->syncPermissions([
             $createdPermissions['khach_hang_dat_ve'],
             $createdPermissions['khach_hang_xem_lich_su'],
             $createdPermissions['khach_hang_huy_ve'],
         ]);
 
-        // 6. Quản lý phòng chiếu: Quản lý phòng chiếu, suất chiếu, vé và doanh thu
+        // 6. Quản lý phòng chiếu
         $cinemaManagerRole->syncPermissions([
             $createdPermissions['quan_ly_phim_suat_chieu'],
             $createdPermissions['quan_ly_phong_ghe'],
@@ -130,6 +135,7 @@ class VaiTroAndQuyenSeeder extends Seeder
             $createdPermissions['soat_ve_vao_cua'],
             $createdPermissions['quan_ly_nhan_vien'],
             $createdPermissions['quan_ly_khach_hang'],
+            $createdPermissions['quan_ly_lien_he'], // 🌟 Thêm quyền liên hệ
             $createdPermissions['thong_ke_doanh_thu'],
         ]);
     }

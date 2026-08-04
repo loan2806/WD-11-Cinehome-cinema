@@ -99,7 +99,6 @@ Route::get('/dashboard', function () {
         return redirect()->route('manager.dashboard');
     }
 
-    // 🌟 ĐÃ SỬA: Chuyển nhân viên sang đúng trang Staff Dashboard
     if ($user->hasRole('Nhân viên') || $user->vai_tro === 'nhan_vien') {
         return redirect()->route('staff.dashboard');
     }
@@ -179,11 +178,9 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
         Route::get('/thanh-toan-thanh-cong/{ve}', [DatVeController::class, 'thanhToanThanhCong'])
             ->name('thanh_toan_thanh_cong');
 
-        // ROUTE HỦY VÉ PENDING DÀNH CHO KHÁCH HÀNG
         Route::post('/huy-ve-pending/{id}', [DatVeController::class, 'huyVePending'])
             ->name('huy_ve_pending');
 
-        // 🌟 CẤU HÌNH API LOCK GHẾ (Đã đảm bảo release-all đứng trước {seat})
         Route::get('/seat-locks/{suat_chieu}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'index'])
             ->name('seat_locks.index');
         
@@ -243,7 +240,6 @@ Route::middleware(['auth'])
         Route::get('/ban-ve/ket-qua/{id}', [BanVeController::class, 'success'])->whereNumber('id')->name('ban-ve.success');
         Route::get('/ban-ve/in-ve/{id}', [BanVeController::class, 'printTicket'])->whereNumber('id')->name('ban-ve.print-ticket');
 
-        // Đánh dấu vé là "Đã in" khi nhân viên bấm nút in vé
         Route::post('/ban-ve/{id}/mark-printed', [BanVeController::class, 'markAsPrinted'])
             ->whereNumber('id')
             ->name('ban-ve.mark-printed');
@@ -261,7 +257,7 @@ Route::middleware(['auth'])
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN PANEL - BỌC KÍN MIDDLEWARE KIỂM TRA QUYỀN VÀO TỪNG NHÓM
+| ADMIN PANEL
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])
@@ -420,7 +416,6 @@ Route::middleware(['auth'])
             Route::get('/thong-ke/export-excel', [ThongKeController::class, 'exportExcel'])->name('thong-ke.export-excel');
             Route::get('/thong-ke/export-pdf', [ThongKeController::class, 'exportPdf'])->name('thong-ke.export-pdf');
 
-            // API endpoint cho thống kê
             Route::get('/api/statistics', [ThongKeController::class, 'apiIndex'])->name('thong-ke.api');
         });
 
@@ -438,7 +433,10 @@ Route::middleware(['auth'])
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
             Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
+        });
 
+        // 🌟 QUẢN LÝ LIÊN HỆ KHÁCH HÀNG (ĐÃ TÁCH TỰ ĐỘNG THEO QUYỀN "lien_he.xem")
+        Route::middleware(['quyen:lien_he.xem'])->group(function () {
             Route::get('/lien-he', [AdminLienHeController::class, 'index'])->name('lien-he.index');
             Route::get('/lien-he/{lienHe}', [AdminLienHeController::class, 'show'])->name('lien-he.show');
             Route::patch('/lien-he/{lienHe}', [AdminLienHeController::class, 'update'])->name('lien-he.update');
