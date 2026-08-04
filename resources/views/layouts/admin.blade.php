@@ -410,8 +410,8 @@
                     </div>
                 @endif
 
-                {{-- 7. THIẾT LẬP HỆ THỐNG --}}
-                @if(coBatKyQuyenNao(['thong_bao.gui', 'cai_dat.he_thong']))
+                {{-- 7. THIẾT LẬP HỆ THỐNG & HỖ TRỢ --}}
+                @if(coBatKyQuyenNao(['thong_bao.gui', 'cai_dat.he_thong', 'lien_he.xem']))
                     @php
                         $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
                             || request()->routeIs('admin.movie-reviews.*')
@@ -422,7 +422,7 @@
                         <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
                             <span class="flex items-center gap-3.5">
                                 <i class="fa-solid fa-gear w-5 text-center text-xl text-[#d99a32]"></i>
-                                <span>Cài đặt tham số gốc</span>
+                                <span>Hệ thống và Hỗ Trợ</span>
                             </span>
                             <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
                         </button>
@@ -433,13 +433,7 @@
                             </a>
                             @endif
 
-                            @if(coQuyen('cai_dat.he_thong'))
-                            <a href="{{ route('admin.system-settings.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.system-settings.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
-                                Cấu hình tham số gốc
-                            </a>
-                            @endif
-
-                            @if(coQuyen('thong_bao.gui'))
+                            @if(coQuyen('lien_he.xem'))
                             <a href="{{ route('admin.lien-he.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.lien-he.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
                                 Liên hệ khách hàng
                             </a>

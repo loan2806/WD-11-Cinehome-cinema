@@ -27,6 +27,11 @@ class LienHeController extends Controller
 
     public function index(Request $request)
     {
+        // 🌟 Kiểm tra quyền xem danh sách liên hệ
+        if (! \coQuyen('lien_he.xem')) {
+            return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền xem Danh sách liên hệ!');
+        }
+
         $query = LienHe::with('nguoiDung')->latest();
 
         if ($request->filled('trang_thai')) {
@@ -58,6 +63,11 @@ class LienHeController extends Controller
 
     public function show(LienHe $lienHe)
     {
+        // 🌟 Kiểm tra quyền xem chi tiết liên hệ
+        if (! \coQuyen('lien_he.xem')) {
+            return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền xem Chi tiết liên hệ!');
+        }
+
         $lienHe->load(['nguoiDung', 'nguoiXuLy']);
 
         $activeVouchers = Voucher::where('trang_thai', true)
@@ -72,6 +82,11 @@ class LienHeController extends Controller
 
     public function update(Request $request, LienHe $lienHe)
     {
+        // 🌟 Kiểm tra quyền cập nhật liên hệ
+        if (! \coQuyen('lien_he.cap_nhat')) {
+            return back()->with('error', 'Tài khoản của bạn không có quyền cập nhật trạng thái liên hệ!');
+        }
+
         $data = $request->validate([
             'trang_thai' => ['required', 'in:cho_xu_ly,dang_xu_ly,da_xu_ly'],
             'phan_hoi' => ['nullable', 'string', 'max:2000'],
@@ -101,6 +116,11 @@ class LienHeController extends Controller
 
     public function tangVoucher(Request $request, LienHe $lienHe)
     {
+        // 🌟 Kiểm tra quyền cập nhật/tặng voucher
+        if (! \coQuyen('lien_he.cap_nhat')) {
+            return back()->with('error', 'Tài khoản của bạn không có quyền tặng voucher!');
+        }
+
         if (!$lienHe->nguoi_dung_id) {
             return back()->with('error', 'Khách hàng này chưa đăng nhập tài khoản nên không thể tặng voucher trực tiếp.');
         }
@@ -157,6 +177,11 @@ class LienHeController extends Controller
 
     public function destroy(Request $request, LienHe $lienHe)
     {
+        // 🌟 Kiểm tra quyền xóa liên hệ
+        if (! \coQuyen('lien_he.xoa')) {
+            return back()->with('error', 'Tài khoản của bạn không có quyền xóa liên hệ!');
+        }
+
         $id = $lienHe->id;
         $lienHe->delete();
 

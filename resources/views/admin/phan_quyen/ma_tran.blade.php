@@ -3,13 +3,17 @@
 @section('title', 'Ma Trận Phân Quyền - CineHome')
 
 @section('content')
+@php
+    $nhomQuyen = config('phan_quyen.nhom_quyen', []);
+@endphp
+
 <div class="space-y-6 text-white">
 
     {{-- HEADER & BUTTON LƯU --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#121212] p-5 rounded-2xl border border-white/10">
         <div>
             <h2 class="text-2xl font-black text-white m-0">Ma trận phân quyền hệ thống</h2>
-            <p class="text-sm text-gray-400 m-0 mt-1">Thiết lập quyền truy cập chi tiết cho Quản Lý Rạp và Nhân Viên Quầy</p>
+            <p class="text-sm text-gray-400 m-0 mt-1">Thiết lập quyền truy cập chi tiết cho các vai trò trong hệ thống</p>
         </div>
         <button type="submit" form="formPhanQuyen" class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white font-bold px-5 py-3 rounded-xl shadow-lg shadow-red-900/30 transition border-0 cursor-pointer">
             <i class="fa-solid fa-floppy-disk"></i>
@@ -17,7 +21,7 @@
         </button>
     </div>
 
-    {{-- THỐNG KÊ 3 VAI TRÒ --}}
+    {{-- THỐNG KÊ CÁC VAI TRÒ --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         @foreach($danhSachVaiTro as $khoaVaiTro => $tenVaiTro)
             <div class="bg-[#121212] border border-white/10 rounded-2xl p-4 flex items-center justify-between shadow-lg">
@@ -36,7 +40,7 @@
     <form id="formPhanQuyen" action="{{ route('admin.phan-quyen.cap-nhat') }}" method="POST" class="space-y-4">
         @csrf
 
-        @foreach(config('phan_quyen.nhom_quyen') as $khoaNhom => $nhom)
+        @foreach($nhomQuyen as $khoaNhom => $nhom)
             <div class="bg-[#121212] border border-white/10 rounded-2xl overflow-hidden shadow-md">
                 
                 {{-- TIÊU ĐỀ NHÓM (CLICK ĐỂ ẨN/HIỆN) --}}
@@ -79,7 +83,6 @@
                             @foreach($nhom['danh_sach_quyen'] as $maQuyen => $tenQuyen)
                                 <tr class="hover:bg-white/5 transition duration-150">
                                     <td class="py-3 px-5">
-                                        {{-- 🌟 ĐÃ ĐẨY TÊN CHỨC NĂNG LÊN TRÊN & MÃ QUYỀN MÀU VÀNG XUỐNG DƯỚI --}}
                                         <div class="text-white font-bold text-sm">{{ $tenQuyen }}</div>
                                         <div class="font-mono text-[#d99a32]/80 text-xs mt-0.5 tracking-wide">{{ $maQuyen }}</div>
                                     </td>
@@ -133,7 +136,7 @@
     }
 
     function capNhatSoLuong() {
-        const danhSachVaiTro = @json(array_keys(config('phan_quyen.vai_tro')));
+        const danhSachVaiTro = @json(array_keys($danhSachVaiTro));
         danhSachVaiTro.forEach(khoaVaiTro => {
             const tong = document.querySelectorAll(`.dem-vai-tro-${khoaVaiTro}`).length;
             const daTich = document.querySelectorAll(`.dem-vai-tro-${khoaVaiTro}:checked`).length;
@@ -144,7 +147,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         capNhatSoLuong();
-        document.querySelectorAll('.dem-vai-tro-quan_ly_rap, .dem-vai-tro-nhan_vien').forEach(cb => {
+        document.querySelectorAll('input[type="checkbox"][class*="dem-vai-tro-"]').forEach(cb => {
             cb.addEventListener('change', capNhatSoLuong);
         });
     });

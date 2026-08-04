@@ -64,10 +64,12 @@ return [
             ],
         ],
         'cai_dat' => [
-            'tieu_de' => 'CÀI ĐẶT THAM SỐ GỐC',
+            'tieu_de' => 'HỆ THỐNG VÀ HỖ TRỢ',
             'danh_sach_quyen' => [
                 'thong_bao.gui'    => 'Gửi thông báo đẩy',
-                'cai_dat.he_thong'  => 'Cấu hình tham số gốc hệ thống',
+                'lien_he.xem'      => 'Xem danh sách & chi tiết liên hệ',
+                'lien_he.cap_nhat' => 'Cập nhật trạng thái liên hệ',
+                'lien_he.xoa'      => 'Xóa thông tin liên hệ',
             ],
         ],
     ],
