@@ -423,14 +423,14 @@ class DatVeController extends Controller
             ->orderBy('name')
             ->get();
 
-       $menu = $foods->groupBy(function ($food) {
+        $menu = $foods->groupBy(function ($food) {
 
-    if ($food->category?->is_combo) {
-        return 'Combo';
-    }
+            if ($food->category?->is_combo) {
+                return 'Combo';
+            }
 
-    return trim($food->category?->name ?? 'Khác');
-})->map(function ($items, $category) {
+            return trim($food->category?->name ?? 'Khác');
+        })->map(function ($items, $category) {
             return [
                 'category' => $category,
                 'foods' => $items->values()->map(function (DoAn $food) {
@@ -939,7 +939,7 @@ class DatVeController extends Controller
                     'line' => $exception->getLine(),
                 ]);
 
-                return back()->withInput()->with('error', 'Lỗi kết nối API VietQR: ' . $exception->getMessage());
+                return back()->withInput()->with('error', 'Không thể kết nối VietQR lúc này. Vui lòng thử lại sau.');
             }
         }
 
@@ -955,7 +955,7 @@ class DatVeController extends Controller
                 'line' => $exception->getLine(),
             ]);
 
-            return back()->withInput()->with('error', 'Không thể hoàn tất đặt vé: ' . $exception->getMessage());
+            return back()->withInput()->with('error', 'Không thể hoàn tất đặt vé lúc này. Vui lòng thử lại sau.');
         }
 
         if (!empty($duLieuTam['food_items'])) {
@@ -1016,7 +1016,7 @@ class DatVeController extends Controller
                         return redirect()->route('dat_ve.thanh_toan_thanh_cong', $ve->id);
                     } catch (\Throwable $exception) {
                         Log::error('PAYOS CALLBACK BOOKING ERROR', ['message' => $exception->getMessage()]);
-                        return redirect()->route('user.ve_xem_phim.index')->with('error', 'Lỗi phát hành vé: ' . $exception->getMessage());
+                        return redirect()->route('user.ve_xem_phim.index')->with('error', 'Không thể phát hành vé lúc này. Vui lòng thử lại sau.');
                     }
                 }
             }
@@ -1051,7 +1051,7 @@ class DatVeController extends Controller
                 return redirect()->route('dat_ve.thanh_toan_thanh_cong', $ve->id);
             } catch (\Throwable $exception) {
                 Log::error('VNPAY CALLBACK BOOKING ERROR', ['message' => $exception->getMessage()]);
-                return redirect()->route('user.ve_xem_phim.index')->with('error', 'Không thể phát hành vé: ' . $exception->getMessage());
+                return redirect()->route('user.ve_xem_phim.index')->with('error', 'Không thể phát hành vé lúc này. Vui lòng thử lại sau.');
             }
         }
 
@@ -1121,7 +1121,7 @@ class DatVeController extends Controller
             $ve = $this->taoVeTuDuLieuTam($bookingData);
         } catch (\Throwable $exception) {
             Log::error('CONFIRM VIETQR BOOKING ERROR', ['message' => $exception->getMessage()]);
-            return redirect()->route('home')->with('error', 'Không thể phát hành vé: ' . $exception->getMessage());
+            return redirect()->route('home')->with('error', 'Không thể phát hành vé lúc này. Vui lòng thử lại sau.');
         }
 
         if (!empty($bookingData['food_items'])) {
@@ -1513,14 +1513,28 @@ class DatVeController extends Controller
     {
         if (!$veXemPhim->nguoi_dung_id || $veXemPhim->trang_thai !== 'da_thanh_toan') return;
 
-        $thanhVien = ThanhVien::firstOrCreate(['nguoi_dung_id' => $veXemPhim->nguoi_dung_id], [
-            'ma_thanh_vien' => 'TV' . str_pad($veXemPhim->nguoi_dung_id, 6, '0', STR_PAD_LEFT),
-            'hang_thanh_vien' => 'member',
-            'diem_hien_tai' => 0,
-            'tong_diem_tich_luy' => 0,
-            'ngay_tham_gia' => now(),
-            'ma_gioi_thieu' => '',
-        ]);
+        $thanhVien = ThanhVien::firstOrCreate(
+            [
+                'nguoi_dung_id' => $veXemPhim->nguoi_dung_id,
+            ],
+            [
+                'ma_thanh_vien' => 'TV' . str_pad(
+                    $veXemPhim->nguoi_dung_id,
+                    6,
+                    '0',
+                    STR_PAD_LEFT
+                ),
+                'ma_gioi_thieu' => ThanhVien::taoMaGioiThieu(
+                    $veXemPhim->nguoi_dung_id
+                ),
+                'nguoi_gioi_thieu_id' => null,
+                'da_nhan_thuong' => false,
+                'hang_thanh_vien' => 'member',
+                'diem_hien_tai' => 0,
+                'tong_diem_tich_luy' => 0,
+                'ngay_tham_gia' => now(),
+            ]
+        );
 
         $diemCong = (int) floor((float) $veXemPhim->tong_tien / 10000);
         if (method_exists($thanhVien, 'congDiem')) {
