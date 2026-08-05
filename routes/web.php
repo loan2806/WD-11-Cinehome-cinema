@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\CaiDatHeThongController;
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Admin\FoodCategoryController;
 use App\Http\Controllers\Admin\FoodVariantController;
+use App\Http\Controllers\Admin\ComboController;
 use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Http\Controllers\Admin\ThanhVienController as AdminThanhVienController;
@@ -52,8 +53,6 @@ use App\Http\Controllers\User\ThanhVienController;
 use App\Http\Controllers\User\VoucherController;
 use App\Http\Controllers\User\ChamSocKhachHangController;
 use App\Http\Controllers\User\NotificationController;
-use App\Http\Controllers\Manager\RevenueReportController as ManagerRevenueReportController;
-use App\Http\Controllers\Manager\ManagerDashboardController;
 use App\Services\SaoLuuDuLieuService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -95,10 +94,15 @@ Route::get('/dashboard', function () {
         return redirect()->route('admin.dashboard');
     }
 
-    if ($user->hasRole('Quản lý') || $user->hasRole('Quản lý phòng chiếu') || $user->hasRole('Sub-Admin')) {
-        return redirect()->route('manager.dashboard');
+    // "Quản lý rạp" dùng thẳng giao diện Admin (đã tự ẩn/hiện menu và chặn route
+    // theo đúng coQuyen() / Ma trận phân quyền) thay vì trang /manager riêng —
+    // để cấp quyền gì bên Admin thì bên Quản lý có ngay chức năng đó, không cần
+    // xây lại từng trang một.
+    if ($user->hasRole('Quản lý') || $user->hasRole('Quản lý phòng chiếu') || $user->hasRole('Sub-Admin') || $user->vai_tro === 'quan_ly') {
+        return redirect()->route('admin.dashboard');
     }
 
+    // 🌟 ĐÃ SỬA: Chuyển nhân viên sang đúng trang Staff Dashboard
     if ($user->hasRole('Nhân viên') || $user->vai_tro === 'nhan_vien') {
         return redirect()->route('staff.dashboard');
     }
@@ -178,9 +182,11 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
         Route::get('/thanh-toan-thanh-cong/{ve}', [DatVeController::class, 'thanhToanThanhCong'])
             ->name('thanh_toan_thanh_cong');
 
+        // ROUTE HỦY VÉ PENDING DÀNH CHO KHÁCH HÀNG
         Route::post('/huy-ve-pending/{id}', [DatVeController::class, 'huyVePending'])
             ->name('huy_ve_pending');
 
+        // 🌟 CẤU HÌNH API LOCK GHẾ (Đã đảm bảo release-all đứng trước {seat})
         Route::get('/seat-locks/{suat_chieu}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'index'])
             ->name('seat_locks.index');
         
@@ -240,6 +246,7 @@ Route::middleware(['auth'])
         Route::get('/ban-ve/ket-qua/{id}', [BanVeController::class, 'success'])->whereNumber('id')->name('ban-ve.success');
         Route::get('/ban-ve/in-ve/{id}', [BanVeController::class, 'printTicket'])->whereNumber('id')->name('ban-ve.print-ticket');
 
+        // Đánh dấu vé là "Đã in" khi nhân viên bấm nút in vé
         Route::post('/ban-ve/{id}/mark-printed', [BanVeController::class, 'markAsPrinted'])
             ->whereNumber('id')
             ->name('ban-ve.mark-printed');
@@ -257,7 +264,7 @@ Route::middleware(['auth'])
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN PANEL
+| ADMIN PANEL - BỌC KÍN MIDDLEWARE KIỂM TRA QUYỀN VÀO TỪNG NHÓM
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])
@@ -355,6 +362,15 @@ Route::middleware(['auth'])
                 Route::delete('categories/{category}', [FoodCategoryController::class, 'destroy'])->name('destroy');
             });
 
+            Route::prefix('foods')->name('foods.combos.')->group(function () {
+                Route::get('combos', [ComboController::class, 'index'])->name('index');
+                Route::get('combos/create', [ComboController::class, 'create'])->name('create');
+                Route::post('combos', [ComboController::class, 'store'])->name('store');
+                Route::get('combos/{food}/edit', [ComboController::class, 'edit'])->name('edit');
+                Route::patch('combos/{food}', [ComboController::class, 'update'])->name('update');
+                Route::delete('combos/{food}', [ComboController::class, 'destroy'])->name('destroy');
+            });
+
             Route::resource('foods', AdminFoodController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
             Route::patch('foods/{food}/stock', [AdminFoodController::class, 'updateStock'])->name('foods.update-stock');
             Route::patch('foods/{food}/toggle-status', [AdminFoodController::class, 'toggleStatus'])->name('foods.toggle-status');
@@ -416,6 +432,7 @@ Route::middleware(['auth'])
             Route::get('/thong-ke/export-excel', [ThongKeController::class, 'exportExcel'])->name('thong-ke.export-excel');
             Route::get('/thong-ke/export-pdf', [ThongKeController::class, 'exportPdf'])->name('thong-ke.export-pdf');
 
+            // API endpoint cho thống kê
             Route::get('/api/statistics', [ThongKeController::class, 'apiIndex'])->name('thong-ke.api');
         });
 
@@ -433,10 +450,7 @@ Route::middleware(['auth'])
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
             Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
-        });
 
-        // 🌟 QUẢN LÝ LIÊN HỆ KHÁCH HÀNG (ĐÃ TÁCH TỰ ĐỘNG THEO QUYỀN "lien_he.xem")
-        Route::middleware(['quyen:lien_he.xem'])->group(function () {
             Route::get('/lien-he', [AdminLienHeController::class, 'index'])->name('lien-he.index');
             Route::get('/lien-he/{lienHe}', [AdminLienHeController::class, 'show'])->name('lien-he.show');
             Route::patch('/lien-he/{lienHe}', [AdminLienHeController::class, 'update'])->name('lien-he.update');

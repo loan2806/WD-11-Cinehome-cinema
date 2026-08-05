@@ -489,7 +489,7 @@
                             $userRole = Auth::user()->vai_tro ?? Auth::user()->role;
                             $adminRoleLabel = match ($userRole) {
                                 'super_admin', 'admin', 'quan_ly_he_thong' => 'Quản trị viên (Super-admin)',
-                                'quan_ly_rap' => 'Quản lý rạp',
+                                'quan_ly' => 'Quản lý rạp',
                                 'nhan_vien' => 'Nhân viên quầy',
                                 default => 'Người dùng',
                             };

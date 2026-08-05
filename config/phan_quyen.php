@@ -4,7 +4,10 @@ return [
     // 🌟 3 Vai trò chuẩn của hệ thống rạp CineHome
     'vai_tro' => [
         'super_admin' => 'Quản Trị Viên (Super-admin)',
-        'quan_ly_rap' => 'Quản Lý Rạp',
+        // Khóa PHẢI khớp với giá trị cột enum "vai_tro" trong bảng nguoi_dungs
+        // ('quan_ly', không phải 'quan_ly_rap') — nếu không coQuyen() sẽ không
+        // bao giờ khớp được tài khoản thật nào, dù ma trận có lưu quyền gì đi nữa.
+        'quan_ly'     => 'Quản Lý Rạp',
         'nhan_vien'   => 'Nhân Viên Quầy',
     ],
 

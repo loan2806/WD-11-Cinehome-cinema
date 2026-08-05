@@ -185,14 +185,15 @@
                             $foodCards = collect($category['foods'] ?? [])->flatMap(function ($food) {
                                 if (!empty($food['is_combo'])) {
                                     return [[
-                                        'key' => 'combo-' . $food['id'],
-                                        'name' => $food['name'],
-                                        'price' => $food['price'] ?? 0,
-                                        'stock' => $food['available'] ?? 999,
-                                        'image' => $food['image'] ?? '',
-                                        'type' => 'combo',
-                                        'badge' => 'Combo',
-                                    ]];
+                                            'key' => 'combo-' . $food['id'],
+                                            'name' => $food['name'],
+                                            'price' => $food['price'] ?? 0,
+                                            'stock' => $food['available'] ?? 999,
+                                            'image' => $food['image'] ?? '',
+                                            'type' => 'combo',
+                                            'badge' => 'Combo',
+                                            'combo_items' => $food['combo_items'] ?? [],
+                                        ]];
                                 }
 
                                 $variants = $food['variants'] ?? [];
@@ -263,6 +264,12 @@
                                                 <strong>{{ number_format($item['price'], 0, ',', '.') }}đ</strong>
                                                 <span>{{ $isSoldOut ? 'Hết món' : 'Còn ' . $stock }}</span>
                                             </div>
+
+                                            @if(!empty($item['description']))
+                                                <p class="booking-food-desc">{{ $item['description'] }}</p>
+                                            @endif
+
+                                            {{-- Combo components hidden in booking menu per admin preference --}}
 
                                             <div class="booking-food-actions">
                                                 <div class="booking-food-qty">
