@@ -39,7 +39,7 @@ class ThemmoiPhimsRequest extends FormRequest
 
             'ngon_ngu' => 'required|string|max:255',
 
-            'thoi_luong' => 'required|integer|min:1',
+            'thoi_luong' => 'required|integer|between:30,300',
 
             'gioi_han_tuoi' => 'required|string|max:20',
 
@@ -140,10 +140,10 @@ class ThemmoiPhimsRequest extends FormRequest
             */
 
             'thoi_luong.required' => 'Vui lòng nhập thời lượng phim',
-
             'thoi_luong.integer' => 'Thời lượng phải là số',
+            'thoi_luong.min' => 'Thời lượng phim phải từ 30 phút trở lên',
+            'thoi_luong.max' => 'Thời lượng phim không được vượt quá 300 phút',
 
-            'thoi_luong.min' => 'Thời lượng phải lớn hơn 0',
 
             /*
             |--------------------------------------------------------------------------

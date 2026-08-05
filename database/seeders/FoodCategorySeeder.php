@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\DanhMucDoAn;
-use App\Models\FoodCategory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -11,8 +10,8 @@ use Illuminate\Support\Str;
 class FoodCategorySeeder extends Seeder
 {
     public function run(): void
-{
-    $categories = [
+    {
+        $categories = [
         [
             'name' => 'Đồ ăn',
             'is_combo' => false,
@@ -37,6 +36,6 @@ class FoodCategorySeeder extends Seeder
                 'is_combo' => $category['is_combo'],
             ]
         );
+        }
     }
-}
 }

@@ -477,9 +477,9 @@ class DatVeController extends Controller
                             // Quan trọng
                             'is_combo' => true,
 
-                            'price' => $price,
+                            'price' => (float) ($food->price ?? $price),
                             'available' => $available,
-                            'combo_items' => $comboItems,
+                            'combo_items' => $comboItems->toArray(),
                         ];
                     }
 
