@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             // 🌟 3. Tài khoản hệ thống & Nhân sự
             TaiKhoanSeeder::class,
             NhanVienSeeder::class,
+            TinTucSeeder::class,
 
             // 🌟 4. Cơ sở vật chất rạp & phòng chiếu
             RapChieuPhimSeeder::class,
