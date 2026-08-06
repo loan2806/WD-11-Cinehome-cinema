@@ -94,7 +94,6 @@ Route::get('/dashboard', function () {
         return redirect()->route('admin.dashboard');
     }
 
-    // Đã mở rộng bắt toàn bộ các biến vai_tro/role cho Quản lý rạp và phòng chiếu
     if (
         $user->hasRole('Quản lý') || 
         $user->hasRole('Quản lý phòng chiếu') || 
@@ -184,11 +183,9 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
         Route::get('/thanh-toan-thanh-cong/{ve}', [DatVeController::class, 'thanhToanThanhCong'])
             ->name('thanh_toan_thanh_cong');
 
-        // ROUTE HỦY VÉ PENDING DÀNH CHO KHÁCH HÀNG
         Route::post('/huy-ve-pending/{id}', [DatVeController::class, 'huyVePending'])
             ->name('huy_ve_pending');
 
-        // CẤU HÌNH API LOCK GHẾ
         Route::get('/seat-locks/{suat_chieu}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'index'])
             ->name('seat_locks.index');
         
@@ -339,9 +336,11 @@ Route::middleware(['auth'])
             Route::patch('ve-xem-phims/{veXemPhim}/cap-nhat-trang-thai', [AdminVeXemPhimController::class, 'capNhatTrangThai'])->name('ve-xem-phims.cap-nhat-trang-thai');
         });
 
+        // ĐÃ BỔ SUNG ROUTE IN VÉ Ở ĐÂY
         Route::middleware(['quyen:soat_ve.quet_qr'])->group(function () {
             Route::get('/soat-ve', [AdminSoatVeController::class, 'index'])->name('soat-ve.index');
             Route::post('/soat-ve/check', [AdminSoatVeController::class, 'check'])->name('soat-ve.check');
+            Route::post('/soat-ve/print', [AdminSoatVeController::class, 'printTicket'])->name('soat-ve.print');
             Route::post('/soat-ve/confirm', [AdminSoatVeController::class, 'confirm'])->name('soat-ve.confirm');
         });
 
