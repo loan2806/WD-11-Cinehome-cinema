@@ -486,7 +486,8 @@
                     <div class="flex items-center gap-3">
                         @php
                             $notificationCount = $notificationCount ?? 0;
-                            $userRole = Auth::user()->vai_tro ?? Auth::user()->role;
+                            $currentUser = Auth::user();
+                            $userRole = $currentUser ? ($currentUser->vai_tro ?? $currentUser->role ?? null) : null;
                             $adminRoleLabel = match ($userRole) {
                                 'super_admin', 'admin', 'quan_ly_he_thong' => 'Quản trị viên (Super-admin)',
                                 'quan_ly_rap' => 'Quản lý rạp',
@@ -558,7 +559,7 @@
 
                                 <div class="hidden text-left sm:block">
                                     <div class="max-w-[120px] truncate text-sm font-bold text-white">
-                                        {{ Auth::user()->ho_ten }}
+                                        {{ $currentUser->ho_ten ?? 'Admin' }}
                                     </div>
                                     <div class="mt-0.5 text-xs font-semibold text-[#d99a32]">
                                         {{ $adminRoleLabel }}
@@ -574,8 +575,8 @@
                                         <i class="fa-solid fa-user text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <div class="truncate text-sm font-bold text-white">{{ Auth::user()->ho_ten }}</div>
-                                        <div class="truncate text-[11px] text-gray-400">{{ Auth::user()->email }}</div>
+                                        <div class="truncate text-sm font-bold text-white">{{ $currentUser->ho_ten ?? 'Admin' }}</div>
+                                        <div class="truncate text-[11px] text-gray-400">{{ $currentUser->email ?? '' }}</div>
                                         <span class="admin-profile-menu-role">{{ $adminRoleLabel }}</span>
                                     </div>
                                 </div>

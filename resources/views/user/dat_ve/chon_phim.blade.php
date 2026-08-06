@@ -41,6 +41,7 @@
             $activeDateOption = collect($dateOptions)->firstWhere('active');
             $activeDateLabel = $activeDateOption['label'] ?? $selectedDate->format('d/m/Y');
             $weekdayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+            $defaultPoster = 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800&auto=format&fit=crop';
         @endphp
 
         <section class="booking-date-panel" aria-label="Chọn ngày chiếu">
@@ -97,15 +98,30 @@
                     @php
                         $phim = $suatChieus->first()->phim;
                         $showtimes = $suatChieus;
-                        $posterUrl = $phim->poster
-                            ? asset('storage/movies/' . $phim->poster)
-                            : 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800&auto=format&fit=crop';
+
+                        // Tối ưu hóa xử lý đường dẫn ảnh poster
+                        $rawPoster = trim($phim->poster ?? '');
+
+                        if (empty($rawPoster)) {
+                            $posterUrl = $defaultPoster;
+                        } elseif (\Illuminate\Support\Str::startsWith($rawPoster, ['http://', 'https://'])) {
+                            $posterUrl = $rawPoster;
+                        } elseif (\Illuminate\Support\Str::startsWith($rawPoster, ['storage/', 'uploads/'])) {
+                            $posterUrl = asset($rawPoster);
+                        } else {
+                            $path = \Illuminate\Support\Str::startsWith($rawPoster, 'movies/') 
+                                ? $rawPoster 
+                                : 'movies/' . ltrim($rawPoster, '/');
+                            $posterUrl = asset('storage/' . $path);
+                        }
                     @endphp
 
                     <article class="booking-showtime-card">
                         <a href="{{ route('user.movies.show', $phim->slug) }}" class="booking-showtime-poster"
                             aria-label="Xem chi tiết {{ $phim->ten_phim }}">
-                            <img src="{{ $posterUrl }}" alt="{{ $phim->ten_phim }}">
+                            <img src="{{ $posterUrl }}" 
+                                 alt="{{ $phim->ten_phim }}"
+                                 onerror="this.onerror=null; this.src='{{ $defaultPoster }}';">
                         </a>
 
                         <div class="booking-showtime-body">

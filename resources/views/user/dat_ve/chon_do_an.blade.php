@@ -203,6 +203,7 @@
                                         'value' => '',
                                         'price' => $food['price'] ?? 0,
                                         'stock' => $food['stock'] ?? 999,
+                                        'image' => $food['image'] ?? '',
                                     ]];
                                 }
 
@@ -214,7 +215,7 @@
                                         'name' => $food['name'] . $variantName,
                                         'price' => $variant['price'] ?? 0,
                                         'stock' => $variant['stock'] ?? 999,
-                                        'image' => $food['image'] ?? '',
+                                        'image' => $variant['image'] ?? $food['image'] ?? '',
                                         'type' => 'variant',
                                         'badge' => !empty($variant['value']) ? $variant['value'] : 'Món lẻ',
                                     ];
@@ -236,13 +237,27 @@
                             <div class="booking-food-grid">
                                 @foreach ($foodCards as $item)
                                     @php
-                                        $imagePath = trim((string) ($item['image'] ?? ''));
-                                        if ($imagePath !== '' && ! str_starts_with($imagePath, 'foods/')) {
-                                            $imagePath = 'foods/' . $imagePath;
+                                        $rawImage = trim((string) ($item['image'] ?? ''));
+                                        $fallbackImage = asset('assets/images/LOGO copy.png');
+
+                                        if (empty($rawImage)) {
+                                            $imageUrl = $fallbackImage;
+                                        } elseif (str_starts_with($rawImage, 'http://') || str_starts_with($rawImage, 'https://')) {
+                                            $imageUrl = $rawImage;
+                                        } elseif (str_starts_with($rawImage, 'assets/')) {
+                                            $imageUrl = asset($rawImage);
+                                        } elseif (str_starts_with($rawImage, 'storage/')) {
+                                            $imageUrl = asset($rawImage);
+                                        } elseif (str_starts_with($rawImage, '/storage/')) {
+                                            $imageUrl = asset(ltrim($rawImage, '/'));
+                                        } else {
+                                            $cleanPath = ltrim($rawImage, '/');
+                                            if (! str_starts_with($cleanPath, 'foods/')) {
+                                                $cleanPath = 'foods/' . $cleanPath;
+                                            }
+                                            $imageUrl = asset('storage/' . $cleanPath);
                                         }
-                                        $imageUrl = $imagePath !== ''
-                                            ? asset('storage/' . $imagePath)
-                                            : asset('assets/images/LOGO copy.png');
+
                                         $stock = (int) ($item['stock'] ?? 0);
                                         $isSoldOut = $stock <= 0;
                                         $searchText = mb_strtolower($item['name'] . ' ' . $category['category'] . ' ' . $item['badge']);
@@ -252,7 +267,7 @@
                                         data-food-card
                                         data-search="{{ $searchText }}">
                                         <div class="booking-food-image">
-                                            <img src="{{ $imageUrl }}" alt="{{ $item['name'] }}">
+                                            <img src="{{ $imageUrl }}" alt="{{ $item['name'] }}" onerror="this.onerror=null;this.src='{{ $fallbackImage }}';">
                                             <span>{{ $item['badge'] }}</span>
                                         </div>
 
@@ -394,7 +409,9 @@
             item.qty = Math.max(0, Number(item.qty || 0));
             item.price = Number(item.price || 0);
             item.stock = Number(item.stock || 999);
-            item.imageUrl = item.imageUrl || fallbackFoodImage;
+            if (!item.imageUrl || item.imageUrl === '' || item.imageUrl.includes('undefined')) {
+                item.imageUrl = fallbackFoodImage;
+            }
 
             if (item.qty <= 0) {
                 delete cart[key];
@@ -426,7 +443,7 @@
 
             return `
                 <div class="booking-cart-item">
-                    <img src="${escapeHtml(item.imageUrl || fallbackFoodImage)}" alt="${escapeHtml(item.name)}">
+                    <img src="${escapeHtml(item.imageUrl || fallbackFoodImage)}" alt="${escapeHtml(item.name)}" onerror="this.onerror=null;this.src='${escapeHtml(fallbackFoodImage)}';">
                     <div>
                         <h3>${escapeHtml(item.name)}</h3>
                         <span>${formatCurrency(item.price)}</span>

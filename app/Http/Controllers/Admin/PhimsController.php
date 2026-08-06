@@ -12,7 +12,6 @@ use App\Traits\Loggable;
 use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Http;
 
 class PhimsController extends Controller
 {
@@ -73,32 +72,19 @@ class PhimsController extends Controller
     {
         $data = $request->validated();
 
-
+        // Kiểm tra trailer YouTube bằng regex (không cần gọi API)
         if (!empty($data['trailer'])) {
-
-            $response = Http::get(
-                'https://www.youtube.com/oembed',
-                [
-                    'url' => $data['trailer'],
-                    'format' => 'json'
-                ]
-            );
-
-            if (!$response->successful()) {
+            $pattern = '#(youtube\.com|youtu\.be)#i';
+            if (!preg_match($pattern, $data['trailer'])) {
                 return back()
-                    ->withErrors([
-                        'trailer' => 'Trailer không tồn tại hoặc đã bị xóa.'
-                    ])
+                    ->withErrors(['trailer' => 'Trailer phải là link YouTube hợp lệ.'])
                     ->withInput();
             }
         }
 
-        // upload ảnh đúng cách
-
-        // upload ảnh đúng cách
+        // Lưu poster vào storage (ĐÃ SỬA: Lưu chuẩn đường dẫn 'movies/filename.jpg')
         if ($request->hasFile('poster')) {
-            $path = $data['poster'] = $request->file('poster')->store('movies', 'public');
-            $data['poster'] = basename($path);
+            $data['poster'] = $request->file('poster')->store('movies', 'public');
         }
 
         $data['slug'] = Str::slug($data['ten_phim']) . '-' . uniqid();
@@ -171,21 +157,12 @@ class PhimsController extends Controller
     {
         $data = $request->validated();
 
+        // Kiểm tra trailer YouTube bằng regex (không cần gọi API)
         if (!empty($data['trailer'])) {
-
-            $response = Http::get(
-                'https://www.youtube.com/oembed',
-                [
-                    'url' => $data['trailer'],
-                    'format' => 'json'
-                ]
-            );
-
-            if (!$response->successful()) {
+            $pattern = '#(youtube\.com|youtu\.be)#i';
+            if (!preg_match($pattern, $data['trailer'])) {
                 return back()
-                    ->withErrors([
-                        'trailer' => 'Trailer không tồn tại hoặc đã bị xóa.'
-                    ])
+                    ->withErrors(['trailer' => 'Trailer phải là link YouTube hợp lệ.'])
                     ->withInput();
             }
         }

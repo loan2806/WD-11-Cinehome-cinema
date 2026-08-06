@@ -1,3 +1,33 @@
+@php
+    use Illuminate\Support\Facades\Storage;
+
+    // Hàm kiểm tra và xử lý đường dẫn poster an toàn
+    $getPosterUrl = function ($movie) {
+        if (!empty($movie->poster)) {
+            // 1. Trường hợp là URL online đầy đủ (ví dụ: https://...)
+            if (filter_var($movie->poster, FILTER_VALIDATE_URL)) {
+                return $movie->poster;
+            }
+
+            // 2. Làm sạch đường dẫn (bỏ dấu / ở đầu nếu có)
+            $relativePath = ltrim($movie->poster, '/');
+
+            // Nếu DB chỉ lưu tên file (chưa có chữ "movies/")
+            if (!str_contains($relativePath, '/')) {
+                $relativePath = 'movies/' . $relativePath;
+            }
+
+            // Kiểm tra file thực sự có trong storage/app/public không
+            if (Storage::disk('public')->exists($relativePath)) {
+                return Storage::url($relativePath);
+            }
+        }
+
+        // 3. Ảnh mặc định nếu thiếu file hoặc hỏng đường dẫn
+        return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=700&auto=format&fit=crop';
+    };
+@endphp
+
 <div class="row g-4">
 
     @forelse ($movies as $movie)
@@ -29,10 +59,10 @@
 
         @php
             /*
-        |--------------------------------------------------------------------------
-        | SẮP RA MẮT
-        |--------------------------------------------------------------------------
-        */
+            |--------------------------------------------------------------------------
+            | SẮP RA MẮT
+            |--------------------------------------------------------------------------
+            */
             if ($status === \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT) {
                 $badgeClass = 'bg-pink-600 text-white';
 
@@ -44,10 +74,10 @@
 
                 $buttonIcon = 'fa-regular fa-heart';
             } /*
-        |--------------------------------------------------------------------------
-        | SẮP CHIẾU
-        |--------------------------------------------------------------------------
-        */ elseif (
+            |--------------------------------------------------------------------------
+            | SẮP CHIẾU
+            |--------------------------------------------------------------------------
+            */ elseif (
                 $status === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU
             ) {
                 $badgeClass = 'bg-blue-500 text-white';
@@ -68,16 +98,16 @@
                 }
                 $buttonIcon = 'fa-solid fa-ticket';
             } /*
-        |--------------------------------------------------------------------------
-        | ĐANG CHIẾU
-        |--------------------------------------------------------------------------
-        */ else {
+            |--------------------------------------------------------------------------
+            | ĐANG CHIẾU
+            |--------------------------------------------------------------------------
+            */ else {
                 $badgeClass = 'bg-[#f5a623] text-black';
 
                 $buttonText = 'Chi tiết';
 
                 $buttonClass =
-                    'flex-1 text-center bg-[#1d1d1d] text-white font-bold py-3 rounded-xl  hover:bg-[#2b2b2b] transition';
+                    'flex-1 text-center bg-[#1d1d1d] text-white font-bold py-3 rounded-xl hover:bg-[#2b2b2b] transition';
 
                 $buttonUrl = route('user.movies.show', $movie->slug);
 
@@ -92,7 +122,7 @@
                 {{-- POSTER --}}
                 <div class="movie-poster relative overflow-hidden">
 
-                    <img src="{{ asset('storage/movies/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}"
+                    <img src="{{ $getPosterUrl($movie) }}" alt="{{ $movie->ten_phim }}"
                         class="w-full h-full object-cover">
 
                     {{-- AGE --}}

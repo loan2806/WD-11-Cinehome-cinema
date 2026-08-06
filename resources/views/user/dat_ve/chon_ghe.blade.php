@@ -89,7 +89,26 @@
         <div class="booking-seat-layout">
             <aside class="booking-seat-movie-card">
                 <div class="booking-seat-poster-wrap">
-                    <img src="{{ $posterUrl }}" alt="{{ $suatChieu->phim->ten_phim }}">
+                    @php
+    // Lấy đường dẫn ảnh từ database (ưu tiên hinh_anh rồi tới poster)
+    $hinhAnh = $suatChieu->phim->hinh_anh ?? $suatChieu->phim->poster ?? '';
+
+    if (\Illuminate\Support\Str::startsWith($hinhAnh, ['http://', 'https://'])) {
+        // Trường hợp 1: Ảnh là URL online từ ngoài
+        $imageUrl = $hinhAnh;
+    } elseif (!empty($hinhAnh)) {
+        // Trường hợp 2: Ảnh lưu nội bộ trong storage (xóa trùng lặp thư mục nếu có)
+        $cleanPath = str_replace('movies/movies/', 'movies/', ltrim($hinhAnh, '/'));
+        $imageUrl = asset('storage/' . $cleanPath);
+    } else {
+        // Trường hợp 3: Ảnh mặc định khi database để trống
+        $imageUrl = asset('images/default-poster.jpg');
+    }
+@endphp
+
+<img src="{{ $imageUrl }}"
+     alt="{{ $suatChieu->phim->ten_phim ?? 'Poster' }}"
+     onerror="this.onerror=null; this.src='{{ asset('images/default-poster.jpg') }}';" />
                     <div class="booking-seat-poster-overlay">
                         <span>CineHome</span>
                         <strong>{{ $suatChieu->phim->ten_phim }}</strong>

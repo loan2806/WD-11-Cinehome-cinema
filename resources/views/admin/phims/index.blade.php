@@ -4,26 +4,26 @@
 @section('page-subtitle', 'Quản lý kho phim, poster, thể loại và lịch chiếu')
 
 @php
-    $posterUrl = function (?string $poster): string {
+    $posterUrl = function ($poster) {
         if (empty($poster)) {
             return asset('assets/images/LOGO copy.png');
         }
 
-        $poster = ltrim($poster, '/');
+        $p = ltrim($poster, '/');
 
-        if (\Illuminate\Support\Str::startsWith($poster, ['http://', 'https://'])) {
-            return $poster;
+        if (strpos($p, 'http://') === 0 || strpos($p, 'https://') === 0) {
+            return $p;
         }
 
-        if (\Illuminate\Support\Str::startsWith($poster, 'storage/')) {
-            return asset($poster);
+        if (strpos($p, 'storage/') === 0) {
+            return asset($p);
         }
 
-        if (\Illuminate\Support\Str::startsWith($poster, 'movies/')) {
-            return asset('storage/' . $poster);
+        if (strpos($p, 'movies/') === 0) {
+            return asset('storage/' . $p);
         }
 
-        return asset('storage/movies/' . $poster);
+        return asset('storage/movies/' . $p);
     };
 
     $currentMovies = $movies->getCollection();

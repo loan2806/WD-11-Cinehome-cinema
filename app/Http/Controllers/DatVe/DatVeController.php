@@ -1154,9 +1154,20 @@ class DatVeController extends Controller
         $ngayChieu = $thoiGianChieu->format('d/m/Y');
         $gioChieu = $thoiGianChieu->format('H:i');
 
-        $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" . urlencode($ve->ma_ve);
+        // 1. Làm sạch đường dẫn file QR từ database
+        $rawQr = $ve->qr_code ?? $ve->qr ?? '';
+        $cleanPath = str_replace(['qrcodes/qrcodes/', 'storage/'], '', ltrim($rawQr, '/'));
+        if (!empty($cleanPath) && !\Illuminate\Support\Str::startsWith($cleanPath, 'qrcodes/')) {
+            $cleanPath = 'qrcodes/' . $cleanPath;
+        }
 
-        $foodItems = Cache::get("ve_foods:{$ve->id}", []);
+        // 2. CHỈ DÙNG ẢNH LOCAL NẾU FILE THỰC SỰ TỒN TẠI TRÊN Ổ ĐĨA
+        if (!empty($cleanPath) && file_exists(public_path('storage/' . $cleanPath))) {
+            $qrUrl = asset('storage/' . $cleanPath);
+        } else {
+            // Nếu file chưa có trên máy, dùng API QuickChart (Cực nhanh & không bao giờ lỗi)
+            $qrUrl = "https://quickchart.io/qr?text=" . urlencode($ve->ma_ve) . "&size=250";
+        }
         $foodHtml = '';
 
         if (!empty($foodItems)) {

@@ -3,22 +3,31 @@
 @section('title', 'Danh sách phim')
 
 @section('content')
-    @php
-        $statusLabels = [
-            \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU => 'Đang chiếu',
-            \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU => 'Sắp chiếu',
-            \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT => 'Sắp ra mắt',
-        ];
+@php
+    use Illuminate\Support\Facades\Storage;
 
-        $posterUrl = function ($movie) {
-            if (!empty($movie->poster) && file_exists(public_path('storage/movies/' . $movie->poster))) {
-                return asset('storage/movies/' . $movie->poster);
+    $statusLabels = [
+        \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU => 'Đang chiếu',
+        \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU => 'Sắp chiếu',
+        \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT => 'Sắp ra mắt',
+    ];
+
+    $posterUrl = function ($movie) {
+        if (!empty($movie->poster)) {
+            if (filter_var($movie->poster, FILTER_VALIDATE_URL)) {
+                return $movie->poster;
             }
-
-            return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=700&auto=format&fit=crop';
-        };
-    @endphp
-
+            $relativePath = ltrim($movie->poster, '/');
+            if (!str_contains($relativePath, '/')) {
+                $relativePath = 'movies/' . $relativePath;
+            }
+            if (Storage::disk('public')->exists($relativePath)) {
+                return Storage::url($relativePath);
+            }
+        }
+        return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=700&auto=format&fit=crop';
+    };
+@endphp
     <div class="movie-list-page" lang="vi" spellcheck="false">
         <section class="movie-list-hero">
             <div>

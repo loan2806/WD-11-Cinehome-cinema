@@ -22,6 +22,7 @@
         $fallbackSeats = 'https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?q=80&w=1300&auto=format&fit=crop';
         $fallbackFood = 'https://images.unsplash.com/photo-1585647347483-22b66260dfff?q=80&w=1300&auto=format&fit=crop';
         $fallbackWaiting = 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?q=80&w=1300&auto=format&fit=crop';
+        $fallbackPoster = 'https://placehold.co/300x450/1e293b/94a3b8?text=No+Poster';
 
         $resolveImage = function ($path, $fallback) {
             if (empty($path)) {
@@ -32,15 +33,18 @@
                 return $path;
             }
 
-            if (file_exists(public_path('storage/' . $path))) {
-                return asset('storage/' . $path);
+            // Làm sạch path loại bỏ tiền tố lặp
+            $cleanPath = str_replace(['storage/', 'public/'], '', ltrim($path, '/'));
+
+            if (file_exists(public_path('storage/' . $cleanPath))) {
+                return asset('storage/' . $cleanPath);
             }
 
-            if (file_exists(public_path($path))) {
-                return asset($path);
+            if (file_exists(public_path($cleanPath))) {
+                return asset($cleanPath);
             }
 
-            return asset('storage/' . $path);
+            return $fallback;
         };
 
         $cinemaImage = $resolveImage($rap->hinh_anh ?? null, $fallbackExterior);
@@ -74,12 +78,26 @@
             ['image' => $fallbackWaiting, 'title' => 'Không gian chờ thư giãn', 'wide' => true],
         ];
 
-        $moviePoster = function ($movie) {
-            if (!empty($movie->poster) && file_exists(public_path('storage/movies/' . $movie->poster))) {
-                return asset('storage/movies/' . $movie->poster);
+        $moviePoster = function ($movie) use ($fallbackPoster) {
+            $rawPoster = $movie->poster ?? '';
+            if (empty($rawPoster)) {
+                return $fallbackPoster;
             }
 
-            return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=600&auto=format&fit=crop';
+            if (Str::startsWith($rawPoster, ['http://', 'https://'])) {
+                return $rawPoster;
+            }
+
+            $cleanPoster = str_replace(['storage/movies/', 'storage/', 'movies/movies/'], '', ltrim($rawPoster, '/'));
+            if (!Str::startsWith($cleanPoster, 'movies/')) {
+                $cleanPoster = 'movies/' . $cleanPoster;
+            }
+
+            if (file_exists(public_path('storage/' . $cleanPoster))) {
+                return asset('storage/' . $cleanPoster);
+            }
+
+            return $fallbackPoster;
         };
     @endphp
 
@@ -165,7 +183,7 @@
             </div>
 
             <figure class="cinema-about-image">
-                <img src="{{ $cinemaImage }}" alt="{{ $cinemaName }}">
+                <img src="{{ $cinemaImage }}" alt="{{ $cinemaName }}" onerror="this.onerror=null; this.src='{{ $fallbackExterior }}';">
             </figure>
         </section>
 
@@ -234,7 +252,7 @@
                 <div class="cinema-movie-rail">
                     @foreach ($hotMovies as $movie)
                         <a href="{{ route('user.movies.show', $movie->slug) }}" class="cinema-movie-card">
-                            <img src="{{ $moviePoster($movie) }}" alt="{{ $movie->ten_phim }}">
+                            <img src="{{ $moviePoster($movie) }}" alt="{{ $movie->ten_phim }}" onerror="this.onerror=null; this.src='{{ $fallbackPoster }}';">
                             <div>
                                 <h3>{{ $movie->ten_phim }}</h3>
                                 <p>
@@ -258,7 +276,7 @@
             <div class="cinema-gallery-grid">
                 @foreach ($gallery as $item)
                     <figure class="cinema-gallery-card {{ $item['wide'] ? 'wide' : '' }}">
-                        <img src="{{ $item['image'] }}" alt="{{ $item['title'] }}">
+                        <img src="{{ $item['image'] }}" alt="{{ $item['title'] }}" onerror="this.onerror=null; this.src='{{ $fallbackExterior }}';">
                         <figcaption>{{ $item['title'] }}</figcaption>
                     </figure>
                 @endforeach

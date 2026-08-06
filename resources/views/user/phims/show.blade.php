@@ -7,7 +7,22 @@
         // Đọc trạng thái Tab từ URL (mặc định overview)
         $activeTab = request('tab', 'overview');
 
-        $posterUrl = asset('storage/movies/' . $movie->poster);
+        $posterUrl = function ($movie) {
+            $p = $movie->poster ?? '';
+            if (empty($p)) {
+                return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=700&auto=format&fit=crop';
+            }
+
+            $p = ltrim($p, '/');
+
+            if (strpos($p, 'http://') === 0 || strpos($p, 'https://') === 0) {
+                return $p;
+            }
+
+            return asset('storage/movies/' . basename($p));
+        };
+
+        $poster = $posterUrl($movie);
         $genres = $movie->genres->pluck('ten_the_loai')->filter()->values();
         $actors = collect(explode(',', (string) $movie->dien_vien))
             ->map(fn($actor) => trim($actor))
@@ -49,7 +64,7 @@
         };
         $backUrl = url()->previous() !== url()->current() ? url()->previous() : route('user.phims.index');
         $detailShots = collect([
-            ['image' => $posterUrl, 'label' => 'Poster chính'],
+            ['image' => $poster, 'label' => 'Poster chính'],
             [
                 'image' => 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80',
                 'label' => 'Không gian rạp',
@@ -63,7 +78,7 @@
 
     <section class="movie-detail-page">
         <section class="movie-detail-hero">
-            <div class="movie-detail-backdrop" style="background-image: url('{{ $posterUrl }}');"></div>
+            <div class="movie-detail-backdrop" style="background-image: url('{{ $poster }}');"></div>
 
             <div class="container-fluid px-5 movie-detail-hero-inner">
                 <a href="{{ $backUrl }}" class="detail-back-link">
@@ -74,7 +89,7 @@
                 <div class="movie-detail-layout">
                     <aside class="detail-poster-card reveal-on-scroll">
                         <div class="detail-poster-frame">
-                            <img src="{{ $posterUrl }}" alt="{{ $movie->ten_phim }}">
+                            <img src="{{ $poster }}" alt="{{ $movie->ten_phim }}">
                             <span class="detail-age-badge">{{ $movie->gioi_han_tuoi }}</span>
                         </div>
 

@@ -1,6 +1,6 @@
 @extends('layouts.user')
 
-@section('title', 'Checkout - ' . $suatChieu->phim->ten_phim)
+@section('title', 'Checkout - ' . ($suatChieu->phim->ten_phim ?? ''))
 
 @section('content')
 
@@ -68,15 +68,33 @@
 
                             <h2 class="text-lg font-black text-yellow-400 mb-3">Thông tin Phim</h2>
 
+                            {{-- XỬ LÝ HÌNH ẢNH POSTER PHIM --}}
+                            @php
+                                $rawPoster = $suatChieu->phim->hinh_anh ?? $suatChieu->phim->poster ?? '';
+                                if (\Illuminate\Support\Str::startsWith($rawPoster, ['http://', 'https://'])) {
+                                    $posterUrl = $rawPoster;
+                                } elseif (!empty($rawPoster)) {
+                                    $cleanPoster = str_replace(['movies/movies/', 'storage/'], '', ltrim($rawPoster, '/'));
+                                    if (!\Illuminate\Support\Str::startsWith($cleanPoster, 'movies/')) {
+                                        $cleanPoster = 'movies/' . $cleanPoster;
+                                    }
+                                    $posterUrl = asset('storage/' . $cleanPoster);
+                                } else {
+                                    $posterUrl = asset('images/default-poster.jpg');
+                                }
+                            @endphp
+
                             <div class="rounded-xl overflow-hidden border border-white/10">
-                                <img src="{{ asset('storage/movies/' . $suatChieu->phim->poster) }}"
-                                    alt="{{ $suatChieu->phim->ten_phim }}" class="w-full rounded-lg object-cover">
+                                <img src="{{ $posterUrl }}"
+                                    alt="{{ $suatChieu->phim->ten_phim ?? 'Poster' }}" 
+                                    class="w-full rounded-lg object-cover"
+                                    onerror="this.onerror=null; this.src='{{ asset('images/default-poster.jpg') }}';">
                             </div>
 
                             <div class="mt-4 text-sm space-y-2 text-gray-300">
-                                <div><strong>Rạp chiếu:</strong> {{ $suatChieu->rapChieuPhim->ten_rap }}</div>
-                                <div><strong>Tên Phim:</strong> {{ $suatChieu->phim->ten_phim }}</div>
-                                <div><strong>Suất chiếu:</strong> {{ $suatChieu->thoi_gian_chieu->format('d/m/Y H:i') }}</div>
+                                <div><strong>Rạp chiếu:</strong> {{ $suatChieu->rapChieuPhim->ten_rap ?? '' }}</div>
+                                <div><strong>Tên Phim:</strong> {{ $suatChieu->phim->ten_phim ?? '' }}</div>
+                                <div><strong>Suất chiếu:</strong> {{ isset($suatChieu->thoi_gian_chieu) ? $suatChieu->thoi_gian_chieu->format('d/m/Y H:i') : '' }}</div>
                             </div>
 
                         </div>
@@ -101,17 +119,28 @@
                                 </div>
 
                                 @forelse($foodItems as $item)
+                                    {{-- XỬ LÝ HÌNH ẢNH ĐỒ ĂN --}}
                                     @php
-                                        $foodImagePath = trim((string) ($item['image'] ?? ''));
-                                        if ($foodImagePath !== '' && ! str_starts_with($foodImagePath, 'foods/')) {
-                                            $foodImagePath = 'foods/' . $foodImagePath;
+                                        $rawFoodImg = trim((string) ($item['image'] ?? ''));
+                                        if (\Illuminate\Support\Str::startsWith($rawFoodImg, ['http://', 'https://'])) {
+                                            $foodUrl = $rawFoodImg;
+                                        } elseif (!empty($rawFoodImg)) {
+                                            $cleanFood = str_replace(['foods/foods/', 'storage/'], '', ltrim($rawFoodImg, '/'));
+                                            if (!\Illuminate\Support\Str::startsWith($cleanFood, 'foods/')) {
+                                                $cleanFood = 'foods/' . $cleanFood;
+                                            }
+                                            $foodUrl = asset('storage/' . $cleanFood);
+                                        } else {
+                                            $foodUrl = null;
                                         }
                                     @endphp
+
                                     <div class="flex justify-between items-center mt-3">
                                         <div class="flex items-center gap-3">
-                                            @if ($foodImagePath !== '')
-                                                <img src="{{ asset('storage/' . $foodImagePath) }}"
-                                                    class="w-16 h-16 object-contain rounded">
+                                            @if ($foodUrl)
+                                                <img src="{{ $foodUrl }}"
+                                                    class="w-16 h-16 object-contain rounded"
+                                                    onerror="this.style.display='none';">
                                             @endif
                                             <span>{{ $item['name'] }}</span>
                                         </div>
@@ -205,7 +234,7 @@
                                             <input type="radio" name="payment_method" value="vietqr" class="accent-yellow-400 w-5 h-5">
                                             <div class="ml-1">
                                                 <span class="block font-bold text-gray-200">Chuyển khoản nhanh VietQR</span>
-                                                <span class="block text-xs text-gray-400 mt-0.5">Tạo mã QR bốc động số tiền, quét để chuyển khoản an toàn</span>
+                                                <span class="block text-xs text-gray-400 mt-0.5">Tạo mã QR động số tiền, quét để chuyển khoản an toàn</span>
                                             </div>
                                         </div>
                                         <div class="bg-white px-2 py-1 rounded-lg flex items-center justify-center shadow-sm">

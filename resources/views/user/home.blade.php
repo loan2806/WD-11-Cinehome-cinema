@@ -29,7 +29,7 @@
         align-items: center;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-sizing: border-box;
-        cursor: pointer; /* Cho phép con trỏ bàn tay trên toàn bộ ô */
+        cursor: pointer;
     }
 
     .hot-movie-card:hover {
@@ -184,11 +184,188 @@
         background: rgba(255, 255, 255, 0.18);
         color: #ffffff !important;
     }
+
+    /* 🎬 CSS MODAL TRAILER POPUP */
+    .trailer-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(8px);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .trailer-modal-backdrop.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .trailer-modal-content {
+        position: relative;
+        width: 90%;
+        max-width: 900px;
+        background: #111827;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    .trailer-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        background: #1f2937;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .trailer-modal-header h4 {
+        margin: 0;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .btn-close-modal {
+        background: transparent;
+        border: none;
+        color: #9ca3af;
+        font-size: 20px;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .btn-close-modal:hover {
+        color: #ef4444;
+    }
+
+    .trailer-iframe-wrapper {
+        position: relative;
+        padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+        height: 0;
+        overflow: hidden;
+    }
+
+    .trailer-iframe-wrapper iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+
+    /* 🎁 CSS PHẦN PROMO / MẸO ĐẶT VÉ */
+    .promo-section {
+        background: linear-gradient(135deg, #1e1b4b, #311b92);
+        border-radius: 20px;
+        padding: 32px 40px;
+        margin-top: 50px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+
+    .promo-content h3 {
+        color: #fff;
+        font-size: 22px;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .promo-content p {
+        color: #cbd5e1;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .promo-actions {
+        display: flex;
+        gap: 12px;
+        flex-shrink: 0;
+    }
+
+    .promo-primary {
+        background: #facc15;
+        color: #000 !important;
+        font-weight: 700;
+        padding: 10px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        transition: background 0.2s;
+    }
+
+    .promo-primary:hover {
+        background: #eab308;
+    }
+
+    .promo-secondary {
+        background: rgba(255,255,255,0.1);
+        color: #fff !important;
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 10px;
+        text-decoration: none;
+        border: 1px solid rgba(255,255,255,0.2);
+        transition: background 0.2s;
+    }
+
+    .promo-secondary:hover {
+        background: rgba(255,255,255,0.2);
+    }
+
+    @media (max-width: 768px) {
+        .promo-section {
+            flex-direction: column;
+            text-align: center;
+            padding: 24px;
+        }
+        .promo-actions {
+            width: 100%;
+            justify-content: center;
+        }
+    }
 </style>
 @endpush
 
 @section('content')
     @php
+        // 🛠️ HÀM TỰ ĐỘNG XỬ LÝ ĐƯỜNG DẪN ẢNH KHÔNG BỊ LỖI LINK
+        $getPosterUrl = function($poster) {
+            if (empty($poster)) {
+                return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=700&q=80';
+            }
+            if (\Illuminate\Support\Str::startsWith($poster, ['http://', 'https://'])) {
+                return $poster;
+            }
+            if (\Illuminate\Support\Str::startsWith($poster, 'storage/')) {
+                return asset($poster);
+            }
+            if (\Illuminate\Support\Str::startsWith($poster, 'movies/')) {
+                return asset('storage/' . $poster);
+            }
+            return asset('storage/movies/' . $poster);
+        };
+
+        // 🎬 HÀM CHUYỂN LINK YOUTUBE THÀNH EMBED EMBED LINK
+        $getTrailerEmbedUrl = function($url) {
+            if (empty($url)) return '';
+            preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/', $url, $matches);
+            return isset($matches[1]) ? 'https://www.youtube.com/embed/' . $matches[1] . '?autoplay=1' : $url;
+        };
+
         $heroMovies = $bannerMovies
             ->merge($comingSoonMovies)
             ->merge($nowShowingMovies)
@@ -205,70 +382,36 @@
             ->merge($comingSoonRail)
             ->unique('id')
             ->take(10);
+
         $fallbackVisualMovies = collect([
-            [
-                'title' => 'Bom tấn hành động',
-                'image' => 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=700&q=80',
-            ],
-            [
-                'title' => 'Đêm phim cảm xúc',
-                'image' => 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=700&q=80',
-            ],
-            [
-                'title' => 'Suất chiếu đặc biệt',
-                'image' => 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=700&q=80',
-            ],
-            [
-                'title' => 'Rạp phim cuối tuần',
-                'image' => 'https://images.unsplash.com/photo-1535016120720-40c646be5580?auto=format&fit=crop&w=700&q=80',
-            ],
-            [
-                'title' => 'Màn ảnh lớn',
-                'image' => 'https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=700&q=80',
-            ],
-            [
-                'title' => 'Không khí điện ảnh',
-                'image' => 'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=700&q=80',
-            ],
-            [
-                'title' => 'Ghế ngồi êm ái',
-                'image' => 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=700&q=80',
-            ],
-            [
-                'title' => 'Trước giờ chiếu',
-                'image' => 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=700&q=80',
-            ],
+            ['title' => 'Bom tấn hành động', 'image' => 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=700&q=80'],
+            ['title' => 'Đêm phim cảm xúc', 'image' => 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=700&q=80'],
+            ['title' => 'Suất chiếu đặc biệt', 'image' => 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=700&q=80'],
+            ['title' => 'Rạp phim cuối tuần', 'image' => 'https://images.unsplash.com/photo-1535016120720-40c646be5580?auto=format&fit=crop&w=700&q=80'],
+            ['title' => 'Màn ảnh lớn', 'image' => 'https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=700&q=80'],
         ]);
+
         $cinemaShots = collect([
-            [
-                'title' => 'Phòng chiếu cao cấp',
-                'image' => 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80',
-            ],
-            [
-                'title' => 'Khoảnh khắc trước giờ chiếu',
-                'image' => 'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=900&q=80',
-            ],
-            [
-                'title' => 'Màn ảnh lớn',
-                'image' => 'https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=900&q=80',
-            ],
-            [
-                'title' => 'Đồ ăn rạp phim',
-                'image' => 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=900&q=80',
-            ],
+            ['title' => 'Phòng chiếu cao cấp', 'image' => 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80'],
+            ['title' => 'Khoảnh khắc trước giờ chiếu', 'image' => 'https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?auto=format&fit=crop&w=900&q=80'],
+            ['title' => 'Màn ảnh lớn', 'image' => 'https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?auto=format&fit=crop&w=900&q=80'],
+            ['title' => 'Đồ ăn rạp phim', 'image' => 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=900&q=80'],
         ]);
     @endphp
 
     <section class="cinema-home">
+        <!-- 🌟 HERO BANNER SLIDER -->
         <section class="booking-hero hero-slider" data-home-slider>
             @forelse ($heroMovies as $movie)
                 @php
                     $detailUrlWithSchedule = route('user.movies.show', $movie->slug) . '#lich-chieu';
+                    $posterUrl = $getPosterUrl($movie->poster);
+                    $trailerEmbed = $getTrailerEmbedUrl($movie->trailer_url ?? $movie->trailer ?? '');
                 @endphp
 
                 <article class="hero-slide booking-hero-slide {{ $loop->first ? 'active' : '' }}"
                     data-slide-index="{{ $loop->index }}"
-                    style="background-image: url('{{ asset('storage/movies/' . $movie->poster) }}');">
+                    style="background-image: url('{{ $posterUrl }}');">
                     <div class="container-fluid px-5 booking-hero-content hero-content">
                         <div class="booking-hero-copy hero-info">
                             <div class="booking-eyebrow">
@@ -307,10 +450,19 @@
                                     Đặt vé ngay
                                 </a>
 
-                                <a href="{{ route('user.movies.show', $movie->slug) }}" class="btn-trailer booking-ghost-btn">
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    Chi tiết phim
-                                </a>
+                                @if (!empty($trailerEmbed))
+                                    <button type="button" class="btn-trailer booking-ghost-btn js-open-trailer"
+                                        data-trailer-title="{{ $movie->ten_phim }}"
+                                        data-trailer-url="{{ $trailerEmbed }}">
+                                        <i class="fa-solid fa-play"></i>
+                                        Xem Trailer
+                                    </button>
+                                @else
+                                    <a href="{{ route('user.movies.show', $movie->slug) }}" class="btn-trailer booking-ghost-btn">
+                                        <i class="fa-solid fa-circle-info"></i>
+                                        Chi tiết phim
+                                    </a>
+                                @endif
                             </div>
 
                             <div class="booking-hero-stats">
@@ -330,7 +482,7 @@
                         </div>
 
                         <div class="booking-hero-poster reveal-on-scroll">
-                            <img src="{{ asset('storage/movies/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}">
+                            <img src="{{ $posterUrl }}" alt="{{ $movie->ten_phim }}">
                             <div class="poster-ticket">
                                 <i class="fa-solid fa-ticket"></i>
                                 Vé điện tử
@@ -385,6 +537,7 @@
 
         <main class="main-section booking-main">
             <div class="container-fluid px-5">
+                <!-- 🚀 QUICK STEPS -->
                 <section class="quick-booking-panel reveal-on-scroll">
                     <a href="{{ route('dat_ve.chon_phim') }}" class="quick-booking-step">
                         <span>01</span>
@@ -408,13 +561,13 @@
                     </a>
                 </section>
 
-                <!-- 🌟 SECTION TOP 3 PHIM HOT CỦA THÁNG -->
+                <!-- 🏆 TOP 3 PHIM HOT CỦA THÁNG -->
                 <section class="booking-section reveal-on-scroll" style="margin-top: 40px;">
                     <div class="booking-section-head">
                         <div>
                             <p style="color: #facc15; font-weight: 700; margin-bottom: 4px;">
                                 <i class="fa-solid fa-fire" style="color: #ef4444; margin-right: 4px;"></i>
-                                BẢNG XẾP HẠNG THÁNG {{ $tenThangHienTai }}
+                                BẢNG XẾP HẠNG THÁNG {{ $tenThangHienTai ?? now()->month }}
                             </p>
                             <h2>Top 3 Phim Hot Của Tháng</h2>
                         </div>
@@ -436,15 +589,15 @@
                                     default => 'background: #374151; color: #fff;'
                                 };
                                 $detailUrlWithSchedule = route('user.movies.show', $movie->slug) . '#lich-chieu';
+                                $posterUrl = $getPosterUrl($movie->poster);
                             @endphp
 
-                            <!-- Bấm vào bất kỳ vị trí nào trên ô đều sẽ chuyển trang đến lịch chiếu -->
                             <div class="hot-movie-card" onclick="window.location.href='{{ $detailUrlWithSchedule }}'">
                                 <div class="hot-rank-badge" style="{{ $badgeStyle }}">
                                     <i class="fa-solid fa-crown"></i> TOP {{ $rank }}
                                 </div>
                                 <div class="hot-movie-poster">
-                                    <img src="{{ asset('storage/movies/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}">
+                                    <img src="{{ $posterUrl }}" alt="{{ $movie->ten_phim }}">
                                     <span class="hot-custom-age-badge">{{ $movie->gioi_han_tuoi }}</span>
                                 </div>
                                 <div class="hot-movie-info">
@@ -478,6 +631,7 @@
                     </div>
                 </section>
 
+                <!-- 🖼️ BỘ SƯU TẬP POSTER -->
                 <section class="booking-poster-wall reveal-on-scroll">
                     <div class="poster-wall-copy">
                         <span>
@@ -499,8 +653,7 @@
                         @foreach ($visualMovies as $movie)
                             <a href="{{ route('user.movies.show', $movie->slug) }}#lich-chieu"
                                 class="poster-wall-card {{ $loop->first ? 'large' : '' }}">
-                                <img src="{{ asset('storage/movies/' . $movie->poster) }}"
-                                    alt="{{ $movie->ten_phim }}">
+                                <img src="{{ $getPosterUrl($movie->poster) }}" alt="{{ $movie->ten_phim }}">
                                 <span>{{ $movie->ten_phim }}</span>
                             </a>
                         @endforeach
@@ -515,6 +668,7 @@
                     </div>
                 </section>
 
+                <!-- 🍿 KHÔNG GIAN RẠP CINEMA -->
                 <section class="cinema-experience-board reveal-on-scroll">
                     <div class="experience-board-head">
                         <span>
@@ -534,11 +688,10 @@
                     </div>
                 </section>
 
+                <!-- 💡 LỢI ÍCH -->
                 <section class="booking-benefits reveal-on-scroll">
                     <div class="booking-benefit-card">
-                        <span>
-                            <i class="fa-solid fa-couch"></i>
-                        </span>
+                        <span><i class="fa-solid fa-couch"></i></span>
                         <div>
                             <h3>Chọn ghế trực quan</h3>
                             <p>Xem sơ đồ ghế rõ ràng, chọn đúng vị trí yêu thích trước khi thanh toán.</p>
@@ -546,9 +699,7 @@
                     </div>
 
                     <div class="booking-benefit-card">
-                        <span>
-                            <i class="fa-solid fa-shield-halved"></i>
-                        </span>
+                        <span><i class="fa-solid fa-shield-halved"></i></span>
                         <div>
                             <h3>Giữ ghế tạm thời</h3>
                             <p>Ghế được khóa trong quá trình đặt vé để bạn thao tác yên tâm hơn.</p>
@@ -556,9 +707,7 @@
                     </div>
 
                     <div class="booking-benefit-card">
-                        <span>
-                            <i class="fa-solid fa-mobile-screen-button"></i>
-                        </span>
+                        <span><i class="fa-solid fa-mobile-screen-button"></i></span>
                         <div>
                             <h3>Vé điện tử tiện lợi</h3>
                             <p>Nhận mã vé sau thanh toán và xuất trình nhanh khi đến rạp.</p>
@@ -566,6 +715,7 @@
                     </div>
                 </section>
 
+                <!-- 🎬 PHIM ĐANG CHIẾU -->
                 <section class="booking-section reveal-on-scroll" data-rail-section>
                     <div class="booking-section-head">
                         <div>
@@ -592,16 +742,24 @@
                         @forelse ($nowShowingRail as $movie)
                             @php
                                 $detailUrlWithSchedule = route('user.movies.show', $movie->slug) . '#lich-chieu';
+                                $posterUrl = $getPosterUrl($movie->poster);
+                                $trailerEmbed = $getTrailerEmbedUrl($movie->trailer_url ?? $movie->trailer ?? '');
                             @endphp
 
                             <article class="booking-movie-card">
                                 <a href="{{ $detailUrlWithSchedule }}" class="booking-movie-poster">
-                                    <img src="{{ asset('storage/movies/' . $movie->poster) }}"
-                                        alt="{{ $movie->ten_phim }}">
+                                    <img src="{{ $posterUrl }}" alt="{{ $movie->ten_phim }}">
                                     <span class="movie-age-badge">{{ $movie->gioi_han_tuoi }}</span>
-                                    <span class="movie-play-overlay">
-                                        <i class="fa-solid fa-play"></i>
-                                    </span>
+                                    
+                                    @if(!empty($trailerEmbed))
+                                        <span class="movie-play-overlay js-open-trailer" data-trailer-title="{{ $movie->ten_phim }}" data-trailer-url="{{ $trailerEmbed }}" onclick="event.preventDefault(); event.stopPropagation();">
+                                            <i class="fa-solid fa-play"></i>
+                                        </span>
+                                    @else
+                                        <span class="movie-play-overlay">
+                                            <i class="fa-solid fa-play"></i>
+                                        </span>
+                                    @endif
                                 </a>
 
                                 <div class="booking-movie-body">
@@ -635,6 +793,7 @@
                     </div>
                 </section>
 
+                <!-- ⏳ PHIM SẮP CHIẾU -->
                 <section class="booking-section reveal-on-scroll" data-rail-section>
                     <div class="booking-section-head">
                         <div>
@@ -659,46 +818,68 @@
 
                     <div class="booking-movie-rail compact">
                         @forelse ($comingSoonRail as $movie)
+                            @php
+                                $posterUrl = $getPosterUrl($movie->poster);
+                                $trailerEmbed = $getTrailerEmbedUrl($movie->trailer_url ?? $movie->trailer ?? '');
+                            @endphp
+
                             <article class="booking-movie-card compact">
                                 <a href="{{ route('user.movies.show', $movie->slug) }}" class="booking-movie-poster">
-                                    <img src="{{ asset('storage/movies/' . $movie->poster) }}"
-                                        alt="{{ $movie->ten_phim }}">
+                                    <img src="{{ $posterUrl }}" alt="{{ $movie->ten_phim }}">
                                     <span class="movie-age-badge">{{ $movie->gioi_han_tuoi }}</span>
-                                    <span class="movie-play-overlay">
-                                        <i class="fa-solid fa-play"></i>
-                                    </span>
+                                    
+                                    @if(!empty($trailerEmbed))
+                                        <span class="movie-play-overlay js-open-trailer" data-trailer-title="{{ $movie->ten_phim }}" data-trailer-url="{{ $trailerEmbed }}" onclick="event.preventDefault(); event.stopPropagation();">
+                                            <i class="fa-solid fa-play"></i>
+                                        </span>
+                                    @else
+                                        <span class="movie-play-overlay">
+                                            <i class="fa-solid fa-play"></i>
+                                        </span>
+                                    @endif
                                 </a>
 
                                 <div class="booking-movie-body">
                                     <h3>{{ $movie->ten_phim }}</h3>
                                     <p>
-                                        <i class="fa-solid fa-earth-asia"></i>
-                                        {{ $movie->country?->ten_quoc_gia ?? 'Đang cập nhật' }}
+                                        <i class="fa-solid fa-clock"></i>
+                                        {{ $movie->thoi_luong }} phút
                                     </p>
+                                    <p>
+                                        <i class="fa-solid fa-tags"></i>
+                                        {{ $movie->genres->pluck('ten_the_loai')->take(2)->join(', ') ?: 'Điện ảnh' }}
+                                    </p>
+                                    @if (!empty($movie->ngay_khoi_chieu))
+                                        <p style="color: #facc15; font-size: 12px;">
+                                            <i class="fa-solid fa-calendar-day"></i>
+                                            Khởi chiếu: {{ \Carbon\Carbon::parse($movie->ngay_khoi_chieu)->format('d/m/Y') }}
+                                        </p>
+                                    @endif
+
                                     <div class="booking-card-actions">
-                                        <a href="{{ route('user.movies.show', $movie->slug) }}" class="card-book-btn">
-                                            Quan tâm
+                                        <a href="{{ route('user.movies.show', $movie->slug) }}" class="card-detail-btn" style="width: 100%; text-align: center;">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            Chi tiết
                                         </a>
                                     </div>
                                 </div>
                             </article>
                         @empty
                             <div class="booking-empty-state">
-                                <i class="fa-regular fa-calendar"></i>
+                                <i class="fa-solid fa-film"></i>
                                 Chưa có phim sắp chiếu.
                             </div>
                         @endforelse
                     </div>
                 </section>
 
-                <section class="booking-promo-strip reveal-on-scroll">
-                    <div class="promo-copy">
-                        <span>
-                            <i class="fa-solid fa-crown"></i>
-                            Thành viên CineHome
-                        </span>
-                        ## Đặt vé hôm nay, tích điểm cho lần xem tiếp theo
-                        <p>Nhận ưu đãi voucher, quản lý vé điện tử và theo dõi lịch sử đặt vé trong tài khoản của bạn.</p>
+                <!-- 🎁 BẢNG KHUYẾN MÃI / THÀNH VIÊN (Đoạn mã bổ sung của bạn) -->
+                <section class="promo-section reveal-on-scroll">
+                    <div class="promo-content">
+                        <h3>Trở thành thành viên CineHome VIP</h3>
+                        <p>
+                            Nhận nhiều ưu đãi độc quyền, tích điểm đổi Voucher quà tặng, quản lý vé điện tử và theo dõi lịch sử đặt vé trong tài khoản của bạn.
+                        </p>
                     </div>
 
                     <div class="promo-actions">
@@ -713,4 +894,151 @@
             </div>
         </main>
     </section>
+
+    <!-- 🎬 MODAL PHÁT TRAILER PHIM -->
+    <div class="trailer-modal-backdrop" id="trailerModal">
+        <div class="trailer-modal-content">
+            <div class="trailer-modal-header">
+                <h4 id="trailerModalTitle">Trailer Phim</h4>
+                <button type="button" class="btn-close-modal" id="btnCloseTrailerModal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="trailer-iframe-wrapper">
+                <iframe id="trailerIframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. Tự động chuyển Banner Hero Slider
+        const heroSlider = document.querySelector('[data-home-slider]');
+        if (heroSlider) {
+            const slides = heroSlider.querySelectorAll('.hero-slide');
+            const dots = heroSlider.querySelectorAll('[data-slide-target]');
+            const btnPrev = heroSlider.querySelector('[data-slide-prev]');
+            const btnNext = heroSlider.querySelector('[data-slide-next]');
+            let currentIndex = 0;
+            let slideInterval;
+
+            function showSlide(index) {
+                if (slides.length === 0) return;
+                slides.forEach(s => s.classList.remove('active'));
+                dots.forEach(d => d.classList.remove('active'));
+
+                currentIndex = (index + slides.length) % slides.length;
+                slides[currentIndex].classList.add('active');
+                if (dots[currentIndex]) {
+                    dots[currentIndex].classList.add('active');
+                }
+            }
+
+            function nextSlide() {
+                showSlide(currentIndex + 1);
+            }
+
+            function startAutoPlay() {
+                if (slides.length > 1) {
+                    slideInterval = setInterval(nextSlide, 5000);
+                }
+            }
+
+            function stopAutoPlay() {
+                clearInterval(slideInterval);
+            }
+
+            if (btnPrev) {
+                btnPrev.addEventListener('click', () => {
+                    stopAutoPlay();
+                    showSlide(currentIndex - 1);
+                    startAutoPlay();
+                });
+            }
+
+            if (btnNext) {
+                btnNext.addEventListener('click', () => {
+                    stopAutoPlay();
+                    nextSlide();
+                    startAutoPlay();
+                });
+            }
+
+            dots.forEach(dot => {
+                dot.addEventListener('click', () => {
+                    stopAutoPlay();
+                    const targetIndex = parseInt(dot.getAttribute('data-slide-target'));
+                    showSlide(targetIndex);
+                    startAutoPlay();
+                });
+            });
+
+            startAutoPlay();
+        }
+
+        // 2. Cuộn danh sách phim ngang (Movie Rail)
+        const railSections = document.querySelectorAll('[data-rail-section]');
+        railSections.forEach(section => {
+            const rail = section.querySelector('.booking-movie-rail');
+            const btnPrev = section.querySelector('[data-rail-prev]');
+            const btnNext = section.querySelector('[data-rail-next]');
+
+            if (rail) {
+                if (btnPrev) {
+                    btnPrev.addEventListener('click', () => {
+                        rail.scrollBy({ left: -320, behavior: 'smooth' });
+                    });
+                }
+                if (btnNext) {
+                    btnNext.addEventListener('click', () => {
+                        rail.scrollBy({ left: 320, behavior: 'smooth' });
+                    });
+                }
+            }
+        });
+
+        // 3. 🎬 XỬ LÝ PHÁT TRAILER BẰNG MODAL NỔI
+        const trailerModal = document.getElementById('trailerModal');
+        const trailerIframe = document.getElementById('trailerIframe');
+        const trailerTitle = document.getElementById('trailerModalTitle');
+        const btnCloseModal = document.getElementById('btnCloseTrailerModal');
+
+        function openTrailerModal(title, url) {
+            if (!url) return;
+            trailerTitle.textContent = 'Trailer: ' + title;
+            trailerIframe.src = url;
+            trailerModal.classList.add('show');
+            document.body.style.overflow = 'hidden'; // Khóa cuộn trang
+        }
+
+        function closeTrailerModal() {
+            trailerModal.classList.remove('show');
+            trailerIframe.src = ''; // Tắt video để không phát tiếng
+            document.body.style.overflow = '';
+        }
+
+        document.querySelectorAll('.js-open-trailer').forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                const title = this.getAttribute('data-trailer-title') || 'Phim';
+                const url = this.getAttribute('data-trailer-url');
+                openTrailerModal(title, url);
+            });
+        });
+
+        if (btnCloseModal) {
+            btnCloseModal.addEventListener('click', closeTrailerModal);
+        }
+
+        if (trailerModal) {
+            trailerModal.addEventListener('click', function (e) {
+                if (e.target === trailerModal) {
+                    closeTrailerModal();
+                }
+            });
+        }
+    });
+</script>
+@endpush

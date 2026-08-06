@@ -178,14 +178,31 @@
                 @forelse ($movieGroups as $movieId => $movieShowtimes)
                     @php
                         $movie = $movieShowtimes->first()->phim;
-                        $poster = $movie?->poster
-                            ? asset('storage/movies/' . $movie->poster)
-                            : asset('images/no-poster.jpg');
+                        $posterRaw = $movie?->poster ?? '';
+
+                        if (empty($posterRaw)) {
+                            $poster = 'https://placehold.co/300x450/1e293b/94a3b8?text=No+Poster';
+                        } elseif (\Illuminate\Support\Str::startsWith($posterRaw, ['http://', 'https://'])) {
+                            $poster = $posterRaw;
+                        } else {
+                            $cleanPoster = str_replace(['storage/movies/', 'storage/', 'movies/movies/'], '', ltrim($posterRaw, '/'));
+                            $cleanPoster = ltrim($cleanPoster, '/');
+                            
+                            if (!\Illuminate\Support\Str::startsWith($cleanPoster, 'movies/')) {
+                                $cleanPoster = 'movies/' . $cleanPoster;
+                            }
+
+                            if (file_exists(public_path('storage/' . $cleanPoster))) {
+                                $poster = asset('storage/' . $cleanPoster);
+                            } else {
+                                $poster = 'https://placehold.co/300x450/1e293b/94a3b8?text=No+Poster';
+                            }
+                        }
                     @endphp
 
                     <article class="counter-movie-card">
                         <div class="counter-movie-poster">
-                            <img src="{{ $poster }}" alt="{{ $movie?->ten_phim ?? 'Poster phim' }}">
+                            <img src="{{ $poster }}" alt="{{ $movie?->ten_phim ?? 'Poster phim' }}" onerror="this.onerror=null; this.src='https://placehold.co/300x450/1e293b/94a3b8?text=No+Poster';">
                         </div>
 
                         <div class="counter-movie-body">
