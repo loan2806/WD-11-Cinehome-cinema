@@ -43,6 +43,15 @@
 
 @push('styles')
 <style>
+    /* 🌟 XOAY MŨI TÊN KHI XỔ DROPDOWN CHI TIẾT PHIM */
+    details.showtime-movie-card .showtime-movie-chevron i {
+        transition: transform 0.25s ease !important;
+    }
+
+    details.showtime-movie-card[open] .showtime-movie-chevron i {
+        transform: rotate(180deg) !important;
+    }
+
     /* 🌟 BỘ THẺ CUSTOM DROPDOWN SELECT CINEHOME */
     .showtime-index-filter {
         position: relative !important;
@@ -179,6 +188,61 @@
         max-width: 480px;
         padding: 24px;
         box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    /* PHÂN TRANG DANH SÁCH SUẤT CHIẾU TRONG TỪNG THẺ PHIM */
+    .showtime-local-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 14px 0 4px;
+    }
+
+    .showtime-page-btn,
+    .showtime-page-numbers button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 34px;
+        padding: 0 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: #18181c;
+        color: #d1d5db;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .showtime-page-numbers {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .showtime-page-btn:hover,
+    .showtime-page-numbers button:hover {
+        border-color: #facc15;
+        color: #facc15;
+    }
+
+    .showtime-page-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+    .showtime-page-btn:disabled:hover {
+        border-color: rgba(255, 255, 255, 0.14);
+        color: #d1d5db;
+    }
+
+    .showtime-page-numbers button.is-active {
+        background: rgba(250, 204, 21, 0.18);
+        border-color: #facc15;
+        color: #facc15;
     }
 </style>
 @endpush
@@ -350,7 +414,8 @@
                     $movieUpcomingCount = $movieShowtimes->filter(fn ($showtime) => $showtime->thoi_gian_chieu?->isFuture())->count();
                 @endphp
 
-                <details class="showtime-movie-card" open>
+                {{-- Bỏ thuộc tính open để thu gọn danh sách mặc định --}}
+                <details class="showtime-movie-card">
                     <summary class="showtime-movie-summary">
                         <div class="showtime-movie-title">
                             <img src="{{ $posterUrl($phim->poster) }}" alt="{{ $phim->ten_phim }}">
@@ -387,8 +452,12 @@
 
                     <div class="showtime-movie-body">
                         @if ($movieShowtimes->isNotEmpty())
-                            <div class="showtime-table-wrap">
-                                <table class="showtime-index-table">
+                            @php
+                                $showtimePerPage = 10;
+                                $showtimeTableId = 'showtime-table-' . $phim->id;
+                            @endphp
+                            <div class="showtime-table-wrap" data-per-page="{{ $showtimePerPage }}">
+                                <table class="showtime-index-table" id="{{ $showtimeTableId }}">
                                     <thead>
                                         <tr>
                                             <th>Mã suất</th>
@@ -412,7 +481,7 @@
                                                     default => 'is-muted',
                                                 };
                                             @endphp
-                                            <tr>
+                                            <tr data-row-index="{{ $loop->index }}">
                                                 <td><span class="showtime-code">#{{ sprintf('%04d', $suat->id) }}</span></td>
                                                 <td>{{ $suat->rapChieuPhim?->ten_rap ?? 'CineHome Cinema' }}</td>
                                                 <td>
@@ -459,6 +528,17 @@
                                     </tbody>
                                 </table>
                             </div>
+                            @if ($movieShowtimes->count() > $showtimePerPage)
+                                <div class="showtime-local-pagination" data-target="{{ $showtimeTableId }}">
+                                    <button type="button" class="showtime-page-btn is-prev" aria-label="Trang trước">
+                                        <i class="fa-solid fa-chevron-left"></i>
+                                    </button>
+                                    <div class="showtime-page-numbers"></div>
+                                    <button type="button" class="showtime-page-btn is-next" aria-label="Trang sau">
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            @endif
                         @else
                             <div class="showtime-empty-card">
                                 <i class="fa-regular fa-calendar-xmark"></i>
@@ -500,7 +580,6 @@
             </div>
         </div>
 
-        <!-- Cảnh báo quy tắc xóa trước 3 ngày & chưa có vé -->
         <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 12.5px; color: #fcd34d;">
             <i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i>
             Chỉ cho phép xóa suất chiếu <strong>trước ít nhất 3 ngày</strong> và <strong>chưa có khách hàng đặt vé</strong>.
@@ -530,26 +609,23 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 🌟 SCRIPT KHỞI TẠO CINE-SELECT POPUP THUẦN (100% CHUẨN XÁC, BẤM ĂN NGAY)
+    // SCRIPT KHỞI TẠO CINE-SELECT POPUP
     document.querySelectorAll('.cine-select-wrapper').forEach(function(wrapper) {
         const hiddenInput = wrapper.querySelector('input[type="hidden"]');
         const trigger = wrapper.querySelector('.cine-select-trigger');
         const triggerText = wrapper.querySelector('.cine-select-value');
         const options = wrapper.querySelectorAll('.cine-select-option');
 
-        // Cập nhật tiêu đề hiển thị từ giá trị đã chọn ban đầu
         options.forEach(function(opt) {
             if (opt.classList.contains('selected')) {
                 triggerText.textContent = opt.textContent.trim();
             }
         });
 
-        // Click để Bật/Tắt Dropdown Menu
         trigger.addEventListener('click', function(e) {
             e.stopPropagation();
             e.preventDefault();
             
-            // Đóng các dropdown khác đang mở
             document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
                 if (w !== wrapper) {
                     w.classList.remove('open');
@@ -559,7 +635,6 @@ document.addEventListener('DOMContentLoaded', function() {
             wrapper.classList.toggle('open');
         });
 
-        // Click chọn Item
         options.forEach(function(opt) {
             opt.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -576,11 +651,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Click bất kỳ đâu ngoài màn hình để đóng Dropdown
     document.addEventListener('click', function() {
         document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
             w.classList.remove('open');
         });
+    });
+
+    // PHÂN TRANG DANH SÁCH SUẤT CHIẾU BÊN TRONG TỪNG THẺ PHIM (client-side)
+    document.querySelectorAll('.showtime-local-pagination').forEach(function(pager) {
+        const table = document.getElementById(pager.dataset.target);
+        if (!table) return;
+
+        const wrap = table.closest('.showtime-table-wrap');
+        const perPage = parseInt(wrap?.dataset.perPage || '10', 10);
+        const rows = Array.from(table.querySelectorAll('tbody tr[data-row-index]'));
+        const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
+
+        const prevBtn = pager.querySelector('.is-prev');
+        const nextBtn = pager.querySelector('.is-next');
+        const numbersEl = pager.querySelector('.showtime-page-numbers');
+        let currentPage = 1;
+
+        function renderNumbers() {
+            numbersEl.innerHTML = '';
+            for (let p = 1; p <= totalPages; p++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = p;
+                btn.classList.toggle('is-active', p === currentPage);
+                btn.addEventListener('click', function() { goToPage(p); });
+                numbersEl.appendChild(btn);
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = Math.min(Math.max(page, 1), totalPages);
+            rows.forEach(function(row) {
+                const rowPage = Math.floor(parseInt(row.dataset.rowIndex, 10) / perPage) + 1;
+                row.style.display = rowPage === currentPage ? '' : 'none';
+            });
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+            renderNumbers();
+        }
+
+        prevBtn.addEventListener('click', function() { goToPage(currentPage - 1); });
+        nextBtn.addEventListener('click', function() { goToPage(currentPage + 1); });
+
+        goToPage(1);
     });
 });
 

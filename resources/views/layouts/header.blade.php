@@ -120,18 +120,24 @@
                                 Danh sách phim
                             </a>
 
-                            @if (Auth::user()->hasRole('Quản trị viên') ||
-                            Auth::user()->hasRole('Quản lý hệ thống') ||
-                            Auth::user()->hasRole('Quản lý') ||
-                            Auth::user()->vai_tro === 'admin')
-                            <a href="{{ route('admin.dashboard') }}">
+                            {{-- Cấu hình hiển thị nút Trang quản lý cho toàn bộ các nhóm Quản lý / Admin --}}
+                            @if (
+                                Auth::user()->hasRole('Quản trị viên') ||
+                                Auth::user()->hasRole('Quản lý hệ thống') ||
+                                Auth::user()->hasRole('Quản lý') ||
+                                Auth::user()->hasRole('Quản lý phòng chiếu') ||
+                                Auth::user()->hasRole('Quản lý rạp') ||
+                                Auth::user()->hasRole('Sub-Admin') ||
+                                in_array(Auth::user()->vai_tro, ['admin', 'super_admin', 'quan_ly', 'quan_ly_phong_chieu', 'quan_ly_rap', 'quan_ly_he_thong', 'manager'])
+                            )
+                            <a href="{{ route('dashboard') }}">
                                 <i class="fa-solid fa-user-shield"></i>
                                 Trang quản lý
                             </a>
                             @endif
 
                             @if (Auth::user()->hasRole('Nhân viên') || Auth::user()->vai_tro === 'nhan_vien')
-                            <a href="{{ route('admin.dashboard') }}">
+                            <a href="{{ route('dashboard') }}">
                                 <i class="fa-solid fa-user-tie"></i>
                                 Trang nhân viên
                             </a>

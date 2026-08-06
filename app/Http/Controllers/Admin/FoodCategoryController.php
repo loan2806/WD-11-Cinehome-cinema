@@ -17,17 +17,14 @@ class FoodCategoryController extends Controller
 
     public function index(Request $request)
     {
-        $query = DanhMucDoAn::query();
+        $query = DanhMucDoAn::where('is_combo', false)->orderBy('name');
 
         if ($request->filled('search')) {
             $keyword = trim($request->search);
             $query->where('name', 'like', "%{$keyword}%");
         }
 
-        $categories = $query
-            ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+        $categories = $query->paginate(20)->withQueryString();
 
         return view('admin.foods.categories.index', compact('categories'));
     }
@@ -40,16 +37,22 @@ class FoodCategoryController extends Controller
     public function store(StoreFoodCategoryRequest $request)
     {
         $data = $request->validated();
+        $data['slug'] = Str::slug($data['name']);
+        $data['is_combo'] = false;
 
-$data['slug'] = Str::slug($data['name']);
-$data['is_combo'] = $request->boolean('is_combo');
-
-$category = DanhMucDoAn::create($data);
+        $category = DanhMucDoAn::create($data);
 
         AdminNotificationService::push(
-            '🍿 Thêm danh mục',
-            'Đã thêm danh mục ' . $category->name,
+            'Thêm danh mục món lẻ',
+            "Đã thêm danh mục {$category->name}",
             'Success'
+        );
+
+        $this->ghiNhatKy(
+            $request,
+            'Thêm danh mục',
+            'Quản lý đồ ăn lẻ',
+            "Đã thêm danh mục {$category->name}"
         );
 
         return redirect()
@@ -66,35 +69,32 @@ $category = DanhMucDoAn::create($data);
     {
         $data = $request->validated();
 
-        if ($category->doAns()->exists()
-        && $category->is_combo != $request->boolean('is_combo')) {
+        if ($category->name !== $data['name']) {
+            $data['slug'] = Str::slug($data['name']);
+        }
 
-        return back()
-            ->withInput()
-            ->with('error', 'Không thể thay đổi loại danh mục khi đã có món ăn.');
-    }
+        $category->update($data);
 
-if ($category->name !== $data['name']) {
-    $data['slug'] = Str::slug($data['name']);
-}
-
-$data['is_combo'] = $request->boolean('is_combo');
-
-$category->update($data);
+        $this->ghiNhatKy(
+            $request,
+            'Cập nhật danh mục',
+            'Quản lý đồ ăn lẻ',
+            "Cập nhật danh mục {$category->name}"
+        );
 
         return redirect()
             ->route('admin.foods.categories.index')
             ->with('success', 'Danh mục đã được cập nhật.');
     }
 
-   public function destroy(DanhMucDoAn $category)
-{
-    if ($category->doAns()->exists()) {
-        return back()->with('error', 'Không thể xóa vì danh mục đang có sản phẩm.');
+    public function destroy(DanhMucDoAn $category)
+    {
+        if ($category->doAns()->exists()) {
+            return back()->with('error', 'Không thể xóa vì danh mục đang có món.');
+        }
+
+        $category->delete();
+
+        return back()->with('success', 'Danh mục đã được xóa.');
     }
-
-    $category->delete();
-
-    return back()->with('success', 'Danh mục đã được xóa.');
-}
 }

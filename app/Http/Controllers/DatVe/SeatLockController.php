@@ -10,36 +10,42 @@ use Illuminate\Support\Facades\Auth;
 class SeatLockController extends Controller
 {
     public function index($suat_chieu)
-    {
-        $identifier = Auth::id() ?? session()->getId();
-        $setKey = $this->setKey($suat_chieu);
-        $seatIds = Cache::get($setKey, []);
-
-        $result = [];
-        $validSeatIds = [];
-
-        foreach ($seatIds as $seatId) {
-            $key = $this->key($suat_chieu, $seatId);
-            $data = Cache::get($key);
-
-            if ($data) {
-                // Chỉ tính là ghế bị khóa (hiện dấu X) nếu do NGƯỜI KHÁC giữ
-                if (($data['identifier'] ?? null) !== $identifier && ($data['expires_at'] ?? 0) > now()->timestamp) {
-                    $result[$seatId] = $data;
-                }
-                $validSeatIds[] = $seatId;
-            }
-        }
-
-        Cache::put($setKey, $validSeatIds, now()->addMinutes(30));
-
-        return response()->json([
-            'locked' => $result
-        ]);
+{
+    // Giải phóng Session lock lập tức để không làm nghẽn các Request chuyển trang
+    if (session()->isStarted()) {
+        session()->save();
     }
+
+    $identifier = Auth::id() ?? session()->getId();
+    $setKey = $this->setKey($suat_chieu);
+    $seatIds = Cache::get($setKey, []);
+
+    $result = [];
+    $validSeatIds = [];
+
+    foreach ($seatIds as $seatId) {
+        $normSeatId = strtoupper(trim($seatId));
+        $key = $this->key($suat_chieu, $normSeatId);
+        $data = Cache::get($key);
+
+        if ($data) {
+            if (($data['identifier'] ?? null) !== $identifier && ($data['expires_at'] ?? 0) > now()->timestamp) {
+                $result[$normSeatId] = $data;
+            }
+            $validSeatIds[] = $normSeatId;
+        }
+    }
+
+    Cache::put($setKey, array_unique($validSeatIds), now()->addMinutes(30));
+
+    return response()->json([
+        'locked' => $result
+    ]);
+}
 
     public function reserve(Request $request, $suat_chieu, $seat)
     {
+        $seat = strtoupper(trim($seat));
         $identifier = Auth::id() ?? session()->getId();
         $key = $this->key($suat_chieu, $seat);
         $setKey = $this->setKey($suat_chieu);
@@ -58,7 +64,7 @@ class SeatLockController extends Controller
             }
         }
 
-        $expires = 7 * 60;
+        $expires = 7 * 60; // 7 phút
 
         $payload = [
             'identifier' => $identifier,
@@ -71,7 +77,7 @@ class SeatLockController extends Controller
         $seatIds = Cache::get($setKey, []);
         if (!in_array($seat, $seatIds)) {
             $seatIds[] = $seat;
-            Cache::put($setKey, $seatIds, now()->addMinutes(30));
+            Cache::put($setKey, array_unique($seatIds), now()->addMinutes(30));
         }
 
         return response()->json(['ok' => true, 'data' => $payload]);
@@ -79,6 +85,7 @@ class SeatLockController extends Controller
 
     public function release(Request $request, $suat_chieu, $seat)
     {
+        $seat = strtoupper(trim($seat));
         $identifier = Auth::id() ?? session()->getId();
         $key = $this->key($suat_chieu, $seat);
         $setKey = $this->setKey($suat_chieu);
@@ -87,11 +94,11 @@ class SeatLockController extends Controller
         if ($existing && ($existing['identifier'] ?? null) === $identifier) {
             Cache::forget($key);
             $seatIds = collect(Cache::get($setKey, []))
-                ->reject(fn($s) => (string)$s === (string)$seat)
+                ->reject(fn($s) => strtoupper(trim($s)) === $seat)
                 ->values()
                 ->all();
 
-            Cache::put($setKey, $seatIds, now()->addMinutes(30));
+            Cache::put($setKey, array_unique($seatIds), now()->addMinutes(30));
         }
 
         return response()->json(['ok' => true]);
@@ -105,7 +112,8 @@ class SeatLockController extends Controller
         $remain = [];
 
         foreach ($seatIds as $seat) {
-            $key = $this->key($suat_chieu, $seat);
+            $normSeat = strtoupper(trim($seat));
+            $key = $this->key($suat_chieu, $normSeat);
             $existing = Cache::get($key);
 
             if (!$existing) {
@@ -115,17 +123,18 @@ class SeatLockController extends Controller
             if (($existing['identifier'] ?? null) == $identifier) {
                 Cache::forget($key);
             } else {
-                $remain[] = $seat;
+                $remain[] = $normSeat;
             }
         }
 
-        Cache::put($setKey, $remain, now()->addMinutes(30));
+        Cache::put($setKey, array_unique($remain), now()->addMinutes(30));
 
         return response()->json(['ok' => true]);
     }
 
     private function key($suat, $seat)
     {
+        $seat = strtoupper(trim($seat));
         return "seat_lock:suat:{$suat}:seat:{$seat}";
     }
 

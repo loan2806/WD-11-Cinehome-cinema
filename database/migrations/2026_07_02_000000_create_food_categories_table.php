@@ -20,6 +20,12 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (Schema::hasTable('foods') && Schema::hasColumn('foods', 'category_id')) {
+            Schema::table('foods', function (Blueprint $table) {
+                $table->dropConstrainedForeignId('category_id');
+            });
+        }
+
         Schema::dropIfExists('food_categories');
     }
 };

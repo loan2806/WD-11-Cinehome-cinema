@@ -30,34 +30,45 @@ class FoodSeeder extends Seeder
                     'sort_order' => 20,
                 ],
                 [
+                    'sku' => 'POPCORN-SALTY',
+                    'name' => 'Bắp mặn',
+                    'category_name' => 'Đồ ăn',
+                    'sort_order' => 30,
+                ],
+                [
                     'sku' => 'COKE-330',
                     'name' => 'Coca Cola',
                     'category_name' => 'Nước uống',
-                    'sort_order' => 30,
+                    'sort_order' => 40,
                 ],
                 [
                     'sku' => 'PEPSI-330',
                     'name' => 'Pepsi',
                     'category_name' => 'Nước uống',
-                    'sort_order' => 40,
+                    'sort_order' => 50,
+                ],
+                [
+                    'sku' => 'FANTA-330',
+                    'name' => 'Fanta cam',
+                    'category_name' => 'Nước uống',
+                    'sort_order' => 60,
                 ],
                 [
                     'sku' => 'COMBO-1',
                     'name' => 'Combo 1 bắp 2 nước',
                     'category_name' => 'Combo',
-                    'sort_order' => 50,
+                    'sort_order' => 70,
                 ],
                 [
                     'sku' => 'COMBO-FAMILY',
                     'name' => 'Combo gia đình',
                     'category_name' => 'Combo',
-                    'sort_order' => 60,
+                    'sort_order' => 80,
                 ],
             ];
 
             $images = collect(File::exists(public_path('storage/foods')) ? File::files(public_path('storage/foods')) : []);
 
-            // Tạo món và category
             foreach ($foods as $foodData) {
                 $category = DanhMucDoAn::updateOrCreate(
                     ['name' => $foodData['category_name']],
@@ -73,123 +84,84 @@ class FoodSeeder extends Seeder
                         'name' => $foodData['name'],
                         'category_id' => $category->id,
                         'sort_order' => $foodData['sort_order'],
-                        'image' => $images->isNotEmpty()
-                            ? $images->random()->getFilename()
-                            : 'placeholder.png',
-                        'description' => null,
+                        'image' => $images->isNotEmpty() ? $images->random()->getFilename() : 'placeholder.png',
+                        'description' => fake()->sentence(8),
                         'is_active' => true,
-                        // giá mặc định null, sẽ set cho combos sau nếu cần
                         'price' => null,
                     ]
                 );
             }
 
-            // Tạo biến thể (variants) cho các món cụ thể
-            // Popcorn variants
-            $this->createOrUpdateVariant('POPCORN-SWEET', 'Small', 50000);
-            $this->createOrUpdateVariant('POPCORN-SWEET', 'Large', 70000);
-            $this->createOrUpdateVariant('POPCORN-CHEESE', 'Small', 55000);
-            $this->createOrUpdateVariant('POPCORN-CHEESE', 'Large', 75000);
+            $this->createOrUpdateVariant('POPCORN-SWEET', 'Small', 50000, 120);
+            $this->createOrUpdateVariant('POPCORN-SWEET', 'Large', 70000, 80);
+            $this->createOrUpdateVariant('POPCORN-CHEESE', 'Small', 55000, 110);
+            $this->createOrUpdateVariant('POPCORN-CHEESE', 'Large', 75000, 90);
+            $this->createOrUpdateVariant('POPCORN-SALTY', 'Small', 52000, 100);
+            $this->createOrUpdateVariant('POPCORN-SALTY', 'Large', 72000, 75);
+            $this->createOrUpdateVariant('COKE-330', '330ml', 15000, 180);
+            $this->createOrUpdateVariant('COKE-330', '550ml', 25000, 120);
+            $this->createOrUpdateVariant('PEPSI-330', '330ml', 14000, 160);
+            $this->createOrUpdateVariant('PEPSI-330', '550ml', 24000, 100);
+            $this->createOrUpdateVariant('FANTA-330', '330ml', 14000, 140);
+            $this->createOrUpdateVariant('FANTA-330', '550ml', 24000, 90);
 
-            // Coca variants
-            $this->createOrUpdateVariant('COKE-330', '300ml', 15000);
-            $this->createOrUpdateVariant('COKE-330', '550ml', 25000);
+            $this->createCombo('COMBO-1', [
+                ['food_sku' => 'POPCORN-SWEET', 'variant' => 'Small', 'quantity' => 1],
+                ['food_sku' => 'COKE-330', 'variant' => '330ml', 'quantity' => 2],
+            ], 30000);
 
-            // Pepsi variants
-            $this->createOrUpdateVariant('PEPSI-330', '300ml', 14000);
-            $this->createOrUpdateVariant('PEPSI-330', '550ml', 24000);
-
-            // Thiết lập combo items và giá combo
-            // Combo 1 bắp 2 nước: 1 x Popcorn Small + 2 x Coke 300ml, price admin set 30000 (ví dụ)
-            $combo1 = DoAn::where('sku', 'COMBO-1')->first();
-            if ($combo1) {
-                // Xoá các chi tiết cũ nếu có
-                $combo1->comboItems()->delete();
-
-                $popcornVariant = BienTheDoAn::whereHas('doAn', function ($q) {
-                    $q->where('sku', 'POPCORN-SWEET');
-                })->where('value', 'Small')->first();
-
-                $coke300 = BienTheDoAn::whereHas('doAn', function ($q) {
-                    $q->where('sku', 'COKE-330');
-                })->where('value', '300ml')->first();
-
-                if ($popcornVariant) {
-                    ChiTietCombo::create([
-                        'combo_food_id' => $combo1->id,
-                        'food_variant_id' => $popcornVariant->id,
-                        'quantity' => 1,
-                    ]);
-                }
-
-                if ($coke300) {
-                    // thêm 2 nước
-                    ChiTietCombo::create([
-                        'combo_food_id' => $combo1->id,
-                        'food_variant_id' => $coke300->id,
-                        'quantity' => 2,
-                    ]);
-                }
-
-                // Đặt giá combo do admin quy định (ví dụ 30000)
-                $combo1->update(['price' => 30000]);
-            }
-
-            // Combo gia đình: 2 x Popcorn Large + 4 x Drink (mỗi 1 nước 550ml) - giá ví dụ 200000
-            $comboFamily = DoAn::where('sku', 'COMBO-FAMILY')->first();
-            if ($comboFamily) {
-                $comboFamily->comboItems()->delete();
-
-                $popcornLarge = BienTheDoAn::whereHas('doAn', function ($q) {
-                    $q->where('sku', 'POPCORN-SWEET');
-                })->where('value', 'Large')->first();
-
-                $drink550 = BienTheDoAn::whereHas('doAn', function ($q) {
-                    $q->whereIn('sku', ['COKE-330', 'PEPSI-330']);
-                })->where('value', '550ml')->first();
-
-                if ($popcornLarge) {
-                    ChiTietCombo::create([
-                        'combo_food_id' => $comboFamily->id,
-                        'food_variant_id' => $popcornLarge->id,
-                        'quantity' => 2,
-                    ]);
-                }
-
-                if ($drink550) {
-                    ChiTietCombo::create([
-                        'combo_food_id' => $comboFamily->id,
-                        'food_variant_id' => $drink550->id,
-                        'quantity' => 4,
-                    ]);
-                }
-
-                $comboFamily->update(['price' => 200000]);
-            }
+            $this->createCombo('COMBO-FAMILY', [
+                ['food_sku' => 'POPCORN-CHEESE', 'variant' => 'Large', 'quantity' => 2],
+                ['food_sku' => 'COKE-330', 'variant' => '550ml', 'quantity' => 2],
+                ['food_sku' => 'PEPSI-330', 'variant' => '550ml', 'quantity' => 2],
+            ], 200000);
         });
     }
 
-    /**
-     * Helper: tạo hoặc update variant dựa trên food sku và value
-     *
-     * @param string $foodSku
-     * @param string $value
-     * @param int|float $price
-     * @return void
-     */
-    protected function createOrUpdateVariant(string $foodSku, string $value, $price): void
+    protected function createOrUpdateVariant(string $foodSku, string $value, float $price, int $stock): void
     {
         $food = DoAn::where('sku', $foodSku)->first();
-        if (! $food) return;
+        if (! $food) {
+            return;
+        }
 
-        // giả sử bảng biến thể có các cột: value, price, stock_quantity, is_active
         $food->variants()->updateOrCreate(
             ['value' => $value],
             [
-                'price' => (float) $price,
-                'stock_quantity' => 100,
+                'price' => $price,
+                'stock_quantity' => $stock,
                 'is_active' => true,
             ]
         );
+    }
+
+    protected function createCombo(string $comboSku, array $items, float $price): void
+    {
+        $combo = DoAn::where('sku', $comboSku)->first();
+        if (! $combo) {
+            return;
+        }
+
+        $combo->comboItems()->delete();
+
+        foreach ($items as $item) {
+            $food = DoAn::where('sku', $item['food_sku'])->first();
+            if (! $food) {
+                continue;
+            }
+
+            $variant = $food->variants()->where('value', $item['variant'])->first();
+            if (! $variant) {
+                continue;
+            }
+
+            ChiTietCombo::create([
+                'combo_food_id' => $combo->id,
+                'food_variant_id' => $variant->id,
+                'quantity' => $item['quantity'],
+            ]);
+        }
+
+        $combo->update(['price' => $price]);
     }
 }

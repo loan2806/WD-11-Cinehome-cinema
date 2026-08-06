@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\CaiDatHeThongController;
 use App\Http\Controllers\Admin\TheloaisController;
 use App\Http\Controllers\Admin\FoodCategoryController;
 use App\Http\Controllers\Admin\FoodVariantController;
+use App\Http\Controllers\Admin\ComboController;
 use App\Http\Controllers\Admin\VeXemPhimController as AdminVeXemPhimController;
 use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Http\Controllers\Admin\ThanhVienController as AdminThanhVienController;
@@ -52,8 +53,6 @@ use App\Http\Controllers\User\ThanhVienController;
 use App\Http\Controllers\User\VoucherController;
 use App\Http\Controllers\User\ChamSocKhachHangController;
 use App\Http\Controllers\User\NotificationController;
-use App\Http\Controllers\Manager\RevenueReportController as ManagerRevenueReportController;
-use App\Http\Controllers\Manager\ManagerDashboardController;
 use App\Services\SaoLuuDuLieuService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -95,8 +94,14 @@ Route::get('/dashboard', function () {
         return redirect()->route('admin.dashboard');
     }
 
-    if ($user->hasRole('Quản lý') || $user->hasRole('Quản lý phòng chiếu') || $user->hasRole('Sub-Admin')) {
-        return redirect()->route('manager.dashboard');
+    if (
+        $user->hasRole('Quản lý') || 
+        $user->hasRole('Quản lý phòng chiếu') || 
+        $user->hasRole('Quản lý rạp') || 
+        $user->hasRole('Sub-Admin') || 
+        in_array($user->vai_tro, ['quan_ly', 'quan_ly_phong_chieu', 'quan_ly_rap', 'manager'])
+    ) {
+        return redirect()->route('admin.dashboard');
     }
 
     if ($user->hasRole('Nhân viên') || $user->vai_tro === 'nhan_vien') {
@@ -257,7 +262,7 @@ Route::middleware(['auth'])
 
 /*
 |--------------------------------------------------------------------------
-| ADMIN PANEL
+| ADMIN PANEL - BỌC KÍN MIDDLEWARE KIỂM TRA QUYỀN VÀO TỪNG NHÓM
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth'])
@@ -265,7 +270,6 @@ Route::middleware(['auth'])
     ->name('admin.')
     ->group(function () {
 
-        // Route API kiểm tra quyền ngầm
         Route::get('/kiem-tra-quyen-ngam', function (\Illuminate\Http\Request $request) {
             $maQuyen = $request->query('quyen');
             if (!$maQuyen) {
@@ -332,9 +336,11 @@ Route::middleware(['auth'])
             Route::patch('ve-xem-phims/{veXemPhim}/cap-nhat-trang-thai', [AdminVeXemPhimController::class, 'capNhatTrangThai'])->name('ve-xem-phims.cap-nhat-trang-thai');
         });
 
+        // ĐÃ BỔ SUNG ROUTE IN VÉ Ở ĐÂY
         Route::middleware(['quyen:soat_ve.quet_qr'])->group(function () {
             Route::get('/soat-ve', [AdminSoatVeController::class, 'index'])->name('soat-ve.index');
             Route::post('/soat-ve/check', [AdminSoatVeController::class, 'check'])->name('soat-ve.check');
+            Route::post('/soat-ve/print', [AdminSoatVeController::class, 'printTicket'])->name('soat-ve.print');
             Route::post('/soat-ve/confirm', [AdminSoatVeController::class, 'confirm'])->name('soat-ve.confirm');
         });
 
@@ -353,6 +359,15 @@ Route::middleware(['auth'])
                 Route::get('categories/{category}/edit', [FoodCategoryController::class, 'edit'])->name('edit');
                 Route::patch('categories/{category}', [FoodCategoryController::class, 'update'])->name('update');
                 Route::delete('categories/{category}', [FoodCategoryController::class, 'destroy'])->name('destroy');
+            });
+
+            Route::prefix('foods')->name('foods.combos.')->group(function () {
+                Route::get('combos', [ComboController::class, 'index'])->name('index');
+                Route::get('combos/create', [ComboController::class, 'create'])->name('create');
+                Route::post('combos', [ComboController::class, 'store'])->name('store');
+                Route::get('combos/{food}/edit', [ComboController::class, 'edit'])->name('edit');
+                Route::patch('combos/{food}', [ComboController::class, 'update'])->name('update');
+                Route::delete('combos/{food}', [ComboController::class, 'destroy'])->name('destroy');
             });
 
             Route::resource('foods', AdminFoodController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
@@ -433,10 +448,7 @@ Route::middleware(['auth'])
             Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
             Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
             Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
-        });
 
-        // 🌟 QUẢN LÝ LIÊN HỆ KHÁCH HÀNG (ĐÃ TÁCH TỰ ĐỘNG THEO QUYỀN "lien_he.xem")
-        Route::middleware(['quyen:lien_he.xem'])->group(function () {
             Route::get('/lien-he', [AdminLienHeController::class, 'index'])->name('lien-he.index');
             Route::get('/lien-he/{lienHe}', [AdminLienHeController::class, 'show'])->name('lien-he.show');
             Route::patch('/lien-he/{lienHe}', [AdminLienHeController::class, 'update'])->name('lien-he.update');

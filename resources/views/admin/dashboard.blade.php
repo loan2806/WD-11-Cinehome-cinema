@@ -1,381 +1,275 @@
 @extends('layouts.admin')
 
-@section('title', 'Dashboard Admin - CineHome')
+@section('title', 'Dashboard Quản lý - CineHome')
 @section('page-title', 'Dashboard quản lý')
 @section('page-subtitle', 'Theo dõi doanh thu, vé bán, suất chiếu và hoạt động vận hành')
 
 @section('content')
-    @php
-        $user = Auth::user();
-        $canSeeRevenue = $user->can('thong_ke_doanh_thu');
-        $canSellTicket = $user->can('ban_ve_tai_quay');
-        $canManageMovie = $user->can('quan_ly_phim_suat_chieu');
-        $canScanTicket = $user->can('soat_ve_vao_cua');
-        $canManageCustomer = $user->can('quan_ly_khach_hang');
+<div class="space-y-6">
 
-        $posterUrl = function (?string $poster): string {
-            if (blank($poster)) {
-                return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=360&q=80';
-            }
-
-            $poster = ltrim($poster, '/');
-
-            if (\Illuminate\Support\Str::startsWith($poster, ['http://', 'https://'])) {
-                return $poster;
-            }
-
-            if (\Illuminate\Support\Str::startsWith($poster, 'storage/')) {
-                return asset($poster);
-            }
-
-            if (\Illuminate\Support\Str::startsWith($poster, 'movies/')) {
-                return asset('storage/' . $poster);
-            }
-
-            return asset('storage/movies/' . $poster);
-        };
-
-        $showingCount = $latestMovies->filter(
-            fn($movie) => $movie->showtimes->contains('trang_thai', \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU),
-        )->count();
-
-        $comingCount = $latestMovies->filter(
-            fn($movie) => $movie->showtimes->contains('trang_thai', \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU) ||
-                $movie->showtimes->contains('trang_thai', \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT),
-        )->count();
-    @endphp
-
-    <div class="admin-dashboard">
-        <section class="admin-dashboard-hero">
-            <div class="admin-dashboard-hero__copy">
-                <span class="admin-dashboard-eyebrow">
-                    <i class="fa-solid fa-chart-line"></i>
-                    Trung tâm điều hành
+    {{-- 1. TRUNG TÂM ĐIỀU HÀNH (HERO BANNER) --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 rounded-3xl bg-gradient-to-r from-[#1c0c08] via-[#121215] to-[#18181c] border border-white/10 p-8 flex flex-col justify-between relative overflow-hidden">
+            <div class="space-y-3 z-10">
+                <span class="text-xs font-black tracking-widest text-[#d99a32] uppercase flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-[#d99a32]"></i> Trung tâm điều hành
                 </span>
-                <h2>Xin chào, {{ $user->ho_ten ?? $user->name ?? 'Admin CineHome' }}</h2>
-                <p>
+                <h2 class="text-3xl font-black text-white">
+                    Xin chào, {{ Auth::user()->ho_ten ?? 'Admin CineHome' }}
+                </h2>
+                <p class="text-gray-400 text-sm max-w-xl">
                     Nắm nhanh tình hình vận hành trong ngày, theo dõi phim mới, suất chiếu và các tác vụ quan trọng của hệ thống rạp CineHome.
                 </p>
+            </div>
 
-                <div class="admin-dashboard-actions">
-                    @if ($canSellTicket)
-                        <a href="{{ route('staff.ban-ve.index') }}" class="dashboard-primary-action">
-                            <i class="fa-solid fa-ticket"></i>
-                            Bán vé tại quầy
-                        </a>
-                    @endif
+            <div class="flex flex-wrap items-center gap-3 mt-6 z-10">
+                <a href="{{ route('staff.ban-ve.index') }}" class="px-5 py-2.5 rounded-xl bg-[#e50914] hover:bg-[#b80710] text-white font-bold text-sm transition flex items-center gap-2 no-underline">
+                    <i class="fa-solid fa-ticket"></i> Bán vé tại quầy
+                </a>
+                <a href="{{ route('admin.suat-chieus.index') }}" class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition flex items-center gap-2 no-underline">
+                    <i class="fa-solid fa-calendar-days"></i> Quản lý suất chiếu
+                </a>
+                <a href="{{ route('admin.thong-ke.index') }}" class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition flex items-center gap-2 no-underline">
+                    <i class="fa-solid fa-chart-pie"></i> Báo cáo doanh thu
+                </a>
+            </div>
+        </div>
 
-                    @if ($canManageMovie)
-                        <a href="{{ route('admin.suat-chieus.index') }}" class="dashboard-secondary-action">
-                            <i class="fa-solid fa-calendar-plus"></i>
-                            Quản lý suất chiếu
-                        </a>
-                    @endif
-
-                    @if ($canSeeRevenue)
-                        <a href="{{ route('admin.thong-ke.index') }}" class="dashboard-secondary-action">
-                            <i class="fa-solid fa-chart-pie"></i>
-                            Báo cáo doanh thu
-                        </a>
-                    @endif
+        {{-- WIDGET PHIÊN VẬN HÀNH THỜI GIAN THỰC --}}
+        <div class="rounded-3xl bg-[#141417] border border-white/10 p-6 flex flex-col justify-between space-y-4">
+            <div>
+                <span class="text-xs font-bold text-gray-400 uppercase">Phiên vận hành</span>
+                <div class="text-2xl font-black text-white mt-1">
+                    {{ now()->format('d/m/Y') }}
                 </div>
             </div>
 
-            <div class="admin-dashboard-hero__panel">
-                <span>Phiên vận hành</span>
-                <strong>{{ now()->format('d/m/Y') }}</strong>
-                <div class="hero-operation-list">
-                    <div>
-                        <i class="fa-solid fa-film"></i>
-                        <p>
-                            <b>{{ $latestMovies->count() }}</b>
-                            phim mới cập nhật
-                        </p>
-                    </div>
-                    <div>
-                        <i class="fa-solid fa-clock"></i>
-                        <p>
-                            <b>{{ $todaySchedules->count() }}</b>
-                            suất chiếu hôm nay
-                        </p>
-                    </div>
-                    <div>
-                        <i class="fa-solid fa-bolt"></i>
-                        <p>
-                            <b>{{ $canSeeRevenue ? 'Live' : 'Ready' }}</b>
-                            trạng thái hệ thống
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="dashboard-stat-grid">
-            @can('thong_ke_doanh_thu')
-                <article class="dashboard-stat-card stat-revenue">
-                    <div class="dashboard-stat-top">
-                        <span><i class="fa-solid fa-sack-dollar"></i></span>
-                        <small class="dashboard-stat-badge is-up">+12%</small>
-                    </div>
-                    <p>Doanh thu hôm nay</p>
-                    <strong>{{ $statData['doanh_thu_hom_nay'] }}</strong>
-                    <div class="dashboard-stat-foot">
-                        <span>So với hôm qua</span>
-                        <i class="fa-solid fa-arrow-trend-up"></i>
-                    </div>
-                </article>
-            @endcan
-
-            @if ($canSeeRevenue || $canSellTicket)
-                <article class="dashboard-stat-card">
-                    <div class="dashboard-stat-top">
-                        <span><i class="fa-solid fa-ticket"></i></span>
-                        <small class="dashboard-stat-badge">Vé</small>
-                    </div>
-                    <p>Vé đã bán</p>
-                    <strong>{{ $statData['ve_da_ban'] }}</strong>
-                    <div class="dashboard-stat-foot">
-                        <span>Giao dịch trong ngày</span>
-                        <i class="fa-solid fa-receipt"></i>
-                    </div>
-                </article>
-            @endif
-
-            @if ($canSeeRevenue || $canSellTicket)
-                <article class="dashboard-stat-card">
-                    <div class="dashboard-stat-top">
-                        <span><i class="fa-solid fa-users"></i></span>
-                        <small class="dashboard-stat-badge">Khách</small>
-                    </div>
-                    <p>Lượng khách</p>
-                    <strong>{{ $statData['luong_khach'] }}</strong>
-                    <div class="dashboard-stat-foot">
-                        <span>Khách vào rạp</span>
-                        <i class="fa-solid fa-person-walking"></i>
-                    </div>
-                </article>
-            @endif
-
-            @can('thong_ke_doanh_thu')
-                <article class="dashboard-stat-card">
-                    <div class="dashboard-stat-top">
-                        <span><i class="fa-solid fa-burger"></i></span>
-                        <small class="dashboard-stat-badge">F&B</small>
-                    </div>
-                    <p>Doanh thu đồ ăn</p>
-                    <strong>{{ $statData['doanh_thu_do_an'] }}</strong>
-                    <div class="dashboard-stat-foot">
-                        <span>Bắp nước & combo</span>
-                        <i class="fa-solid fa-mug-hot"></i>
-                    </div>
-                </article>
-            @endcan
-        </section>
-
-        @unless ($canSeeRevenue)
-            <section class="dashboard-staff-note">
-                <div>
-                    <span><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-                    <div>
-                        <h4>Chế độ vận hành quầy</h4>
-                        <p>
-                            Tài khoản của bạn đang được phân quyền theo nghiệp vụ. Các tác vụ khả dụng sẽ hiển thị ngay bên dưới để thao tác nhanh hơn.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="dashboard-staff-actions">
-                    @can('ban_ve_tai_quay')
-                        <a href="{{ route('staff.ban-ve.index') }}">Bán vé trực tiếp</a>
-                    @endcan
-                    @can('soat_ve_vao_cua')
-                        <a href="{{ route('admin.soat-ve.index') }}">Soát vé QR</a>
-                    @endcan
-                </div>
-            </section>
-        @endunless
-
-        <section class="dashboard-command-grid">
-            <div class="admin-panel dashboard-panel dashboard-movie-panel">
-                <div class="panel-header dashboard-panel-header">
-                    <div>
-                        <span class="dashboard-section-kicker">Thư viện phim</span>
-                        <h5>Phim mới cập nhật</h5>
-                        <small>{{ $showingCount }} đang chiếu, {{ $comingCount }} sắp chiếu trong danh sách gần nhất</small>
-                    </div>
-
-                    @if ($canManageMovie)
-                        <a href="{{ route('admin.phims.index') }}" class="dashboard-panel-link">
-                            Quản lý phim
-                            <i class="fa-solid fa-arrow-right"></i>
-                        </a>
-                    @endif
-                </div>
-
-                <div class="table-responsive">
-                    <table class="admin-table dashboard-table">
-                        <thead>
-                            <tr>
-                                <th>Phim</th>
-                                <th>Thể loại</th>
-                                <th>Thời lượng</th>
-                                <th>Trạng thái</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($latestMovies as $movie)
-                                @php
-                                    $statuses = $movie->showtimes->pluck('trang_thai');
-
-                                    if ($statuses->contains(\App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU)) {
-                                        $statusText = 'Đang chiếu';
-                                        $statusClass = 'status-showing';
-                                    } elseif ($statuses->contains(\App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU)) {
-                                        $statusText = 'Sắp chiếu';
-                                        $statusClass = 'status-coming';
-                                    } elseif ($statuses->contains(\App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT)) {
-                                        $statusText = 'Sắp ra mắt';
-                                        $statusClass = 'status-coming';
-                                    } else {
-                                        $statusText = 'Chưa có suất';
-                                        $statusClass = 'status-stop';
-                                    }
-                                @endphp
-                                <tr>
-                                    <td>
-                                        <div class="dashboard-movie-cell">
-                                            <img src="{{ $posterUrl($movie->poster) }}" alt="{{ $movie->ten_phim }}">
-                                            <div>
-                                                <strong>{{ $movie->ten_phim }}</strong>
-                                                <small>{{ $movie->country?->ten_quoc_gia ?? 'Đang cập nhật quốc gia' }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>{{ $movie->genres->pluck('ten_the_loai')->take(2)->join(', ') ?: 'Điện ảnh' }}</td>
-                                    <td>{{ $movie->thoi_luong }} phút</td>
-                                    <td>
-                                        <span class="status-badge {{ $statusClass }}">{{ $statusText }}</span>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4">
-                                        <div class="dashboard-empty-state">
-                                            <i class="fa-solid fa-film"></i>
-                                            <strong>Chưa có phim nào</strong>
-                                            <span>Thêm phim mới để bắt đầu vận hành lịch chiếu.</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <aside class="dashboard-side-stack">
-                <section class="admin-panel dashboard-panel">
-                    <div class="panel-header dashboard-panel-header">
-                        <div>
-                            <span class="dashboard-section-kicker">Tác vụ nhanh</span>
-                            <h5>Lối tắt vận hành</h5>
+            <div class="space-y-2">
+                <div class="flex items-center justify-between bg-white/5 border border-white/5 rounded-2xl p-3.5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-[#d99a32]/10 text-[#d99a32] flex items-center justify-center">
+                            <i class="fa-solid fa-film"></i>
                         </div>
+                        <span class="text-xs text-gray-300 font-medium">Phim mới cập nhật</span>
                     </div>
+                    <span class="text-lg font-black text-white">{{ $phimMoiCapNhatCount }}</span>
+                </div>
 
-                    <div class="dashboard-quick-actions">
-                        @if ($canManageMovie)
-                            <a href="{{ route('admin.phims.create') }}">
-                                <span><i class="fa-solid fa-plus"></i></span>
-                                <div>
-                                    <strong>Thêm phim mới</strong>
-                                    <small>Cập nhật poster, thể loại, trailer</small>
-                                </div>
-                            </a>
-
-                            <a href="{{ route('admin.suat-chieus.create') }}">
-                                <span><i class="fa-solid fa-calendar-plus"></i></span>
-                                <div>
-                                    <strong>Tạo suất chiếu</strong>
-                                    <small>Lên lịch theo phòng và khung giờ</small>
-                                </div>
-                            </a>
-                        @endif
-
-                        @if ($canSellTicket)
-                            <a href="{{ route('staff.ban-ve.index') }}">
-                                <span><i class="fa-solid fa-cash-register"></i></span>
-                                <div>
-                                    <strong>Bán vé tại quầy</strong>
-                                    <small>Chọn suất, ghế và thanh toán</small>
-                                </div>
-                            </a>
-                        @endif
-
-                        @if ($canScanTicket)
-                            <a href="{{ route('admin.soat-ve.index') }}">
-                                <span><i class="fa-solid fa-qrcode"></i></span>
-                                <div>
-                                    <strong>Soát vé QR</strong>
-                                    <small>Xác thực vé trước cửa phòng</small>
-                                </div>
-                            </a>
-                        @endif
-
-                        @if ($canManageCustomer)
-                            <a href="{{ route('admin.khach-hang.index') }}">
-                                <span><i class="fa-solid fa-user-group"></i></span>
-                                <div>
-                                    <strong>Khách hàng</strong>
-                                    <small>Hồ sơ, thành viên và voucher</small>
-                                </div>
-                            </a>
-                        @endif
-                    </div>
-                </section>
-
-                <section class="admin-panel dashboard-panel">
-                    <div class="panel-header dashboard-panel-header">
-                        <div>
-                            <span class="dashboard-section-kicker">Hôm nay</span>
-                            <h5>Suất chiếu gần nhất</h5>
-                            <small>{{ $todaySchedules->count() }} suất đang trong lịch</small>
+                <div class="flex items-center justify-between bg-white/5 border border-white/5 rounded-2xl p-3.5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                            <i class="fa-solid fa-clock"></i>
                         </div>
-
-                        @if ($canManageMovie)
-                            <a href="{{ route('admin.suat-chieus.index') }}" class="dashboard-panel-link compact">
-                                Tất cả
-                            </a>
-                        @endif
+                        <span class="text-xs text-gray-300 font-medium">Suất chiếu hôm nay</span>
                     </div>
+                    <span class="text-lg font-black text-white">{{ $suatChieuHomNayCount }}</span>
+                </div>
 
-                    <div class="dashboard-showtime-list">
-                        @forelse ($todaySchedules as $schedule)
-                            @php
-                                $startTime = \Carbon\Carbon::parse($schedule->thoi_gian_chieu);
-                            @endphp
-                            <article class="dashboard-showtime-card">
-                                <time>{{ $startTime->format('H:i') }}</time>
-                                <div>
-                                    <strong>{{ $schedule->phim?->ten_phim ?? 'Phim đang cập nhật' }}</strong>
-                                    <span>
-                                        {{ $schedule->phongChieu?->ten_phong ?? 'Phòng chiếu' }}
-                                        @if ($schedule->rapChieuPhim?->ten_rap)
-                                            · {{ $schedule->rapChieuPhim->ten_rap }}
-                                        @endif
-                                    </span>
-                                </div>
-                                <b>{{ number_format((float) $schedule->gia_ve) }}đ</b>
-                            </article>
-                        @empty
-                            <div class="dashboard-empty-state compact">
-                                <i class="fa-regular fa-calendar"></i>
-                                <strong>Chưa có suất chiếu hôm nay</strong>
-                                <span>Lên lịch suất chiếu để hệ thống bắt đầu nhận đặt vé.</span>
-                            </div>
-                        @endforelse
+                <div class="flex items-center justify-between bg-white/5 border border-white/5 rounded-2xl p-3.5">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                            <i class="fa-solid fa-signal"></i>
+                        </div>
+                        <span class="text-xs text-gray-300 font-medium">Trạng thái hệ thống</span>
                     </div>
-                </section>
-            </aside>
-        </section>
+                    <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                        Live
+                    </span>
+                </div>
+            </div>
+        </div>
     </div>
+
+    {{-- 2. BỘ 4 CARD THỐNG KÊ DOANH THU THỜI GIAN THỰC --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+        {{-- CARD 1: DOANH THU HÔM NAY --}}
+        <div class="rounded-3xl bg-[#141417] border border-white/10 p-5 relative overflow-hidden flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <div class="w-11 h-11 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-sack-dollar"></i>
+                </div>
+                @if($phanTramTangTruong >= 0)
+                    <span class="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                        +{{ $phanTramTangTruong }}%
+                    </span>
+                @else
+                    <span class="text-xs font-bold text-red-400 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20">
+                        {{ $phanTramTangTruong }}%
+                    </span>
+                @endif
+            </div>
+
+            <div class="mt-4">
+                <span class="text-xs text-gray-400 font-medium">Doanh thu hôm nay</span>
+                <div class="text-2xl font-black text-white mt-1">
+                    {{ number_format($doanhThuVeHomNay, 0, ',', '.') }}đ
+                </div>
+                <span class="text-[11px] text-gray-500 mt-1 block">So với hôm qua</span>
+            </div>
+        </div>
+
+        {{-- CARD 2: VÉ ĐÃ BÁN --}}
+        <div class="rounded-3xl bg-[#141417] border border-white/10 p-5 relative overflow-hidden flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <div class="w-11 h-11 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-ticket"></i>
+                </div>
+                <span class="text-xs font-bold text-gray-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">Vé</span>
+            </div>
+
+            <div class="mt-4">
+                <span class="text-xs text-gray-400 font-medium">Vé đã bán</span>
+                <div class="text-2xl font-black text-white mt-1">
+                    {{ number_format($veDaBanHomNay, 0, ',', '.') }}
+                </div>
+                <span class="text-[11px] text-gray-500 mt-1 block">Giao dịch trong ngày</span>
+            </div>
+        </div>
+
+        {{-- CARD 3: LƯỢNG KHÁCH --}}
+        <div class="rounded-3xl bg-[#141417] border border-white/10 p-5 relative overflow-hidden flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <div class="w-11 h-11 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <span class="text-xs font-bold text-gray-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">Khách</span>
+            </div>
+
+            <div class="mt-4">
+                <span class="text-xs text-gray-400 font-medium">Lượng khách</span>
+                <div class="text-2xl font-black text-white mt-1">
+                    {{ number_format($luongKhachHomNay, 0, ',', '.') }}
+                </div>
+                <span class="text-[11px] text-gray-500 mt-1 block">Khách vào rạp</span>
+            </div>
+        </div>
+
+        {{-- CARD 4: DOANH THU ĐỒ ĂN --}}
+        <div class="rounded-3xl bg-[#141417] border border-white/10 p-5 relative overflow-hidden flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <div class="w-11 h-11 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-burger"></i>
+                </div>
+                <span class="text-xs font-bold text-gray-400 bg-white/5 px-2.5 py-1 rounded-full border border-white/10">F&B</span>
+            </div>
+
+            <div class="mt-4">
+                <span class="text-xs text-gray-400 font-medium">Doanh thu đồ ăn</span>
+                <div class="text-2xl font-black text-white mt-1">
+                    {{ number_format($doanhThuDoAnHomNay, 0, ',', '.') }}đ
+                </div>
+                <span class="text-[11px] text-gray-500 mt-1 block">Bắp nước & combo</span>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- 3. BẢNG PHIM MỚI CẬP NHẬT & TÁC VỤ NHANH --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        {{-- DANH SÁCH PHIM MỚI --}}
+        <div class="lg:col-span-2 rounded-3xl bg-[#141417] border border-white/10 p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-[#d99a32] uppercase">Thư viện phim</span>
+                    <h3 class="text-lg font-black text-white mt-0.5">Phim mới cập nhật</h3>
+                </div>
+                <a href="{{ route('admin.phims.index') }}" class="text-xs font-bold text-[#d99a32] hover:underline flex items-center gap-1 no-underline">
+                    Quản lý phim <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b border-white/10 text-xs text-gray-400 uppercase">
+                            <th class="py-3 px-2">Phim</th>
+                            <th class="py-3 px-2">Thể loại</th>
+                            <th class="py-3 px-2">Thời lượng</th>
+                            <th class="py-3 px-2 text-right">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        @forelse($danhSachPhimMoi as $phim)
+                            <tr class="hover:bg-white/5 transition">
+                                <td class="py-3 px-2 flex items-center gap-3">
+                                    {{-- ĐÃ SỬA: NGẮN VÒNG LẶP ONERROR BẰNG THIS.ONERROR=NULL VA DUNG SVG SAFE FALLBACK --}}
+                                    <img src="{{ !empty($phim->poster) ? asset('storage/' . $phim->poster) : 'data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'48\' viewBox=\'0 0 40 48\'><rect width=\'100%\' height=\'100%\' fill=\'%2328282e\'/><text x=\'50%\' y=\'50%\' fill=\'%23d99a32\' font-size=\'10\' font-weight=\'bold\' text-anchor=\'middle\' dy=\'.3em\'>CINE</text></svg>' }}" 
+                                         alt="{{ $phim->ten_phim }}" 
+                                         class="w-10 h-12 object-cover rounded-lg bg-zinc-800" 
+                                         onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'48\' viewBox=\'0 0 40 48\'><rect width=\'100%\' height=\'100%\' fill=\'%2328282e\'/><text x=\'50%\' y=\'50%\' fill=\'%23d99a32\' font-size=\'10\' font-weight=\'bold\' text-anchor=\'middle\' dy=\'.3em\'>CINE</text></svg>';">
+                                    <span class="font-bold text-white max-w-[200px] truncate">{{ $phim->ten_phim }}</span>
+                                </td>
+                                <td class="py-3 px-2 text-gray-300">
+                                    @if(!empty($phim->theLoais) && is_iterable($phim->theLoais))
+                                        {{ $phim->theLoais->pluck('ten_the_loai')->implode(', ') ?: 'Chưa xếp' }}
+                                    @elseif(!empty($phim->theLoai) && is_iterable($phim->theLoai))
+                                        {{ $phim->theLoai->pluck('ten_the_loai')->implode(', ') ?: 'Chưa xếp' }}
+                                    @else
+                                        Chưa xếp
+                                    @endif
+                                </td>
+                                <td class="py-3 px-2 text-gray-300 font-medium">
+                                    {{ $phim->thoi_luong ?? 120 }} phút
+                                </td>
+                                <td class="py-3 px-2 text-right">
+                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+                                        Đang chiếu
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="py-6 text-center text-gray-500">Chưa có dữ liệu phim mới.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {{-- TÁC VỤ NHANH --}}
+        <div class="rounded-3xl bg-[#141417] border border-white/10 p-6 space-y-4 flex flex-col justify-between">
+            <div>
+                <span class="text-xs font-bold text-[#d99a32] uppercase">Tác vụ nhanh</span>
+                <h3 class="text-lg font-black text-white mt-0.5">Lối tắt vận hành</h3>
+
+                <div class="space-y-3 mt-4">
+                    <a href="{{ route('admin.phims.create') }}" class="flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 transition text-white no-underline">
+                        <div class="w-9 h-9 rounded-xl bg-[#d99a32]/20 text-[#d99a32] flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-plus"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Thêm phim mới</div>
+                            <div class="text-xs text-gray-400">Cập nhật poster, thể loại, trailer</div>
+                        </div>
+                    </a>
+
+                    <a href="{{ route('admin.suat-chieus.create') }}" class="flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 transition text-white no-underline">
+                        <div class="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-calendar-plus"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Tạo lịch chiếu</div>
+                            <div class="text-xs text-gray-400">Lên lịch chiếu đơn hoặc hàng loạt</div>
+                        </div>
+                    </a>
+
+                    <a href="{{ route('staff.ban-ve.index') }}" class="flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 transition text-white no-underline">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-cash-register"></i>
+                        </div>
+                        <div>
+                            <div class="font-bold text-sm">Quầy bán vé</div>
+                            <div class="text-xs text-gray-400">Mở giao diện quầy POS bán tại rạp</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
 @endsection
