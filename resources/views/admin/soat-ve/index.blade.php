@@ -143,7 +143,7 @@ $typeLabel = [
                 <div class="manual-input-row">
                     <div class="manual-input-wrap">
                         <i class="fa-solid fa-barcode"></i>
-                        <input id="ticketCodeInput" type="text" name="ma_ve" value="{{ old('ma_ve') }}" placeholder="VD: VE260617ABC123" autocomplete="off">
+                        <input id="ticketCodeInput" type="text" name="ma_ve" value="{{ old('ma_ve') }}" placeholder="VD: VE260806WPFRJV" autocomplete="off">
                     </div>
                     <button type="submit" class="scan-btn scan-btn-submit">
                         <i class="fa-solid fa-magnifying-glass"></i>
@@ -316,7 +316,6 @@ $typeLabel = [
         const printUrl = @json(route('admin.soat-ve.print'));
         const csrfToken = @json(csrf_token());
 
-        // Modal xác nhận in vé
         const printModal = document.getElementById('confirmPrintTicketModal');
         const modalBtnPrintConfirm = document.getElementById('modalBtnPrintConfirm');
         const modalBtnPrintCancel = document.getElementById('modalBtnPrintCancel');
@@ -326,6 +325,7 @@ $typeLabel = [
         let html5QrCode = null;
         let scanning = false;
         let requestBusy = false;
+        let isDetecting = false; // Cờ chặn chồng chéo các khung hình quét
         let activeScanner = null;
         let lastValue = '';
         let lastScanAt = 0;
@@ -333,6 +333,36 @@ $typeLabel = [
         let pendingPrintTicketCode = '';
         let pendingPrintTicketData = null;
         let html5QrcodeLoader = null;
+
+        function parseTicketCode(rawValue) {
+            let value = String(rawValue || '').trim();
+            if (!value) return '';
+
+            if (value.startsWith('{') && value.endsWith('}')) {
+                try {
+                    const parsed = JSON.parse(value);
+                    value = parsed.ma_ve || parsed.code || parsed.ticket_code || value;
+                } catch (e) {}
+            }
+
+            if (value.includes('http://') || value.includes('https://')) {
+                try {
+                    const url = new URL(value);
+                    if (url.searchParams.has('ma_ve')) {
+                        value = url.searchParams.get('ma_ve');
+                    } else if (url.searchParams.has('code')) {
+                        value = url.searchParams.get('code');
+                    } else {
+                        const parts = url.pathname.split('/').filter(Boolean);
+                        if (parts.length > 0) {
+                            value = parts[parts.length - 1];
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            return String(value || '').trim().replace(/[\r\n\t]/g, '');
+        }
 
         function ensureHtml5Qrcode() {
             if (window.Html5Qrcode) return Promise.resolve();
@@ -497,6 +527,7 @@ $typeLabel = [
         }
 
         async function postTicket(url, value) {
+            const cleanCode = parseTicketCode(value);
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -504,7 +535,7 @@ $typeLabel = [
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': csrfToken
                 },
-                body: JSON.stringify({ ma_ve: value })
+                body: JSON.stringify({ ma_ve: cleanCode })
             });
 
             let data = {};
@@ -520,15 +551,15 @@ $typeLabel = [
         }
 
         async function inspectTicket(rawValue) {
-            const value = String(rawValue || '').trim();
+            const value = parseTicketCode(rawValue);
 
             if (!value) {
-                setStatus('Vui lòng nhập mã vé hoặc quét QR.', 'error');
+                setStatus('Mã QR không hợp lệ hoặc rỗng.', 'error');
                 input.focus();
+                requestBusy = false;
                 return;
             }
 
-            requestBusy = true;
             input.value = value;
             setStatus('Đang kiểm tra vé...');
 
@@ -554,7 +585,7 @@ $typeLabel = [
             } catch (error) {
                 setStatus('Không thể kết nối máy chủ. Vui lòng thử lại.', 'error');
             } finally {
-                setTimeout(() => { requestBusy = false; }, 700);
+                setTimeout(() => { requestBusy = false; }, 1200);
             }
         }
 
@@ -569,7 +600,6 @@ $typeLabel = [
             return `** Phim dán nhãn [${r}]: Khán giả lưu ý tuân thủ đúng quy định độ tuổi **`;
         }
 
-        // HÀM XÁC ĐỊNH LOẠI GHẾ (THƯỜNG / VIP / COUPLE) THEO MÃ GHẾ
         function getSeatTypeName(seatCode, ticket) {
             if (ticket && (ticket.ten_loai_ghe || ticket.loai_ghe)) {
                 const lg = String(ticket.ten_loai_ghe || ticket.loai_ghe).toLowerCase();
@@ -583,14 +613,13 @@ $typeLabel = [
             if (!match) return 'Ghế Thường';
 
             const row = match[1].toUpperCase();
-            const rowIndex = row.charCodeAt(0) - 64; // A=1, B=2, C=3,...
+            const rowIndex = row.charCodeAt(0) - 64;
 
             if (rowIndex <= 3) return 'Ghế Thường';
             if (rowIndex >= 8) return 'Ghế Couple';
             return 'Ghế VIP';
         }
 
-        // HÀM XUẤT VÉ IN NHIỆT VỚI CĂN GIỮA PHIM, PHÒNG CHIẾU VÀ LOẠI GHẾ
         function printTicketThermal(ticket) {
             const printWindow = window.open('', '_blank', 'width=420,height=650');
             if (!printWindow) {
@@ -632,24 +661,16 @@ $typeLabel = [
                         </div>
                         <div class="divider"></div>
                         <div class="text-center"><strong>MÃ VÉ:</strong> ${ticket.ma_ve}${ticketIndexLabel}</div>
-                        
-                        <!-- TÊN PHIM CĂN GIỮA NỔI BẬT -->
                         <div class="movie-title-center">${ticket.ten_phim}</div>
-                        
-                        <!-- PHÒNG CHIẾU CĂN GIỮA NỔI BẬT -->
                         <div class="room-title-center">PHÒNG: ${ticket.ten_phong || 'CHƯA XẾP'}</div>
-                        
                         <div class="notice">${ageNotice}</div>
                         <div class="divider"></div>
                         <div class="info-row"><span>Rạp:</span> <strong>${ticket.ten_rap || 'CineHome Cinema'}</strong></div>
                         <div class="info-row"><span>Suất chiếu:</span> <strong>${ticket.thoi_gian_chieu || 'N/A'}</strong></div>
-                        
-                        <!-- KHUNG GHẾ CĂN GIỮA & HIỂN THỊ LOẠI GHẾ -->
                         <div class="seat-box-center">
                             <div>GHẾ: ${seat}</div>
                             <span class="seat-type-label">(${seatTypeStr})</span>
                         </div>
-                        
                         <div class="info-row"><span>Giá vé:</span> <strong>${ticket.tong_tien || '0đ'}</strong></div>
                         <div class="info-row"><span>Loại vé:</span> <span>${ticket.loai_ve_label || 'TRỰC TUYẾN'}</span></div>
                         ${currentFoodsHtml}
@@ -678,60 +699,17 @@ $typeLabel = [
                             font-size: 13px;
                             line-height: 1.35;
                         }
-                        .ticket-page {
-                            page-break-after: always;
-                            padding-bottom: 12px;
-                        }
-                        .ticket-page:last-child {
-                            page-break-after: avoid;
-                        }
+                        .ticket-page { page-break-after: always; padding-bottom: 12px; }
+                        .ticket-page:last-child { page-break-after: avoid; }
                         .text-center { text-align: center; }
                         .title { font-size: 18px; font-weight: bold; margin-bottom: 2px; }
                         .sub-title { font-size: 11px; margin-bottom: 6px; }
                         .divider { border-top: 1px dashed #000; margin: 6px 0; }
                         .info-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-                        
-                        /* CĂN GIỮA VÀ NỔI BẬT TÊN PHIM & PHÒNG */
-                        .movie-title-center { 
-                            font-size: 16px; 
-                            font-weight: bold; 
-                            text-align: center; 
-                            margin: 8px 0 4px 0; 
-                            text-transform: uppercase; 
-                            line-height: 1.25;
-                        }
-                        .room-title-center { 
-                            font-size: 14px; 
-                            font-weight: bold; 
-                            text-align: center; 
-                            background: #f0f0f0; 
-                            padding: 4px; 
-                            margin: 4px 0; 
-                            border: 1px dashed #000;
-                            border-radius: 4px; 
-                            text-transform: uppercase;
-                        }
-                        
-                        /* KHUNG GHẾ KÈM LOẠI GHẾ CĂN GIỮA */
-                        .seat-box-center { 
-                            font-size: 18px; 
-                            font-weight: bold; 
-                            background: #000; 
-                            color: #fff; 
-                            padding: 6px 8px; 
-                            text-align: center; 
-                            margin: 8px 0; 
-                            border-radius: 4px; 
-                        }
-                        .seat-type-label {
-                            font-size: 11px;
-                            font-weight: normal;
-                            display: block;
-                            margin-top: 2px;
-                            letter-spacing: 0.5px;
-                            text-transform: uppercase;
-                        }
-
+                        .movie-title-center { font-size: 16px; font-weight: bold; text-align: center; margin: 8px 0 4px 0; text-transform: uppercase; line-height: 1.25; }
+                        .room-title-center { font-size: 14px; font-weight: bold; text-align: center; background: #f0f0f0; padding: 4px; margin: 4px 0; border: 1px dashed #000; border-radius: 4px; text-transform: uppercase; }
+                        .seat-box-center { font-size: 18px; font-weight: bold; background: #000; color: #fff; padding: 6px 8px; text-align: center; margin: 8px 0; border-radius: 4px; }
+                        .seat-type-label { font-size: 11px; font-weight: normal; display: block; margin-top: 2px; letter-spacing: 0.5px; text-transform: uppercase; }
                         .notice { font-size: 10px; text-align: center; margin-top: 8px; }
                     </style>
                 </head>
@@ -752,7 +730,6 @@ $typeLabel = [
             printWindow.document.close();
         }
 
-        // BƯỚC XÁC NHẬN KẾT QUẢ IN VÉ (MỞ SAU KHI MÀN HÌNH IN HIỂN THỊ)
         function openPrintConfirmModal(ticketCode, ticketData) {
             pendingPrintTicketCode = ticketCode;
             pendingPrintTicketData = ticketData;
@@ -771,7 +748,6 @@ $typeLabel = [
 
             if (!pendingPrintTicketCode) return;
 
-            // Gửi AJAX cập nhật trạng thái đổi từ da_thanh_toan sang da_in
             setStatus('Đang lưu trạng thái vé...');
             try {
                 const { response, data } = await postTicket(printUrl, pendingPrintTicketCode);
@@ -793,7 +769,6 @@ $typeLabel = [
             }
         });
 
-        // LẮNG NGHE SỰ KIỆN CLICK BẤM "IN VÉ NGAY"
         resultBox.addEventListener('click', function(event) {
             const printBtn = event.target.closest('#btnPrintTicket');
 
@@ -812,49 +787,60 @@ $typeLabel = [
                     return;
                 }
 
-                // 1. Bật cửa sổ in nhiệt TRƯỚC
                 if (ticketData) {
                     printTicketThermal(ticketData);
                 }
 
-                // 2. Mở modal xác nhận SAU KHI đã xuất màn hình in
                 openPrintConfirmModal(ticketCode, ticketData);
                 return;
             }
         });
 
-        // CAMERA SCANNER FUNCTIONS
-        function handleDecodedQr(value) {
-            value = String(value || '').trim();
+        function handleDecodedQr(rawValue) {
+            if (requestBusy) return;
+
+            const cleanCode = parseTicketCode(rawValue);
             const now = Date.now();
 
-            if (!value || requestBusy || (value === lastValue && now - lastScanAt <= 3500)) return;
+            if (!cleanCode) return;
+            if (cleanCode === lastValue && now - lastScanAt <= 3500) return;
 
-            lastValue = value;
+            requestBusy = true;
+            lastValue = cleanCode;
             lastScanAt = now;
-            inspectTicket(value);
+
+            inspectTicket(cleanCode);
         }
 
+        // TỐI ƯU HÓA HÀM SCANFRAME - THROTTLE MỖI 150MS
         async function scanFrame() {
             if (!scanning || !detector || !video.srcObject) return;
 
-            if (!requestBusy && video.readyState >= 2) {
+            if (!requestBusy && !isDetecting && video.readyState >= 2) {
+                isDetecting = true;
                 try {
                     const barcodes = await detector.detect(video);
                     if (barcodes.length > 0) handleDecodedQr(barcodes[0].rawValue);
-                } catch (error) {}
+                } catch (error) {
+                } finally {
+                    isDetecting = false;
+                }
             }
 
-            requestAnimationFrame(scanFrame);
+            if (scanning) {
+                setTimeout(() => {
+                    requestAnimationFrame(scanFrame);
+                }, 150);
+            }
         }
 
         async function startScanner() {
             if (scanning) return;
-            if ('BarcodeDetector' in window) {
-                await startNativeScanner();
-                if (activeScanner === 'native') return;
-            }
+            // Ưu tiên Html5Qrcode (ZXing Engine) đọc màn hình điện thoại nhanh vượt trội
             await startFallbackScanner();
+            if (!scanning && 'BarcodeDetector' in window) {
+                await startNativeScanner();
+            }
         }
 
         async function startNativeScanner() {
@@ -903,14 +889,14 @@ $typeLabel = [
                 activeScanner = 'fallback';
                 cameraBox.classList.add('is-live', 'is-fallback');
                 setScannerButtons(true);
-                setStatus('Đang mở camera bằng trình quét dự phòng...');
+                setStatus('Đang mở camera...');
 
                 await html5QrCode.start(
                     { facingMode: 'environment' },
                     {
-                        fps: 10,
+                        fps: 15,
                         qrbox: (w, h) => {
-                            const size = Math.floor(Math.min(w, h) * 0.68);
+                            const size = Math.floor(Math.min(w, h) * 0.75);
                             return { width: size, height: size };
                         }
                     },
@@ -924,7 +910,6 @@ $typeLabel = [
                 activeScanner = null;
                 cameraBox.classList.remove('is-live', 'is-fallback');
                 setScannerButtons(false);
-                setStatus('Không mở được camera. Hãy cấp quyền camera và thử lại.', 'error');
             }
         }
 
@@ -957,6 +942,8 @@ $typeLabel = [
         form.addEventListener('submit', function(event) {
             if (!window.fetch) return;
             event.preventDefault();
+            if (requestBusy) return;
+            requestBusy = true;
             inspectTicket(input.value);
         });
     });
