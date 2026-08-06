@@ -43,6 +43,15 @@
 
 @push('styles')
 <style>
+    /* 🌟 XOAY MŨI TÊN KHI XỔ DROPDOWN CHI TIẾT PHIM */
+    details.showtime-movie-card .showtime-movie-chevron i {
+        transition: transform 0.25s ease !important;
+    }
+
+    details.showtime-movie-card[open] .showtime-movie-chevron i {
+        transform: rotate(180deg) !important;
+    }
+
     /* 🌟 BỘ THẺ CUSTOM DROPDOWN SELECT CINEHOME */
     .showtime-index-filter {
         position: relative !important;
@@ -405,7 +414,8 @@
                     $movieUpcomingCount = $movieShowtimes->filter(fn ($showtime) => $showtime->thoi_gian_chieu?->isFuture())->count();
                 @endphp
 
-                <details class="showtime-movie-card" open>
+                {{-- Bỏ thuộc tính open để thu gọn danh sách mặc định --}}
+                <details class="showtime-movie-card">
                     <summary class="showtime-movie-summary">
                         <div class="showtime-movie-title">
                             <img src="{{ $posterUrl($phim->poster) }}" alt="{{ $phim->ten_phim }}">
@@ -570,7 +580,6 @@
             </div>
         </div>
 
-        <!-- Cảnh báo quy tắc xóa trước 3 ngày & chưa có vé -->
         <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 12.5px; color: #fcd34d;">
             <i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i>
             Chỉ cho phép xóa suất chiếu <strong>trước ít nhất 3 ngày</strong> và <strong>chưa có khách hàng đặt vé</strong>.
@@ -600,26 +609,23 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 🌟 SCRIPT KHỞI TẠO CINE-SELECT POPUP THUẦN (100% CHUẨN XÁC, BẤM ĂN NGAY)
+    // SCRIPT KHỞI TẠO CINE-SELECT POPUP
     document.querySelectorAll('.cine-select-wrapper').forEach(function(wrapper) {
         const hiddenInput = wrapper.querySelector('input[type="hidden"]');
         const trigger = wrapper.querySelector('.cine-select-trigger');
         const triggerText = wrapper.querySelector('.cine-select-value');
         const options = wrapper.querySelectorAll('.cine-select-option');
 
-        // Cập nhật tiêu đề hiển thị từ giá trị đã chọn ban đầu
         options.forEach(function(opt) {
             if (opt.classList.contains('selected')) {
                 triggerText.textContent = opt.textContent.trim();
             }
         });
 
-        // Click để Bật/Tắt Dropdown Menu
         trigger.addEventListener('click', function(e) {
             e.stopPropagation();
             e.preventDefault();
             
-            // Đóng các dropdown khác đang mở
             document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
                 if (w !== wrapper) {
                     w.classList.remove('open');
@@ -629,7 +635,6 @@ document.addEventListener('DOMContentLoaded', function() {
             wrapper.classList.toggle('open');
         });
 
-        // Click chọn Item
         options.forEach(function(opt) {
             opt.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -646,14 +651,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Click bất kỳ đâu ngoài màn hình để đóng Dropdown
     document.addEventListener('click', function() {
         document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
             w.classList.remove('open');
         });
     });
 
-    // 🌟 PHÂN TRANG DANH SÁCH SUẤT CHIẾU BÊN TRONG TỪNG THẺ PHIM (client-side)
+    // PHÂN TRANG DANH SÁCH SUẤT CHIẾU BÊN TRONG TỪNG THẺ PHIM (client-side)
     document.querySelectorAll('.showtime-local-pagination').forEach(function(pager) {
         const table = document.getElementById(pager.dataset.target);
         if (!table) return;
