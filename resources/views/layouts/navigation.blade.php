@@ -34,6 +34,17 @@
                     </x-slot>
 
                     <x-slot name="content">
+                        {{-- Hiển thị nút Trang quản lý nếu tài khoản thuộc các nhóm quản trị/nhân viên --}}
+                        @if (
+                            Auth::user()->hasAnyRole(['Quản trị viên', 'Quản lý', 'Quản lý phòng chiếu', 'Quản lý rạp', 'Quản lý hệ thống', 'Nhân viên']) ||
+                            in_array(Auth::user()->vai_tro, ['admin', 'super_admin', 'quan_ly', 'quan_ly_phong_chieu', 'quan_ly_rap', 'quan_ly_he_thong', 'nhan_vien', 'manager'])
+                        )
+                            <x-dropdown-link :href="route('dashboard')" class="text-yellow-600 font-semibold">
+                                {{ __('Trang quản lý') }}
+                            </x-dropdown-link>
+                            <div class="border-t border-gray-100"></div>
+                        @endif
+
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Profile') }}
                         </x-dropdown-link>
@@ -80,6 +91,15 @@
             </div>
 
             <div class="mt-3 space-y-1">
+                @if (
+                    Auth::user()->hasAnyRole(['Quản trị viên', 'Quản lý', 'Quản lý phòng chiếu', 'Quản lý rạp', 'Quản lý hệ thống', 'Nhân viên']) ||
+                    in_array(Auth::user()->vai_tro, ['admin', 'super_admin', 'quan_ly', 'quan_ly_phong_chieu', 'quan_ly_rap', 'quan_ly_he_thong', 'nhan_vien', 'manager'])
+                )
+                    <x-responsive-nav-link :href="route('dashboard')" class="text-yellow-600 font-semibold">
+                        {{ __('Trang quản lý') }}
+                    </x-responsive-nav-link>
+                @endif
+
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>

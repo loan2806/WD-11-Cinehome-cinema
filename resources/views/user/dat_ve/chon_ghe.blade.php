@@ -40,8 +40,7 @@
         <section class="booking-seat-hero">
             <div class="booking-flow-hero-copy">
                 <span class="booking-eyebrow">
-                    <i class="fa-solid fa-couch"></i>
-                    Bước 2 trong 4
+                    <i class="fa-solid fa-couch"></i> Bước 2 trong 4
                 </span>
                 <h1>Chọn ghế đẹp cho suất chiếu của bạn.</h1>
                 <p>
@@ -126,7 +125,7 @@
 
             <section class="booking-seat-map-panel" aria-label="Sơ đồ chọn ghế">
                 
-                {{-- 🌟 BANNER CẢNH BÁO ĐƠN HÀNG CHỜ THANH TOÁN (ĐÃ SỬA TÊN THAM SỐ MOVIE) --}}
+                {{-- BANNER CẢNH BÁO ĐƠN HÀNG CHỜ THANH TOÁN --}}
                 @if (isset($pendingTicket) && $pendingTicket && !$pendingTicket->isExpired())
                     <div class="booking-pending-alert" style="background: rgba(234, 179, 8, 0.12) !important; border: 1px solid #eab308 !important; color: #fef08a !important; padding: 16px 20px !important; border-radius: 16px !important; margin-bottom: 20px !important; display: flex !important; justify-content: space-between !important; align-items: center !important; gap: 15px !important; flex-wrap: wrap !important; z-index: 99 !important; box-shadow: 0 10px 25px -5px rgba(234, 179, 8, 0.2);">
                         <div style="display: flex; align-items: center; gap: 14px;">
@@ -137,7 +136,7 @@
                             </div>
                         </div>
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <a href="{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id, 'pending_ticket_id' => $pendingTicket->id]) }}" style="background: #eab308; color: #000; padding: 9px 18px; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 13px; transition: 0.2s;">
+                            <a href="{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id, 'pending_ticket_id' => $pendingTicket->id]) }}" class="js-proceed-link" style="background: #eab308; color: #000; padding: 9px 18px; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 13px; transition: 0.2s;">
                                 Tiếp tục thanh toán <i class="fa-solid fa-arrow-right" style="margin-left: 4px;"></i>
                             </a>
                             <a href="{{ route('dat_ve.chon_ghe', ['movie' => $suatChieu->id, 'reset' => 1]) }}" style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 9px 16px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 13px; border: 1px solid rgba(239, 68, 68, 0.4);" onclick="return confirm('Bạn có chắc muốn hủy đơn chờ này để chọn lại ghế mới?')">
@@ -150,8 +149,7 @@
                 <div class="booking-seat-toolbar">
                     <div>
                         <span class="booking-eyebrow">
-                            <i class="fa-solid fa-ticket"></i>
-                            Sơ đồ phòng chiếu
+                            <i class="fa-solid fa-ticket"></i> Sơ đồ phòng chiếu
                         </span>
                         <h2>Chọn vị trí yêu thích</h2>
                         <p>{{ $availableSeats }} ghế còn trống / {{ $totalSeats }} ghế. Tối đa 8 ghế mỗi lần đặt.</p>
@@ -379,7 +377,8 @@
             let countdownTimerInterval = null;
             let selectedSeats = [];
             let lockedSeats = new Set();
-            let isProceedingToFood = false;
+            let isProceedingToNextStep = false;
+            let isFetchingLocks = false;
 
             const params = new URLSearchParams(window.location.search);
             const seatParam = params.get("ghe");
@@ -429,15 +428,19 @@
             }
 
             async function loadLockedSeats() {
+                if (isFetchingLocks || isProceedingToNextStep) return;
+                isFetchingLocks = true;
                 try {
                     const res = await fetch(`/dat-ve/seat-locks/${showtimeId}`);
-                    if (!res.ok) return;
-
-                    const data = await res.json();
-                    lockedSeats = new Set(Object.keys(data.locked || {}).map(normalizeSeat));
-                    syncButtonStates();
+                    if (res.ok) {
+                        const data = await res.json();
+                        lockedSeats = new Set(Object.keys(data.locked || {}).map(normalizeSeat));
+                        syncButtonStates();
+                    }
                 } catch (e) {
                     console.error("Lỗi quét ghế đang giữ:", e);
+                } finally {
+                    isFetchingLocks = false;
                 }
             }
 
@@ -462,7 +465,7 @@
             }
 
             function releaseAllSeatsBeacon() {
-                if (isProceedingToFood || selectedSeats.length === 0) return;
+                if (isProceedingToNextStep || selectedSeats.length === 0) return;
 
                 const url = `/dat-ve/seat-locks/${showtimeId}/release-all`;
                 const formData = new FormData();
@@ -489,9 +492,12 @@
             document.addEventListener("click", function(e) {
                 const link = e.target.closest("a");
                 if (link && link.href) {
-                    if (!link.href.includes("chon-do-an") && !isProceedingToFood) {
-                        releaseAllSeatsBeacon();
+                    if (link.href.includes("chon-do-an") || link.href.includes("chon_do_an") || link.classList.contains("js-proceed-link")) {
+                        isProceedingToNextStep = true;
+                        if (countdownTimerInterval) clearInterval(countdownTimerInterval);
+                        return;
                     }
+                    releaseAllSeatsBeacon();
                 }
             });
 
@@ -554,9 +560,7 @@
             }
 
             function validateSeatsAdjacentJS(seats) {
-                if (seats.length <= 1) {
-                    return true;
-                }
+                if (seats.length <= 1) return true;
 
                 const parsedSeats = [];
                 const seatRegex = /^([A-Z]+)([0-9]+)$/;
@@ -569,50 +573,26 @@
                             row: match[1],
                             num: parseInt(match[2], 10)
                         });
-                    } else {
-                        if (upperSeat.includes('-') || upperSeat.includes('|')) {
-                            const subSeats = upperSeat.split(/[-|]/);
-                            for (const sub of subSeats) {
-                                const subMatch = sub.trim().match(seatRegex);
-                                if (subMatch) {
-                                    parsedSeats.push({
-                                        row: subMatch[1],
-                                        num: parseInt(subMatch[2], 10)
-                                    });
-                                }
-                            }
-                        }
                     }
                 }
 
-                if (parsedSeats.length === 0) {
-                    return true;
-                }
+                if (parsedSeats.length === 0) return true;
 
                 const grouped = {};
                 for (const s of parsedSeats) {
-                    if (!grouped[s.row]) {
-                        grouped[s.row] = [];
-                    }
+                    if (!grouped[s.row]) grouped[s.row] = [];
                     grouped[s.row].push(s.num);
                 }
 
                 for (const row in grouped) {
                     const nums = [...new Set(grouped[row])].sort((a, b) => a - b);
-                    
                     for (let i = 0; i < nums.length - 1; i++) {
                         const start = nums[i];
                         const end = nums[i + 1];
-                        
                         if (end - start > 1) {
                             for (let middleNum = start + 1; middleNum < end; middleNum++) {
                                 const middleSeatCode = `${row}${middleNum}`;
-                                
-                                const middleBtn = seatButtons.find(btn => {
-                                    const codes = getSeatsFromButton(btn);
-                                    return codes.includes(middleSeatCode);
-                                });
-                                
+                                const middleBtn = seatButtons.find(btn => getSeatsFromButton(btn).includes(middleSeatCode));
                                 if (middleBtn) {
                                     const isBooked = middleBtn.classList.contains('booked');
                                     const isLocked = middleBtn.classList.contains('locked');
@@ -628,7 +608,6 @@
                         }
                     }
                 }
-
                 return true;
             }
 
@@ -638,41 +617,25 @@
                     alertEl = document.createElement("div");
                     alertEl.className = "booking-seat-alert";
                     alertEl.style.cssText = "background: rgba(239, 68, 68, 0.15) !important; border: 1px solid #ef4444 !important; color: #f87171 !important; padding: 16px !important; border-radius: 12px !important; margin: 15px 0 !important; display: flex !important; align-items: center !important; gap: 12px !important; font-weight: 600 !important; font-size: 14px !important; position: relative !important; z-index: 99 !important;";
-                    
                     const toolbar = document.querySelector(".booking-seat-toolbar");
-                    if (toolbar) {
-                        toolbar.parentNode.insertBefore(alertEl, toolbar.nextSibling);
-                    }
+                    if (toolbar) toolbar.parentNode.insertBefore(alertEl, toolbar.nextSibling);
                 }
-                alertEl.innerHTML = `
-                    <i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important; margin-right: 8px;"></i>
-                    <span>${message}</span>
-                `;
-                alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                alertEl.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important; margin-right: 8px;"></i><span>${message}</span>`;
             }
 
             function clearSeatErrorJS() {
                 const alertEl = document.querySelector(".booking-seat-alert");
-                if (alertEl) {
-                    alertEl.remove();
-                }
+                if (alertEl) alertEl.remove();
             }
 
             function updateUI() {
                 selectedSeats = Array.from(new Set(selectedSeats.map(normalizeSeat).filter(Boolean)));
                 syncButtonStates();
 
-                if (validateSeatsAdjacentJS(selectedSeats)) {
-                    clearSeatErrorJS();
-                }
+                if (validateSeatsAdjacentJS(selectedSeats)) clearSeatErrorJS();
 
-                if (seatCountEl) {
-                    seatCountEl.innerText = selectedSeats.length + " ghế";
-                }
-
-                if (seatLabels) {
-                    seatLabels.innerText = selectedSeats.length ? selectedSeats.join(", ") : "—";
-                }
+                if (seatCountEl) seatCountEl.innerText = selectedSeats.length + " ghế";
+                if (seatLabels) seatLabels.innerText = selectedSeats.length ? selectedSeats.join(", ") : "—";
 
                 if (selectedList) {
                     if (selectedSeats.length === 0) {
@@ -689,14 +652,10 @@
 
                 let total = 0;
                 seatButtons.forEach(btn => {
-                    if (buttonIsSelected(btn)) {
-                        total += Number(btn.dataset.price || 0);
-                    }
+                    if (buttonIsSelected(btn)) total += Number(btn.dataset.price || 0);
                 });
 
-                if (totalPriceEl) {
-                    totalPriceEl.innerText = money(total);
-                }
+                if (totalPriceEl) totalPriceEl.innerText = money(total);
 
                 if (btnFood) {
                     const hasSeat = selectedSeats.length > 0;
@@ -742,10 +701,7 @@
                                     headers: { "X-CSRF-TOKEN": csrf }
                                 });
 
-                                if (!res.ok) {
-                                    throw new Error("seat_locked");
-                                }
-
+                                if (!res.ok) throw new Error("seat_locked");
                                 reservedNow.push(seat);
                             } catch (e) {
                                 alert("Ghế " + seat + " vừa được người khác chọn.");
@@ -780,28 +736,35 @@
             }
 
             if (btnFood) {
-                btnFood.addEventListener("click", function(e) {
-                    e.preventDefault();
-                    if (selectedSeats.length === 0) return;
+        btnFood.addEventListener("click", function(e) {
+        e.preventDefault();
+        if (selectedSeats.length === 0) return;
 
-                    if (!validateSeatsAdjacentJS(selectedSeats)) {
-                        showSeatErrorJS("Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!");
-                        return;
-                    }
+        if (!validateSeatsAdjacentJS(selectedSeats)) {
+            showSeatErrorJS("Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!");
+            return;
+        }
 
-                    isProceedingToFood = true;
+        // Đánh dấu chuyển bước & Hủy lắng nghe Beacon giải phóng ghế
+        isProceedingToNextStep = true;
+        window.removeEventListener("pagehide", releaseAllSeatsBeacon);
+        if (countdownTimerInterval) clearInterval(countdownTimerInterval);
 
-                    const seats = encodeURIComponent(selectedSeats.join(","));
-                    let url = `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seats}`;
-                    if (pendingTicketId) {
-                        url += `&pending_ticket_id=${encodeURIComponent(pendingTicketId)}`;
-                    }
+        // Khóa nút & hiển thị trạng thái loading
+        btnFood.disabled = true;
+        btnFood.style.opacity = "0.7";
+        btnFood.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang chuyển trang...';
 
-                    window.location.href = url;
-                });
-            }
+        const seats = encodeURIComponent(selectedSeats.join(","));
+        let url = `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seats}`;
+        if (pendingTicketId) {
+            url += `&pending_ticket_id=${encodeURIComponent(pendingTicketId)}`;
+        }
 
-            // 🌟 ĐÃ SỬA TÊN THAM SỐ ROUTE SANG 'movie' DỨT ĐIỂM LỖI 500
+        window.location.href = url;
+    });
+}
+
             if (btnResetSeats) {
                 btnResetSeats.addEventListener("click", async function() {
                     if (!confirm('Bạn có chắc chắn muốn hủy chọn ghế ?')) return;
@@ -810,17 +773,14 @@
                     await releaseAllSeats();
                     clearSeatErrorJS();
                     
-                    if (countdownEl) {
-                        countdownEl.innerText = "07:00";
-                    }
-
+                    if (countdownEl) countdownEl.innerText = "07:00";
                     window.location.href = "{{ route('dat_ve.chon_ghe', ['movie' => $suatChieu->id, 'reset' => 1]) }}";
                 });
             }
 
             updateUI();
             loadLockedSeats();
-            setInterval(loadLockedSeats, 3000);
+            setInterval(loadLockedSeats, 5000);
         });
     </script>
 @endsection
