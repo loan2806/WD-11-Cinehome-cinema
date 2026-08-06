@@ -94,15 +94,17 @@ Route::get('/dashboard', function () {
         return redirect()->route('admin.dashboard');
     }
 
-    // "Quản lý rạp" dùng thẳng giao diện Admin (đã tự ẩn/hiện menu và chặn route
-    // theo đúng coQuyen() / Ma trận phân quyền) thay vì trang /manager riêng —
-    // để cấp quyền gì bên Admin thì bên Quản lý có ngay chức năng đó, không cần
-    // xây lại từng trang một.
-    if ($user->hasRole('Quản lý') || $user->hasRole('Quản lý phòng chiếu') || $user->hasRole('Sub-Admin') || $user->vai_tro === 'quan_ly') {
+    // Đã mở rộng bắt toàn bộ các biến vai_tro/role cho Quản lý rạp và phòng chiếu
+    if (
+        $user->hasRole('Quản lý') || 
+        $user->hasRole('Quản lý phòng chiếu') || 
+        $user->hasRole('Quản lý rạp') || 
+        $user->hasRole('Sub-Admin') || 
+        in_array($user->vai_tro, ['quan_ly', 'quan_ly_phong_chieu', 'quan_ly_rap', 'manager'])
+    ) {
         return redirect()->route('admin.dashboard');
     }
 
-    // 🌟 ĐÃ SỬA: Chuyển nhân viên sang đúng trang Staff Dashboard
     if ($user->hasRole('Nhân viên') || $user->vai_tro === 'nhan_vien') {
         return redirect()->route('staff.dashboard');
     }
@@ -186,7 +188,7 @@ Route::prefix('dat-ve')->name('dat_ve.')->group(function () {
         Route::post('/huy-ve-pending/{id}', [DatVeController::class, 'huyVePending'])
             ->name('huy_ve_pending');
 
-        // 🌟 CẤU HÌNH API LOCK GHẾ (Đã đảm bảo release-all đứng trước {seat})
+        // CẤU HÌNH API LOCK GHẾ
         Route::get('/seat-locks/{suat_chieu}', [\App\Http\Controllers\DatVe\SeatLockController::class, 'index'])
             ->name('seat_locks.index');
         
@@ -246,7 +248,6 @@ Route::middleware(['auth'])
         Route::get('/ban-ve/ket-qua/{id}', [BanVeController::class, 'success'])->whereNumber('id')->name('ban-ve.success');
         Route::get('/ban-ve/in-ve/{id}', [BanVeController::class, 'printTicket'])->whereNumber('id')->name('ban-ve.print-ticket');
 
-        // Đánh dấu vé là "Đã in" khi nhân viên bấm nút in vé
         Route::post('/ban-ve/{id}/mark-printed', [BanVeController::class, 'markAsPrinted'])
             ->whereNumber('id')
             ->name('ban-ve.mark-printed');
@@ -272,7 +273,6 @@ Route::middleware(['auth'])
     ->name('admin.')
     ->group(function () {
 
-        // Route API kiểm tra quyền ngầm
         Route::get('/kiem-tra-quyen-ngam', function (\Illuminate\Http\Request $request) {
             $maQuyen = $request->query('quyen');
             if (!$maQuyen) {
@@ -432,7 +432,6 @@ Route::middleware(['auth'])
             Route::get('/thong-ke/export-excel', [ThongKeController::class, 'exportExcel'])->name('thong-ke.export-excel');
             Route::get('/thong-ke/export-pdf', [ThongKeController::class, 'exportPdf'])->name('thong-ke.export-pdf');
 
-            // API endpoint cho thống kê
             Route::get('/api/statistics', [ThongKeController::class, 'apiIndex'])->name('thong-ke.api');
         });
 
