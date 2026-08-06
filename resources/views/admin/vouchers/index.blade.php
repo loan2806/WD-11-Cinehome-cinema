@@ -224,12 +224,18 @@
                             @endforeach
                         </select>
                     </div>
-                    <select name="trang_thai" class="admin-input">
-                        <option value="">Tất cả trạng thái</option>
-                        <option value="active" @selected(request('trang_thai') === 'active')>Đang hiệu lực</option>
-                        <option value="inactive" @selected(request('trang_thai') === 'inactive')>Đang tắt</option>
-                        <option value="expired" @selected(request('trang_thai') === 'expired')>Hết hạn</option>
-                    </select>
+                    <div class="voucher-select">
+                        <button type="button" class="voucher-select__trigger">
+                            <span class="voucher-select__value">Tất cả trạng thái</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <select name="trang_thai" class="hidden">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="active" @selected(request('trang_thai') === 'active')>Đang hiệu lực</option>
+                            <option value="inactive" @selected(request('trang_thai') === 'inactive')>Đang tắt</option>
+                            <option value="expired" @selected(request('trang_thai') === 'expired')>Hết hạn</option>
+                        </select>
+                    </div>
                     <button class="voucher-filter-btn" type="submit">
                         <i class="fa-solid fa-filter"></i>
                         Lọc
@@ -393,12 +399,18 @@
                         <i class="fa-solid fa-magnifying-glass"></i>
                         <input name="issued_q" value="{{ request('issued_q') }}" placeholder="Tìm mã cá nhân, khách hàng...">
                     </label>
-                    <select name="issued_status" class="admin-input">
-                        <option value="">Tất cả trạng thái</option>
-                        <option value="unused" @selected(request('issued_status') === 'unused')>Chưa dùng</option>
-                        <option value="used" @selected(request('issued_status') === 'used')>Đã dùng</option>
-                        <option value="expired" @selected(request('issued_status') === 'expired')>Hết hạn</option>
-                    </select>
+                    <div class="voucher-select">
+                        <button type="button" class="voucher-select__trigger">
+                            <span class="voucher-select__value">Tất cả trạng thái</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <select name="issued_status" class="hidden">
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="unused" @selected(request('issued_status') === 'unused')>Chưa dùng</option>
+                            <option value="used" @selected(request('issued_status') === 'used')>Đã dùng</option>
+                            <option value="expired" @selected(request('issued_status') === 'expired')>Hết hạn</option>
+                        </select>
+                    </div>
                     <button class="voucher-filter-btn" type="submit">
                         <i class="fa-solid fa-filter"></i>
                         Lọc
