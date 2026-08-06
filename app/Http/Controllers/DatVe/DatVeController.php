@@ -158,7 +158,7 @@ public function chonGhe($id)
         return redirect()->route('dat_ve.chon_phim')->with('error', 'Không tìm thấy suất chiếu phù hợp.');
     }
 
-    // Xử lý nút Hủy & Chọn lại từ View
+    // Xử lý nút Hủy & Chọn lại
     if (request()->boolean('reset') && Auth::check()) {
         $oldTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
             ->where('suat_chieu_id', $suatChieu->id)
@@ -178,7 +178,7 @@ public function chonGhe($id)
         return redirect()->route('dat_ve.chon_ghe', ['movie' => $suatChieu->id]);
     }
 
-    // Lấy vé đang chờ thanh toán nếu có
+    // Lấy vé đang chờ thanh toán
     $pendingTicket = null;
     if (Auth::check()) {
         $pendingTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
@@ -202,7 +202,6 @@ public function chonGhe($id)
     $pendingTicketId = $pendingTicket?->id;
     $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
 
-    // Quét ghế đã bán / đã đặt thành công
     $bookedTickets = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
         ->when($pendingTicketId, fn($q) => $q->where('id', '!=', $pendingTicketId))
         ->where(function ($q) {
@@ -232,10 +231,16 @@ public function chonGhe($id)
         $chonDuoc = !$daDat && !$baoTri;
 
         $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai_ghe ?? 'Thường');
+        $laCouple = (bool)($ghe->loaiGhe->la_couple ?? false) ||
+                    str_contains($loaiGheNorm, 'couple') ||
+                    str_contains($loaiGheNorm, 'đôi') ||
+                    str_contains($loaiGheNorm, 'doi') ||
+                    str_contains($loaiGheNorm, 'double');
+
         $phuThu = (float)($ghe->loaiGhe->phu_thu ?? 0);
         $giaVe = (float)$suatChieu->gia_ve + $phuThu;
 
-        if ($ghe->loaiGhe?->la_couple || str_contains($loaiGheNorm, 'couple') || str_contains($loaiGheNorm, 'đôi') || str_contains($loaiGheNorm, 'doi')) {
+        if ($laCouple) {
             $giaVe = ((float)$suatChieu->gia_ve * 2) + $phuThu;
         }
 
@@ -243,6 +248,7 @@ public function chonGhe($id)
             'id' => $ghe->id,
             'ma_ghe' => $ghe->ma_ghe,
             'loai_ghe' => $ghe->loaiGhe->ten_loai_ghe ?? 'Thường',
+            'la_couple' => $laCouple,
             'gia' => $giaVe,
             'phu_thu' => $phuThu,
             'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#3b82f6',
