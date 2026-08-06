@@ -88,13 +88,19 @@ $baseSeatPrice = (float) $seatTotal;
                             @foreach($category['foods'] as $food)
                             <div class="food-card bg-zinc-900 border border-white/10 rounded-2xl p-4 flex flex-col justify-between hover:border-yellow-400 transition" data-search-term="{{ mb_strtolower($food['name']) }}">
                                 <div class="h-28 bg-black rounded-xl flex items-center justify-center overflow-hidden mb-3 relative border border-white/5">
-                                    @if (!empty($food['image']))
-                                    <img src="{{ asset('storage/foods/' . $food['image']) }}" class="h-full object-contain hover:scale-110 transition duration-300" alt="{{ $food['name'] }}">
-                                    @else
-                                    <span class="text-xs text-gray-600">
-                                        No Image
-                                    </span>
-                                    @endif
+                                    @php
+                                    $imagePath = trim((string) ($food['image'] ?? ''));
+
+                                    if ($imagePath !== '' && !str_starts_with($imagePath, 'foods/')) {
+                                    $imagePath = 'foods/' . $imagePath;
+                                    }
+
+                                    $imageUrl = $imagePath
+                                    ? asset('storage/' . $imagePath)
+                                    : asset('assets/images/LOGO copy.png');
+                                    @endphp
+
+                                    <img src="{{ $imageUrl }}" alt="{{ $food['name'] }}" class="h-full w-full object-contain hover:scale-110 transition duration-300" onerror="this.src='{{ asset('assets/images/LOGO copy.png') }}';">
 
                                     @if (($food['available'] ?? 0) <= 0) <div class="absolute inset-0 bg-black/75 flex items-center justify-center">
                                         <span class="rounded-lg bg-red-500 px-3 py-1 text-xs font-black text-white">
@@ -309,7 +315,7 @@ $baseSeatPrice = (float) $seatTotal;
             quantity = Math.max(quantity, 1);
 
             const currentQuantity =
-                Number(cart[cartItemKey]?.qty) || 0;
+                Number(cart[cartItemKey] ? .qty) || 0;
 
             if (currentQuantity + quantity > available) {
                 alert(
