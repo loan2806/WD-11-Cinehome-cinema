@@ -303,9 +303,6 @@
                                 Bán vé trực tiếp rạp
                             </a>
 
-                            <a href="{{ route('staff.lich-su-ve.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('staff.lich-su-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
-                                Lịch sử vé
-                            </a>
                             @endif
 
                             @if(coQuyen('soat_ve.quet_qr'))
@@ -490,7 +487,7 @@
                             $userRole = $currentUser ? ($currentUser->vai_tro ?? $currentUser->role ?? null) : null;
                             $adminRoleLabel = match ($userRole) {
                                 'super_admin', 'admin', 'quan_ly_he_thong' => 'Quản trị viên (Super-admin)',
-                                'quan_ly_rap' => 'Quản lý rạp',
+                                'quan_ly' => 'Quản lý rạp',
                                 'nhan_vien' => 'Nhân viên quầy',
                                 default => 'Người dùng',
                             };

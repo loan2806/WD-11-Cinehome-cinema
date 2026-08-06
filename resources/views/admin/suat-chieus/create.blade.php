@@ -14,7 +14,6 @@
 
 @push('styles')
 <style>
-    /* 🌟 BỎ OVERFLOW HIDDEN ĐỂ DROPDOWN DẠNG CARD KHÔNG BỊ CẮT XUỐNG DƯỚI KHUNG */
     .showtime-form-layout,
     .showtime-main,
     .showtime-panel,
@@ -28,12 +27,10 @@
         z-index: 10;
     }
 
-    /* Khi dropdown mở, nâng Z-Index của Panel chứa nó lên cao nhất */
     .showtime-panel:has(.cine-select-wrapper.open) {
         z-index: 900 !important;
     }
 
-    /* 🌟 BỘ DROPDOWN POPUP CINEHOME CHUẨN 100% */
     .cine-select-wrapper {
         position: relative !important;
         width: 100% !important;
@@ -122,12 +119,33 @@
         font-weight: 700 !important;
     }
 
-    .cine-select-menu::-webkit-scrollbar {
-        width: 6px;
+    .showtime-time-list {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+        margin-top: 10px !important;
     }
-    .cine-select-menu::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
+
+    .showtime-time-chip {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        background: #18181c !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        border-radius: 10px !important;
+        padding: 8px 14px !important;
+        color: #fff !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        user-select: none !important;
+    }
+
+    .showtime-time-chip:has(input:checked) {
+        border-color: #facc15 !important;
+        background: rgba(250, 204, 21, 0.15) !important;
+        color: #facc15 !important;
     }
 </style>
 @endpush
@@ -136,26 +154,34 @@
 <div class="showtime-create-page">
     @include('admin.partials.flash')
 
+    @if ($errors->any())
+        <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; padding: 16px; margin-bottom: 20px; color: #f87171;">
+            <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; margin-bottom: 8px;">
+                <i class="fa-solid fa-circle-exclamation"></i> Vui lòng kiểm tra lại thông tin nhập liệu:
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <section class="showtime-hero-panel">
         <div>
             <span class="showtime-kicker">
-                <i class="fa-solid fa-calendar-plus"></i>
-                Trung tâm lên lịch
+                <i class="fa-solid fa-calendar-plus"></i> Trung tâm lên lịch
             </span>
             <h2>Thêm suất chiếu mới</h2>
-            <p>
-                Cấu hình lịch chiếu đơn lẻ hoặc rải chuỗi suất chiếu hàng loạt. Giao diện được gom gọn để giảm nhầm phòng, nhầm giờ.
-            </p>
+            <p>Cấu hình lịch chiếu đơn lẻ hoặc rải chuỗi suất chiếu hàng loạt.</p>
         </div>
 
         <div class="showtime-hero-actions">
             <a href="{{ route('admin.suat-chieus.index') }}" class="movie-action-btn is-ghost">
-                <i class="fa-solid fa-arrow-left"></i>
-                Danh sách suất chiếu
+                <i class="fa-solid fa-arrow-left"></i> Danh sách suất chiếu
             </a>
             <button type="submit" form="showtimeCreateForm" class="movie-action-btn is-primary">
-                <i class="fa-solid fa-floppy-disk"></i>
-                Xác nhận lên lịch
+                <i class="fa-solid fa-floppy-disk"></i> Xác nhận lên lịch
             </button>
         </div>
     </section>
@@ -188,9 +214,7 @@
                                 <td>{{ $scTrung->phim->ten_phim ?? 'Không rõ' }}</td>
                                 <td>{{ $scTrung->phongChieu->ten_phong ?? 'Không rõ' }}</td>
                                 <td>
-                                    {{ \Carbon\Carbon::parse($scTrung->thoi_gian_chieu)->format('H:i d/m/Y') }}
-                                    -
-                                    {{ \Carbon\Carbon::parse($scTrung->thoi_gian_ket_thuc)->format('H:i d/m/Y') }}
+                                    {{ \Carbon\Carbon::parse($scTrung->thoi_gian_chieu)->format('H:i d/m/Y') }} - {{ \Carbon\Carbon::parse($scTrung->thoi_gian_ket_thuc)->format('H:i d/m/Y') }}
                                 </td>
                                 <td>
                                     <a href="{{ route('admin.suat-chieus.edit', $scTrung->id) }}" target="_blank">
@@ -207,7 +231,6 @@
 
     <form id="showtimeCreateForm" action="{{ route('admin.suat-chieus.store') }}" method="POST" class="showtime-form">
         @csrf
-
         <input type="hidden" name="rap_chieu_phim_id" value="{{ $rapMacDinh->id ?? 1 }}">
 
         <div class="showtime-form-layout">
@@ -222,7 +245,6 @@
                     </div>
 
                     <div class="showtime-grid" style="grid-template-columns: 1fr 1fr !important; gap: 20px;">
-                        <!-- SELECTION PHIM -->
                         <div class="showtime-field">
                             <span>Phim trình chiếu <b>*</b></span>
                             <div class="cine-select-wrapper" id="wrap_phim">
@@ -244,7 +266,6 @@
                             </div>
                         </div>
 
-                        <!-- SELECTION PHÒNG CHIẾU -->
                         <div class="showtime-field">
                             <span>Phòng chiếu <b>*</b></span>
                             <div class="cine-select-wrapper" id="wrap_phong">
@@ -283,7 +304,7 @@
                             <div class="cine-select-wrapper">
                                 <input type="hidden" name="loai_tao" id="loai_tao" value="{{ $selectedLoaiTao }}" required>
                                 <div class="cine-select-trigger" tabindex="0">
-                                    <span class="cine-select-value">Tạo 1 suất chiếu đơn lẻ</span>
+                                    <span class="cine-select-value">{{ $selectedLoaiTao === 'hang_loat' ? 'Tạo chuỗi suất chiếu hàng loạt' : 'Tạo 1 suất chiếu đơn lẻ' }}</span>
                                     <i class="fa-solid fa-chevron-down"></i>
                                 </div>
                                 <div class="cine-select-menu">
@@ -317,7 +338,7 @@
                         </div>
                     </div>
 
-                    <div id="khu_hang_loat" class="showtime-mode-block">
+                    <div id="khu_hang_loat" class="showtime-mode-block" style="display: none;">
                         <div class="showtime-grid two-cols">
                             <label class="showtime-field">
                                 <span>Từ ngày <b>*</b></span>
@@ -345,11 +366,11 @@
                                 @endforeach
                             </div>
 
-                            <div class="showtime-custom-time">
+                            <!-- KHU VỰC CHÈN GIỜ KHÁC -->
+                            <div class="showtime-custom-time" style="margin-top: 15px; display: flex; align-items: center; gap: 10px;">
                                 <input type="time" id="custom_time_input" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 8px 12px; border-radius: 8px;">
-                                <button type="button" id="btn_add_custom_time">
-                                    <i class="fa-solid fa-plus"></i>
-                                    Chèn giờ khác
+                                <button type="button" id="btn_add_custom_time" style="background: #25252b; border: 1px solid #d99a32; color: #d99a32; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                                    <i class="fa-solid fa-plus"></i> Chèn giờ khác
                                 </button>
                             </div>
                         </div>
@@ -365,7 +386,7 @@
                         </div>
                     </div>
 
-                    <div id="khu_vuc_gia_ngay_le" class="showtime-holiday-price">
+                    <div id="khu_vuc_gia_ngay_le" class="showtime-holiday-price" style="display: none;">
                         <div class="showtime-holiday-head">
                             <i class="fa-solid fa-gift"></i>
                             <div>
@@ -432,12 +453,10 @@
             </div>
             <div class="showtime-save-actions">
                 <a href="{{ route('admin.suat-chieus.index') }}" class="movie-action-btn is-ghost">
-                    <i class="fa-solid fa-xmark"></i>
-                    Hủy
+                    <i class="fa-solid fa-xmark"></i> Hủy
                 </a>
                 <button type="submit" class="movie-action-btn is-primary">
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    Xác nhận lên lịch
+                    <i class="fa-solid fa-floppy-disk"></i> Xác nhận lên lịch
                 </button>
             </div>
         </div>
@@ -447,8 +466,73 @@
 
 @push('scripts')
 <script>
+// 🌟 1. KHAI BÁO HÀM TẠO CHIP GIỜ TOÀN CỤC (WINDOW SCOPE)
+window.executeAddCustomTime = function(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    const customTimeInput = document.getElementById('custom_time_input');
+    const khungGioContainer = document.getElementById('khung_gio_checkboxes');
+    if (!customTimeInput || !khungGioContainer) return false;
+
+    const rawVal = customTimeInput.value;
+    if (!rawVal) {
+        alert('Vui lòng chọn đầy đủ Giờ, Phút và Buổi (AM/PM) trước khi bấm Chèn!');
+        customTimeInput.focus();
+        return false;
+    }
+
+    // Chuẩn hóa giờ HH:MM
+    const parts = rawVal.split(':');
+    const formattedVal = parts[0].padStart(2, '0') + ':' + parts[1].substring(0, 2).padStart(2, '0');
+
+    let existingCheckbox = khungGioContainer.querySelector(`input[value="${formattedVal}"]`);
+    if (existingCheckbox) {
+        existingCheckbox.checked = true;
+    } else {
+        const newChip = document.createElement('label');
+        newChip.className = 'showtime-time-chip';
+        newChip.innerHTML = `<input type="checkbox" name="khung_gio[]" value="${formattedVal}" checked> <span>${formattedVal}</span>`;
+        khungGioContainer.appendChild(newChip);
+    }
+
+    customTimeInput.value = '';
+    if (typeof updateMonitor === 'function') updateMonitor();
+    return false;
+};
+
 document.addEventListener('DOMContentLoaded', function() {
-    // SCRIPT KÍCH HOẠT DROPDOWN THUẦN
+    // 🌟 2. CHẶN BẤM ENTER TRÊN FORM ĐỂ KHÔNG BỊ PHÁT DỮ LIỆU SỚM VÂNG LỖI JSON
+    const mainForm = document.getElementById('showtimeCreateForm');
+    if (mainForm) {
+        mainForm.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const target = e.target;
+                // Nếu đang bấm Enter trong ô nhập giờ custom -> Thực hiện chèn giờ ngay lập tức
+                if (target && target.id === 'custom_time_input') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.executeAddCustomTime(e);
+                    return false;
+                }
+                // Nếu đang gõ ở các ô input khác -> Chặn hành động Submit Form bằng phím Enter
+                if (target && target.tagName === 'INPUT' && target.type !== 'submit') {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+    }
+
+    // 🌟 3. BẮT SỰ KIỆN CLICK NÚT CHÈN GIỜ KHÁC
+    const btnAddCustomTime = document.getElementById('btn_add_custom_time');
+    if (btnAddCustomTime) {
+        btnAddCustomTime.addEventListener('click', window.executeAddCustomTime);
+    }
+
+    // 🌟 4. DROPDOWN THUẦN
     document.querySelectorAll('.cine-select-wrapper').forEach(function(wrapper) {
         const hiddenInput = wrapper.querySelector('input[type="hidden"]');
         const trigger = wrapper.querySelector('.cine-select-trigger');
@@ -464,41 +548,32 @@ document.addEventListener('DOMContentLoaded', function() {
         trigger.addEventListener('click', function(e) {
             e.stopPropagation();
             e.preventDefault();
-            
             document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
-                if (w !== wrapper) {
-                    w.classList.remove('open');
-                }
+                if (w !== wrapper) w.classList.remove('open');
             });
-
             wrapper.classList.toggle('open');
         });
 
         options.forEach(function(opt) {
             opt.addEventListener('click', function(e) {
                 e.stopPropagation();
-                const val = opt.dataset.value;
-                hiddenInput.value = val;
+                hiddenInput.value = opt.dataset.value;
                 triggerText.textContent = opt.textContent.trim();
 
                 options.forEach(o => o.classList.remove('selected'));
                 opt.classList.add('selected');
 
                 wrapper.classList.remove('open');
-                
-                // Bắn sự kiện change cho hidden input để cập nhật monitor
                 hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
             });
         });
     });
 
     document.addEventListener('click', function() {
-        document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
-            w.classList.remove('open');
-        });
+        document.querySelectorAll('.cine-select-wrapper').forEach(w => w.classList.remove('open'));
     });
 
-    // CHUYỂN ĐỔI CHẾ ĐỘ ĐƠN LẺ / HÀNG LOẠT
+    // 🌟 5. CHUYỂN CHẾ ĐỘ ĐƠN LẺ / HÀNG LOẠT
     const loaiInput = document.getElementById('loai_tao');
     const khuDonLe = document.getElementById('khu_don_le');
     const khuHangLoat = document.getElementById('khu_hang_loat');
@@ -518,13 +593,14 @@ document.addEventListener('DOMContentLoaded', function() {
         switchFormMode();
     }
 
-    // MONITOR XEM TRƯỚC LỊCH
+    // 🌟 6. MONITOR XEM TRƯỚC LỊCH
     const phimInput = document.getElementById('phim_id');
     const ngayChieuInput = document.getElementById('ngay_chieu_don_le');
     const gioChieuInput = document.getElementById('gio_chieu_don_le');
     const previewArea = document.getElementById('thoi_luong_preview');
+    const khungGioContainer = document.getElementById('khung_gio_checkboxes');
 
-    function updateMonitor() {
+    window.updateMonitor = function() {
         if (!previewArea) return;
 
         const selectedPhimOpt = document.querySelector('#wrap_phim .cine-select-option.selected');
@@ -532,22 +608,43 @@ document.addEventListener('DOMContentLoaded', function() {
         const thoiLuong = selectedPhimOpt ? (parseInt(selectedPhimOpt.dataset.thoiLuong) || 90) : 90;
 
         if (!phimInput.value) {
-            previewArea.value = "Vui lòng chọn Phim và Khung giờ để xem phân tích chiếm phòng...";
+            previewArea.value = "Vui lòng chọn Phim và Khung giờ để xem phân tích...";
             return;
         }
 
         if (loaiInput.value === 'don_le') {
             const ngay = ngayChieuInput.value || 'YYYY-MM-DD';
             const gio = gioChieuInput.value || 'HH:MM';
-            previewArea.value = `[CHIẾM PHÒNG CHIẾU]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+{{ $thoiGianDonPhong }}p dọn phòng)\n- Khởi chiếu: ${gio} ngày ${ngay}\n- Sẵn sàng suất tiếp theo: ${gio} (+${thoiLuong + {{ $thoiGianDonPhong }}} phút)`;
+            previewArea.value = `[CHIẾM PHÒNG CHIẾU]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+{{ $thoiGianDonPhong }}p dọn phòng)\n- Khởi chiếu: ${gio} ngày ${ngay}`;
         } else {
-            previewArea.value = `[TẠO SUẤT CHIẾU HÀNG LOẠT]\n- Phim: ${tenPhim}\n- Thời lượng phim: ${thoiLuong} phút\n- Thời gian dọn phòng: {{ $thoiGianDonPhong }} phút/suất\n- Các suất sẽ tự động kiểm tra trùng lịch trước khi khởi tạo.`;
+            const checkedBoxes = document.querySelectorAll('input[name="khung_gio[]"]:checked');
+            const selectedGios = Array.from(checkedBoxes).map(cb => cb.value).join(', ');
+            previewArea.value = `[TẠO SUẤT HÀNG LOẠT]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+{{ $thoiGianDonPhong }}p dọn phòng)\n- Mốc giờ đã chọn: ${selectedGios || 'Chưa chọn mốc giờ nào'}`;
         }
-    }
+    };
 
     if (phimInput) phimInput.addEventListener('change', updateMonitor);
     if (ngayChieuInput) ngayChieuInput.addEventListener('change', updateMonitor);
     if (gioChieuInput) gioChieuInput.addEventListener('change', updateMonitor);
+    if (khungGioContainer) {
+        khungGioContainer.addEventListener('change', function(e) {
+            if (e.target.name === 'khung_gio[]') updateMonitor();
+        });
+    }
+
+    // 🌟 7. CHẶN SUBMIT NẾU CHƯA CHỌN MỐC GIỜ TRONG CHẾ ĐỘ HÀNG LOẠT
+    if (mainForm) {
+        mainForm.addEventListener('submit', function(e) {
+            if (loaiInput && loaiInput.value === 'hang_loat') {
+                const checkedBoxes = document.querySelectorAll('input[name="khung_gio[]"]:checked');
+                if (checkedBoxes.length === 0) {
+                    e.preventDefault();
+                    alert('Vui lòng chọn hoặc chèn ít nhất MỘT khung giờ chiếu trước khi khởi tạo!');
+                    return false;
+                }
+            }
+        });
+    }
 });
 </script>
 @endpush

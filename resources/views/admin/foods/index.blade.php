@@ -1,8 +1,8 @@
 @extends('layouts.admin')
 
-@section('title', 'Cấu hình Menu & Kho hàng')
-@section('page-title', 'Cấu hình Menu & Kho hàng')
-@section('page-subtitle', 'Quản lý món, giá bán, tồn kho và trạng thái hiển thị')
+@section('title', 'Quản lý đồ ăn lẻ')
+@section('page-title', 'Quản lý đồ ăn lẻ')
+@section('page-subtitle', 'Quản lý tên món, biến thể, ảnh, mô tả, số lượng và giá')
 
 @section('content')
 @php
@@ -28,18 +28,22 @@
                 <i class="fa-solid fa-boxes-stacked"></i>
                 Menu & kho hàng
             </span>
-            <h2>Quản lý đồ ăn, nước uống và combo</h2>
-            <p>Theo dõi giá bán, tồn kho, trạng thái hiển thị và thao tác nhanh với từng món tại quầy.</p>
+            <h2>Quản lý đồ ăn lẻ</h2>
+            <p>Theo dõi giá bán, tồn kho, trạng thái hiển thị và thao tác nhanh với từng món lẻ tại quầy.</p>
         </div>
 
         <div class="food-menu-actions">
+            <a href="{{ route('admin.foods.combos.index') }}" class="food-menu-btn is-soft">
+                <i class="fa-solid fa-gift"></i>
+                Quản lý combo
+            </a>
             <a href="{{ route('admin.foods.categories.index') }}" class="food-menu-btn is-soft">
                 <i class="fa-solid fa-layer-group"></i>
-                Danh mục
+                Quản lý danh mục món lẻ
             </a>
             <a href="{{ route('admin.foods.create') }}" class="food-menu-btn">
                 <i class="fa-solid fa-plus"></i>
-                Thêm món
+                Thêm món lẻ
             </a>
         </div>
     </section>
@@ -113,6 +117,7 @@
             @forelse ($foods as $food)
                 @php
                     $isCombo = $food->isCombo();
+                    $tongTonKho = $food->tong_ton_kho;
                     $stock = $food->stock_quantity;
                     $isLowStock = $stock <= $food->min_stock_quantity;
                     $imagePath = $food->image
@@ -153,8 +158,12 @@
                             <span>Giá bán</span>
                             <strong>{{ number_format((float) $food->price, 0, ',', '.') }}đ</strong>
                         </div>
-                        <div class="{{ $isLowStock ? 'is-low' : '' }}">
+                        <div>
                             <span>Tồn kho</span>
+                            <strong>{{ $tongTonKho }}</strong>
+                        </div>
+                        <div class="{{ $isLowStock ? 'is-low' : '' }}">
+                            <span>Tồn kho khả dụng</span>
                             <strong>{{ $stock }}</strong>
                         </div>
                         <div>

@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\ThanhVien;
+use App\Notifications\ResetPasswordNotification;
 
 class NguoiDung extends Authenticatable
 {
@@ -128,4 +129,8 @@ class NguoiDung extends Authenticatable
     {
         return $this->hasMany(BangLuong::class, 'nguoi_dung_id');
     }
+    public function sendPasswordResetNotification($token)
+{
+    $this->notify(new ResetPasswordNotification($token));
+}
 }

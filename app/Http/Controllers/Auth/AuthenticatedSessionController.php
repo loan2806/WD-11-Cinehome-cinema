@@ -30,9 +30,8 @@ class AuthenticatedSessionController extends Controller
         // 2. Tái tạo lại mã Session bảo mật chống tấn công giả mạo phiên
         $request->session()->regenerate();
 
-        // ĐIỀU HƯỚNG DUY NHẤT QUA /dashboard
-        // Tránh xung đột phân quyền vì logic điều hướng được tập trung ở 1 chỗ.
-        return redirect()->intended(route('dashboard', absolute: false));
+        // ÉP CHUYỂN HƯỚNG TRỰC TIẾP VỀ /dashboard (Không dùng intended để tránh bị đẩy ngược lại trang chủ)
+        return redirect()->route('dashboard');
     }
 
     /**

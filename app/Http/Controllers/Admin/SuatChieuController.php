@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class SuatChieuController extends Controller
 {
@@ -26,17 +27,12 @@ class SuatChieuController extends Controller
         '09-03' => 'Ngày Quốc Khánh (Ngày gối đầu)',
     ];
 
-    /**
-     * HÀM INDEX: TỰ ĐỘNG XÓA SUẤT ĐÃ CHIẾU > 24H & LỌC DỮ LIỆU
-     */
     public function index(Request $request): View
     {
         $now = Carbon::now();
 
-        // 🌟 1. TỰ ĐỘNG XÓA CÁC SUẤT CHIẾU ĐÃ KẾT THÚC QUÁ 24 GIỜ ĐỂ DỌN SẠCH BỘ NHỚ
         SuatChieu::where('thoi_gian_ket_thuc', '<=', $now->copy()->subHours(24))->delete();
 
-        // 🌟 2. Cập nhật trạng thái các suất đã chiếu xong (trong vòng 24h gần nhất)
         SuatChieu::where('trang_thai', '!=', 'huy')
             ->where('trang_thai', '!=', 'da_chieu')
             ->where('thoi_gian_ket_thuc', '<=', $now)
@@ -109,7 +105,8 @@ class SuatChieuController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        // Ép redirect back về Blade View khi có lỗi, loại bỏ màn hình JSON
+        $validator = Validator::make($request->all(), [
             'phim_id' => 'required|exists:phims,id',
             'phong_chieu_id' => 'required|exists:phong_chieus,id',
             'loai_tao' => 'required|in:don_le,hang_loat',
@@ -117,11 +114,25 @@ class SuatChieuController extends Controller
             'gio_chieu_don_le' => 'required_if:loai_tao,don_le|nullable|string',
             'ngay_bat_dau' => 'required_if:loai_tao,hang_loat|nullable|date',
             'ngay_ket_thuc' => 'required_if:loai_tao,hang_loat|nullable|date|after_or_equal:ngay_bat_dau',
-            'khung_gio' => 'required_if:loai_tao,hang_loat|nullable|array',
+            'khung_gio' => 'required_if:loai_tao,hang_loat|nullable|array|min:1',
             'khung_gio.*' => 'string',
             'gia_ve_tuy_chinh' => 'nullable|numeric|min:0',
             'gia_ve_ngay_le' => 'nullable|numeric|min:0',
+        ], [
+            'phim_id.required' => 'Vui lòng chọn phim trình chiếu.',
+            'phong_chieu_id.required' => 'Vui lòng chọn phòng chiếu.',
+            'ngay_chieu_don_le.required_if' => 'Vui lòng chọn ngày chiếu cho suất đơn lẻ.',
+            'gio_chieu_don_le.required_if' => 'Vui lòng chọn giờ chiếu cho suất đơn lẻ.',
+            'ngay_bat_dau.required_if' => 'Vui lòng chọn ngày bắt đầu khi tạo hàng loạt.',
+            'ngay_ket_thuc.required_if' => 'Vui lòng chọn ngày kết thúc khi tạo hàng loạt.',
+            'ngay_ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.',
+            'khung_gio.required_if' => 'Vui lòng chọn hoặc chèn ít nhất một khung giờ chiếu trước khi khởi tạo!',
+            'khung_gio.min' => 'Vui lòng chọn hoặc chèn ít nhất một khung giờ chiếu.',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
         $settings = CaiDatHeThong::first();
         $thoiGianDonPhong = $settings ? $settings->thoi_gian_don_phong : 15;
@@ -164,11 +175,13 @@ class SuatChieuController extends Controller
 
         $ngayBatDau = Carbon::parse($request->ngay_bat_dau);
         $ngayKetThuc = Carbon::parse($request->ngay_ket_thuc);
+        $danhSachKhungGio = $request->input('khung_gio', []);
+        
         $tatCaSuatChieuTrungHangLoat = collect();
         $suatChieuCanTao = [];
 
         for ($ngayQuet = $ngayBatDau->copy(); $ngayQuet->lte($ngayKetThuc); $ngayQuet->addDay()) {
-            foreach ($request->khung_gio as $gioChieu) {
+            foreach ($danhSachKhungGio as $gioChieu) {
                 $thoiGianChieu = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioChieu);
                 $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
 
@@ -287,14 +300,23 @@ class SuatChieuController extends Controller
 
     public function update(Request $request, SuatChieu $suatChieu) 
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'phim_id' => 'required|exists:phims,id', 
             'phong_chieu_id' => 'required|exists:phong_chieus,id', 
             'ngay_chieu' => 'required|date', 
             'gio_chieu' => 'required|string', 
             'gia_ve_tuy_chinh' => 'nullable|numeric|min:0', 
             'trang_thai' => 'required|in:sap_ra_mat,sap_chieu,dang_chieu,dung_nhan_ve,da_chieu,huy'
+        ], [
+            'phim_id.required' => 'Vui lòng chọn phim.',
+            'phong_chieu_id.required' => 'Vui lòng chọn phòng chiếu.',
+            'ngay_chieu.required' => 'Vui lòng chọn ngày chiếu.',
+            'gio_chieu.required' => 'Vui lòng nhập giờ chiếu.',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
         $settings = CaiDatHeThong::first(); 
         $thoiGianDonPhong = $settings ? $settings->thoi_gian_don_phong : 15;
@@ -336,27 +358,25 @@ class SuatChieuController extends Controller
         return redirect()->route('admin.suat-chieus.index')->with('success', 'Cập nhật thông tin suất chiếu thành công.');
     }
 
-    /**
-     * 🌟 HÀM XÓA SUẤT CHIẾU VỚI QUY TẮC BẮT BUỘC
-     */
     public function destroy(Request $request, SuatChieu $suatChieu) 
     {
-        // 1. Bắt buộc nhập lý do xóa
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'ly_do_huy' => 'required|string|max:500',
         ], [
             'ly_do_huy.required' => 'Vui lòng nhập lý do xóa suất chiếu.',
         ]);
 
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
         $now = Carbon::now();
         $thoiGianChieu = Carbon::parse($suatChieu->thoi_gian_chieu);
 
-        // 2. Quy tắc 1: Phải xóa trước suất chiếu ít nhất 3 ngày (>= 72 giờ)
         if ($thoiGianChieu->lt($now->copy()->addDays(3))) {
-            return redirect()->back()->with('error', 'Không thể xóa! Chỉ được phép xóa suất chiếu trước giờ chiếu ít nhất 3 ngày (ví dụ: ngày 4/8 chỉ được xóa từ 7/8 trở đi).');
+            return redirect()->back()->with('error', 'Không thể xóa! Chỉ được phép xóa suất chiếu trước giờ chiếu ít nhất 3 ngày.');
         }
 
-        // 3. Quy tắc 2: Chưa có người đặt vé
         $coNguoiDatVe = DB::table('ve_xem_phims')
             ->where('suat_chieu_id', $suatChieu->id)
             ->whereIn('trang_thai', ['da_thanh_toan', 'cho_thanh_toan', 'da_su_dung', 'da_dat'])
@@ -369,7 +389,6 @@ class SuatChieuController extends Controller
         $lyDoHuy = $request->input('ly_do_huy');
         $tenPhim = $suatChieu->phim->ten_phim ?? 'N/A';
 
-        // 4. Ghi nhật ký hệ thống
         $this->ghiNhatKy(
             $request, 
             'Xóa suất chiếu', 
