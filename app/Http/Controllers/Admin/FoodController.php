@@ -24,9 +24,11 @@ class FoodController extends Controller
         $query = Doan::with([
             'variants',
             'category',
-            'comboItems.variant',
             'defaultVariant',
         ])
+            ->whereHas('category', function ($query) {
+                $query->where('is_combo', false);
+            })
             ->withCount('invoiceItems');
 
         if ($request->filled('q')) {
@@ -51,13 +53,9 @@ class FoodController extends Controller
             match ($request->status) {
                 'active' => $query->where('is_active', true),
                 'inactive' => $query->where('is_active', false),
-                'low' => $query->where(function ($q) {
-                    $q->whereHas('variants', function ($variantQuery) {
-                        $variantQuery->where('is_active', true)
-                            ->where('stock_quantity', '<=', 10);
-                    })->orWhereHas('comboItems.variant', function ($variantQuery) {
-                        $variantQuery->where('stock_quantity', '<=', 10);
-                    });
+                'low' => $query->whereHas('variants', function ($variantQuery) {
+                    $variantQuery->where('is_active', true)
+                        ->where('stock_quantity', '<=', 10);
                 }),
                 default => null,
             };
@@ -69,13 +67,16 @@ class FoodController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $categories = DanhMucDoAn::orderBy('name')->get();
+        $categories = DanhMucDoAn::where('is_combo', false)
+            ->orderBy('name')
+            ->get();
         $allFoods = Doan::with([
             'category',
             'variants',
-            'comboItems.variant',
             'defaultVariant',
-        ])->get();
+        ])->whereHas('category', function ($query) {
+            $query->where('is_combo', false);
+        })->get();
 
         $summary = [
             'total' => $allFoods->count(),
@@ -95,15 +96,14 @@ class FoodController extends Controller
 
     public function create(Request $request)
     {
-
-        $categories = DanhMucDoAn::orderBy('name')->get();
-
-        // Lấy tất cả món KHÔNG phải Combo
+        $categories = DanhMucDoAn::where('is_combo', false)
+            ->orderBy('name')
+            ->get();
 
         $variants = BienTheDoAn::with('doAn')
             ->whereHas('doAn', function ($q) {
                 $q->whereHas('category', function ($q) {
-                    $q->where('name', 'not like', '%Combo%');
+                    $q->where('is_combo', false);
                 });
             })
             ->get();
@@ -128,24 +128,24 @@ class FoodController extends Controller
 
     public function edit(Doan $food)
     {
+        if ($food->category?->is_combo) {
+            return redirect()->route('admin.foods.combos.edit', $food);
+        }
+
         $food->load([
             'category',
             'variants',
             'defaultVariant',
-            'comboItems.variant.doAn.category',
         ]);
 
-        $categories = DanhMucDoAn::orderBy('name')->get();
-
-        $variants = BienTheDoAn::with('doAn.category')
-            ->whereHas('doAn', function ($q) {
-                $q->where('category_id', '!=', DanhMucDoAn::where('name', 'Combo')->value('id'));
+        $variants = BienTheDoAn::with('doAn')
+            ->whereHas('doAn.category', function ($q) {
+                $q->where('is_combo', false);
             })
             ->get();
 
         return view('admin.foods.edit', compact(
             'food',
-            'categories',
             'variants'
         ));
     }
@@ -154,31 +154,20 @@ class FoodController extends Controller
     {
         $data = $request->validated();
 
+        $category = DanhMucDoAn::find($data['category_id']);
+        if ($category && $category->is_combo) {
+            return back()
+                ->withInput()
+                ->with('error', 'Xin lỗi, trang này chỉ dùng để tạo món lẻ. Vui lòng tạo combo tại trang Quản lý combo.');
+        }
+
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('foods', 'public');
-        }
-        $category = DanhMucDoAn::find($data['category_id']);
-
-        if ($category && str_contains(strtolower($category->name), 'combo')) {
-
-            $variantIds = collect($request->input('combo_items', []))
-                ->pluck('variant_id')
-                ->filter();
-
-            if ($variantIds->count() != $variantIds->unique()->count()) {
-
-                return back()
-                    ->withInput()
-                    ->with('error', 'Không được chọn trùng biến thể trong cùng một combo.');
-            }
         }
 
         $food = Doan::create($data);
 
-        $isCombo = str_contains(
-            strtolower($food->category->name),
-            'combo'
-        );
+        $isCombo = $food->category->is_combo;
 
         if ($isCombo) {
 
@@ -246,6 +235,13 @@ class FoodController extends Controller
     public function update(CapnhatFoodRequest $request, Doan $food)
     {
         $data = $request->validated();
+
+        if ($food->category?->is_combo) {
+            return back()->with(
+                'error',
+                'Sản phẩm combo phải cập nhật trên trang Quản lý combo.'
+            );
+        }
 
         // Upload ảnh mới
         if ($request->hasFile('image')) {

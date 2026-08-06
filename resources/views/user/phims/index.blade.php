@@ -39,55 +39,100 @@
             </div>
         </section>
 
-        <form action="{{ route('user.phims.index') }}" method="GET" class="movie-filter movie-filter-form">
-            <label>
-                <span>Tên phim</span>
-                <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}" placeholder="Tìm tên phim..."
+        <form action="{{ route('user.phims.index') }}" method="GET" class="movie-filter movie-filter-form" id="movieFilterForm">
+            <label class="filter-label {{ request('tim_kiem') ? 'is-active' : '' }}">
+                <span class="filter-title">
+                    <i class="fa-solid fa-film text-red-500"></i>
+                    Tên phim
+                </span>
+                <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}" placeholder="Nhập tên phim cần tìm..."
                     class="filter-input">
             </label>
 
-            <label>
-                <span>Thể loại</span>
-                <select name="the_loai" class="filter-input">
-                    <option value="">Tất cả thể loại</option>
-                    @foreach ($genres as $genre)
-                        <option value="{{ $genre->ten_the_loai }}" {{ request('the_loai') == $genre->ten_the_loai ? 'selected' : '' }}>
-                            {{ $genre->ten_the_loai }}
-                        </option>
-                    @endforeach
-                </select>
-            </label>
+            <div class="filter-label {{ request('the_loai') ? 'is-active' : '' }}">
+                <span class="filter-title">
+                    <i class="fa-solid fa-tags text-amber-400"></i>
+                    Thể loại
+                </span>
+                <div class="cine-custom-select" data-select-name="the_loai">
+                    <input type="hidden" name="the_loai" value="{{ request('the_loai') }}">
+                    <button type="button" class="cine-select-trigger">
+                        <span class="cine-select-value">{{ request('the_loai') ?: 'Tất cả thể loại' }}</span>
+                        <i class="fa-solid fa-chevron-down cine-select-arrow"></i>
+                    </button>
+                    <div class="cine-select-dropdown">
+                        <div class="cine-option {{ !request('the_loai') ? 'selected' : '' }}" data-value="">
+                            <span>Tất cả thể loại</span>
+                            <i class="fa-solid fa-check check-icon"></i>
+                        </div>
+                        @foreach ($genres as $genre)
+                            <div class="cine-option {{ request('the_loai') == $genre->ten_the_loai ? 'selected' : '' }}" data-value="{{ $genre->ten_the_loai }}">
+                                <span>{{ $genre->ten_the_loai }}</span>
+                                <i class="fa-solid fa-check check-icon"></i>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
 
-            <label>
-                <span>Quốc gia</span>
-                <select name="quoc_gia" class="filter-input">
-                    <option value="">Tất cả quốc gia</option>
-                    @foreach ($countries as $country)
-                        <option value="{{ $country->ten_quoc_gia }}" {{ request('quoc_gia') == $country->ten_quoc_gia ? 'selected' : '' }}>
-                            {{ $country->ten_quoc_gia }}
-                        </option>
-                    @endforeach
-                </select>
-            </label>
+            <div class="filter-label {{ request('quoc_gia') ? 'is-active' : '' }}">
+                <span class="filter-title">
+                    <i class="fa-solid fa-earth-americas text-blue-400"></i>
+                    Quốc gia
+                </span>
+                <div class="cine-custom-select" data-select-name="quoc_gia">
+                    <input type="hidden" name="quoc_gia" value="{{ request('quoc_gia') }}">
+                    <button type="button" class="cine-select-trigger">
+                        <span class="cine-select-value">{{ request('quoc_gia') ?: 'Tất cả quốc gia' }}</span>
+                        <i class="fa-solid fa-chevron-down cine-select-arrow"></i>
+                    </button>
+                    <div class="cine-select-dropdown">
+                        <div class="cine-option {{ !request('quoc_gia') ? 'selected' : '' }}" data-value="">
+                            <span>Tất cả quốc gia</span>
+                            <i class="fa-solid fa-check check-icon"></i>
+                        </div>
+                        @foreach ($countries as $country)
+                            <div class="cine-option {{ request('quoc_gia') == $country->ten_quoc_gia ? 'selected' : '' }}" data-value="{{ $country->ten_quoc_gia }}">
+                                <span>{{ $country->ten_quoc_gia }}</span>
+                                <i class="fa-solid fa-check check-icon"></i>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
 
-            <label>
-                <span>Trạng thái</span>
-                <select name="status" class="filter-input">
-                    <option value="">Tất cả trạng thái</option>
-                    @foreach ($statusLabels as $statusValue => $statusLabel)
-                        <option value="{{ $statusValue }}" {{ request('status') == $statusValue ? 'selected' : '' }}>
-                            {{ $statusLabel }}
-                        </option>
-                    @endforeach
-                </select>
-            </label>
+            <div class="filter-label {{ request('status') ? 'is-active' : '' }}">
+                <span class="filter-title">
+                    <i class="fa-solid fa-circle-play text-emerald-400"></i>
+                    Trạng thái
+                </span>
+                <div class="cine-custom-select" data-select-name="status">
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                    <button type="button" class="cine-select-trigger">
+                        <span class="cine-select-value">{{ isset($statusLabels[request('status')]) ? $statusLabels[request('status')] : 'Tất cả trạng thái' }}</span>
+                        <i class="fa-solid fa-chevron-down cine-select-arrow"></i>
+                    </button>
+                    <div class="cine-select-dropdown">
+                        <div class="cine-option {{ !request('status') ? 'selected' : '' }}" data-value="">
+                            <span>Tất cả trạng thái</span>
+                            <i class="fa-solid fa-check check-icon"></i>
+                        </div>
+                        @foreach ($statusLabels as $statusValue => $statusLabel)
+                            <div class="cine-option {{ request('status') == $statusValue ? 'selected' : '' }}" data-value="{{ $statusValue }}">
+                                <span>{{ $statusLabel }}</span>
+                                <i class="fa-solid fa-check check-icon"></i>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
 
             <div class="movie-filter-actions">
-                <button type="submit" class="btn-filter">
+                <button type="submit" class="btn-filter" title="Tìm kiếm">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    Tìm
+                    <span>Lọc phim</span>
                 </button>
-                <a href="{{ route('user.phims.index') }}" class="btn-reset" aria-label="Xóa bộ lọc">
+                <a href="{{ route('user.phims.index') }}" class="btn-reset" title="Xóa bộ lọc" aria-label="Xóa bộ lọc">
                     <i class="fa-solid fa-rotate-right"></i>
                 </a>
             </div>
@@ -97,14 +142,11 @@
             <section class="movie-list-grid" aria-label="Danh sách phim">
                 @foreach ($movies as $movie)
                     @php
-                        $now = now('Asia/Ho_Chi_Minh');
-                        $futureShowtime = $movie->showtimes
-                            ->filter(fn($showtime) => $showtime->thoi_gian_chieu && \Carbon\Carbon::parse($showtime->thoi_gian_chieu)->gte($now))
-                            ->sortBy('thoi_gian_chieu')
-                            ->first();
-
-                        $movieStatus = $futureShowtime?->trang_thai ?? \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT;
-                        $canBook = $futureShowtime && $futureShowtime->trang_thai === \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU;
+                        $movieStatus = $movie->calculated_status ?? \App\Models\SuatChieu::TRANG_THAI_SAP_RA_MAT;
+                        $canBook = in_array($movieStatus, [
+                            \App\Models\SuatChieu::TRANG_THAI_DANG_CHIEU,
+                            \App\Models\SuatChieu::TRANG_THAI_SAP_CHIEU
+                        ]);
                     @endphp
 
                     <article class="movie-card movie-list-card">
@@ -136,7 +178,8 @@
 
                             <div class="movie-actions">
                                 @if ($canBook)
-                                    <a href="{{ route('dat_ve.chon_ghe', $movie->slug) }}" class="btn-small-book booking-link">
+                                    {{-- ĐÃ SỬA: TRUYỀN THÊM ?tab=showtimes#lich-chieu --}}
+                                    <a href="{{ route('user.movies.show', $movie->slug) }}?tab=showtimes#lich-chieu" class="btn-small-book booking-link">
                                         <i class="fa-solid fa-ticket"></i>
                                         Đặt vé
                                     </a>

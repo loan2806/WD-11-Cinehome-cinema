@@ -274,6 +274,7 @@
                         <a href="{{ route('admin.suat-chieus.create', ['phim_id' => $phim->id]) }}" class="movie-action-btn is-primary">
                             <i class="fa-solid fa-calendar-plus"></i>
                             Tạo suất chiếu
+                            <i class="fa-solid fa-arrow-right"></i>
                         </a>
                     </div>
                 @endif

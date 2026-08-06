@@ -36,11 +36,216 @@
     ])->filter(fn ($value) => filled($value))->count();
     $moviesWithShowtimes = $visibleMovies->filter(fn ($movie) => $movie->showtimes->isNotEmpty())->count();
     $todayShowtimes = $visibleShowtimes->filter(fn ($showtime) => $showtime->thoi_gian_chieu?->isToday())->count();
-    $upcomingShowtimes = $visibleShowtimes->filter(fn ($showtime) => $showtime->thoi_gian_chieu?->isFuture())->count();
     $statusLabels = \App\Models\SuatChieu::TRANG_THAI_LIST + [
         'dung_nhan_ve' => 'Dừng nhận vé',
     ];
 @endphp
+
+@push('styles')
+<style>
+    /* 🌟 XOAY MŨI TÊN KHI XỔ DROPDOWN CHI TIẾT PHIM */
+    details.showtime-movie-card .showtime-movie-chevron i {
+        transition: transform 0.25s ease !important;
+    }
+
+    details.showtime-movie-card[open] .showtime-movie-chevron i {
+        transform: rotate(180deg) !important;
+    }
+
+    /* 🌟 BỘ THẺ CUSTOM DROPDOWN SELECT CINEHOME */
+    .showtime-index-filter {
+        position: relative !important;
+        z-index: 100 !important;
+        overflow: visible !important;
+    }
+
+    .showtime-filter-field {
+        position: relative !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+    }
+
+    .cine-select-wrapper {
+        position: relative !important;
+        width: 100% !important;
+        user-select: none !important;
+    }
+
+    .cine-select-trigger {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        background: #18181c !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        border-radius: 12px !important;
+        padding: 10px 14px !important;
+        color: #f3f4f6 !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        height: 42px !important;
+        transition: all 0.2s ease !important;
+        outline: none !important;
+    }
+
+    .cine-select-trigger:hover,
+    .cine-select-wrapper.open .cine-select-trigger {
+        border-color: #facc15 !important;
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2) !important;
+    }
+
+    .cine-select-trigger i {
+        color: #facc15 !important;
+        font-size: 12px !important;
+        transition: transform 0.2s ease !important;
+    }
+
+    .cine-select-wrapper.open .cine-select-trigger i {
+        transform: rotate(180deg) !important;
+    }
+
+    /* CARD MENU POPUP SỔ XUỐNG DẠNG NỔI */
+    .cine-select-menu {
+        position: absolute !important;
+        top: calc(100% + 6px) !important;
+        left: 0 !important;
+        right: 0 !important;
+        min-width: 200px !important;
+        background: #18181c !important;
+        border: 1px solid rgba(250, 204, 21, 0.3) !important;
+        border-radius: 16px !important;
+        padding: 8px !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+        z-index: 99999 !important;
+        max-height: 260px !important;
+        overflow-y: auto !important;
+        display: none !important;
+    }
+
+    .cine-select-wrapper.open .cine-select-menu {
+        display: block !important;
+    }
+
+    .cine-select-option {
+        display: flex !important;
+        align-items: center !important;
+        padding: 10px 12px !important;
+        border-radius: 10px !important;
+        color: #d1d5db !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        margin-bottom: 2px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .cine-select-option:hover {
+        background: rgba(250, 204, 21, 0.15) !important;
+        color: #facc15 !important;
+    }
+
+    .cine-select-option.selected {
+        background: rgba(250, 204, 21, 0.25) !important;
+        color: #facc15 !important;
+        font-weight: 700 !important;
+    }
+
+    .cine-select-menu::-webkit-scrollbar {
+        width: 6px;
+    }
+    .cine-select-menu::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+    }
+
+    /* MODAL NHẬP LÝ DO HỦY SUẤT CHIẾU */
+    .custom-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(6px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 999999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+    }
+    .custom-modal-backdrop.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .custom-modal-card {
+        background: #18181c;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        width: 100%;
+        max-width: 480px;
+        padding: 24px;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    /* PHÂN TRANG DANH SÁCH SUẤT CHIẾU TRONG TỪNG THẺ PHIM */
+    .showtime-local-pagination {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 14px 0 4px;
+    }
+
+    .showtime-page-btn,
+    .showtime-page-numbers button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 34px;
+        height: 34px;
+        padding: 0 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: #18181c;
+        color: #d1d5db;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+    .showtime-page-numbers {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .showtime-page-btn:hover,
+    .showtime-page-numbers button:hover {
+        border-color: #facc15;
+        color: #facc15;
+    }
+
+    .showtime-page-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+    .showtime-page-btn:disabled:hover {
+        border-color: rgba(255, 255, 255, 0.14);
+        color: #d1d5db;
+    }
+
+    .showtime-page-numbers button.is-active {
+        background: rgba(250, 204, 21, 0.18);
+        border-color: #facc15;
+        color: #facc15;
+    }
+</style>
+@endpush
 
 @section('content')
 <div class="showtime-index-page">
@@ -54,8 +259,7 @@
             </span>
             <h2>Quản lý suất chiếu theo phim</h2>
             <p>
-                Theo dõi từng phim, kiểm tra rạp, phòng, khung giờ, giá vé và trạng thái vận hành trong một giao diện
-                gọn, dễ mở rộng và dễ thao tác.
+                Theo dõi từng phim, kiểm tra rạp, phòng, khung giờ, giá vé và trạng thái vận hành trong một giao diện gọn.
             </p>
         </div>
 
@@ -106,46 +310,71 @@
     </section>
 
     <form method="GET" action="{{ route('admin.suat-chieus.index') }}" class="showtime-index-filter">
-        <label class="showtime-filter-field">
+        <!-- BỘ LỌC PHIM -->
+        <div class="showtime-filter-field">
             <span>Phim</span>
-            <select name="phim_id">
-                <option value="">Tất cả phim</option>
-                @foreach ($phims as $itemPhim)
-                    <option value="{{ $itemPhim->id }}" @selected(request('phim_id') == $itemPhim->id)>
-                        {{ $itemPhim->ten_phim }}
-                    </option>
-                @endforeach
-            </select>
-        </label>
+            <div class="cine-select-wrapper">
+                <input type="hidden" name="phim_id" value="{{ request('phim_id') }}">
+                <div class="cine-select-trigger" tabindex="0">
+                    <span class="cine-select-value">Tất cả phim</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="cine-select-menu">
+                    <div class="cine-select-option {{ request('phim_id') == '' ? 'selected' : '' }}" data-value="">Tất cả phim</div>
+                    @foreach ($phims as $itemPhim)
+                        <div class="cine-select-option {{ request('phim_id') == $itemPhim->id ? 'selected' : '' }}" data-value="{{ $itemPhim->id }}">
+                            {{ $itemPhim->ten_phim }}
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
 
-        <label class="showtime-filter-field">
+        <!-- BỘ LỌC PHÒNG CHIẾU -->
+        <div class="showtime-filter-field">
             <span>Phòng chiếu</span>
-            <select name="phong_chieu_id">
-                <option value="">Tất cả phòng</option>
-                @foreach ($phongChieus as $phong)
-                    <option value="{{ $phong->id }}" @selected(request('phong_chieu_id') == $phong->id)>
-                        {{ $phong->ten_phong }} ({{ strtoupper($phong->loai_phong) }})
-                    </option>
-                @endforeach
-            </select>
-        </label>
+            <div class="cine-select-wrapper">
+                <input type="hidden" name="phong_chieu_id" value="{{ request('phong_chieu_id') }}">
+                <div class="cine-select-trigger" tabindex="0">
+                    <span class="cine-select-value">Tất cả phòng</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="cine-select-menu">
+                    <div class="cine-select-option {{ request('phong_chieu_id') == '' ? 'selected' : '' }}" data-value="">Tất cả phòng</div>
+                    @foreach ($phongChieus as $phong)
+                        <div class="cine-select-option {{ request('phong_chieu_id') == $phong->id ? 'selected' : '' }}" data-value="{{ $phong->id }}">
+                            {{ $phong->ten_phong }} ({{ strtoupper($phong->loai_phong) }})
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
 
-        <label class="showtime-filter-field">
+        <!-- BỘ LỌC TRẠNG THÁI -->
+        <div class="showtime-filter-field">
             <span>Trạng thái</span>
-            <select name="trang_thai">
-                <option value="">Tất cả trạng thái</option>
-                @foreach ($statusLabels as $value => $label)
-                    <option value="{{ $value }}" @selected(request('trang_thai') == $value)>
-                        {{ $label }}
-                    </option>
-                @endforeach
-            </select>
-        </label>
+            <div class="cine-select-wrapper">
+                <input type="hidden" name="trang_thai" value="{{ request('trang_thai') }}">
+                <div class="cine-select-trigger" tabindex="0">
+                    <span class="cine-select-value">Tất cả trạng thái</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="cine-select-menu">
+                    <div class="cine-select-option {{ request('trang_thai') == '' ? 'selected' : '' }}" data-value="">Tất cả trạng thái</div>
+                    @foreach ($statusLabels as $value => $label)
+                        <div class="cine-select-option {{ request('trang_thai') == $value ? 'selected' : '' }}" data-value="{{ $value }}">
+                            {{ $label }}
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
 
-        <label class="showtime-filter-field">
+        <!-- BỘ LỌC NGÀY CHIẾU -->
+        <div class="showtime-filter-field">
             <span>Ngày chiếu</span>
-            <input type="date" name="ngay_chieu" value="{{ request('ngay_chieu') }}">
-        </label>
+            <input type="date" name="ngay_chieu" value="{{ request('ngay_chieu') }}" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 9px 14px; border-radius: 12px; height: 42px; width: 100%;">
+        </div>
 
         <div class="showtime-filter-actions">
             <button type="submit" class="movie-action-btn is-primary">
@@ -183,10 +412,10 @@
                     $movieShowtimes = $phim->showtimes;
                     $movieTodayCount = $movieShowtimes->filter(fn ($showtime) => $showtime->thoi_gian_chieu?->isToday())->count();
                     $movieUpcomingCount = $movieShowtimes->filter(fn ($showtime) => $showtime->thoi_gian_chieu?->isFuture())->count();
-                    $firstShowtime = $movieShowtimes->first();
                 @endphp
 
-                <details class="showtime-movie-card" {{ $loop->first ? 'open' : '' }}>
+                {{-- Bỏ thuộc tính open để thu gọn danh sách mặc định --}}
+                <details class="showtime-movie-card">
                     <summary class="showtime-movie-summary">
                         <div class="showtime-movie-title">
                             <img src="{{ $posterUrl($phim->poster) }}" alt="{{ $phim->ten_phim }}">
@@ -196,7 +425,7 @@
                                     <i class="fa-regular fa-clock"></i>
                                     {{ $phim->thoi_luong ?? 90 }} phút
                                     <b></b>
-                                    {{ $phim->country?->ten_quoc_gia ?? 'Chưa cập nhật quốc gia' }}
+                                    {{ $phim->country?->ten_quoc_gia ?? 'Việt Nam' }}
                                 </span>
                             </div>
                         </div>
@@ -223,33 +452,12 @@
 
                     <div class="showtime-movie-body">
                         @if ($movieShowtimes->isNotEmpty())
-                            <div class="showtime-mobile-list">
-                                @foreach ($movieShowtimes as $suat)
-                                    @php
-                                        $status = $suat->trang_thai;
-                                        $statusClass = match ($status) {
-                                            'dang_chieu' => 'is-live',
-                                            'sap_chieu', 'sap_ra_mat' => 'is-upcoming',
-                                            'huy' => 'is-cancelled',
-                                            default => 'is-muted',
-                                        };
-                                    @endphp
-                                    <article class="showtime-mobile-item">
-                                        <div>
-                                            <strong>{{ $suat->thoi_gian_chieu?->format('H:i d/m/Y') ?? 'N/A' }}</strong>
-                                            <span>
-                                                {{ $suat->rapChieuPhim?->ten_rap ?? 'N/A' }}
-                                                •
-                                                {{ $suat->phongChieu?->ten_phong ?? 'N/A' }}
-                                            </span>
-                                        </div>
-                                        <em class="{{ $statusClass }}">{{ $statusLabels[$status] ?? $status }}</em>
-                                    </article>
-                                @endforeach
-                            </div>
-
-                            <div class="showtime-table-wrap">
-                                <table class="showtime-index-table">
+                            @php
+                                $showtimePerPage = 10;
+                                $showtimeTableId = 'showtime-table-' . $phim->id;
+                            @endphp
+                            <div class="showtime-table-wrap" data-per-page="{{ $showtimePerPage }}">
+                                <table class="showtime-index-table" id="{{ $showtimeTableId }}">
                                     <thead>
                                         <tr>
                                             <th>Mã suất</th>
@@ -273,11 +481,9 @@
                                                     default => 'is-muted',
                                                 };
                                             @endphp
-                                            <tr>
-                                                <td>
-                                                    <span class="showtime-code">#{{ sprintf('%04d', $suat->id) }}</span>
-                                                </td>
-                                                <td>{{ $suat->rapChieuPhim?->ten_rap ?? 'N/A' }}</td>
+                                            <tr data-row-index="{{ $loop->index }}">
+                                                <td><span class="showtime-code">#{{ sprintf('%04d', $suat->id) }}</span></td>
+                                                <td>{{ $suat->rapChieuPhim?->ten_rap ?? 'CineHome Cinema' }}</td>
                                                 <td>
                                                     <span class="showtime-room-chip">
                                                         {{ $suat->phongChieu?->ten_phong ?? 'N/A' }}
@@ -294,9 +500,7 @@
                                                         {{ $suat->thoi_gian_ket_thuc?->format('H:i') ?? '--:--' }}
                                                     </span>
                                                 </td>
-                                                <td>
-                                                    <strong class="showtime-price">{{ number_format((float) $suat->gia_ve) }}đ</strong>
-                                                </td>
+                                                <td><strong class="showtime-price">{{ number_format((float) $suat->gia_ve) }}đ</strong></td>
                                                 <td>
                                                     <span class="showtime-status {{ $statusClass }}">
                                                         {{ $statusLabels[$status] ?? $status }}
@@ -310,13 +514,13 @@
                                                         <a href="{{ route('admin.suat-chieus.edit', $suat) }}" class="movie-icon-btn is-edit" title="Sửa suất chiếu">
                                                             <i class="fa-solid fa-pen"></i>
                                                         </a>
-                                                        <form action="{{ route('admin.suat-chieus.destroy', $suat) }}" method="POST" onsubmit="return confirm('Bạn chắc chắn muốn xóa suất chiếu này?')">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="movie-icon-btn is-delete" title="Xóa suất chiếu">
-                                                                <i class="fa-solid fa-trash-can"></i>
-                                                            </button>
-                                                        </form>
+                                                        
+                                                        <button type="button" 
+                                                                class="movie-icon-btn is-delete" 
+                                                                title="Xóa suất chiếu"
+                                                                onclick="openDeleteModal('{{ route('admin.suat-chieus.destroy', $suat) }}', '{{ sprintf('%04d', $suat->id) }}', '{{ $phim->ten_phim }}', '{{ $suat->thoi_gian_chieu?->format('d/m/Y H:i') }}')">
+                                                            <i class="fa-solid fa-trash-can"></i>
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -324,6 +528,17 @@
                                     </tbody>
                                 </table>
                             </div>
+                            @if ($movieShowtimes->count() > $showtimePerPage)
+                                <div class="showtime-local-pagination" data-target="{{ $showtimeTableId }}">
+                                    <button type="button" class="showtime-page-btn is-prev" aria-label="Trang trước">
+                                        <i class="fa-solid fa-chevron-left"></i>
+                                    </button>
+                                    <div class="showtime-page-numbers"></div>
+                                    <button type="button" class="showtime-page-btn is-next" aria-label="Trang sau">
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            @endif
                         @else
                             <div class="showtime-empty-card">
                                 <i class="fa-regular fa-calendar-xmark"></i>
@@ -351,4 +566,151 @@
         </div>
     </section>
 </div>
+
+<!-- MODAL XÁC NHẬN XÓA SUẤT CHIẾU VÀ NHẬP LÝ DO HỦY -->
+<div id="deleteModal" class="custom-modal-backdrop">
+    <div class="custom-modal-card">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <div style="background: rgba(239, 68, 68, 0.2); color: #ef4444; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+                <h4 style="color: #fff; font-size: 18px; font-weight: 800; margin: 0;">Xác nhận xóa suất chiếu</h4>
+                <small style="color: #9ca3af;" id="deleteModalSub">Suất chiếu #0000</small>
+            </div>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 16px; font-size: 12.5px; color: #fcd34d;">
+            <i class="fa-solid fa-circle-info" style="margin-right: 4px;"></i>
+            Chỉ cho phép xóa suất chiếu <strong>trước ít nhất 3 ngày</strong> và <strong>chưa có khách hàng đặt vé</strong>.
+        </div>
+
+        <form id="deleteForm" method="POST" action="">
+            @csrf
+            @method('DELETE')
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: #d1d5db; font-size: 13px; font-weight: 600; margin-bottom: 8px;">
+                    Lý do xóa / hủy suất chiếu <span style="color: #ef4444;">*</span>
+                </label>
+                <textarea name="ly_do_huy" id="ly_do_huy_input" required rows="3" placeholder="Ví dụ: Đổi lịch phòng, sự cố thiết bị, thay đổi khung giờ chiếu..." style="width: 100%; background: #111113; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 12px; padding: 12px; font-size: 14px; outline: none;"></textarea>
+                <small style="color: #6b7280; margin-top: 4px; display: block;">Lý do xóa sẽ được lưu lại nhật ký hệ thống (Audit Log).</small>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeDeleteModal()" class="movie-action-btn is-ghost" style="padding: 8px 16px; font-size: 13px;">Hủy bỏ</button>
+                <button type="submit" class="movie-action-btn is-primary" style="background: #ef4444; border-color: #ef4444; color: #fff; padding: 8px 18px; font-size: 13px;">Xác nhận xóa</button>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // SCRIPT KHỞI TẠO CINE-SELECT POPUP
+    document.querySelectorAll('.cine-select-wrapper').forEach(function(wrapper) {
+        const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+        const trigger = wrapper.querySelector('.cine-select-trigger');
+        const triggerText = wrapper.querySelector('.cine-select-value');
+        const options = wrapper.querySelectorAll('.cine-select-option');
+
+        options.forEach(function(opt) {
+            if (opt.classList.contains('selected')) {
+                triggerText.textContent = opt.textContent.trim();
+            }
+        });
+
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
+                if (w !== wrapper) {
+                    w.classList.remove('open');
+                }
+            });
+
+            wrapper.classList.toggle('open');
+        });
+
+        options.forEach(function(opt) {
+            opt.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const val = opt.dataset.value;
+                hiddenInput.value = val;
+                triggerText.textContent = opt.textContent.trim();
+
+                options.forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+
+                wrapper.classList.remove('open');
+                hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        });
+    });
+
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
+            w.classList.remove('open');
+        });
+    });
+
+    // PHÂN TRANG DANH SÁCH SUẤT CHIẾU BÊN TRONG TỪNG THẺ PHIM (client-side)
+    document.querySelectorAll('.showtime-local-pagination').forEach(function(pager) {
+        const table = document.getElementById(pager.dataset.target);
+        if (!table) return;
+
+        const wrap = table.closest('.showtime-table-wrap');
+        const perPage = parseInt(wrap?.dataset.perPage || '10', 10);
+        const rows = Array.from(table.querySelectorAll('tbody tr[data-row-index]'));
+        const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
+
+        const prevBtn = pager.querySelector('.is-prev');
+        const nextBtn = pager.querySelector('.is-next');
+        const numbersEl = pager.querySelector('.showtime-page-numbers');
+        let currentPage = 1;
+
+        function renderNumbers() {
+            numbersEl.innerHTML = '';
+            for (let p = 1; p <= totalPages; p++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = p;
+                btn.classList.toggle('is-active', p === currentPage);
+                btn.addEventListener('click', function() { goToPage(p); });
+                numbersEl.appendChild(btn);
+            }
+        }
+
+        function goToPage(page) {
+            currentPage = Math.min(Math.max(page, 1), totalPages);
+            rows.forEach(function(row) {
+                const rowPage = Math.floor(parseInt(row.dataset.rowIndex, 10) / perPage) + 1;
+                row.style.display = rowPage === currentPage ? '' : 'none';
+            });
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+            renderNumbers();
+        }
+
+        prevBtn.addEventListener('click', function() { goToPage(currentPage - 1); });
+        nextBtn.addEventListener('click', function() { goToPage(currentPage + 1); });
+
+        goToPage(1);
+    });
+});
+
+function openDeleteModal(actionUrl, code, phimTitle, showTimeText) {
+    document.getElementById('deleteForm').action = actionUrl;
+    document.getElementById('deleteModalSub').textContent = 'Suất chiếu #' + code + ' - Phim: ' + phimTitle + (showTimeText ? ' (' + showTimeText + ')' : '');
+    document.getElementById('ly_do_huy_input').value = '';
+    document.getElementById('deleteModal').classList.add('active');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+}
+</script>
+@endpush

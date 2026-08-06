@@ -7,6 +7,7 @@
 @section('content')
 @php
     $isCombo = $food->isCombo();
+    $tongTonKho = $food->tong_ton_kho;
     $stock = $food->stock_quantity;
     $isLowStock = $stock <= $food->min_stock_quantity;
     $imagePath = $food->image
@@ -69,6 +70,10 @@
         <div class="food-show-stat">
             <span>Giá bán</span>
             <strong>{{ number_format((float) $food->price, 0, ',', '.') }}đ</strong>
+        </div>
+        <div class="food-show-stat">
+            <span>Tồn kho</span>
+            <strong>{{ $tongTonKho }}</strong>
         </div>
         <div class="food-show-stat {{ $isLowStock ? 'is-warn' : 'is-good' }}">
             <span>Tồn kho khả dụng</span>

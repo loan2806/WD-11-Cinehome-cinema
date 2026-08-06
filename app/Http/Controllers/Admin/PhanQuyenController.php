@@ -4,63 +4,102 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 
 class PhanQuyenController extends Controller
 {
     /**
-     * Hiển thị danh sách các vai trò và bảng ma trận tích chọn quyền động
+     * Hiển thị Ma trận phân quyền
      */
-    public function index(Request $request)
+    public function maTran()
     {
-        // Lấy tất cả vai trò kèm theo danh sách quyền hiện tại của chúng
-        $roles = Role::with('permissions')->get();
-        $editableRoles = $roles->reject(fn ($role) => $role->name === 'Quản trị viên')->values();
+        // 🌟 BẢO VỆ TỨC THÌ: Nếu quyền xem Ma trận bị tước, lập tức chặn lại
+        if (! \coQuyen('phan_quyen.ma_tran')) {
+            return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền truy cập Ma trận phân quyền!');
+        }
+
+        $danhSachVaiTro = config('phan_quyen.vai_tro', []);
         
-        // Lấy toàn bộ danh sách các quyền hạn được định nghĩa trong hệ thống
-        $permissions = Permission::all();
+        // Lấy ma trận quyền từ Cache
+        $maTranQuyen = Cache::get('ma_tran_phan_quyen_he_thong', []);
 
-        // Kiểm tra xem Admin có đang bấm chọn xem một vai trò cụ thể nào không
-        $selectedRole = null;
-        if ($request->has('role_id')) {
-            $selectedRole = Role::find($request->role_id);
+        // Thu thập toàn bộ các mã quyền đang khai báo trong Config
+        $tatCaMaQuyen = [];
+        foreach (config('phan_quyen.nhom_quyen', []) as $nhom) {
+            foreach ($nhom['danh_sach_quyen'] as $maQuyen => $tenQuyen) {
+                $tatCaMaQuyen[] = $maQuyen;
+            }
         }
 
-        // Nếu không lựa chọn vai trò cụ thể, mặc định hiển thị vai trò đầu tiên trong danh sách
-        if (!$selectedRole || $selectedRole->name === 'Quản trị viên') {
-            $selectedRole = $editableRoles->first();
+        // Nếu Cache rỗng, khởi tạo mặc định cho super_admin sở hữu tất cả các quyền
+        if (empty($maTranQuyen)) {
+            $maTranQuyen['super_admin'] = $tatCaMaQuyen;
+        } else {
+            // Đảm bảo Super Admin luôn sở hữu 100% tất cả các quyền kể cả quyền mới tạo
+            $maTranQuyen['super_admin'] = array_values(array_unique(array_merge($maTranQuyen['super_admin'] ?? [], $tatCaMaQuyen)));
         }
 
-        $summary = [
-            'roles' => $editableRoles->count(),
-            'permissions' => $permissions->count(),
-            'assigned' => $editableRoles->sum(fn ($role) => $role->permissions->count()),
-            'selected' => $selectedRole?->permissions->count() ?? 0,
-        ];
-
-        return view('admin.phan-quyen.index', compact('roles', 'permissions', 'selectedRole', 'summary'));
+        return view('admin.phan_quyen.ma_tran', compact('danhSachVaiTro', 'maTranQuyen'));
     }
 
     /**
-     * Xử lý lưu và cập nhật ma trận tích chọn quyền động của Vai trò
-     * Đã tích hợp lệnh xóa bộ nhớ đệm tối cao chống leak quyền
+     * Cập nhật Ma trận phân quyền
      */
-    public function updateMatrix(Request $request, $id)
+    public function capNhat(Request $request)
     {
-        // Tìm vai trò cần cập nhật quyền hạn
-        $role = Role::findOrFail($id);
-        
-        // Nhận danh sách mảng các quyền được người dùng tích chọn từ form
-        $activePermissions = $request->input('permissions', []);
+        // 🌟 BẢO VỆ TỨC THÌ: Kiểm tra ngay tại thời điểm bấm gửi Form
+        if (! \coQuyen('phan_quyen.ma_tran')) {
+            return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn vừa bị thu hồi quyền thao tác trên Ma trận phân quyền!');
+        }
 
-        // Đồng bộ hóa danh sách quyền mới cho vai trò
-        $role->syncPermissions($activePermissions);
+        $danhSachQuyenGuiLen = $request->input('danh_sach_quyen', []);
 
-        // BIỆN PHÁP BẢO MẬT: Ép buộc Spatie xóa sạch bộ nhớ đệm cũ để kích hoạt quyền mới ngay lập tức
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        // Thu thập toàn bộ mã quyền có trong hệ thống
+        $tatCaMaQuyen = [];
+        foreach (config('phan_quyen.nhom_quyen', []) as $nhom) {
+            foreach ($nhom['danh_sach_quyen'] as $maQuyen => $tenQuyen) {
+                $tatCaMaQuyen[] = $maQuyen;
+            }
+        }
 
-        return redirect()->route('admin.phan-quyen.index', ['role_id' => $role->id])
-                         ->with('success', 'Cập nhật ma trận phân quyền động cho vai trò thành công!');
+        // Mặc định ép Quản Trị Viên (Super-admin) sở hữu 100% tất cả các quyền
+        $danhSachQuyenGuiLen['super_admin'] = $tatCaMaQuyen;
+
+        // 🌟 1. Cập nhật và ghi đè vĩnh viễn vào Cache hệ thống
+        Cache::forget('ma_tran_phan_quyen_he_thong');
+        Cache::forever('ma_tran_phan_quyen_he_thong', $danhSachQuyenGuiLen);
+
+        // 🌟 2. Đồng bộ trực tiếp vào Cơ sở dữ liệu Spatie Permission
+        try {
+            // Xóa bộ nhớ tạm Spatie
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+            // Đảm bảo tất cả Permission Keys trong config đều đã tồn tại trong DB
+            foreach ($tatCaMaQuyen as $maQuyen) {
+                Permission::firstOrCreate(
+                    ['name' => $maQuyen, 'guard_name' => 'web'],
+                    ['description' => $maQuyen]
+                );
+            }
+
+            // Cập nhật quyền cho từng vai trò tương ứng trong DB
+            $danhSachVaiTro = config('phan_quyen.vai_tro', []);
+            foreach ($danhSachVaiTro as $khoaVaiTro => $tenVaiTro) {
+                $role = Role::firstOrCreate(['name' => $khoaVaiTro, 'guard_name' => 'web']);
+                
+                // Lấy danh sách quyền được tích chọn từ màn hình ma trận
+                $quyenCuaVaiTro = $danhSachQuyenGuiLen[$khoaVaiTro] ?? [];
+                
+                // Đồng bộ danh sách quyền vào vai trò
+                $role->syncPermissions($quyenCuaVaiTro);
+            }
+        } catch (\Throwable $e) {
+            logger()->error('Cảnh báo đồng bộ Spatie DB: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Đã cập nhật và áp dụng ngay lập tức ma trận phân quyền hệ thống!');
     }
 }

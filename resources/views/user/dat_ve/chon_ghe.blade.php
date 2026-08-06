@@ -13,12 +13,17 @@
 
         $flatSeats = collect($gheTheoHang ?? [])->flatten(1)->map(function ($seat) {
             $seat['loai_ghe_norm'] = mb_strtolower($seat['loai_ghe'] ?? '');
+            $seat['is_couple_seat'] = ($seat['la_couple'] ?? false) ||
+                str_contains($seat['loai_ghe_norm'], 'couple') ||
+                str_contains($seat['loai_ghe_norm'], 'đôi') ||
+                str_contains($seat['loai_ghe_norm'], 'doi') ||
+                str_contains($seat['loai_ghe_norm'], 'double');
             return $seat;
         });
 
         $normalSeat = $flatSeats->first(fn($seat) => str_contains($seat['loai_ghe_norm'] ?? '', 'thường') || ($seat['loai_ghe_norm'] ?? '') === 'normal');
         $vipSeat = $flatSeats->first(fn($seat) => str_contains($seat['loai_ghe_norm'] ?? '', 'vip'));
-        $doubleSeat = $flatSeats->first(fn($seat) => str_contains($seat['loai_ghe_norm'] ?? '', 'couple') || str_contains($seat['loai_ghe_norm'] ?? '', 'doi') || str_contains($seat['loai_ghe_norm'] ?? '', 'đôi') || str_contains($seat['loai_ghe_norm'] ?? '', 'double'));
+        $doubleSeat = $flatSeats->first(fn($seat) => $seat['is_couple_seat']);
 
         $hasNormal = !is_null($normalSeat);
         $hasVip = !is_null($vipSeat);
@@ -26,7 +31,7 @@
 
         $normalPrice = $normalSeat['gia'] ?? ($suatChieu->gia_ve ?? 0);
         $vipPrice = $vipSeat['gia'] ?? $normalPrice;
-        $doublePrice = ($doubleSeat['gia'] ?? (($suatChieu->gia_ve ?? 0) * 2)) + ($doubleSeat['phu_thu'] ?? 0);
+        $doublePrice = $doubleSeat['gia'] ?? (($suatChieu->gia_ve ?? 0) * 2);
 
         $totalSeats = $flatSeats->count();
         $availableSeats = $flatSeats->where('chon_duoc', true)->count();
@@ -40,8 +45,7 @@
         <section class="booking-seat-hero">
             <div class="booking-flow-hero-copy">
                 <span class="booking-eyebrow">
-                    <i class="fa-solid fa-couch"></i>
-                    Bước 2 trong 4
+                    <i class="fa-solid fa-couch"></i> Bước 2 trong 4
                 </span>
                 <h1>Chọn ghế đẹp cho suất chiếu của bạn.</h1>
                 <p>
@@ -125,11 +129,31 @@
             </aside>
 
             <section class="booking-seat-map-panel" aria-label="Sơ đồ chọn ghế">
+                
+                @if (isset($pendingTicket) && $pendingTicket && !$pendingTicket->isExpired())
+                    <div class="booking-pending-alert" style="background: rgba(234, 179, 8, 0.12) !important; border: 1px solid #eab308 !important; color: #fef08a !important; padding: 16px 20px !important; border-radius: 16px !important; margin-bottom: 20px !important; display: flex !important; justify-content: space-between !important; align-items: center !important; gap: 15px !important; flex-wrap: wrap !important; z-index: 99 !important; box-shadow: 0 10px 25px -5px rgba(234, 179, 8, 0.2);">
+                        <div style="display: flex; align-items: center; gap: 14px;">
+                            <i class="fa-solid fa-clock-rotate-left" style="color: #facc15 !important; font-size: 22px !important;"></i>
+                            <div>
+                                <strong style="display: block; color: #fff; font-size: 15px; font-weight: 700; margin-bottom: 2px;">Bạn đang có đơn hàng chờ thanh toán (Mã vé: {{ $pendingTicket->ma_ve }})</strong>
+                                <span style="font-size: 13px; color: #cbd5e1;">Ghế đang giữ: <b style="color: #facc15;">{{ $pendingTicket->ma_ghe }}</b></span>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <a href="{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id, 'pending_ticket_id' => $pendingTicket->id]) }}" class="js-proceed-link" style="background: #eab308; color: #000; padding: 9px 18px; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 13px; transition: 0.2s;">
+                                Tiếp tục thanh toán <i class="fa-solid fa-arrow-right" style="margin-left: 4px;"></i>
+                            </a>
+                            <a href="{{ route('dat_ve.chon_ghe', ['movie' => $suatChieu->id, 'reset' => 1]) }}" style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 9px 16px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 13px; border: 1px solid rgba(239, 68, 68, 0.4);" onclick="return confirm('Bạn có chắc muốn hủy đơn chờ này để chọn lại ghế mới?')">
+                                Hủy & Chọn lại
+                            </a>
+                        </div>
+                    </div>
+                @endif
+
                 <div class="booking-seat-toolbar">
                     <div>
                         <span class="booking-eyebrow">
-                            <i class="fa-solid fa-ticket"></i>
-                            Sơ đồ phòng chiếu
+                            <i class="fa-solid fa-ticket"></i> Sơ đồ phòng chiếu
                         </span>
                         <h2>Chọn vị trí yêu thích</h2>
                         <p>{{ $availableSeats }} ghế còn trống / {{ $totalSeats }} ghế. Tối đa 8 ghế mỗi lần đặt.</p>
@@ -141,7 +165,6 @@
                     </div>
                 </div>
 
-                {{-- 🌟 ĐÃ SỬA: Bổ sung inline CSS cực đẹp và chắc chắn hiển thị cho thông báo lỗi từ Server --}}
                 @if (session('error'))
                     <div class="booking-seat-alert" style="background: rgba(239, 68, 68, 0.15) !important; border: 1px solid #ef4444 !important; color: #f87171 !important; padding: 16px !important; border-radius: 12px !important; margin: 15px 0 !important; display: flex !important; align-items: center !important; gap: 12px !important; font-weight: 600 !important; font-size: 14px !important; position: relative !important; z-index: 99 !important;">
                         <i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important;"></i>
@@ -162,10 +185,16 @@
                                     <span class="row-label">{{ $hang }}</span>
 
                                     @php
+                                        // Sắp xếp tự nhiên mã ghế (ví dụ: H1, H2, H3... H10)
+                                        usort($cacGhe, function ($a, $b) {
+                                            return strnatcmp($a['ma_ghe'], $b['ma_ghe']);
+                                        });
+
                                         $merged = [];
                                         $skip = false;
+                                        $totalRowSeats = count($cacGhe);
 
-                                        for ($i = 0; $i < count($cacGhe); $i++) {
+                                        for ($i = 0; $i < $totalRowSeats; $i++) {
                                             if ($skip) {
                                                 $skip = false;
                                                 continue;
@@ -173,35 +202,49 @@
 
                                             $ghe = $cacGhe[$i];
                                             $type = mb_strtolower($ghe['loai_ghe'] ?? '');
-                                            $isCouple = str_contains($type, 'couple') || str_contains($type, 'đôi') || str_contains($type, 'doi');
+                                            $isCouple = ($ghe['la_couple'] ?? false) ||
+                                                        str_contains($type, 'couple') ||
+                                                        str_contains($type, 'đôi') ||
+                                                        str_contains($type, 'doi') ||
+                                                        str_contains($type, 'double');
 
-                                            if ($isCouple && isset($cacGhe[$i + 1]) && mb_strtolower($cacGhe[$i + 1]['loai_ghe'] ?? '') === $type) {
+                                            if ($isCouple && isset($cacGhe[$i + 1])) {
                                                 $ghe2 = $cacGhe[$i + 1];
-                                                $merged[] = [
-                                                    'ma_ghe' => $ghe['ma_ghe'] . ' | ' . $ghe2['ma_ghe'],
-                                                    'seat_codes' => $ghe['ma_ghe'] . ',' . $ghe2['ma_ghe'],
-                                                    'loai_ghe' => $ghe['loai_ghe'],
-                                                    'gia' => $ghe['gia'] + ($ghe['phu_thu'] ?? 0),
-                                                    'mau_sac' => $ghe['mau_sac'],
-                                                    'da_dat' => $ghe['da_dat'] || $ghe2['da_dat'],
-                                                    'bao_tri' => $ghe['bao_tri'] || $ghe2['bao_tri'],
-                                                    'chon_duoc' => $ghe['chon_duoc'] && $ghe2['chon_duoc'],
-                                                    'is_couple' => true,
-                                                ];
-                                                $skip = true;
-                                            } else {
-                                                $merged[] = [
-                                                    'ma_ghe' => $ghe['ma_ghe'],
-                                                    'seat_codes' => $ghe['ma_ghe'],
-                                                    'loai_ghe' => $ghe['loai_ghe'],
-                                                    'gia' => $ghe['gia'],
-                                                    'mau_sac' => $ghe['mau_sac'],
-                                                    'da_dat' => $ghe['da_dat'],
-                                                    'bao_tri' => $ghe['bao_tri'],
-                                                    'chon_duoc' => $ghe['chon_duoc'],
-                                                    'is_couple' => false,
-                                                ];
+                                                $type2 = mb_strtolower($ghe2['loai_ghe'] ?? '');
+                                                $isCouple2 = ($ghe2['la_couple'] ?? false) ||
+                                                             str_contains($type2, 'couple') ||
+                                                             str_contains($type2, 'đôi') ||
+                                                             str_contains($type2, 'doi') ||
+                                                             str_contains($type2, 'double');
+
+                                                if ($isCouple2) {
+                                                    $merged[] = [
+                                                        'ma_ghe' => $ghe['ma_ghe'] . ' | ' . $ghe2['ma_ghe'],
+                                                        'seat_codes' => $ghe['ma_ghe'] . ',' . $ghe2['ma_ghe'],
+                                                        'loai_ghe' => $ghe['loai_ghe'],
+                                                        'gia' => $ghe['gia'],
+                                                        'mau_sac' => $ghe['mau_sac'],
+                                                        'da_dat' => ($ghe['da_dat'] ?? false) || ($ghe2['da_dat'] ?? false),
+                                                        'bao_tri' => ($ghe['bao_tri'] ?? false) || ($ghe2['bao_tri'] ?? false),
+                                                        'chon_duoc' => ($ghe['chon_duoc'] ?? true) && ($ghe2['chon_duoc'] ?? true),
+                                                        'is_couple' => true,
+                                                    ];
+                                                    $skip = true;
+                                                    continue;
+                                                }
                                             }
+
+                                            $merged[] = [
+                                                'ma_ghe' => $ghe['ma_ghe'],
+                                                'seat_codes' => $ghe['ma_ghe'],
+                                                'loai_ghe' => $ghe['loai_ghe'],
+                                                'gia' => $ghe['gia'],
+                                                'mau_sac' => $ghe['mau_sac'],
+                                                'da_dat' => $ghe['da_dat'] ?? false,
+                                                'bao_tri' => $ghe['bao_tri'] ?? false,
+                                                'chon_duoc' => $ghe['chon_duoc'] ?? true,
+                                                'is_couple' => $isCouple,
+                                            ];
                                         }
                                     @endphp
 
@@ -217,7 +260,7 @@
                                             $typeText = $ghe['loai_ghe'] ?? 'Ghế';
                                         @endphp
 
-                                        <div class="seat-wrapper">
+                                        <div class="seat-wrapper {{ $isCouple ? 'seat-wrapper--couple' : '' }}">
                                             @foreach ($codes as $seat)
                                                 <input type="checkbox" class="js-seat sr-only" value="{{ trim($seat) }}" {{ $disabled ? 'disabled' : '' }}>
                                             @endforeach
@@ -225,7 +268,7 @@
                                             <button
                                                 type="button"
                                                 class="seat-button {{ $isCouple ? 'seat-button--couple' : '' }} {{ $isBooked ? 'booked' : '' }} {{ $isMaintenance ? 'maintenance' : '' }}"
-                                                style="--seat-color: {{ $ghe['mau_sac'] }}"
+                                                style="--seat-color: {{ $ghe['mau_sac'] }}; @if($isCouple) width: 84px; max-width: 84px; @endif"
                                                 data-seat="{{ $seatLabel }}"
                                                 data-seat-codes="{{ $seatCodes }}"
                                                 data-price="{{ $ghe['gia'] }}"
@@ -236,7 +279,7 @@
                                                 @disabled($disabled)
                                             >
                                                 @if ($isCouple)
-                                                    <span class="seat-couple-label">{{ trim($codes[0]) }} | {{ trim($codes[1]) }}</span>
+                                                    <span class="seat-couple-label">{{ trim($codes[0]) }} | {{ trim($codes[1] ?? '') }}</span>
                                                 @else
                                                     <span>{{ $seatLabel }}</span>
                                                 @endif
@@ -358,6 +401,8 @@
             let countdownTimerInterval = null;
             let selectedSeats = [];
             let lockedSeats = new Set();
+            let isProceedingToNextStep = false;
+            let isFetchingLocks = false;
 
             const params = new URLSearchParams(window.location.search);
             const seatParam = params.get("ghe");
@@ -407,15 +452,19 @@
             }
 
             async function loadLockedSeats() {
+                if (isFetchingLocks || isProceedingToNextStep) return;
+                isFetchingLocks = true;
                 try {
                     const res = await fetch(`/dat-ve/seat-locks/${showtimeId}`);
-                    if (!res.ok) return;
-
-                    const data = await res.json();
-                    lockedSeats = new Set(Object.keys(data.locked || {}).map(normalizeSeat));
-                    syncButtonStates();
+                    if (res.ok) {
+                        const data = await res.json();
+                        lockedSeats = new Set(Object.keys(data.locked || {}).map(normalizeSeat));
+                        syncButtonStates();
+                    }
                 } catch (e) {
                     console.error("Lỗi quét ghế đang giữ:", e);
+                } finally {
+                    isFetchingLocks = false;
                 }
             }
 
@@ -438,6 +487,43 @@
                 localStorage.removeItem(storageKey);
                 updateUI();
             }
+
+            function releaseAllSeatsBeacon() {
+                if (isProceedingToNextStep || selectedSeats.length === 0) return;
+
+                const url = `/dat-ve/seat-locks/${showtimeId}/release-all`;
+                const formData = new FormData();
+                formData.append("_token", csrf);
+
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon(url, formData);
+                } else {
+                    fetch(url, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRF-TOKEN": csrf,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({}),
+                        keepalive: true
+                    });
+                }
+                localStorage.removeItem(storageKey);
+            }
+
+            window.addEventListener("pagehide", releaseAllSeatsBeacon);
+
+            document.addEventListener("click", function(e) {
+                const link = e.target.closest("a");
+                if (link && link.href) {
+                    if (link.href.includes("chon-do-an") || link.href.includes("chon_do_an") || link.classList.contains("js-proceed-link")) {
+                        isProceedingToNextStep = true;
+                        if (countdownTimerInterval) clearInterval(countdownTimerInterval);
+                        return;
+                    }
+                    releaseAllSeatsBeacon();
+                }
+            });
 
             function updateCountdown(deadline) {
                 const remain = deadline - Date.now();
@@ -463,6 +549,17 @@
             function checkTimerState() {
                 if (!countdownEl) return;
 
+                if (selectedSeats.length === 0) {
+                    if (countdownTimerInterval) {
+                        clearInterval(countdownTimerInterval);
+                        countdownTimerInterval = null;
+                    }
+                    localStorage.removeItem(storageKey);
+                    countdownEl.innerText = "07:00";
+                    countdownEl.classList.remove("animate-pulse");
+                    return;
+                }
+
                 let deadline = Number(localStorage.getItem(storageKey));
                 const serverDeadline = Number(pendingDeadline) || null;
                 const validStoredDeadline = deadline && deadline > Date.now() ? deadline : null;
@@ -474,18 +571,8 @@
                     deadline = validServerDeadline;
                 } else if (validStoredDeadline) {
                     deadline = validStoredDeadline;
-                } else if (selectedSeats.length > 0) {
-                    deadline = Date.now() + (7 * 60 * 1000);
                 } else {
-                    if (countdownTimerInterval) {
-                        clearInterval(countdownTimerInterval);
-                        countdownTimerInterval = null;
-                    }
-
-                    localStorage.removeItem(storageKey);
-                    countdownEl.innerText = "07:00";
-                    countdownEl.classList.remove("animate-pulse");
-                    return;
+                    deadline = Date.now() + (7 * 60 * 1000);
                 }
 
                 localStorage.setItem(storageKey, deadline);
@@ -496,135 +583,83 @@
                 }
             }
 
-            // 🌟 BỔ SUNG: Hàm Javascript kiểm tra tính liền kề cực chuẩn của ghế ngay tại Client
             function validateSeatsAdjacentJS(seats) {
-    if (seats.length <= 1) {
-        return true;
-    }
+                if (seats.length <= 1) return true;
 
-    const parsedSeats = [];
-    const seatRegex = /^([A-Z]+)([0-9]+)$/;
+                const parsedSeats = [];
+                const seatRegex = /^([A-Z]+)([0-9]+)$/;
 
-    for (const seat of seats) {
-        const upperSeat = String(seat || "").toUpperCase().trim();
-        const match = upperSeat.match(seatRegex);
-        if (match) {
-            parsedSeats.push({
-                row: match[1],
-                num: parseInt(match[2], 10)
-            });
-        } else {
-            if (upperSeat.includes('-') || upperSeat.includes('|')) {
-                const subSeats = upperSeat.split(/[-|]/);
-                for (const sub of subSeats) {
-                    const subMatch = sub.trim().match(seatRegex);
-                    if (subMatch) {
+                for (const seat of seats) {
+                    const upperSeat = String(seat || "").toUpperCase().trim();
+                    const match = upperSeat.match(seatRegex);
+                    if (match) {
                         parsedSeats.push({
-                            row: subMatch[1],
-                            num: parseInt(subMatch[2], 10)
+                            row: match[1],
+                            num: parseInt(match[2], 10)
                         });
                     }
                 }
-            }
-        }
-    }
 
-    if (parsedSeats.length === 0) {
-        return true;
-    }
+                if (parsedSeats.length === 0) return true;
 
-    // Nhóm theo hàng (Row)
-    const grouped = {};
-    for (const s of parsedSeats) {
-        if (!grouped[s.row]) {
-            grouped[s.row] = [];
-        }
-        grouped[s.row].push(s.num);
-    }
+                const grouped = {};
+                for (const s of parsedSeats) {
+                    if (!grouped[s.row]) grouped[s.row] = [];
+                    grouped[s.row].push(s.num);
+                }
 
-    // Kiểm tra từng hàng
-    for (const row in grouped) {
-        const nums = [...new Set(grouped[row])].sort((a, b) => a - b);
-        
-        for (let i = 0; i < nums.length - 1; i++) {
-            const start = nums[i];
-            const end = nums[i + 1];
-            
-            if (end - start > 1) {
-                // Kiểm tra xem có bất kỳ ghế TRỐNG (Available) nào xen giữa không
-                for (let middleNum = start + 1; middleNum < end; middleNum++) {
-                    const middleSeatCode = `${row}${middleNum}`;
-                    
-                    // Tìm button tương ứng của ghế ở giữa này trong giao diện DOM
-                    const middleBtn = seatButtons.find(btn => {
-                        const codes = getSeatsFromButton(btn);
-                        return codes.includes(middleSeatCode);
-                    });
-                    
-                    if (middleBtn) {
-                        const isBooked = middleBtn.classList.contains('booked');
-                        const isLocked = middleBtn.classList.contains('locked');
-                        const isMaintenance = middleBtn.classList.contains('maintenance');
-                        const isStaticDisabled = middleBtn.dataset.staticDisabled === "1";
-                        const isSelectedByMe = selectedSeats.includes(middleSeatCode);
-                        
-                        // Nếu tồn tại ghế ở giữa hoàn toàn trống (chưa bị ai mua, mình cũng không chọn)
-                        if (!isBooked && !isLocked && !isMaintenance && !isStaticDisabled && !isSelectedByMe) {
-                            return false; // Thực sự có ghế trống khả dụng chen giữa -> Báo lỗi!
+                for (const row in grouped) {
+                    const nums = [...new Set(grouped[row])].sort((a, b) => a - b);
+                    for (let i = 0; i < nums.length - 1; i++) {
+                        const start = nums[i];
+                        const end = nums[i + 1];
+                        if (end - start > 1) {
+                            for (let middleNum = start + 1; middleNum < end; middleNum++) {
+                                const middleSeatCode = `${row}${middleNum}`;
+                                const middleBtn = seatButtons.find(btn => getSeatsFromButton(btn).includes(middleSeatCode));
+                                if (middleBtn) {
+                                    const isBooked = middleBtn.classList.contains('booked');
+                                    const isLocked = middleBtn.classList.contains('locked');
+                                    const isMaintenance = middleBtn.classList.contains('maintenance');
+                                    const isStaticDisabled = middleBtn.dataset.staticDisabled === "1";
+                                    const isSelectedByMe = selectedSeats.includes(middleSeatCode);
+
+                                    if (!isBooked && !isLocked && !isMaintenance && !isStaticDisabled && !isSelectedByMe) {
+                                        return false;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
+                return true;
             }
-        }
-    }
 
-    return true; // Hợp lệ!
-}
-
-            // 🌟 BỔ SUNG: Hàm tự động hiển thị alert cực đẹp ngay trên giao diện
             function showSeatErrorJS(message) {
                 let alertEl = document.querySelector(".booking-seat-alert");
                 if (!alertEl) {
                     alertEl = document.createElement("div");
                     alertEl.className = "booking-seat-alert";
                     alertEl.style.cssText = "background: rgba(239, 68, 68, 0.15) !important; border: 1px solid #ef4444 !important; color: #f87171 !important; padding: 16px !important; border-radius: 12px !important; margin: 15px 0 !important; display: flex !important; align-items: center !important; gap: 12px !important; font-weight: 600 !important; font-size: 14px !important; position: relative !important; z-index: 99 !important;";
-                    
                     const toolbar = document.querySelector(".booking-seat-toolbar");
-                    if (toolbar) {
-                        toolbar.parentNode.insertBefore(alertEl, toolbar.nextSibling);
-                    }
+                    if (toolbar) toolbar.parentNode.insertBefore(alertEl, toolbar.nextSibling);
                 }
-                alertEl.innerHTML = `
-                    <i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important; margin-right: 8px;"></i>
-                    <span>${message}</span>
-                `;
-                alertEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                alertEl.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important; margin-right: 8px;"></i><span>${message}</span>`;
             }
 
-            // 🌟 BỔ SUNG: Hàm tự động ẩn alert đi khi người dùng chọn lại ghế hợp lệ
             function clearSeatErrorJS() {
                 const alertEl = document.querySelector(".booking-seat-alert");
-                if (alertEl) {
-                    alertEl.remove();
-                }
+                if (alertEl) alertEl.remove();
             }
 
             function updateUI() {
                 selectedSeats = Array.from(new Set(selectedSeats.map(normalizeSeat).filter(Boolean)));
                 syncButtonStates();
 
-                // 🌟 Tự động xóa thông báo lỗi nếu tổ hợp ghế hiện tại đã hợp lệ
-                if (validateSeatsAdjacentJS(selectedSeats)) {
-                    clearSeatErrorJS();
-                }
+                if (validateSeatsAdjacentJS(selectedSeats)) clearSeatErrorJS();
 
-                if (seatCountEl) {
-                    seatCountEl.innerText = selectedSeats.length + " ghế";
-                }
-
-                if (seatLabels) {
-                    seatLabels.innerText = selectedSeats.length ? selectedSeats.join(", ") : "—";
-                }
+                if (seatCountEl) seatCountEl.innerText = selectedSeats.length + " ghế";
+                if (seatLabels) seatLabels.innerText = selectedSeats.length ? selectedSeats.join(", ") : "—";
 
                 if (selectedList) {
                     if (selectedSeats.length === 0) {
@@ -641,14 +676,10 @@
 
                 let total = 0;
                 seatButtons.forEach(btn => {
-                    if (buttonIsSelected(btn)) {
-                        total += Number(btn.dataset.price || 0);
-                    }
+                    if (buttonIsSelected(btn)) total += Number(btn.dataset.price || 0);
                 });
 
-                if (totalPriceEl) {
-                    totalPriceEl.innerText = money(total);
-                }
+                if (totalPriceEl) totalPriceEl.innerText = money(total);
 
                 if (btnFood) {
                     const hasSeat = selectedSeats.length > 0;
@@ -694,10 +725,7 @@
                                     headers: { "X-CSRF-TOKEN": csrf }
                                 });
 
-                                if (!res.ok) {
-                                    throw new Error("seat_locked");
-                                }
-
+                                if (!res.ok) throw new Error("seat_locked");
                                 reservedNow.push(seat);
                             } catch (e) {
                                 alert("Ghế " + seat + " vừa được người khác chọn.");
@@ -736,35 +764,45 @@
                     e.preventDefault();
                     if (selectedSeats.length === 0) return;
 
-                        if (!validateSeatsAdjacentJS(selectedSeats)) {
-                            showSeatErrorJS("Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!");
-                            return;
-                        }
+                    if (!validateSeatsAdjacentJS(selectedSeats)) {
+                        showSeatErrorJS("Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!");
+                        return;
+                    }
 
-                        const seats = encodeURIComponent(selectedSeats.join(","));
-                        let url = `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seats}`;
-                        if (pendingTicketId) {
-                            url += `&pending_ticket_id=${encodeURIComponent(pendingTicketId)}`;
-                        }
+                    isProceedingToNextStep = true;
+                    window.removeEventListener("pagehide", releaseAllSeatsBeacon);
+                    if (countdownTimerInterval) clearInterval(countdownTimerInterval);
 
-                        window.location.href = url;
-                    });
-                }
+                    btnFood.disabled = true;
+                    btnFood.style.opacity = "0.7";
+                    btnFood.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang chuyển trang...';
 
-                if (btnResetSeats) {
-                    btnResetSeats.addEventListener("click", async function() {
-                        if (selectedSeats.length === 0) return;
-                        await releaseAllSeats();
-                        clearSeatErrorJS();
-                        if (countdownEl) {
-                            countdownEl.innerText = "07:00";
-                        }
-                        alert('Đã hủy chọn ghế cũ. Vui lòng chọn ghế mới.');
-                    });
-                }
+                    const seats = encodeURIComponent(selectedSeats.join(","));
+                    let url = `{{ route('dat_ve.chon_do_an', ['suat_chieu_id' => $suatChieu->id]) }}?ghe=${seats}`;
+                    if (pendingTicketId) {
+                        url += `&pending_ticket_id=${encodeURIComponent(pendingTicketId)}`;
+                    }
+
+                    window.location.href = url;
+                });
+            }
+
+            if (btnResetSeats) {
+                btnResetSeats.addEventListener("click", async function() {
+                    if (!confirm('Bạn có chắc chắn muốn hủy chọn ghế ?')) return;
+
+                    localStorage.removeItem(storageKey);
+                    await releaseAllSeats();
+                    clearSeatErrorJS();
+
+                    if (countdownEl) countdownEl.innerText = "07:00";
+                    window.location.href = "{{ route('dat_ve.chon_ghe', ['movie' => $suatChieu->id, 'reset' => 1]) }}";
+                });
+            }
+
             updateUI();
             loadLockedSeats();
-            setInterval(loadLockedSeats, 3000);
+            setInterval(loadLockedSeats, 5000);
         });
     </script>
 @endsection

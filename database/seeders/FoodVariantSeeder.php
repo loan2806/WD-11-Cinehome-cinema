@@ -81,6 +81,18 @@ class FoodVariantSeeder extends Seeder
                     'price' => 35000,
                     'stock_quantity' => 100,
                 ],
+                [
+                    'food_sku' => 'FANTA-330',
+                    'value' => '330ml',
+                    'price' => 24000,
+                    'stock_quantity' => 140,
+                ],
+                [
+                    'food_sku' => 'FANTA-330',
+                    'value' => '500ml',
+                    'price' => 34000,
+                    'stock_quantity' => 90,
+                ],
             ];
 
             foreach ($variants as $variant) {

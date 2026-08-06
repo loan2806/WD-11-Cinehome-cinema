@@ -3,6 +3,50 @@
 @section('title', 'Vé của tôi')
 
 @section('content')
+<style>
+    /* 🌟 ANIMATION NHỊP ĐẬP CHO NÚT THANH TOÁN & TRẠNG THÁI CHỜ */
+    @keyframes pulsePayGlow {
+        0% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.6); }
+        70% { box-shadow: 0 0 0 10px rgba(250, 204, 21, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(250, 204, 21, 0); }
+    }
+    @keyframes badgeSoftPulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.75; transform: scale(0.97); }
+    }
+    .animate-pay-pulse {
+        animation: pulsePayGlow 2s infinite;
+    }
+    .animate-badge-pulse {
+        animation: badgeSoftPulse 1.8s infinite ease-in-out;
+    }
+
+    /* 🌟 NÚT CHI TIẾT THIẾT KẾ MỚI SANG TRỌNG */
+    .btn-ticket-detail-custom {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #f3f4f6 !important;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 10px 20px;
+        border-radius: 10px;
+        text-decoration: none !important;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(8px);
+    }
+    .btn-ticket-detail-custom:hover {
+        background: rgba(250, 204, 21, 0.15);
+        border-color: #facc15;
+        color: #facc15 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(250, 204, 21, 0.25);
+    }
+</style>
+
 @php
     $statusMeta = [
         'cho_thanh_toan' => [
@@ -45,6 +89,9 @@
         ['status' => 'het_han', 'label' => 'Hết hạn', 'count' => $ticketStats['expired'] ?? 0],
         ['status' => 'da_huy', 'label' => 'Đã hủy', 'count' => $ticketStats['cancelled'] ?? 0],
     ];
+
+    // Lấy vé chờ thanh toán gần nhất (nếu có)
+    $pendingTicketAlert = $veXemPhims->firstWhere('trang_thai', 'cho_thanh_toan');
 @endphp
 
 <section class="mytickets-page">
@@ -94,20 +141,6 @@
             </aside>
         </div>
 
-        @if(session('success'))
-            <div class="mytickets-alert is-success">
-                <i class="fa-solid fa-circle-check"></i>
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="mytickets-alert is-error">
-                <i class="fa-solid fa-circle-exclamation"></i>
-                {{ session('error') }}
-            </div>
-        @endif
-
         <div class="mytickets-stats" style="grid-template-columns: repeat(5, 1fr) !important;">
             <article>
                 <span>Tổng vé</span>
@@ -135,6 +168,59 @@
                 <small>Lịch sử vé đã hủy</small>
             </article>
         </div>
+
+        {{-- 🌟 THÔNG BÁO CẢNH BÁO LỖI / CHUYỂN HƯỚNG ĐẶT VÉ KHÁC --}}
+        @if(session('error'))
+            <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(153, 27, 27, 0.35)); border: 1px solid rgba(239, 68, 68, 0.6); color: #ffffff; padding: 16px 20px; border-radius: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; box-shadow: 0 8px 25px rgba(239, 68, 68, 0.2); backdrop-filter: blur(10px);">
+                <div style="background: #ef4444; color: #fff; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div style="flex: 1; font-size: 15px; font-weight: 600; line-height: 1.5; color: #fecdd3;">
+                    {{ session('error') }}
+                </div>
+            </div>
+        @endif
+
+        @if(session('success'))
+            <div style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(21, 128, 61, 0.35)); border: 1px solid rgba(34, 197, 94, 0.6); color: #ffffff; padding: 16px 20px; border-radius: 16px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; box-shadow: 0 8px 25px rgba(34, 197, 94, 0.2); backdrop-filter: blur(10px);">
+                <div style="background: #22c55e; color: #fff; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div style="flex: 1; font-size: 15px; font-weight: 600; line-height: 1.5; color: #dcfce7;">
+                    {{ session('success') }}
+                </div>
+            </div>
+        @endif
+
+        {{-- 🌟 BANNER CẢNH BÁO NẾU ĐANG CÓ ĐƠN CHỜ THANH TOÁN --}}
+        @if($pendingTicketAlert && method_exists($pendingTicketAlert, 'isExpired') && !$pendingTicketAlert->isExpired())
+            <div style="background: rgba(234, 179, 8, 0.12); border: 1px solid #eab308; color: #fef08a; padding: 18px 24px; border-radius: 18px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; box-shadow: 0 10px 30px -5px rgba(234, 179, 8, 0.25);">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="background: #eab308; color: #000; width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; flex-shrink: 0;" class="animate-pay-pulse">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <strong style="display: block; color: #fff; font-size: 16px; font-weight: 800; margin-bottom: 3px;">
+                            Bạn đang có đơn hàng chờ thanh toán: {{ $pendingTicketAlert->ten_phim }}
+                        </strong>
+                        <span style="font-size: 13px; color: #cbd5e1;">
+                            Ghế giữ: <b style="color: #facc15;">{{ $pendingTicketAlert->ma_ghe }}</b> • Tổng tiền: <b style="color: #facc15;">{{ number_format($pendingTicketAlert->tong_tien, 0, ',', '.') }}đ</b>
+                        </span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <a href="{{ route('dat_ve.checkout', ['suat_chieu_id' => $pendingTicketAlert->suat_chieu_id, 'pending_ticket_id' => $pendingTicketAlert->id]) }}" style="background: #eab308; color: #000; padding: 10px 20px; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 13px; transition: 0.2s;" class="myticket-detail-btn">
+                        Thanh toán ngay <i class="fa-solid fa-arrow-right " style="margin-left: 4px;"></i>
+                    </a>
+                    <form action="{{ route('dat_ve.huy_ve_pending', $pendingTicketAlert->id) }}" method="POST" style="margin: 0;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này để chọn suất chiếu mới?');">
+                        @csrf
+                        <button type="submit" style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 10px 16px; border-radius: 10px; font-weight: 700; border: 1px solid rgba(239, 68, 68, 0.4); font-size: 13px; cursor: pointer;" class="myticket-detail-btn">
+                            Hủy đơn
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endif
 
         <section class="mytickets-board">
             <div class="mytickets-board-head">
@@ -175,7 +261,7 @@
                         <div class="myticket-code">
                             <span>Mã vé</span>
                             @if($veXemPhim->trang_thai === 'cho_thanh_toan')
-                                <strong>Đang chờ thanh toán</strong>
+                                <strong class="text-warning animate-badge-pulse">Chờ thanh toán</strong>
                                 <small>Vui lòng hoàn tất thanh toán để nhận mã vé.</small>
                             @else
                                 <strong>{{ $veXemPhim->ma_ve }}</strong>
@@ -232,27 +318,56 @@
                             </div>
                             <div>
                                 <span>Trạng thái</span>
-                                <strong class="myticket-status">
+                                <strong class="myticket-status {{ $veXemPhim->trang_thai === 'cho_thanh_toan' ? 'animate-badge-pulse' : '' }}">
                                     <i class="{{ $meta['icon'] }}"></i>
                                     {{ $meta['label'] }}
                                 </strong>
                                 <small>{{ $meta['description'] }}</small>
+
+                                {{-- 🌟 NÚT THANH TOÁN & HỦY ĐƠN VÉ PENDING --}}
+                                @if($veXemPhim->trang_thai === 'cho_thanh_toan')
+                                    <div class="myticket-status-action" style="margin-top: 12px; width: 100%;">
+                                        @if(method_exists($veXemPhim, 'isExpired') && $veXemPhim->isExpired())
+                                            <span style="color: #ef4444; font-size: 13px; font-weight: 600; display: block; background: rgba(239, 68, 68, 0.12); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.25); text-align: center;">
+                                                <i class="fa-solid fa-clock-rotate-left me-1"></i> Đã quá hạn 7 phút
+                                            </span>
+                                        @else
+                                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
+                                                <a href="{{ route('dat_ve.checkout', ['suat_chieu_id' => $veXemPhim->suat_chieu_id, 'pending_ticket_id' => $veXemPhim->id]) }}" 
+                                                   class="myticket-detail-btn" 
+                                                   style="background: linear-gradient(135deg, #facc15, #eab308); color: #000000 !important; font-weight: 800; font-size: 13px; text-transform: uppercase; padding: 10px 12px; border-radius: 10px; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;">
+                                                    <i class="fa-solid fa-credit-card" style="color: #000000 !important;"></i>
+                                                    <span style="color: #000000 !important;">Thanh toán</span>
+                                                </a>
+
+                                                <form action="{{ route('dat_ve.huy_ve_pending', $veXemPhim->id) }}" 
+                                                      method="POST" 
+                                                      style="margin: 0; display: flex;" 
+                                                      onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này để nhả lại ghế trống?');">
+                                                    @csrf
+                                                    <button type="submit"
+                                                            class="myticket-detail-btn"
+                                                            style="width: 100%; background: rgba(239, 68, 68, 0.12); color: #fca5a5 !important; border: 1px solid rgba(239, 68, 68, 0.35); font-weight: 700; font-size: 13px; padding: 10px 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease;">
+                                                        <i class="fa-solid fa-xmark"></i>
+                                                        <span>Hủy đơn</span>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
                         </div>
 
-                        <div class="myticket-actions">
-                            @if($veXemPhim->trang_thai === 'cho_thanh_toan')
-                                <a href="{{ route('dat_ve.checkout', ['suat_chieu_id' => $veXemPhim->suat_chieu_id, 'pending_ticket_id' => $veXemPhim->id]) }}" class="myticket-detail-btn">
-                                    <i class="fa-solid fa-credit-card"></i>
-                                    Thanh toán
+                        {{-- 🌟 NÚT CHI TIẾT VÉ CHO VÉ ĐÃ THANH TOÁN / ĐÃ SỬ DỤNG / HẾT HẠN --}}
+                        @if($veXemPhim->trang_thai !== 'cho_thanh_toan')
+                            <div class="myticket-actions" style="display: flex; justify-content: flex-end; align-items: center;">
+                                <a href="{{ route('user.ve_xem_phim.show', $veXemPhim) }}" class="btn-ticket-detail-custom">
+                                    <i class="fa-solid fa-qrcode" style="font-size: 14px;"></i>
+                                    <span>Xem chi tiết</span>
                                 </a>
-                            @else
-                                <a href="{{ route('user.ve_xem_phim.show', $veXemPhim) }}" class="myticket-detail-btn">
-                                    <i class="fa-solid fa-qrcode"></i>
-                                    Chi tiết
-                                </a>
-                            @endif
-                        </div>
+                            </div>
+                        @endif
                     </article>
                 @empty
                     <div class="mytickets-empty">

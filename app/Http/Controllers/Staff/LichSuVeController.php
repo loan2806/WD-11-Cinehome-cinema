@@ -8,42 +8,45 @@ use Illuminate\Http\Request;
 
 class LichSuVeController extends Controller
 {
-    /**
-     * Hiển thị danh sách lịch sử vé.
-     * Nhân viên có thể tìm kiếm theo mã vé, tên phim, mã ghế
-     * và lọc theo loại vé hoặc trạng thái vé.
-     */
     public function index(Request $request)
     {
-        // Khởi tạo query lấy danh sách vé
+        // Đồng bộ các giao dịch QR đã quá 7 phút để lịch sử hiển thị đúng.
+        VeXemPhim::query()
+            ->where('loai_ve', 'tai_quay')
+            ->where('payment_method', 'vietqr')
+            ->where('trang_thai', 'cho_thanh_toan')
+            ->whereNotNull('thoi_gian_het_han')
+            ->where('thoi_gian_het_han', '<=', now())
+            ->update([
+                'trang_thai' => 'het_han',
+                'thoi_gian_het_han' => null,
+            ]);
+
         $query = VeXemPhim::query()
-            ->with(['nguoiDung', 'nhanVien', 'suatChieu']);
+            ->with(['nhanVien', 'nguoiDung'])
+            ->latest('id');
 
-        // Tìm kiếm theo mã vé, tên phim hoặc mã ghế
-        if ($request->filled('keyword')) {
-            $keyword = trim($request->keyword);
-
+        $keyword = trim((string) $request->input('keyword', ''));
+        if ($keyword !== '') {
             $query->where(function ($q) use ($keyword) {
-                $q->where('ma_ve', 'like', '%' . $keyword . '%')
-                    ->orWhere('ten_phim', 'like', '%' . $keyword . '%')
-                    ->orWhere('ma_ghe', 'like', '%' . $keyword . '%');
+                $q->where('ma_ve', 'like', "%{$keyword}%")
+                    ->orWhere('ten_phim', 'like', "%{$keyword}%")
+                    ->orWhere('ma_ghe', 'like', "%{$keyword}%")
+                    ->orWhere('ten_rap', 'like', "%{$keyword}%")
+                    ->orWhere('ten_phong', 'like', "%{$keyword}%");
             });
         }
 
-        // Lọc theo loại vé: trực tuyến hoặc tại quầy
         if ($request->filled('loai_ve')) {
-            $query->where('loai_ve', $request->loai_ve);
+            $query->where('loai_ve', $request->string('loai_ve')->toString());
         }
 
-        // Lọc theo trạng thái vé
         if ($request->filled('trang_thai')) {
-            $query->where('trang_thai', $request->trang_thai);
+            $query->where('trang_thai', $request->string('trang_thai')->toString());
         }
 
-        // Lấy danh sách vé mới nhất trước, phân trang 10 vé mỗi trang
         $tickets = $query
-            ->latest()
-            ->paginate(10)
+            ->paginate(20)
             ->withQueryString();
 
         return view('staff.lich-su-ve.index', compact('tickets'));

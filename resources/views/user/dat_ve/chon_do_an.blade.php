@@ -2,6 +2,63 @@
 
 @section('title', 'Chọn đồ ăn - ' . $suatChieu->phim->ten_phim)
 
+{{-- CSS CHỈ TÁC ĐỘNG GIỎ HÀNG DÍNH THEO MÀN HÌNH - KHÔNG LÀM BẠO/BIẾN DẠNG GIAO DIỆN GỐC --}}
+<style>
+    /* 1. Sửa lỗi thẻ cha làm hỏng thuộc tính sticky */
+    html, body, main, .booking-food-page, #bookingWrapper {
+        overflow: visible !important;
+    }
+
+    /* 2. Cấu hình lại khung Flexbox chuẩn tỉ lệ gốc */
+    .booking-food-layout {
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 24px !important;
+    }
+
+    /* Giúp cột danh sách món ăn bên trái tự động chiếm trọn phần không gian còn lại */
+    .booking-food-menu {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+    }
+
+    /* Cố định kích thước cột giỏ hàng bên phải & giữ dính khi cuộn */
+    .booking-food-sidebar {
+        flex: 0 0 340px !important;
+        width: 340px !important;
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 90px !important; /* Khoảng cách dừng cách Header khi cuộn */
+        z-index: 20 !important;
+    }
+
+    /* 3. Tùy chỉnh thanh cuộn giỏ hàng mỏng mịn, đồng bộ Dark Theme (Ẩn thanh cuộn trắng xấu) */
+    .booking-cart-items {
+        max-height: 280px !important;
+        overflow-y: auto !important;
+        padding-right: 4px !important;
+        /* Hỗ trợ Firefox */
+        scrollbar-width: thin !important;
+        scrollbar-color: #ef4444 rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* Chrome, Safari, Edge */
+    .booking-cart-items::-webkit-scrollbar {
+        width: 4px !important;
+    }
+    .booking-cart-items::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-radius: 4px !important;
+    }
+    .booking-cart-items::-webkit-scrollbar-thumb {
+        background: #ef4444 !important;
+        border-radius: 4px !important;
+    }
+    .booking-cart-items::-webkit-scrollbar-thumb:hover {
+        background: #dc2626 !important;
+    }
+</style>
+
 @section('content')
     @php
         $seatSummary = $selectedSeats->implode(', ');
@@ -128,14 +185,15 @@
                             $foodCards = collect($category['foods'] ?? [])->flatMap(function ($food) {
                                 if (!empty($food['is_combo'])) {
                                     return [[
-                                        'key' => 'combo-' . $food['id'],
-                                        'name' => $food['name'],
-                                        'price' => $food['price'] ?? 0,
-                                        'stock' => $food['available'] ?? 999,
-                                        'image' => $food['image'] ?? '',
-                                        'type' => 'combo',
-                                        'badge' => 'Combo',
-                                    ]];
+                                            'key' => 'combo-' . $food['id'],
+                                            'name' => $food['name'],
+                                            'price' => $food['price'] ?? 0,
+                                            'stock' => $food['available'] ?? 999,
+                                            'image' => $food['image'] ?? '',
+                                            'type' => 'combo',
+                                            'badge' => 'Combo',
+                                            'combo_items' => $food['combo_items'] ?? [],
+                                        ]];
                                 }
 
                                 $variants = $food['variants'] ?? [];
@@ -206,6 +264,12 @@
                                                 <strong>{{ number_format($item['price'], 0, ',', '.') }}đ</strong>
                                                 <span>{{ $isSoldOut ? 'Hết món' : 'Còn ' . $stock }}</span>
                                             </div>
+
+                                            @if(!empty($item['description']))
+                                                <p class="booking-food-desc">{{ $item['description'] }}</p>
+                                            @endif
+
+                                            {{-- Combo components hidden in booking menu per admin preference --}}
 
                                             <div class="booking-food-actions">
                                                 <div class="booking-food-qty">
@@ -308,6 +372,12 @@
     const baseSeatPrice = parseInt("{{ $seatTotalPrice }}") || 0;
     const fallbackFoodImage = "{{ asset('assets/images/LOGO copy.png') }}";
 
+    // KEY BẢO VỆ GIỎ HÀNG: Tạo định danh riêng cho từng đơn hàng (Chống dính đồ ăn đơn cũ)
+    const sortedSeatsKey = [...initialSelectedSeats].sort().join('_');
+    const cartStorageKey = pendingTicketId 
+        ? `food_cart_ticket_${pendingTicketId}` 
+        : `food_cart_suat_{{ $suatChieu->id }}_${sortedSeatsKey}`;
+
     let cart = {};
     let countdownInterval = null;
     let countdownExpired = false;
@@ -391,7 +461,9 @@
         if (clearCartBtn) clearCartBtn.disabled = items.length === 0;
 
         subtotalPrice.innerText = formatCurrency(baseSeatPrice + foodTotal);
-        localStorage.setItem('food_cart', JSON.stringify(cart));
+        
+        // Lưu dữ liệu giỏ hàng riêng cho đơn này
+        localStorage.setItem(cartStorageKey, JSON.stringify(cart));
 
         updateCheckoutButton();
     }
@@ -631,9 +703,12 @@
     document.addEventListener('DOMContentLoaded', function() {
         const checkoutBtn = document.getElementById('btnCheckout');
 
-        cart = Array.isArray(initialFoodCart) && initialFoodCart.length > 0
-            ? Object.fromEntries(initialFoodCart.map(item => [item.key, item]))
-            : JSON.parse(localStorage.getItem('food_cart') || '{}');
+        // Lấy dữ liệu đồ ăn riêng biệt của đơn này
+        if (Array.isArray(initialFoodCart) && initialFoodCart.length > 0) {
+            cart = Object.fromEntries(initialFoodCart.map(item => [item.key, item]));
+        } else {
+            cart = JSON.parse(localStorage.getItem(cartStorageKey) || '{}');
+        }
 
         renderCart();
         startCountdown();

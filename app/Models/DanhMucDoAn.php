@@ -12,10 +12,14 @@ class DanhMucDoAn extends Model
 
     protected $table = 'food_categories'; // Giữ nguyên tên bảng cấu trúc cũ trong database
 
-    protected $fillable = [
-        'name',
-        'is_active',
-    ];
+   protected $fillable = [
+    'name',
+    'slug',
+    'is_combo',
+];
+protected $casts = [
+    'is_combo' => 'boolean',
+];
 
     public function doAns(): HasMany
     {

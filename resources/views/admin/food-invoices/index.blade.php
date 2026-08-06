@@ -50,7 +50,7 @@
             </span>
             <h2>Hóa đơn đồ ăn & combo</h2>
             <p>
-                Tạo hóa đơn, chọn món nhanh và cập nhật trạng thái thanh toán tại quầy.
+                Tạo hóa đơn, chọn món nhanh và theo dõi thanh toán tại quầy.
             </p>
         </div>
 
@@ -146,13 +146,14 @@
                         <button
                             type="button"
                             class="food-chip"
-                            data-food-id="{{ $food->id }}"
-                            data-food-name="{{ $food->name }}"
-                            data-food-price="{{ $food->price }}"
-                            title="Còn {{ $food->stock_quantity }} phần"
+                            data-food-id="{{ $food['food_id'] }}"
+                            data-variant-id="{{ $food['variant_id'] }}"
+                            data-food-name="{{ $food['label'] }}"
+                            data-food-price="{{ $food['price'] }}"
+                            title="Còn {{ $food['stock'] }} phần"
                         >
-                            <span>{{ $food->name }}</span>
-                            <em>{{ $food->stock_quantity }}</em>
+                            <span>{{ $food['label'] }}</span>
+                            <em>{{ $food['stock'] }}</em>
                         </button>
                     @empty
                         <a href="{{ route('admin.foods.index') }}" class="food-chip is-empty">
@@ -219,7 +220,7 @@
                 <div>
                     <span class="food-invoice-eyebrow">Danh sách</span>
                     <h3>Hóa đơn gần đây</h3>
-                    <p>Theo dõi và cập nhật trạng thái thanh toán.</p>
+                    <p>Theo dõi các hóa đơn đã tạo.</p>
                 </div>
                 <div class="food-list-counter">
                     <strong>{{ $invoices->total() }}</strong>
@@ -280,31 +281,10 @@
                                 @endif
                             </div>
 
-                            <form method="POST" action="{{ route('admin.food-invoices.update-status', $invoice) }}" class="food-status-form">
-                                @csrf
-                                @method('PATCH')
-                                <details class="food-status-menu">
-                                    <summary class="food-status-trigger {{ $statusClasses[$invoice->payment_status] ?? '' }}">
-                                        <span>{{ $statusLabels[$invoice->payment_status] ?? $invoice->payment_status }}</span>
-                                        <i class="fa-solid fa-chevron-down"></i>
-                                    </summary>
-                                    <div class="food-status-panel">
-                                        @foreach ($statusLabels as $value => $label)
-                                            <button
-                                                type="submit"
-                                                name="payment_status"
-                                                value="{{ $value }}"
-                                                class="food-status-option {{ $statusClasses[$value] ?? '' }} @if ($invoice->payment_status === $value) is-current @endif"
-                                            >
-                                                <span>{{ $label }}</span>
-                                                @if ($invoice->payment_status === $value)
-                                                    <i class="fa-solid fa-check"></i>
-                                                @endif
-                                            </button>
-                                        @endforeach
-                                    </div>
-                                </details>
-                            </form>
+                            <!-- 🌟 TRẠNG THÁI HIỂN THỊ DẠNG BADGE CỐ ĐỊNH (CHỈ ĐỌC) -->
+                            <div class="food-status-badge {{ $statusClasses[$invoice->payment_status] ?? '' }}">
+                                <span>{{ $statusLabels[$invoice->payment_status] ?? $invoice->payment_status }}</span>
+                            </div>
 
                             <form method="POST" action="{{ route('admin.food-invoices.destroy', $invoice) }}" onsubmit="return confirm('Xóa hóa đơn {{ $invoice->invoice_code }}?')">
                                 @csrf
@@ -357,9 +337,42 @@
     </div>
 </div>
 
+<style>
+    /* 🌟 CSS BADGE TRẠNG THÁI CỐ ĐỊNH CHO HÓA ĐƠN ĐỒ ĂN */
+    .food-status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .food-status-badge.is-paid {
+        background: rgba(34, 197, 94, .15);
+        color: #4ade80;
+        border: 1px solid rgba(34, 197, 94, .3);
+    }
+
+    .food-status-badge.is-pending {
+        background: rgba(234, 179, 8, .15);
+        color: #facc15;
+        border: 1px solid rgba(234, 179, 8, .3);
+    }
+
+    .food-status-badge.is-cancelled {
+        background: rgba(239, 68, 68, .15);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, .3);
+    }
+</style>
+
 <template id="foodItemTemplate">
     <div class="food-item-row">
         <input data-field="food_id" type="hidden" class="food-id">
+        <input data-field="food_variant_id" type="hidden" class="food-variant-id">
         <label class="food-item-name">
             <span>Tên món</span>
             <input data-field="food_name" class="admin-input food-name" placeholder="Tên món" required>
@@ -428,6 +441,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function fillRow(row, food = {}) {
         row.querySelector('.food-id').value = food.food_id || food.id || '';
+        row.querySelector('.food-variant-id').value = food.food_variant_id || food.variant_id || '';
         row.querySelector('.food-name').value = food.food_name || food.name || '';
         row.querySelector('.food-quantity').value = food.quantity || 1;
         row.querySelector('.food-price').value = food.unit_price || food.price || '';
@@ -474,6 +488,7 @@ document.addEventListener('DOMContentLoaded', function () {
         button.addEventListener('click', function () {
             addRow({
                 id: button.dataset.foodId,
+                variant_id: button.dataset.variantId || '',
                 name: button.dataset.foodName,
                 price: button.dataset.foodPrice,
                 quantity: 1,

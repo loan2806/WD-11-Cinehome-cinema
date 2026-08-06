@@ -330,7 +330,7 @@ $previousUrl = url()->previous();
 
                             <input type="hidden" name="food_cart" value="{{ json_encode($foodItems->values()->all()) }}">
 
-                            <input type="hidden" name="clear_cart_key" value="staff_food_cart_{{ $staffId }}_{{ $suatChieu->id }}">
+                            <input type="hidden" name="clear_cart_key" value="staff_food_cart_v2_{{ $staffId }}_{{ $suatChieu->id }}">
 
                             {{-- PHƯƠNG THỨC THANH TOÁN --}}
                             <div class="space-y-3">
@@ -417,15 +417,15 @@ $previousUrl = url()->previous();
                                     </button>
 
                                     <button type="button" data-cash-round="100000" class="cash-round-button rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-yellow-400/50 hover:bg-yellow-400/10">
-                                        Bội 100.000đ
+                                        Làm Tròn 100.000đ
                                     </button>
 
                                     <button type="button" data-cash-round="200000" class="cash-round-button rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-yellow-400/50 hover:bg-yellow-400/10">
-                                        Bội 200.000đ
+                                        Làm Tròn 200.000đ
                                     </button>
 
                                     <button type="button" data-cash-round="500000" class="cash-round-button rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm transition hover:border-yellow-400/50 hover:bg-yellow-400/10">
-                                        Bội 500.000đ
+                                        Làm Tròn 500.000đ
                                     </button>
 
                                 </div>
@@ -468,7 +468,7 @@ $previousUrl = url()->previous();
                                         </p>
 
                                         <p class="mt-1 text-sm leading-6 text-gray-400">
-                                            Sau khi xác nhận, hệ thống sẽ tạo giao dịch và hiển thị mã QR để khách quét thanh toán.
+                                            Sau khi xác nhận, hệ thống tạo giao dịch VietQR và khóa các ghế đã chọn trong 7 phút để chờ khách thanh toán.
                                         </p>
 
                                     </div>
@@ -488,7 +488,7 @@ $previousUrl = url()->previous();
                                 </div>
 
                                 <p class="mt-3 text-xs text-orange-400">
-                                    Vé chỉ được phát hành sau khi giao dịch được xác nhận đã thanh toán.
+                                    Vé chỉ được phát hành sau khi PayOS xác nhận thanh toán thành công. Nếu hủy hoặc quá hạn, ghế sẽ được giải phóng.
                                 </p>
 
                             </div>
@@ -519,364 +519,365 @@ $previousUrl = url()->previous();
 </div>
 
 <script>
-(function () {
-    const totalAmount = @json((int) $total);
+    (function() {
+        const totalAmount = @json((int) $total);
 
-    const paymentForm = document.getElementById('paymentForm');
-    const paymentRadios = document.querySelectorAll(
-        'input[name="payment_method"]'
-    );
-    const paymentLabels = document.querySelectorAll(
-        '.payment-method-label'
-    );
-
-    const cashSection = document.getElementById(
-        'cashPaymentSection'
-    );
-    const vietQrSection = document.getElementById(
-        'vietQrPaymentSection'
-    );
-
-    const receivedAmountInput = document.getElementById(
-        'receivedAmount'
-    );
-    const changeAmountElement = document.getElementById(
-        'changeAmount'
-    );
-    const cashMessageElement = document.getElementById(
-        'cashMessage'
-    );
-
-    const submitButton = document.getElementById(
-        'submitPaymentButton'
-    );
-    const submitText = document.getElementById(
-        'submitPaymentText'
-    );
-
-    let submitting = false;
-
-    if (
-        !paymentForm ||
-        !cashSection ||
-        !vietQrSection ||
-        !receivedAmountInput ||
-        !changeAmountElement ||
-        !cashMessageElement ||
-        !submitButton ||
-        !submitText
-    ) {
-        console.error(
-            'Staff checkout: thiếu phần tử HTML cần thiết.'
+        const paymentForm = document.getElementById('paymentForm');
+        const paymentRadios = document.querySelectorAll(
+            'input[name="payment_method"]'
         );
-        return;
-    }
-
-    function formatMoney(value) {
-        const number = Number(value);
-
-        if (!Number.isFinite(number) || number < 0) {
-            return '0đ';
-        }
-
-        return new Intl.NumberFormat('vi-VN').format(number) + 'đ';
-    }
-
-    function getPaymentMethod() {
-        const checkedRadio = document.querySelector(
-            'input[name="payment_method"]:checked'
+        const paymentLabels = document.querySelectorAll(
+            '.payment-method-label'
         );
 
-        return checkedRadio ? checkedRadio.value : 'cash';
-    }
-
-    function setSubmitEnabled(enabled, text) {
-        submitText.textContent = text;
-        submitButton.disabled = !enabled;
-
-        if (enabled) {
-            submitButton.classList.remove(
-                'bg-gray-700',
-                'text-gray-400',
-                'cursor-not-allowed'
-            );
-
-            submitButton.classList.add(
-                'bg-yellow-400',
-                'text-black',
-                'hover:bg-yellow-300',
-                'cursor-pointer',
-                'shadow-lg',
-                'shadow-yellow-400/10'
-            );
-        } else {
-            submitButton.classList.add(
-                'bg-gray-700',
-                'text-gray-400',
-                'cursor-not-allowed'
-            );
-
-            submitButton.classList.remove(
-                'bg-yellow-400',
-                'text-black',
-                'hover:bg-yellow-300',
-                'cursor-pointer',
-                'shadow-lg',
-                'shadow-yellow-400/10'
-            );
-        }
-    }
-
-    function updateCashCalculation() {
-        const receivedAmount = Number(
-            receivedAmountInput.value || 0
+        const cashSection = document.getElementById(
+            'cashPaymentSection'
+        );
+        const vietQrSection = document.getElementById(
+            'vietQrPaymentSection'
         );
 
-        if (receivedAmount <= 0) {
-            changeAmountElement.textContent = '0đ';
+        const receivedAmountInput = document.getElementById(
+            'receivedAmount'
+        );
+        const changeAmountElement = document.getElementById(
+            'changeAmount'
+        );
+        const cashMessageElement = document.getElementById(
+            'cashMessage'
+        );
 
-            changeAmountElement.classList.remove(
-                'text-green-400',
-                'text-red-400'
-            );
-            changeAmountElement.classList.add(
-                'text-gray-400'
-            );
+        const submitButton = document.getElementById(
+            'submitPaymentButton'
+        );
+        const submitText = document.getElementById(
+            'submitPaymentText'
+        );
 
-            cashMessageElement.textContent =
-                'Nhập số tiền khách đưa';
+        let submitting = false;
 
-            cashMessageElement.classList.remove(
-                'text-green-400',
-                'text-red-400'
+        if (
+            !paymentForm ||
+            !cashSection ||
+            !vietQrSection ||
+            !receivedAmountInput ||
+            !changeAmountElement ||
+            !cashMessageElement ||
+            !submitButton ||
+            !submitText
+        ) {
+            console.error(
+                'Staff checkout: thiếu phần tử HTML cần thiết.'
             );
-            cashMessageElement.classList.add(
-                'text-gray-500'
-            );
-
-            setSubmitEnabled(
-                false,
-                'NHẬP SỐ TIỀN KHÁCH ĐƯA'
-            );
-
             return;
         }
 
-        if (receivedAmount < totalAmount) {
-            const missingAmount = totalAmount - receivedAmount;
+        function formatMoney(value) {
+            const number = Number(value);
 
-            changeAmountElement.textContent = '0đ';
-
-            changeAmountElement.classList.remove(
-                'text-green-400',
-                'text-gray-400'
-            );
-            changeAmountElement.classList.add(
-                'text-red-400'
-            );
-
-            cashMessageElement.textContent =
-                'Khách còn thiếu ' + formatMoney(missingAmount);
-
-            cashMessageElement.classList.remove(
-                'text-green-400',
-                'text-gray-500'
-            );
-            cashMessageElement.classList.add(
-                'text-red-400'
-            );
-
-            setSubmitEnabled(
-                false,
-                'SỐ TIỀN KHÁCH ĐƯA CHƯA ĐỦ'
-            );
-
-            return;
-        }
-
-        const changeAmount = receivedAmount - totalAmount;
-
-        changeAmountElement.textContent =
-            formatMoney(changeAmount);
-
-        changeAmountElement.classList.remove(
-            'text-red-400',
-            'text-gray-400'
-        );
-        changeAmountElement.classList.add(
-            'text-green-400'
-        );
-
-        cashMessageElement.textContent =
-            changeAmount > 0
-                ? 'Số tiền cần trả lại khách'
-                : 'Khách đã đưa đúng số tiền';
-
-        cashMessageElement.classList.remove(
-            'text-red-400',
-            'text-gray-500'
-        );
-        cashMessageElement.classList.add(
-            'text-green-400'
-        );
-
-        setSubmitEnabled(
-            true,
-            'XÁC NHẬN THANH TOÁN VÀ IN VÉ'
-        );
-    }
-
-    function updatePaymentLabels() {
-        paymentLabels.forEach(function (label) {
-            const radio = label.querySelector(
-                'input[type="radio"]'
-            );
-            const title = label.querySelector(
-                '.payment-method-title'
-            );
-
-            if (!radio) {
-                return;
+            if (!Number.isFinite(number) || number < 0) {
+                return '0đ';
             }
 
-            if (radio.checked) {
-                label.classList.add(
-                    'border-yellow-400',
-                    'bg-yellow-400/10'
-                );
-                label.classList.remove(
-                    'border-white/10',
-                    'bg-zinc-900/30'
+            return new Intl.NumberFormat('vi-VN').format(number) + 'đ';
+        }
+
+        function getPaymentMethod() {
+            const checkedRadio = document.querySelector(
+                'input[name="payment_method"]:checked'
+            );
+
+            return checkedRadio ? checkedRadio.value : 'cash';
+        }
+
+        function setSubmitEnabled(enabled, text) {
+            submitText.textContent = text;
+            submitButton.disabled = !enabled;
+
+            if (enabled) {
+                submitButton.classList.remove(
+                    'bg-gray-700'
+                    , 'text-gray-400'
+                    , 'cursor-not-allowed'
                 );
 
-                if (title) {
-                    title.classList.add('text-gray-100');
-                    title.classList.remove('text-gray-200');
-                }
+                submitButton.classList.add(
+                    'bg-yellow-400'
+                    , 'text-black'
+                    , 'hover:bg-yellow-300'
+                    , 'cursor-pointer'
+                    , 'shadow-lg'
+                    , 'shadow-yellow-400/10'
+                );
             } else {
-                label.classList.remove(
-                    'border-yellow-400',
-                    'bg-yellow-400/10'
-                );
-                label.classList.add(
-                    'border-white/10',
-                    'bg-zinc-900/30'
+                submitButton.classList.add(
+                    'bg-gray-700'
+                    , 'text-gray-400'
+                    , 'cursor-not-allowed'
                 );
 
-                if (title) {
-                    title.classList.remove('text-gray-100');
-                    title.classList.add('text-gray-200');
-                }
+                submitButton.classList.remove(
+                    'bg-yellow-400'
+                    , 'text-black'
+                    , 'hover:bg-yellow-300'
+                    , 'cursor-pointer'
+                    , 'shadow-lg'
+                    , 'shadow-yellow-400/10'
+                );
             }
-        });
-    }
-
-    function updatePaymentMethod() {
-        const paymentMethod = getPaymentMethod();
-
-        updatePaymentLabels();
-
-        if (paymentMethod === 'cash') {
-            cashSection.classList.remove('hidden');
-            vietQrSection.classList.add('hidden');
-
-            receivedAmountInput.required = true;
-            updateCashCalculation();
-        } else {
-            cashSection.classList.add('hidden');
-            vietQrSection.classList.remove('hidden');
-
-            receivedAmountInput.required = false;
-            receivedAmountInput.value = '';
-
-            setSubmitEnabled(
-                true,
-                'TẠO MÃ THANH TOÁN VIETQR'
-            );
-        }
-    }
-
-    paymentRadios.forEach(function (radio) {
-        radio.addEventListener(
-            'change',
-            updatePaymentMethod
-        );
-    });
-
-    receivedAmountInput.addEventListener(
-        'input',
-        updateCashCalculation
-    );
-
-    document
-        .querySelectorAll('.cash-exact-button')
-        .forEach(function (button) {
-            button.addEventListener('click', function () {
-                receivedAmountInput.value = totalAmount;
-                updateCashCalculation();
-            });
-        });
-
-    document
-        .querySelectorAll('.cash-round-button')
-        .forEach(function (button) {
-            button.addEventListener('click', function () {
-                const unit = Number(
-                    this.dataset.cashRound || 0
-                );
-
-                if (unit <= 0) {
-                    return;
-                }
-
-                receivedAmountInput.value =
-                    Math.ceil(totalAmount / unit) * unit;
-
-                updateCashCalculation();
-            });
-        });
-
-    paymentForm.addEventListener('submit', function (event) {
-        if (submitting) {
-            event.preventDefault();
-            return;
         }
 
-        const paymentMethod = getPaymentMethod();
-
-        if (paymentMethod === 'cash') {
+        function updateCashCalculation() {
             const receivedAmount = Number(
                 receivedAmountInput.value || 0
             );
 
-            if (receivedAmount < totalAmount) {
-                event.preventDefault();
+            if (receivedAmount <= 0) {
+                changeAmountElement.textContent = '0đ';
 
-                alert(
-                    'Số tiền khách đưa chưa đủ để thanh toán.'
+                changeAmountElement.classList.remove(
+                    'text-green-400'
+                    , 'text-red-400'
+                );
+                changeAmountElement.classList.add(
+                    'text-gray-400'
                 );
 
-                receivedAmountInput.focus();
+                cashMessageElement.textContent =
+                    'Nhập số tiền khách đưa';
+
+                cashMessageElement.classList.remove(
+                    'text-green-400'
+                    , 'text-red-400'
+                );
+                cashMessageElement.classList.add(
+                    'text-gray-500'
+                );
+
+                setSubmitEnabled(
+                    false
+                    , 'NHẬP SỐ TIỀN KHÁCH ĐƯA'
+                );
+
                 return;
+            }
+
+            if (receivedAmount < totalAmount) {
+                const missingAmount = totalAmount - receivedAmount;
+
+                changeAmountElement.textContent = '0đ';
+
+                changeAmountElement.classList.remove(
+                    'text-green-400'
+                    , 'text-gray-400'
+                );
+                changeAmountElement.classList.add(
+                    'text-red-400'
+                );
+
+                cashMessageElement.textContent =
+                    'Khách còn thiếu ' + formatMoney(missingAmount);
+
+                cashMessageElement.classList.remove(
+                    'text-green-400'
+                    , 'text-gray-500'
+                );
+                cashMessageElement.classList.add(
+                    'text-red-400'
+                );
+
+                setSubmitEnabled(
+                    false
+                    , 'SỐ TIỀN KHÁCH ĐƯA CHƯA ĐỦ'
+                );
+
+                return;
+            }
+
+            const changeAmount = receivedAmount - totalAmount;
+
+            changeAmountElement.textContent =
+                formatMoney(changeAmount);
+
+            changeAmountElement.classList.remove(
+                'text-red-400'
+                , 'text-gray-400'
+            );
+            changeAmountElement.classList.add(
+                'text-green-400'
+            );
+
+            cashMessageElement.textContent =
+                changeAmount > 0 ?
+                'Số tiền cần trả lại khách' :
+                'Khách đã đưa đúng số tiền';
+
+            cashMessageElement.classList.remove(
+                'text-red-400'
+                , 'text-gray-500'
+            );
+            cashMessageElement.classList.add(
+                'text-green-400'
+            );
+
+            setSubmitEnabled(
+                true
+                , 'XÁC NHẬN THANH TOÁN VÀ IN VÉ'
+            );
+        }
+
+        function updatePaymentLabels() {
+            paymentLabels.forEach(function(label) {
+                const radio = label.querySelector(
+                    'input[type="radio"]'
+                );
+                const title = label.querySelector(
+                    '.payment-method-title'
+                );
+
+                if (!radio) {
+                    return;
+                }
+
+                if (radio.checked) {
+                    label.classList.add(
+                        'border-yellow-400'
+                        , 'bg-yellow-400/10'
+                    );
+                    label.classList.remove(
+                        'border-white/10'
+                        , 'bg-zinc-900/30'
+                    );
+
+                    if (title) {
+                        title.classList.add('text-gray-100');
+                        title.classList.remove('text-gray-200');
+                    }
+                } else {
+                    label.classList.remove(
+                        'border-yellow-400'
+                        , 'bg-yellow-400/10'
+                    );
+                    label.classList.add(
+                        'border-white/10'
+                        , 'bg-zinc-900/30'
+                    );
+
+                    if (title) {
+                        title.classList.remove('text-gray-100');
+                        title.classList.add('text-gray-200');
+                    }
+                }
+            });
+        }
+
+        function updatePaymentMethod() {
+            const paymentMethod = getPaymentMethod();
+
+            updatePaymentLabels();
+
+            if (paymentMethod === 'cash') {
+                cashSection.classList.remove('hidden');
+                vietQrSection.classList.add('hidden');
+
+                receivedAmountInput.required = true;
+                updateCashCalculation();
+            } else {
+                cashSection.classList.add('hidden');
+                vietQrSection.classList.remove('hidden');
+
+                receivedAmountInput.required = false;
+                receivedAmountInput.value = '';
+
+                setSubmitEnabled(
+                    true
+                    , 'TẠO MÃ THANH TOÁN VIETQR'
+                );
             }
         }
 
-        submitting = true;
-        submitButton.disabled = true;
+        paymentRadios.forEach(function(radio) {
+            radio.addEventListener(
+                'change'
+                , updatePaymentMethod
+            );
+        });
 
-        submitButton.classList.add(
-            'opacity-60',
-            'cursor-not-allowed'
+        receivedAmountInput.addEventListener(
+            'input'
+            , updateCashCalculation
         );
 
-        submitText.textContent =
-            paymentMethod === 'cash'
-                ? 'ĐANG XỬ LÝ THANH TOÁN...'
-                : 'ĐANG KHỞI TẠO VIETQR...';
-    });
+        document
+            .querySelectorAll('.cash-exact-button')
+            .forEach(function(button) {
+                button.addEventListener('click', function() {
+                    receivedAmountInput.value = totalAmount;
+                    updateCashCalculation();
+                });
+            });
 
-    updatePaymentMethod();
-})();
+        document
+            .querySelectorAll('.cash-round-button')
+            .forEach(function(button) {
+                button.addEventListener('click', function() {
+                    const unit = Number(
+                        this.dataset.cashRound || 0
+                    );
+
+                    if (unit <= 0) {
+                        return;
+                    }
+
+                    receivedAmountInput.value =
+                        Math.ceil(totalAmount / unit) * unit;
+
+                    updateCashCalculation();
+                });
+            });
+
+        paymentForm.addEventListener('submit', function(event) {
+            if (submitting) {
+                event.preventDefault();
+                return;
+            }
+
+            const paymentMethod = getPaymentMethod();
+
+            if (paymentMethod === 'cash') {
+                const receivedAmount = Number(
+                    receivedAmountInput.value || 0
+                );
+
+                if (receivedAmount < totalAmount) {
+                    event.preventDefault();
+
+                    alert(
+                        'Số tiền khách đưa chưa đủ để thanh toán.'
+                    );
+
+                    receivedAmountInput.focus();
+                    return;
+                }
+            }
+
+            submitting = true;
+            submitButton.disabled = true;
+
+            submitButton.classList.add(
+                'opacity-60'
+                , 'cursor-not-allowed'
+            );
+
+            submitText.textContent =
+                paymentMethod === 'cash' ?
+                'ĐANG XỬ LÝ THANH TOÁN...' :
+                'ĐANG KHỞI TẠO VIETQR...';
+        });
+
+        updatePaymentMethod();
+    })();
+
 </script>
 
 @endsection

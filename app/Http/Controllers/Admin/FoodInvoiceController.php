@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Doan;
-use App\Models\BienTheDoAn;
 use App\Models\FoodInvoice;
+use App\Services\FoodInventoryService;
 use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +16,10 @@ use Illuminate\Validation\ValidationException;
 class FoodInvoiceController extends Controller
 {
     use Loggable;
+
+    public function __construct(private FoodInventoryService $foodInventory)
+    {
+    }
 
     public function index(Request $request)
     {
@@ -69,8 +73,30 @@ class FoodInvoiceController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Mỗi biến thể (size) là một lựa chọn "chọn nhanh" riêng, vì giá và
+        // tồn kho khác nhau theo từng size — gộp chung dễ gây hiểu lầm "không trừ kho".
         $quickFoods = $foodsForSale
-            ->filter(fn (Doan $food) => $food->stock_quantity > 0)
+            ->flatMap(function (Doan $food) {
+                if ($food->isCombo()) {
+                    return $food->stock_quantity > 0 ? [[
+                        'food_id' => $food->id,
+                        'variant_id' => null,
+                        'label' => $food->name,
+                        'price' => $food->price,
+                        'stock' => $food->stock_quantity,
+                    ]] : [];
+                }
+
+                return $food->variants
+                    ->filter(fn ($variant) => $variant->stock_quantity > 0)
+                    ->map(fn ($variant) => [
+                        'food_id' => $food->id,
+                        'variant_id' => $variant->id,
+                        'label' => $variant->value ? "{$food->name} - {$variant->value}" : $food->name,
+                        'price' => (float) $variant->price,
+                        'stock' => $variant->stock_quantity,
+                    ]);
+            })
             ->values();
 
         $lowStockFoods = $foodsForSale
@@ -100,6 +126,7 @@ class FoodInvoiceController extends Controller
             'note' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.food_id' => ['nullable', 'integer', 'exists:foods,id'],
+            'items.*.food_variant_id' => ['nullable', 'integer', 'exists:food_variants,id'],
             'items.*.food_name' => ['required', 'string', 'max:255'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:999'],
             'items.*.unit_price' => ['required', 'numeric', 'min:0'],
@@ -146,6 +173,7 @@ class FoodInvoiceController extends Controller
             foreach ($items as $item) {
                 $invoice->items()->create([
                     'food_id' => $item['food_id'],
+                    'food_variant_id' => $item['food_variant_id'],
                     'food_name' => $item['food_name'],
                     'quantity' => (int) $item['quantity'],
                     'unit_price' => (float) $item['unit_price'],
@@ -249,11 +277,22 @@ class FoodInvoiceController extends Controller
                     ]);
                 }
 
+                $variant = null;
+                if ($food && filled($item['food_variant_id'] ?? null)) {
+                    $variant = $food->variants->firstWhere('id', (int) $item['food_variant_id']);
+                }
+
+                $foodName = $food?->name ?? trim($item['food_name']);
+                if ($variant?->value) {
+                    $foodName .= " - {$variant->value}";
+                }
+
                 return [
                     'food_id' => $food?->id,
-                    'food_name' => $food?->name ?? trim($item['food_name']),
+                    'food_variant_id' => $variant?->id,
+                    'food_name' => $foodName,
                     'quantity' => (int) $item['quantity'],
-                    'unit_price' => $food ? (float) $food->price : (float) $item['unit_price'],
+                    'unit_price' => $variant ? (float) $variant->price : ($food ? (float) $food->price : (float) $item['unit_price']),
                 ];
             })
             ->values()
@@ -262,103 +301,15 @@ class FoodInvoiceController extends Controller
 
     private function deductInventory($items): void
     {
-        $quantities = collect($items)
-            ->filter(fn ($item) => filled(data_get($item, 'food_id')))
-            ->groupBy(fn ($item) => (int) data_get($item, 'food_id'))
-            ->map(fn ($group) => $group->sum(fn ($item) => (int) data_get($item, 'quantity')));
-
-        foreach ($quantities as $foodId => $quantity) {
-            $food = Doan::with(['category', 'comboItems.variant'])->lockForUpdate()->find($foodId);
-
-            if (! $food) {
-                continue;
-            }
-
-            if ($food->isCombo()) {
-                $this->deductComboInventory($food, $quantity);
-                continue;
-            }
-
-            $variant = $this->saleVariantForUpdate($food);
-
-            if (! $variant || $variant->stock_quantity < $quantity) {
-                $available = (int) ($variant?->stock_quantity ?? 0);
-
-                throw ValidationException::withMessages([
-                    'items' => "Món {$food->name} chỉ còn {$available}, không đủ để lưu hóa đơn {$quantity} phần.",
-                ]);
-            }
-
-            $variant->decrement('stock_quantity', $quantity);
+        try {
+            $this->foodInventory->deduct($items);
+        } catch (\RuntimeException $exception) {
+            throw ValidationException::withMessages(['items' => $exception->getMessage()]);
         }
     }
 
     private function restoreInventory($items): void
     {
-        $quantities = collect($items)
-            ->filter(fn ($item) => filled(data_get($item, 'food_id')))
-            ->groupBy(fn ($item) => (int) data_get($item, 'food_id'))
-            ->map(fn ($group) => $group->sum(fn ($item) => (int) data_get($item, 'quantity')));
-
-        foreach ($quantities as $foodId => $quantity) {
-            $food = Doan::with(['category', 'comboItems.variant'])->find($foodId);
-
-            if (! $food) {
-                continue;
-            }
-
-            if ($food->isCombo()) {
-                $this->restoreComboInventory($food, $quantity);
-                continue;
-            }
-
-            $variant = $this->saleVariantForUpdate($food);
-
-            if ($variant) {
-                $variant->increment('stock_quantity', $quantity);
-            }
-        }
-    }
-
-    private function saleVariantForUpdate(Doan $food): ?BienTheDoAn
-    {
-        return $food->variants()
-            ->where('is_active', true)
-            ->orderBy('price')
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->first();
-    }
-
-    private function deductComboInventory(Doan $food, int $quantity): void
-    {
-        if ($food->comboItems->isEmpty()) {
-            throw ValidationException::withMessages([
-                'items' => "Combo {$food->name} chưa có thành phần, không thể bán.",
-            ]);
-        }
-
-        foreach ($food->comboItems as $comboItem) {
-            $needed = (int) $comboItem->quantity * $quantity;
-            $variant = BienTheDoAn::lockForUpdate()->find($comboItem->food_variant_id);
-
-            if (! $variant || $variant->stock_quantity < $needed) {
-                $available = (int) ($variant?->stock_quantity ?? 0);
-
-                throw ValidationException::withMessages([
-                    'items' => "Combo {$food->name} không đủ kho thành phần, cần {$needed} nhưng chỉ còn {$available}.",
-                ]);
-            }
-
-            $variant->decrement('stock_quantity', $needed);
-        }
-    }
-
-    private function restoreComboInventory(Doan $food, int $quantity): void
-    {
-        foreach ($food->comboItems as $comboItem) {
-            BienTheDoAn::whereKey($comboItem->food_variant_id)
-                ->increment('stock_quantity', (int) $comboItem->quantity * $quantity);
-        }
+        $this->foodInventory->restore($items);
     }
 }

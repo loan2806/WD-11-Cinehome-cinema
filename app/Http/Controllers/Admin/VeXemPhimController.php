@@ -12,11 +12,66 @@ class VeXemPhimController extends Controller
 {
     /**
      * Hiển thị danh sách vé trong Admin.
-     * Có tìm kiếm, lọc và thống kê nhanh.
+     * Có tìm kiếm, lọc, thống kê và tự dọn vé chờ thanh toán hết hạn.
      */
     public function index(Request $request)
     {
-        // Lấy danh sách vé kèm thông tin người mua, nhân viên và suất chiếu
+        /*
+         * Đồng bộ các vé đã thanh toán nhưng suất chiếu đã qua giờ.
+         * Chỉ chuyển các vé chưa sử dụng/đã in? Theo logic hiện tại chỉ
+         * áp dụng cho da_thanh_toan để tránh ghi đè trạng thái khác.
+         */
+        VeXemPhim::where('trang_thai', 'da_thanh_toan')
+            ->whereNotNull('thoi_gian_chieu')
+            ->where('thoi_gian_chieu', '<', now('Asia/Ho_Chi_Minh'))
+            ->update([
+                'trang_thai' => 'het_han',
+            ]);
+
+        /*
+         * Dọn các vé chờ thanh toán quá hạn.
+         * Đồng thời giải phóng cache giữ ghế để ghế có thể được bán lại.
+         */
+        $expiredPendingTickets = VeXemPhim::where(
+                'trang_thai',
+                'cho_thanh_toan'
+            )
+            ->whereNotNull('thoi_gian_het_han')
+            ->where(
+                'thoi_gian_het_han',
+                '<',
+                now('Asia/Ho_Chi_Minh')
+            )
+            ->get();
+
+        foreach ($expiredPendingTickets as $pendingTicket) {
+            $seats = explode(
+                ',',
+                (string) $pendingTicket->ma_ghe
+            );
+
+            foreach ($seats as $seat) {
+                $seatCode = strtoupper(trim($seat));
+
+                if ($seatCode === '') {
+                    continue;
+                }
+
+                Cache::forget(
+                    "seat_lock:suat:"
+                    . $pendingTicket->suat_chieu_id
+                    . ":seat:"
+                    . $seatCode
+                );
+            }
+
+            /*
+             * Xóa vé chờ thanh toán hết hạn để không biến thành vé hủy
+             * trong các danh sách khác.
+             */
+            $pendingTicket->delete();
+        }
+
         $query = VeXemPhim::with([
             'nguoiDung',
             'nhanVien',
@@ -25,89 +80,181 @@ class VeXemPhimController extends Controller
             'suatChieu.phongChieu',
         ]);
 
-        // Tìm kiếm theo mã vé, tên phim, rạp, phòng hoặc ghế
         if ($request->filled('tim_kiem')) {
-            $keyword = $request->tim_kiem;
+            $keyword = trim((string) $request->tim_kiem);
 
             $query->where(function ($q) use ($keyword) {
-                $q->where('ma_ve', 'like', "%{$keyword}%")
-                    ->orWhere('ten_phim', 'like', "%{$keyword}%")
-                    ->orWhere('ten_rap', 'like', "%{$keyword}%")
-                    ->orWhere('ten_phong', 'like', "%{$keyword}%")
-                    ->orWhere('ma_ghe', 'like', "%{$keyword}%");
+                $q->where(
+                    'ma_ve',
+                    'like',
+                    "%{$keyword}%"
+                )
+                    ->orWhere(
+                        'ten_phim',
+                        'like',
+                        "%{$keyword}%"
+                    )
+                    ->orWhere(
+                        'ma_ghe',
+                        'like',
+                        "%{$keyword}%"
+                    )
+                    ->orWhereHas(
+                        'nguoiDung',
+                        function ($userQuery) use ($keyword) {
+                            $userQuery->where(
+                                'ho_ten',
+                                'like',
+                                "%{$keyword}%"
+                            );
+                        }
+                    )
+                    ->orWhereHas(
+                        'nhanVien',
+                        function ($staffQuery) use ($keyword) {
+                            $staffQuery->where(
+                                'ho_ten',
+                                'like',
+                                "%{$keyword}%"
+                            );
+                        }
+                    );
             });
         }
 
-        // Lọc theo trạng thái vé
         if ($request->filled('trang_thai')) {
-            $query->where('trang_thai', $request->trang_thai);
+            $query->where(
+                'trang_thai',
+                $request->trang_thai
+            );
         }
 
-        // Lọc theo loại vé: trực tuyến hoặc tại quầy
         if ($request->filled('loai_ve')) {
-            $query->where('loai_ve', $request->loai_ve);
+            $query->where(
+                'loai_ve',
+                $request->loai_ve
+            );
         }
 
-        // Phân trang danh sách vé, giữ lại query lọc khi chuyển trang
         $tickets = $query
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        // Thống kê nhanh hiển thị trên đầu trang
         $totalTickets = VeXemPhim::count();
-        $onlineTickets = VeXemPhim::where('loai_ve', 'truc_tuyen')->count();
-        $counterTickets = VeXemPhim::where('loai_ve', 'tai_quay')->count();
-        $paidTickets = VeXemPhim::where('trang_thai', 'da_thanh_toan')->count();
-        $usedTickets = VeXemPhim::where('trang_thai', 'da_su_dung')->count();
-        $cancelledTickets = VeXemPhim::where('trang_thai', 'da_huy')->count();
-        $ticketRevenue = VeXemPhim::whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung'])->sum('tong_tien');
+
+        $onlineTickets = VeXemPhim::where(
+            'loai_ve',
+            'truc_tuyen'
+        )->count();
+
+        $counterTickets = VeXemPhim::where(
+            'loai_ve',
+            'tai_quay'
+        )->count();
+
+        $pendingTickets = VeXemPhim::where(
+            'trang_thai',
+            'cho_thanh_toan'
+        )->count();
+
+        $paidTickets = VeXemPhim::where(
+            'trang_thai',
+            'da_thanh_toan'
+        )->count();
+
+        $printedTickets = VeXemPhim::where(
+            'trang_thai',
+            'da_in'
+        )->count();
+
+        $usedTickets = VeXemPhim::where(
+            'trang_thai',
+            'da_su_dung'
+        )->count();
+
+        $cancelledTickets = VeXemPhim::where(
+            'trang_thai',
+            'da_huy'
+        )->count();
+
+        $expiredTickets = VeXemPhim::where(
+            'trang_thai',
+            'het_han'
+        )->count();
+
+        $ticketRevenue = VeXemPhim::whereIn(
+            'trang_thai',
+            [
+                'da_thanh_toan',
+                'da_in',
+                'da_su_dung',
+            ]
+        )->sum('tong_tien');
 
         $summary = [
             'total' => $totalTickets,
             'online' => $onlineTickets,
             'counter' => $counterTickets,
+            'pending' => $pendingTickets,
             'paid' => $paidTickets,
+            'printed' => $printedTickets,
             'used' => $usedTickets,
             'cancelled' => $cancelledTickets,
+            'expired' => $expiredTickets,
             'revenue' => $ticketRevenue,
         ];
 
-        return view('admin.ve-xem-phims.index', compact(
-            'tickets',
-            'summary',
-            'totalTickets',
-            'onlineTickets',
-            'counterTickets',
-            'paidTickets',
-            'usedTickets',
-            'cancelledTickets'
-        ));
+        return view(
+            'admin.ve-xem-phims.index',
+            compact(
+                'tickets',
+                'summary',
+                'totalTickets',
+                'onlineTickets',
+                'counterTickets',
+                'pendingTickets',
+                'paidTickets',
+                'printedTickets',
+                'usedTickets',
+                'cancelledTickets',
+                'expiredTickets'
+            )
+        );
     }
 
     /**
      * Xem chi tiết một vé.
      */
-    
+    public function show($id)
+    {
+        $veXemPhim = VeXemPhim::with([
+            'nguoiDung',
+            'nhanVien',
+            'suatChieu.phim',
+            'suatChieu.rapChieuPhim',
+            'suatChieu.phongChieu',
+        ])->findOrFail($id);
 
-public function show($id)
-{
-    // Tìm thông tin vé xem phim
-    $veXemPhim = \App\Models\VeXemPhim::findOrFail($id);
+        $foodItems = Cache::get(
+            "ve_foods:{$veXemPhim->id}",
+            $veXemPhim->food_items ?? []
+        );
 
-    // 🌟 ĐỒNG BỘ CACHE: Lấy dữ liệu đồ ăn từ Cache giống hệt phía User
-    $foodItems = Cache::get("ve_foods:{$veXemPhim->id}", []);
-
-    return view('admin.ve-xem-phims.show', compact('veXemPhim', 'foodItems'));
-}
+        return view(
+            'admin.ve-xem-phims.show',
+            compact(
+                'veXemPhim',
+                'foodItems'
+            )
+        );
+    }
 
     /**
      * Hiển thị form cập nhật trạng thái vé.
-     * Admin chỉ sửa trạng thái, không sửa phim, ghế, giá vé.
      */
     public function edit(VeXemPhim $veXemPhim)
     {
-        // Load thông tin để admin đối chiếu trước khi cập nhật
         $veXemPhim->load([
             'nguoiDung',
             'nhanVien',
@@ -116,97 +263,155 @@ public function show($id)
             'suatChieu.phongChieu',
         ]);
 
-        return view('admin.ve-xem-phims.edit', compact('veXemPhim'));
+        return view(
+            'admin.ve-xem-phims.edit',
+            compact('veXemPhim')
+        );
     }
 
     /**
      * Cập nhật trạng thái vé.
      */
-    public function update(Request $request, VeXemPhim $veXemPhim)
-    {
-        // Chỉ cho phép cập nhật các trạng thái hợp lệ
+    public function update(
+        Request $request,
+        VeXemPhim $veXemPhim
+    ) {
         $data = $request->validate([
-            'trang_thai' => ['required', 'in:da_thanh_toan,da_su_dung,da_huy'],
+            'trang_thai' => [
+                'required',
+                'in:cho_thanh_toan,da_thanh_toan,da_in,da_su_dung,da_huy,het_han',
+            ],
         ], [
-            'trang_thai.required' => 'Vui lòng chọn trạng thái vé',
-            'trang_thai.in' => 'Trạng thái vé không hợp lệ',
+            'trang_thai.required' =>
+                'Vui lòng chọn trạng thái vé',
+            'trang_thai.in' =>
+                'Trạng thái vé không hợp lệ',
         ]);
 
-        // Vé đã sử dụng thì không được chuyển sang hủy
         if (
             $veXemPhim->trang_thai === 'da_su_dung'
             && $data['trang_thai'] === 'da_huy'
         ) {
-            return back()->with('error', 'Không thể hủy vé đã sử dụng');
+            return back()->with(
+                'error',
+                'Không thể hủy vé đã sử dụng'
+            );
+        }
+
+        if (
+            $veXemPhim->trang_thai === 'da_thanh_toan'
+            && $data['trang_thai'] === 'da_su_dung'
+        ) {
+            return back()->with(
+                'error',
+                'Vé chưa được in, không thể chuyển sang đã sử dụng.'
+            );
         }
 
         $trangThaiCu = $veXemPhim->trang_thai;
 
-
         $updateData = [
             'trang_thai' => $data['trang_thai'],
+            'tien_hoan' =>
+                $data['trang_thai'] === 'da_huy'
+                    ? $veXemPhim->tong_tien
+                    : 0,
         ];
-
-        // Nếu hủy vé thì ghi nhận số tiền hoàn
-        if ($data['trang_thai'] === 'da_huy') {
-            $updateData['tien_hoan'] = $veXemPhim->tong_tien;
-        }
-
-        // Nếu chuyển lại sang trạng thái khác thì reset tiền hoàn
-        if ($data['trang_thai'] !== 'da_huy') {
-            $updateData['tien_hoan'] = 0;
-        }
 
         $veXemPhim->update($updateData);
 
-
         AdminNotificationService::push(
             '🎟️ Vé xem phim đã được cập nhật',
-            'Trạng thái vé #' . $veXemPhim->ma_ve .
-                ' đã chuyển từ ' . $trangThaiCu .
-                ' sang ' . $data['trang_thai'],
+            'Trạng thái vé #'
+                . $veXemPhim->ma_ve
+                . ' đã chuyển từ '
+                . $trangThaiCu
+                . ' sang '
+                . $data['trang_thai'],
             'Success'
         );
 
-
         return redirect()
-            ->route('admin.ve-xem-phims.show', $veXemPhim)
-            ->with('success', 'Cập nhật trạng thái vé thành công');
+            ->route(
+                'admin.ve-xem-phims.show',
+                $veXemPhim
+            )
+            ->with(
+                'success',
+                'Cập nhật trạng thái vé thành công'
+            );
     }
 
     /**
-     * Hủy vé nhanh từ danh sách hoặc chi tiết vé.
+     * Hủy vé nhanh.
      */
     public function huy(VeXemPhim $veXemPhim)
     {
-        // Không hủy lại vé đã hủy
         if ($veXemPhim->trang_thai === 'da_huy') {
-            return back()->with('warning', 'Vé này đã bị hủy trước đó');
+            return back()->with(
+                'warning',
+                'Vé này đã bị hủy trước đó'
+            );
         }
 
-        // Không hủy vé đã sử dụng
         if ($veXemPhim->trang_thai === 'da_su_dung') {
-            return back()->with('error', 'Không thể hủy vé đã sử dụng');
+            return back()->with(
+                'error',
+                'Không thể hủy vé đã sử dụng'
+            );
         }
 
-        // Cập nhật trạng thái và tiền hoàn
+        if ($veXemPhim->trang_thai === 'het_han') {
+            return back()->with(
+                'error',
+                'Không thể hủy vé đã hết hạn'
+            );
+        }
+
         $veXemPhim->update([
             'trang_thai' => 'da_huy',
             'tien_hoan' => $veXemPhim->tong_tien,
         ]);
 
+        $showtimeId = $veXemPhim->suat_chieu_id
+            ?? $veXemPhim->suatChieu?->id;
+
+        if ($showtimeId) {
+            foreach (
+                explode(
+                    ',',
+                    (string) $veXemPhim->ma_ghe
+                ) as $seat
+            ) {
+                $seatCode = strtoupper(trim($seat));
+
+                if ($seatCode === '') {
+                    continue;
+                }
+
+                Cache::forget(
+                    "seat_lock:suat:"
+                    . $showtimeId
+                    . ":seat:"
+                    . $seatCode
+                );
+            }
+        }
 
         AdminNotificationService::push(
             '❌ Vé đã bị hủy',
-            'Vé #' . $veXemPhim->ma_ve .
-                ' của suất chiếu #' . $veXemPhim->suatChieu->id .
-                ' đã bị hủy',
+            'Vé #'
+                . $veXemPhim->ma_ve
+                . ' của suất chiếu #'
+                . ($showtimeId ?? '---')
+                . ' đã bị hủy',
             'Danger'
         );
 
-
-
-        return back()->with('success', 'Hủy vé thành công');
+        return back()->with(
+            'success',
+            'Hủy vé thành công'
+        );
     }
 
     /**
@@ -214,53 +419,137 @@ public function show($id)
      */
     public function suDung(VeXemPhim $veXemPhim)
     {
-        // Vé đã hủy thì không được sử dụng
         if ($veXemPhim->trang_thai === 'da_huy') {
-            return back()->with('error', 'Không thể sử dụng vé đã hủy');
+            return back()->with(
+                'error',
+                'Không thể sử dụng vé đã hủy'
+            );
         }
 
-        // Vé đã sử dụng rồi thì không cập nhật lại
+        if ($veXemPhim->trang_thai === 'het_han') {
+            return back()->with(
+                'error',
+                'Không thể sử dụng vé đã hết hạn'
+            );
+        }
+
+        if ($veXemPhim->trang_thai === 'cho_thanh_toan') {
+            return back()->with(
+                'error',
+                'Vé chưa thanh toán, không thể sử dụng.'
+            );
+        }
+
+        if ($veXemPhim->trang_thai === 'da_thanh_toan') {
+            return back()->with(
+                'error',
+                'Vé chưa được in, không thể chuyển sang đã sử dụng.'
+            );
+        }
+
         if ($veXemPhim->trang_thai === 'da_su_dung') {
-            return back()->with('warning', 'Vé này đã được sử dụng');
+            return back()->with(
+                'warning',
+                'Vé này đã được sử dụng'
+            );
         }
 
-        // Chuyển trạng thái vé sang đã sử dụng
         $veXemPhim->update([
             'trang_thai' => 'da_su_dung',
             'tien_hoan' => 0,
         ]);
 
-
         AdminNotificationService::push(
             '✔️ Vé đã được sử dụng',
-            'Vé #' . $veXemPhim->ma_ve .
-                ' đã được check-in thành công',
+            'Vé #'
+                . $veXemPhim->ma_ve
+                . ' đã được check-in thành công',
             'Success'
         );
 
-        return back()->with('success', 'Cập nhật vé đã sử dụng thành công');
+        return back()->with(
+            'success',
+            'Cập nhật vé đã sử dụng thành công'
+        );
     }
 
-    public function capNhatTrangThai(Request $request, VeXemPhim $veXemPhim)
-    {
+    /**
+     * Cập nhật trạng thái nhanh ngay trên bảng quản lý vé.
+     */
+    public function capNhatTrangThai(
+        Request $request,
+        VeXemPhim $veXemPhim
+    ) {
         $data = $request->validate([
-            'trang_thai' => ['required', 'in:da_thanh_toan,da_su_dung,da_huy'],
+            'trang_thai' => [
+                'required',
+                'in:cho_thanh_toan,da_thanh_toan,da_in,da_su_dung,da_huy,het_han',
+            ],
+        ], [
+            'trang_thai.required' =>
+                'Vui lòng chọn trạng thái vé.',
+            'trang_thai.in' =>
+                'Trạng thái vé không hợp lệ.',
         ]);
 
         if (
             $veXemPhim->trang_thai === 'da_su_dung'
             && $data['trang_thai'] === 'da_huy'
         ) {
-            return back()->with('error', 'Không thể hủy vé đã sử dụng');
+            return back()->with(
+                'error',
+                'Không thể hủy vé đã sử dụng'
+            );
         }
+
+        if (
+            $veXemPhim->trang_thai === 'da_thanh_toan'
+            && $data['trang_thai'] === 'da_su_dung'
+        ) {
+            return back()->with(
+                'error',
+                'Vé chưa được in, không thể chuyển sang đã sử dụng.'
+            );
+        }
+
+        if (
+            in_array(
+                $veXemPhim->trang_thai,
+                ['da_huy', 'het_han'],
+                true
+            )
+            && $data['trang_thai'] !== $veXemPhim->trang_thai
+        ) {
+            return back()->with(
+                'error',
+                'Không thể thay đổi trạng thái của vé đã hủy hoặc hết hạn.'
+            );
+        }
+
+        $oldStatus = $veXemPhim->trang_thai;
 
         $veXemPhim->update([
             'trang_thai' => $data['trang_thai'],
-            'tien_hoan' => $data['trang_thai'] === 'da_huy'
-                ? $veXemPhim->tong_tien
-                : 0,
+            'tien_hoan' =>
+                $data['trang_thai'] === 'da_huy'
+                    ? $veXemPhim->tong_tien
+                    : 0,
         ]);
 
-        return back()->with('success', 'Cập nhật trạng thái vé thành công');
+        AdminNotificationService::push(
+            '🎟️ Vé xem phim đã được cập nhật',
+            'Trạng thái vé #'
+                . $veXemPhim->ma_ve
+                . ' đã chuyển từ '
+                . $oldStatus
+                . ' sang '
+                . $data['trang_thai'],
+            'Success'
+        );
+
+        return back()->with(
+            'success',
+            'Cập nhật trạng thái vé thành công'
+        );
     }
 }

@@ -33,247 +33,419 @@
         request('quoc_gia'),
     ])->filter(fn ($value) => filled($value))->count();
     $moviesWithShowtimes = $currentMovies->filter(fn ($movie) => $movie->showtimes->isNotEmpty())->count();
+    
+    $genreList = $genres ?? $theLoais ?? [];
+    $countryList = $countries ?? $quocGias ?? [];
 @endphp
+
+@push('styles')
+<style>
+    /* 🌟 BỐ CỤC TỔNG THỂ TỶ LỆ 100% CHUẨN */
+    .movie-admin-page {
+        padding-top: 15px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* 🌟 KHUNG TÌM KIẾM ĐÈ PHỦ HẲN LÊN NỀN CŨ - KHÔNG BỊ BÓNG CHỮ ĐÈ */
+    .movie-filter-box {
+        background: #151518 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 16px !important;
+        padding: 16px 20px !important;
+        margin-bottom: 20px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        position: relative !important;
+        z-index: 50 !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .movie-filter-grid {
+        display: grid !important;
+        grid-template-columns: 2fr 1fr 1fr auto !important;
+        gap: 12px !important;
+        align-items: end !important;
+        width: 100% !important;
+    }
+
+    /* 🌟 DROPDOWN POPUP NỔI HIGHLIGHT Z-INDEX CAO */
+    .cine-select-wrapper {
+        position: relative !important;
+        width: 100% !important;
+        user-select: none !important;
+        z-index: 20 !important;
+    }
+
+    .cine-select-wrapper.open {
+        z-index: 99999 !important;
+    }
+
+    .cine-select-trigger {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        background: #18181c !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        border-radius: 10px !important;
+        padding: 8px 12px !important;
+        color: #f3f4f6 !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        height: 40px !important;
+        box-sizing: border-box !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .cine-select-trigger:hover,
+    .cine-select-wrapper.open .cine-select-trigger {
+        border-color: #facc15 !important;
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2) !important;
+    }
+
+    .cine-select-trigger i {
+        color: #facc15 !important;
+        font-size: 11px !important;
+        transition: transform 0.2s ease !important;
+    }
+
+    .cine-select-wrapper.open .cine-select-trigger i {
+        transform: rotate(180deg) !important;
+    }
+
+    .cine-select-menu {
+        position: absolute !important;
+        top: calc(100% + 4px) !important;
+        left: 0 !important;
+        right: 0 !important;
+        background: #18181c !important;
+        border: 1px solid rgba(250, 204, 21, 0.35) !important;
+        border-radius: 12px !important;
+        padding: 6px !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95) !important;
+        z-index: 999999 !important;
+        max-height: 220px !important;
+        overflow-y: auto !important;
+        display: none !important;
+    }
+
+    .cine-select-wrapper.open .cine-select-menu {
+        display: block !important;
+    }
+
+    .cine-select-option {
+        padding: 8px 10px !important;
+        border-radius: 6px !important;
+        color: #d1d5db !important;
+        font-size: 13px !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        white-space: nowrap !important;
+    }
+
+    .cine-select-option:hover {
+        background: rgba(250, 204, 21, 0.15) !important;
+        color: #facc15 !important;
+    }
+
+    .cine-select-option.selected {
+        background: rgba(250, 204, 21, 0.25) !important;
+        color: #facc15 !important;
+        font-weight: 700 !important;
+    }
+
+    /* 🌟 BẢNG QUẢN LÝ GỌN GÀNG HIỂN THỊ ĐỦ THAO TÁC Ở TỶ LỆ 100% */
+    .movie-table-card {
+        background: #151518 !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+        padding: 16px 20px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .movie-table-responsive {
+        width: 100% !important;
+        overflow-x: auto !important;
+    }
+
+    .cine-movie-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+    }
+
+    .cine-movie-table th {
+        color: #9ca3af !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        padding: 12px 8px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        text-align: left !important;
+    }
+
+    .cine-movie-table td {
+        padding: 10px 8px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        vertical-align: middle !important;
+        color: #e5e7eb !important;
+        font-size: 13px !important;
+    }
+
+    /* TINH CHỈNH CHIỀU RỘNG & PHẦN TỬ TRONG BẢNG */
+    .poster-mini {
+        width: 42px !important;
+        height: 58px !important;
+        object-fit: cover !important;
+        border-radius: 6px !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        flex-shrink: 0 !important;
+    }
+
+    .badge-chip {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 5px !important;
+        padding: 4px 8px !important;
+        border-radius: 14px !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        background: rgba(255,255,255,0.06) !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        white-space: nowrap !important;
+    }
+
+    .col-lang-text {
+        font-size: 12.5px !important;
+        color: #d1d5db !important;
+        line-height: 1.3 !important;
+        max-width: 130px !important;
+        display: inline-block !important;
+    }
+
+    .action-btns-group {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 6px !important;
+    }
+
+    .btn-icon-act {
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: #fff !important;
+        font-size: 12px !important;
+        transition: all 0.2s ease !important;
+        text-decoration: none !important;
+        border: none !important;
+        cursor: pointer !important;
+    }
+
+    .btn-icon-act.view { background: rgba(59, 130, 246, 0.18) !important; color: #60a5fa !important; }
+    .btn-icon-act.edit { background: rgba(234, 179, 8, 0.18) !important; color: #facc15 !important; }
+    .btn-icon-act.delete { background: rgba(239, 68, 68, 0.18) !important; color: #f87171 !important; }
+
+    .btn-icon-act:hover {
+        transform: translateY(-2px) !important;
+        filter: brightness(1.25) !important;
+    }
+</style>
+@endpush
 
 @section('content')
 <div class="movie-admin-page">
     @include('admin.partials.flash')
 
-    <section class="movie-library-hero">
-        <div class="movie-library-copy">
-            <span class="movie-kicker">
-                <i class="fa-solid fa-film"></i>
-                Kho phim CineHome
-            </span>
-            <h2>Danh sách phim</h2>
-            <p>
-                Quản lý poster, thông tin phim, thể loại và trạng thái lịch chiếu trong một giao diện gọn gàng,
-                dễ quét và thao tác nhanh hơn.
-            </p>
-
-            <div class="movie-hero-meta">
-                <span>
-                    <i class="fa-solid fa-layer-group"></i>
-                    {{ number_format($movies->total()) }} phim
-                </span>
-                <span>
-                    <i class="fa-solid fa-filter"></i>
-                    {{ $activeFilterCount }} bộ lọc đang dùng
-                </span>
-            </div>
+    <!-- NÚT TẠO PHIM HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div>
+            <h2 style="font-size: 24px; font-weight: 900; color: #fff; margin: 0;">Danh sách phim</h2>
+            <p style="color: #9ca3af; font-size: 13px; margin: 4px 0 0 0;">Quản lý kho phim, poster, thể loại và lịch chiếu.</p>
         </div>
-
-        <div class="movie-hero-actions">
+        <div style="display: flex; gap: 10px;">
             <a href="{{ route('admin.phims.create') }}" class="movie-action-btn is-primary">
-                <i class="fa-solid fa-plus"></i>
-                Thêm phim mới
+                <i class="fa-solid fa-plus"></i> Thêm phim mới
             </a>
-            <a href="{{ route('admin.suat-chieus.index') }}" class="movie-action-btn is-soft">
-                <i class="fa-solid fa-calendar-days"></i>
-                Quản lý suất chiếu
+            <a href="{{ route('admin.suat-chieus.index') }}" class="movie-action-btn is-ghost">
+                <i class="fa-solid fa-calendar-days"></i> Suất chiếu
             </a>
         </div>
-    </section>
+    </div>
 
-    <section class="movie-stat-grid" aria-label="Tổng quan kho phim">
-        <article class="movie-stat-card">
-            <span><i class="fa-solid fa-clapperboard"></i></span>
+    <!-- KHUNG TÌM KIẾM VÀ DROPDOWN ĐỀ NỔI -->
+    <div class="movie-filter-box">
+        <form method="GET" action="{{ route('admin.phims.index') }}" class="movie-filter-grid">
+            <!-- Ô TÌM KIẾM -->
             <div>
-                <small>Tổng phim</small>
-                <strong>{{ number_format($movies->total()) }}</strong>
+                <span style="display: block; color: #d1d5db; font-size: 12px; font-weight: 700; margin-bottom: 6px;">Tìm kiếm</span>
+                <div style="position: relative;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #ef4444; font-size: 13px;"></i>
+                    <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}" placeholder="Nhập tên phim cần tìm..." style="width: 100%; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 8px 12px 8px 34px; border-radius: 10px; height: 40px; font-size: 13.5px; outline: none; box-sizing: border-box;">
+                </div>
             </div>
-        </article>
 
-        <article class="movie-stat-card">
-            <span><i class="fa-solid fa-table-list"></i></span>
+            <!-- DROPDOWN THỂ LOẠI -->
             <div>
-                <small>Đang hiển thị</small>
-                <strong>{{ number_format($currentMovies->count()) }}</strong>
+                <span style="display: block; color: #d1d5db; font-size: 12px; font-weight: 700; margin-bottom: 6px;">Thể loại</span>
+                <div class="cine-select-wrapper">
+                    <input type="hidden" name="the_loai" value="{{ request('the_loai') }}">
+                    <div class="cine-select-trigger" tabindex="0">
+                        <span class="cine-select-value">{{ request('the_loai') ?: 'Tất cả thể loại' }}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="cine-select-menu">
+                        <div class="cine-select-option {{ empty(request('the_loai')) ? 'selected' : '' }}" data-value="">Tất cả thể loại</div>
+                        @foreach ($genreList as $genre)
+                            @php $gName = is_object($genre) ? $genre->ten_the_loai : $genre; @endphp
+                            <div class="cine-select-option {{ request('the_loai') == $gName ? 'selected' : '' }}" data-value="{{ $gName }}">
+                                {{ $gName }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             </div>
-        </article>
 
-        <article class="movie-stat-card">
-            <span><i class="fa-solid fa-clock"></i></span>
+            <!-- DROPDOWN QUỐC GIA -->
             <div>
-                <small>Có suất chiếu ở trang này</small>
-                <strong>{{ number_format($moviesWithShowtimes) }}</strong>
+                <span style="display: block; color: #d1d5db; font-size: 12px; font-weight: 700; margin-bottom: 6px;">Quốc gia</span>
+                <div class="cine-select-wrapper">
+                    <input type="hidden" name="quoc_gia" value="{{ request('quoc_gia') }}">
+                    <div class="cine-select-trigger" tabindex="0">
+                        <span class="cine-select-value">{{ request('quoc_gia') ?: 'Tất cả quốc gia' }}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="cine-select-menu">
+                        <div class="cine-select-option {{ empty(request('quoc_gia')) ? 'selected' : '' }}" data-value="">Tất cả quốc gia</div>
+                        @foreach ($countryList as $country)
+                            @php $cName = is_object($country) ? $country->ten_quoc_gia : $country; @endphp
+                            <div class="cine-select-option {{ request('quoc_gia') == $cName ? 'selected' : '' }}" data-value="{{ $cName }}">
+                                {{ $cName }}
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             </div>
-        </article>
 
-        <article class="movie-stat-card">
-            <span><i class="fa-solid fa-tags"></i></span>
-            <div>
-                <small>Thể loại đang bật</small>
-                <strong>{{ number_format($genres->count()) }}</strong>
+            <!-- NÚT THAO TÁC LỌC -->
+            <div style="display: flex; gap: 8px;">
+                <button type="submit" class="movie-action-btn is-primary" style="height: 40px; padding: 0 16px;">
+                    <i class="fa-solid fa-sliders"></i> Lọc phim
+                </button>
+                <a href="{{ route('admin.phims.index') }}" class="movie-action-btn is-ghost" style="height: 40px; padding: 0 12px;" title="Đặt lại">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
             </div>
-        </article>
-    </section>
+        </form>
+    </div>
 
-    <form method="GET" action="{{ route('admin.phims.index') }}" class="movie-filter-panel">
-        <label class="movie-filter-field is-search">
-            <span>Tìm kiếm</span>
-            <div>
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input
-                    type="text"
-                    name="tim_kiem"
-                    value="{{ request('tim_kiem') }}"
-                    placeholder="Nhập tên phim cần tìm..."
-                >
-            </div>
-        </label>
-
-        <label class="movie-filter-field">
-            <span>Thể loại</span>
-            <select name="the_loai">
-                <option value="">Tất cả thể loại</option>
-                @foreach ($genres as $genre)
-                    <option value="{{ $genre->ten_the_loai }}" @selected(request('the_loai') == $genre->ten_the_loai)>
-                        {{ $genre->ten_the_loai }}
-                    </option>
-                @endforeach
-            </select>
-        </label>
-
-        <label class="movie-filter-field">
-            <span>Quốc gia</span>
-            <select name="quoc_gia">
-                <option value="">Tất cả quốc gia</option>
-                @foreach ($countries as $country)
-                    <option value="{{ $country->ten_quoc_gia }}" @selected(request('quoc_gia') == $country->ten_quoc_gia)>
-                        {{ $country->ten_quoc_gia }}
-                    </option>
-                @endforeach
-            </select>
-        </label>
-
-        <div class="movie-filter-actions">
-            <button type="submit" class="movie-action-btn is-primary">
-                <i class="fa-solid fa-sliders"></i>
-                Lọc phim
-            </button>
-            <a href="{{ route('admin.phims.index') }}" class="movie-action-btn is-ghost">
-                <i class="fa-solid fa-rotate-left"></i>
-                Đặt lại
-            </a>
-        </div>
-    </form>
-
-    <section class="movie-table-panel">
-        <div class="movie-table-head">
-            <div>
-                <span class="movie-kicker">
-                    <i class="fa-solid fa-list-check"></i>
-                    Kết quả quản lý
-                </span>
-                <h3>Kho phim</h3>
-            </div>
-            <p>
-                Hiển thị
-                <strong>{{ $movies->firstItem() ?? 0 }} - {{ $movies->lastItem() ?? 0 }}</strong>
-                trong
-                <strong>{{ number_format($movies->total()) }}</strong>
-                phim
-            </p>
+    <!-- KHUNG BẢNG DANH SÁCH -->
+    <div class="movie-table-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="color: #facc15; font-size: 12px; font-weight: 800; text-transform: uppercase;">
+                <i class="fa-solid fa-list-check"></i> KHO PHIM CINEHOME
+            </span>
+            <small style="color: #9ca3af; font-size: 12.5px;">
+                Hiển thị <b>{{ $movies->firstItem() ?? 0 }} - {{ $movies->lastItem() ?? 0 }}</b> trong tổng <b>{{ number_format($movies->total()) }}</b> phim
+            </small>
         </div>
 
-        <div class="movie-table-wrap">
-            <table class="movie-admin-table">
+        <div class="movie-table-responsive">
+            <table class="cine-movie-table">
                 <thead>
                     <tr>
-                        <th>Phim</th>
-                        <th>Quốc gia</th>
-                        <th>Thể loại</th>
-                        <th>Ngôn ngữ</th>
-                        <th>Thời lượng</th>
-                        <th>Suất chiếu</th>
-                        <th class="is-actions">Thao tác</th>
+                        <th style="width: 240px;">Phim</th>
+                        <th style="width: 120px;">Quốc gia</th>
+                        <th style="width: 180px;">Thể loại</th>
+                        <th style="width: 140px;">Ngôn ngữ</th>
+                        <th style="width: 100px;">Thời lượng</th>
+                        <th style="width: 110px;">Suất chiếu</th>
+                        <th style="width: 110px; text-align: right;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($movies as $movie)
                         @php
                             $showtimeCount = $movie->showtimes->count();
-                            $visibleGenres = $movie->genres->take(3);
+                            $visibleGenres = $movie->genres->take(2);
                             $hiddenGenreCount = max($movie->genres->count() - $visibleGenres->count(), 0);
                         @endphp
                         <tr>
                             <td>
-                                <div class="movie-title-cell">
-                                    <a href="{{ route('admin.phims.show', $movie) }}" class="movie-poster-thumb">
-                                        <img src="{{ $posterUrl($movie->poster) }}" alt="{{ $movie->ten_phim }}">
-                                    </a>
-                                    <div class="movie-title-copy">
-                                        <a href="{{ route('admin.phims.show', $movie) }}">{{ $movie->ten_phim }}</a>
-                                        <span>
-                                            <i class="fa-solid fa-id-card-clip"></i>
-                                            #{{ $movie->id }}
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <img src="{{ $posterUrl($movie->poster) }}" alt="{{ $movie->ten_phim }}" class="poster-mini">
+                                    <div>
+                                        <strong style="color: #fff; font-size: 14px; display: block; margin-bottom: 3px;">{{ $movie->ten_phim }}</strong>
+                                        <div style="display: flex; align-items: center; gap: 5px; font-size: 11px;">
+                                            <span style="color: #facc15; font-weight: 700;">#{{ $movie->id }}</span>
                                             @if ($movie->gioi_han_tuoi)
-                                                <em>{{ $movie->gioi_han_tuoi }}</em>
+                                                <span style="background: #ef4444; color: #fff; padding: 1px 5px; border-radius: 4px; font-weight: 800;">{{ $movie->gioi_han_tuoi }}</span>
                                             @endif
-                                        </span>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
 
                             <td>
-                                <span class="movie-country-chip">
-                                    <i class="fa-solid fa-location-dot"></i>
-                                    {{ $movie->country?->ten_quoc_gia ?? 'Chưa cập nhật' }}
+                                <span class="badge-chip">
+                                    <i class="fa-solid fa-location-dot" style="color: #facc15;"></i>
+                                    {{ $movie->country?->ten_quoc_gia ?? 'Chưa rõ' }}
                                 </span>
                             </td>
 
                             <td>
-                                <div class="movie-genre-list">
+                                <div style="display: flex; flex-wrap: wrap; gap: 4px;">
                                     @forelse ($visibleGenres as $genre)
-                                        <span>{{ $genre->ten_the_loai }}</span>
+                                        <span style="background: rgba(255,255,255,0.08); color: #d1d5db; padding: 2px 8px; border-radius: 6px; font-size: 11.5px;">{{ $genre->ten_the_loai }}</span>
                                     @empty
-                                        <span class="is-muted">Chưa có thể loại</span>
+                                        <span style="color: #6b7280; font-size: 11.5px;">Chưa xếp</span>
                                     @endforelse
 
                                     @if ($hiddenGenreCount > 0)
-                                        <span class="is-more">+{{ $hiddenGenreCount }}</span>
+                                        <span style="background: rgba(250, 204, 21, 0.2); color: #facc15; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700;">+{{ $hiddenGenreCount }}</span>
                                     @endif
                                 </div>
                             </td>
 
                             <td>
-                                <span class="movie-muted-text">{{ $movie->ngon_ngu ?: 'Chưa cập nhật' }}</span>
+                                <span class="col-lang-text">{{ $movie->ngon_ngu ?: 'Tiếng Việt / Phụ đề' }}</span>
                             </td>
 
                             <td>
-                                <span class="movie-duration-pill">
-                                    <i class="fa-regular fa-clock"></i>
-                                    {{ (int) $movie->thoi_luong }} phút
+                                <span style="color: #facc15; font-weight: 700; font-size: 12.5px; white-space: nowrap;">
+                                    <i class="fa-regular fa-clock"></i> {{ (int) $movie->thoi_luong }} phút
                                 </span>
                             </td>
 
                             <td>
                                 @if ($showtimeCount > 0)
-                                    <span class="movie-schedule-badge is-live">
-                                        <i class="fa-solid fa-calendar-check"></i>
-                                        {{ $showtimeCount }} suất
+                                    <span style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 11.5px; white-space: nowrap;">
+                                        <i class="fa-solid fa-calendar-check"></i> {{ $showtimeCount }} suất
                                     </span>
                                 @else
-                                    <span class="movie-schedule-badge is-empty">
-                                        <i class="fa-solid fa-calendar-xmark"></i>
+                                    <span style="background: rgba(255, 255, 255, 0.05); color: #9ca3af; padding: 3px 8px; border-radius: 6px; font-size: 11.5px; white-space: nowrap;">
                                         Chưa có
                                     </span>
                                 @endif
                             </td>
 
                             <td>
-                                <div class="movie-row-actions">
-                                    <a href="{{ route('admin.phims.show', $movie) }}" class="movie-icon-btn is-view" title="Xem chi tiết">
+                                <div class="action-btns-group">
+                                    <a href="{{ route('admin.phims.show', $movie) }}" class="btn-icon-act view" title="Xem chi tiết">
                                         <i class="fa-solid fa-eye"></i>
                                     </a>
-                                    <a href="{{ route('admin.phims.edit', $movie) }}" class="movie-icon-btn is-edit" title="Sửa phim">
+                                    <a href="{{ route('admin.phims.edit', $movie) }}" class="btn-icon-act edit" title="Sửa phim">
                                         <i class="fa-solid fa-pen"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('admin.phims.destroy', $movie) }}" onsubmit="return confirm('Bạn chắc chắn muốn xóa phim này?')">
+                                    <form method="POST" action="{{ route('admin.phims.destroy', $movie) }}" onsubmit="return confirm('Bạn chắc chắn muốn xóa phim này?')" style="display: inline-block;">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="movie-icon-btn is-delete" title="Xóa phim">
+                                        <button type="submit" class="btn-icon-act delete" title="Xóa phim">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </form>
@@ -282,16 +454,8 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7">
-                                <div class="movie-empty-state">
-                                    <i class="fa-solid fa-film"></i>
-                                    <strong>Chưa có phim phù hợp</strong>
-                                    <span>Thử đổi bộ lọc hoặc thêm phim mới vào kho CineHome.</span>
-                                    <a href="{{ route('admin.phims.create') }}" class="movie-action-btn is-primary">
-                                        <i class="fa-solid fa-plus"></i>
-                                        Thêm phim mới
-                                    </a>
-                                </div>
+                            <td colspan="7" style="text-align: center; padding: 30px; color: #9ca3af;">
+                                Không tìm thấy phim phù hợp.
                             </td>
                         </tr>
                     @endforelse
@@ -299,9 +463,56 @@
             </table>
         </div>
 
-        <div class="movie-admin-pagination">
+        <div style="margin-top: 16px;">
             @include('components.admin-pagination', ['paginator' => $movies])
         </div>
-    </section>
+    </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 🌟 SCRIPT KÍCH HOẠT DROPDOWN CINE-SELECT POPUP NỔI
+    document.querySelectorAll('.cine-select-wrapper').forEach(function(wrapper) {
+        const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+        const trigger = wrapper.querySelector('.cine-select-trigger');
+        const triggerText = wrapper.querySelector('.cine-select-value');
+        const options = wrapper.querySelectorAll('.cine-select-option');
+
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
+                if (w !== wrapper) {
+                    w.classList.remove('open');
+                }
+            });
+
+            wrapper.classList.toggle('open');
+        });
+
+        options.forEach(function(opt) {
+            opt.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const val = opt.dataset.value;
+                hiddenInput.value = val;
+                triggerText.textContent = opt.textContent.trim();
+
+                options.forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+
+                wrapper.classList.remove('open');
+            });
+        });
+    });
+
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
+            w.classList.remove('open');
+        });
+    });
+});
+</script>
+@endpush

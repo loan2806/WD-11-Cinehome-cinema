@@ -24,6 +24,13 @@ return new class extends Migration
             // Mã thẻ thành viên, ví dụ: TV000001
             $table->string('ma_thanh_vien')->unique();
 
+            // 🌟 BỔ SUNG THÊM 2 CỘT NÀY VÀO ĐÂY:
+            $table->string('ma_gioi_thieu')->nullable()->unique();
+            $table->foreignId('nguoi_gioi_thieu_id')
+                ->nullable()
+                ->constrained('nguoi_dungs')
+                ->nullOnDelete();
+
             // Hạng thành viên
             $table->enum('hang_thanh_vien', [
                 'member',

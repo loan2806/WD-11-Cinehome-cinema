@@ -3,6 +3,103 @@
 @section('title', 'Quản lý Phòng Chiếu - CineHome')
 @section('page-title', 'Quản lý Phòng Chiếu')
 
+@push('styles')
+<style>
+    .room-filter-select {
+        position: relative;
+    }
+
+    .room-filter-trigger {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 44px;
+        min-width: 200px;
+        padding: 0 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #1c1c1c;
+        color: #ffffff;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .room-filter-trigger .label.is-placeholder {
+        color: #8a8f98;
+        font-weight: 500;
+    }
+
+    .room-filter-trigger:hover {
+        background: #232323;
+    }
+
+    .room-filter-select.is-open .room-filter-trigger {
+        border-color: #e50914;
+        box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.16);
+    }
+
+    .room-filter-trigger .label {
+        flex: 1;
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .room-filter-trigger .chevron {
+        color: #8a8f98;
+        font-size: 11px;
+        transition: transform 0.2s ease;
+    }
+
+    .room-filter-select.is-open .chevron {
+        transform: rotate(180deg);
+    }
+
+    .room-filter-menu {
+        position: fixed;
+        z-index: 3000;
+        overflow: hidden;
+        overflow-y: auto;
+        max-height: 280px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: #191919;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+
+    .room-filter-option {
+        display: block;
+        width: 100%;
+        padding: 11px 14px;
+        border: 0;
+        background: transparent;
+        color: #c3c9d6;
+        font-size: 13.5px;
+        font-weight: 600;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .room-filter-option:not(:last-child) {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .room-filter-option:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: #ffffff;
+    }
+
+    .room-filter-option.is-selected {
+        background: rgba(229, 9, 20, 0.14);
+        color: #ffffff;
+    }
+</style>
+@endpush
+
 @section('content')
 
     @php
@@ -127,40 +224,68 @@
             {{-- Form Lọc --}}
             <form method="GET" action="{{ route('admin.phong-chieus.index') }}" class="flex flex-wrap items-center gap-3 flex-grow">
                 
+                @php
+                    $rapOptions = ['' => '-- Tất cả Rạp --'] + $rapChieuPhims->pluck('ten_rap', 'id')->toArray();
+                    $currentRapId = (string) request('rap_chieu_phim_id', '');
+                    if (!isset($rapOptions[$currentRapId]) && !isset($rapOptions[(int) $currentRapId])) {
+                        $currentRapId = '';
+                    }
+
+                    $trangThaiOptions = [
+                        '' => '-- Trạng thái --',
+                        'hoat_dong' => 'Hoạt động',
+                        'bao_tri' => 'Bảo trì',
+                        'ngung_hoat_dong' => 'Ngừng hoạt động',
+                    ];
+                    $currentTrangThai = (string) request('trang_thai', '');
+                    if (!isset($trangThaiOptions[$currentTrangThai])) {
+                        $currentTrangThai = '';
+                    }
+                @endphp
+
                 {{-- Lọc Rạp --}}
-                <div class="relative">
-                    <select name="rap_chieu_phim_id"
-                        class="h-11 rounded-xl border border-white/10 bg-[#1c1c1c] pl-4 pr-10 text-sm text-white outline-none focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] appearance-none cursor-pointer min-w-[200px] transition">
-                        <option value="">-- Tất cả Rạp --</option>
-                        @foreach ($rapChieuPhims as $rap)
-                            <option value="{{ $rap->id }}"
-                                {{ request('rap_chieu_phim_id') == $rap->id ? 'selected' : '' }}>
-                                {{ $rap->ten_rap }}
-                            </option>
+                <div class="room-filter-select" data-value="{{ $currentRapId }}">
+                    <input type="hidden" name="rap_chieu_phim_id" value="{{ $currentRapId }}">
+
+                    <button type="button" class="room-filter-trigger">
+                        <span class="label {{ $currentRapId === '' ? 'is-placeholder' : '' }}">{{ $rapOptions[$currentRapId] ?? $rapOptions[(int) $currentRapId] }}</span>
+                        <i class="fa-solid fa-chevron-down chevron"></i>
+                    </button>
+
+                    <div class="room-filter-menu hidden">
+                        @foreach ($rapOptions as $value => $label)
+                            <button
+                                type="button"
+                                class="room-filter-option {{ (string) $value === $currentRapId ? 'is-selected' : '' }}"
+                                data-value="{{ $value }}"
+                                data-label="{{ $label }}"
+                            >
+                                {{ $label }}
+                            </button>
                         @endforeach
-                    </select>
-                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
-                        <i class="fa-solid fa-chevron-down"></i>
                     </div>
                 </div>
 
                 {{-- Lọc Trạng thái --}}
-                <div class="relative">
-                    <select name="trang_thai"
-                        class="h-11 rounded-xl border border-white/10 bg-[#1c1c1c] pl-4 pr-10 text-sm text-white outline-none focus:border-[#e50914] focus:ring-1 focus:ring-[#e50914] appearance-none cursor-pointer min-w-[160px] transition">
-                        <option value="">-- Trạng thái --</option>
-                        <option value="hoat_dong" {{ request('trang_thai') == 'hoat_dong' ? 'selected' : '' }}>
-                            Hoạt động
-                        </option>
-                        <option value="bao_tri" {{ request('trang_thai') == 'bao_tri' ? 'selected' : '' }}>
-                            Bảo trì
-                        </option>
-                        <option value="ngung_hoat_dong" {{ request('trang_thai') == 'ngung_hoat_dong' ? 'selected' : '' }}>
-                            Ngừng hoạt động
-                        </option>
-                    </select>
-                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
-                        <i class="fa-solid fa-chevron-down"></i>
+                <div class="room-filter-select" data-value="{{ $currentTrangThai }}">
+                    <input type="hidden" name="trang_thai" value="{{ $currentTrangThai }}">
+
+                    <button type="button" class="room-filter-trigger">
+                        <span class="label {{ $currentTrangThai === '' ? 'is-placeholder' : '' }}">{{ $trangThaiOptions[$currentTrangThai] }}</span>
+                        <i class="fa-solid fa-chevron-down chevron"></i>
+                    </button>
+
+                    <div class="room-filter-menu hidden">
+                        @foreach ($trangThaiOptions as $value => $label)
+                            <button
+                                type="button"
+                                class="room-filter-option {{ $value === $currentTrangThai ? 'is-selected' : '' }}"
+                                data-value="{{ $value }}"
+                                data-label="{{ $label }}"
+                            >
+                                {{ $label }}
+                            </button>
+                        @endforeach
                     </div>
                 </div>
 
@@ -529,6 +654,75 @@
             // Gắn sự kiện click
             btnGrid.addEventListener('click', () => toggleView('grid'));
             btnTable.addEventListener('click', () => toggleView('table'));
+        });
+    </script>
+
+    {{-- CUSTOM FILTER DROPDOWNS --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.room-filter-select').forEach(function (wrap) {
+                const trigger = wrap.querySelector('.room-filter-trigger');
+                const menu = wrap.querySelector('.room-filter-menu');
+                const hiddenInput = wrap.querySelector('input[type="hidden"]');
+                const labelEl = trigger.querySelector('.label');
+                const options = wrap.querySelectorAll('.room-filter-option');
+
+                // Đưa menu ra làm con trực tiếp của <body> để tránh bị các
+                // container cha (overflow/backdrop-filter) làm lệch hoặc cắt mất.
+                document.body.appendChild(menu);
+
+                function closeMenu() {
+                    wrap.classList.remove('is-open');
+                    menu.classList.add('hidden');
+                }
+
+                function positionMenu() {
+                    const rect = trigger.getBoundingClientRect();
+                    menu.style.left = rect.left + 'px';
+                    menu.style.width = rect.width + 'px';
+
+                    const menuHeight = menu.offsetHeight;
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    const spaceAbove = rect.top;
+
+                    if (spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow) {
+                        menu.style.top = (rect.top - menuHeight - 8) + 'px';
+                    } else {
+                        menu.style.top = (rect.bottom + 8) + 'px';
+                    }
+                }
+
+                trigger.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    const willOpen = menu.classList.contains('hidden');
+                    closeMenu();
+                    if (willOpen) {
+                        wrap.classList.add('is-open');
+                        menu.classList.remove('hidden');
+                        positionMenu();
+                    }
+                });
+
+                window.addEventListener('scroll', closeMenu, true);
+                window.addEventListener('resize', closeMenu);
+
+                options.forEach(function (opt) {
+                    opt.addEventListener('click', function () {
+                        hiddenInput.value = opt.dataset.value;
+                        labelEl.textContent = opt.dataset.label;
+                        labelEl.classList.toggle('is-placeholder', opt.dataset.value === '');
+
+                        options.forEach((o) => o.classList.toggle('is-selected', o === opt));
+                        closeMenu();
+                    });
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!wrap.contains(event.target) && !menu.contains(event.target)) {
+                        closeMenu();
+                    }
+                });
+            });
         });
     </script>
 

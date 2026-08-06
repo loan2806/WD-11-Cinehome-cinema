@@ -6,38 +6,182 @@
 @php
     $selectedLoaiTao = old('loai_tao', 'don_le');
     $selectedPhimId = old('phim_id', request('phim_id'));
-    $selectedRapId = old('rap_chieu_phim_id', request('rap_chieu_phim_id'));
     $selectedPhongId = old('phong_chieu_id', $phongChieuId ?? request('phong_chieu_id'));
     $selectedKhungGio = old('khung_gio', []);
     $selectedKhungGio = is_array($selectedKhungGio) ? $selectedKhungGio : [];
     $khungGioMacDinh = ['08:30', '11:00', '13:30', '16:00', '18:30', '21:00', '23:30'];
 @endphp
 
+@push('styles')
+<style>
+    .showtime-form-layout,
+    .showtime-main,
+    .showtime-panel,
+    .showtime-grid,
+    .showtime-field {
+        overflow: visible !important;
+        position: relative !important;
+    }
+
+    .showtime-panel {
+        z-index: 10;
+    }
+
+    .showtime-panel:has(.cine-select-wrapper.open) {
+        z-index: 900 !important;
+    }
+
+    .cine-select-wrapper {
+        position: relative !important;
+        width: 100% !important;
+        user-select: none !important;
+        z-index: 20 !important;
+    }
+
+    .cine-select-wrapper.open {
+        z-index: 99999 !important;
+    }
+
+    .cine-select-trigger {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        background: #18181c !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        color: #f3f4f6 !important;
+        font-size: 14px !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        outline: none !important;
+    }
+
+    .cine-select-trigger:hover,
+    .cine-select-wrapper.open .cine-select-trigger {
+        border-color: #facc15 !important;
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2) !important;
+    }
+
+    .cine-select-trigger i {
+        color: #facc15 !important;
+        font-size: 12px !important;
+        transition: transform 0.2s ease !important;
+    }
+
+    .cine-select-wrapper.open .cine-select-trigger i {
+        transform: rotate(180deg) !important;
+    }
+
+    .cine-select-menu {
+        position: absolute !important;
+        top: calc(100% + 6px) !important;
+        left: 0 !important;
+        right: 0 !important;
+        min-width: 100% !important;
+        background: #18181c !important;
+        border: 1px solid rgba(250, 204, 21, 0.35) !important;
+        border-radius: 16px !important;
+        padding: 8px !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+        z-index: 999999 !important;
+        max-height: 260px !important;
+        overflow-y: auto !important;
+        display: none !important;
+    }
+
+    .cine-select-wrapper.open .cine-select-menu {
+        display: block !important;
+    }
+
+    .cine-select-option {
+        padding: 10px 12px !important;
+        border-radius: 10px !important;
+        color: #d1d5db !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        margin-bottom: 2px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .cine-select-option:hover {
+        background: rgba(250, 204, 21, 0.15) !important;
+        color: #facc15 !important;
+    }
+
+    .cine-select-option.selected {
+        background: rgba(250, 204, 21, 0.25) !important;
+        color: #facc15 !important;
+        font-weight: 700 !important;
+    }
+
+    .showtime-time-list {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+        margin-top: 10px !important;
+    }
+
+    .showtime-time-chip {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        background: #18181c !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        border-radius: 10px !important;
+        padding: 8px 14px !important;
+        color: #fff !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        user-select: none !important;
+    }
+
+    .showtime-time-chip:has(input:checked) {
+        border-color: #facc15 !important;
+        background: rgba(250, 204, 21, 0.15) !important;
+        color: #facc15 !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="showtime-create-page">
     @include('admin.partials.flash')
 
+    @if ($errors->any())
+        <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; padding: 16px; margin-bottom: 20px; color: #f87171;">
+            <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; margin-bottom: 8px;">
+                <i class="fa-solid fa-circle-exclamation"></i> Vui lòng kiểm tra lại thông tin nhập liệu:
+            </div>
+            <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <section class="showtime-hero-panel">
         <div>
             <span class="showtime-kicker">
-                <i class="fa-solid fa-calendar-plus"></i>
-                Trung tâm lên lịch
+                <i class="fa-solid fa-calendar-plus"></i> Trung tâm lên lịch
             </span>
             <h2>Thêm suất chiếu mới</h2>
-            <p>
-                Cấu hình lịch chiếu đơn lẻ hoặc rải chuỗi suất chiếu hàng loạt. Giao diện được gom theo từng bước
-                để giảm nhầm phòng, nhầm giờ và dễ kiểm tra trước khi lưu.
-            </p>
+            <p>Cấu hình lịch chiếu đơn lẻ hoặc rải chuỗi suất chiếu hàng loạt.</p>
         </div>
 
         <div class="showtime-hero-actions">
             <a href="{{ route('admin.suat-chieus.index') }}" class="movie-action-btn is-ghost">
-                <i class="fa-solid fa-arrow-left"></i>
-                Danh sách suất chiếu
+                <i class="fa-solid fa-arrow-left"></i> Danh sách suất chiếu
             </a>
             <button type="submit" form="showtimeCreateForm" class="movie-action-btn is-primary">
-                <i class="fa-solid fa-floppy-disk"></i>
-                Xác nhận lên lịch
+                <i class="fa-solid fa-floppy-disk"></i> Xác nhận lên lịch
             </button>
         </div>
     </section>
@@ -70,9 +214,7 @@
                                 <td>{{ $scTrung->phim->ten_phim ?? 'Không rõ' }}</td>
                                 <td>{{ $scTrung->phongChieu->ten_phong ?? 'Không rõ' }}</td>
                                 <td>
-                                    {{ \Carbon\Carbon::parse($scTrung->thoi_gian_chieu)->format('H:i d/m/Y') }}
-                                    -
-                                    {{ \Carbon\Carbon::parse($scTrung->thoi_gian_ket_thuc)->format('H:i d/m/Y') }}
+                                    {{ \Carbon\Carbon::parse($scTrung->thoi_gian_chieu)->format('H:i d/m/Y') }} - {{ \Carbon\Carbon::parse($scTrung->thoi_gian_ket_thuc)->format('H:i d/m/Y') }}
                                 </td>
                                 <td>
                                     <a href="{{ route('admin.suat-chieus.edit', $scTrung->id) }}" target="_blank">
@@ -87,25 +229,9 @@
         </section>
     @endif
 
-    @if ($errors->any())
-        <section class="showtime-alert is-danger">
-            <div class="showtime-alert-head">
-                <span><i class="fa-solid fa-circle-exclamation"></i></span>
-                <div>
-                    <strong>Vui lòng kiểm tra lại thông tin</strong>
-                    <p>Có {{ $errors->count() }} lỗi cần xử lý trước khi tạo suất chiếu.</p>
-                </div>
-            </div>
-            <ul class="showtime-error-list">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </section>
-    @endif
-
     <form id="showtimeCreateForm" action="{{ route('admin.suat-chieus.store') }}" method="POST" class="showtime-form">
         @csrf
+        <input type="hidden" name="rap_chieu_phim_id" value="{{ $rapMacDinh->id ?? 1 }}">
 
         <div class="showtime-form-layout">
             <main class="showtime-main">
@@ -114,55 +240,52 @@
                         <span><i class="fa-solid fa-clapperboard"></i></span>
                         <div>
                             <h3>1. Chọn phim và phòng chiếu</h3>
-                            <p>Xác định phim, rạp và phòng trước khi chọn khung giờ.</p>
+                            <p>Xác định phim và phòng chiếu trước khi chọn khung giờ.</p>
                         </div>
                     </div>
 
-                    <div class="showtime-grid">
-                        <label class="showtime-field">
+                    <div class="showtime-grid" style="grid-template-columns: 1fr 1fr !important; gap: 20px;">
+                        <div class="showtime-field">
                             <span>Phim trình chiếu <b>*</b></span>
-                            <select name="phim_id" id="phim_id" required>
-                                <option value="">Chọn phim</option>
-                                @foreach ($phims as $phim)
-                                    <option
-                                        value="{{ $phim->id }}"
-                                        data-thoi-luong="{{ $phim->thoi_luong }}"
-                                        @selected((string) $selectedPhimId === (string) $phim->id)
-                                    >
-                                        {{ $phim->ten_phim }} ({{ $phim->thoi_luong ?? 90 }} phút)
-                                    </option>
-                                @endforeach
-                            </select>
-                        </label>
+                            <div class="cine-select-wrapper" id="wrap_phim">
+                                <input type="hidden" name="phim_id" id="phim_id" value="{{ $selectedPhimId }}" required>
+                                <div class="cine-select-trigger" tabindex="0">
+                                    <span class="cine-select-value">Chọn phim</span>
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                                <div class="cine-select-menu">
+                                    <div class="cine-select-option {{ empty($selectedPhimId) ? 'selected' : '' }}" data-value="" data-thoi-luong="90">Chọn phim</div>
+                                    @foreach ($phims as $phim)
+                                        <div class="cine-select-option {{ (string)$selectedPhimId === (string)$phim->id ? 'selected' : '' }}" 
+                                             data-value="{{ $phim->id }}"
+                                             data-thoi-luong="{{ $phim->thoi_luong ?? 90 }}">
+                                            {{ $phim->ten_phim }} ({{ $phim->thoi_luong ?? 90 }} phút)
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
 
-                        <label class="showtime-field">
-                            <span>Rạp chiếu <b>*</b></span>
-                            <select name="rap_chieu_phim_id" id="rap_chieu_phim_id" required>
-                                <option value="">Chọn rạp</option>
-                                @foreach ($rapChieuPhims as $rap)
-                                    <option value="{{ $rap->id }}" @selected((string) $selectedRapId === (string) $rap->id)>
-                                        {{ $rap->ten_rap }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </label>
-
-                        <label class="showtime-field">
+                        <div class="showtime-field">
                             <span>Phòng chiếu <b>*</b></span>
-                            <select name="phong_chieu_id" id="phong_chieu_id" required>
-                                <option value="">Chọn phòng</option>
-                                @foreach ($phongChieus ?? [] as $phong)
-                                    <option
-                                        value="{{ $phong->id }}"
-                                        data-rap-id="{{ $phong->rap_chieu_phim_id }}"
-                                        data-room-type="{{ strtoupper($phong->loai_phong) }}"
-                                        @selected((string) $selectedPhongId === (string) $phong->id)
-                                    >
-                                        {{ $phong->ten_phong }} ({{ strtoupper($phong->loai_phong) }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </label>
+                            <div class="cine-select-wrapper" id="wrap_phong">
+                                <input type="hidden" name="phong_chieu_id" id="phong_chieu_id" value="{{ $selectedPhongId }}" required>
+                                <div class="cine-select-trigger" tabindex="0">
+                                    <span class="cine-select-value">Chọn phòng</span>
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                                <div class="cine-select-menu">
+                                    <div class="cine-select-option {{ empty($selectedPhongId) ? 'selected' : '' }}" data-value="">Chọn phòng</div>
+                                    @foreach ($phongChieus ?? [] as $phong)
+                                        <div class="cine-select-option {{ (string)$selectedPhongId === (string)$phong->id ? 'selected' : '' }}" 
+                                             data-value="{{ $phong->id }}"
+                                             data-room-type="{{ strtoupper($phong->loai_phong) }}">
+                                            {{ $phong->ten_phong }} ({{ strtoupper($phong->loai_phong) }})
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -176,13 +299,24 @@
                     </div>
 
                     <div class="showtime-mode-row">
-                        <label class="showtime-field">
+                        <div class="showtime-field">
                             <span>Chế độ tạo lịch <b>*</b></span>
-                            <select name="loai_tao" id="loai_tao" required>
-                                <option value="don_le" @selected($selectedLoaiTao === 'don_le')>Tạo 1 suất chiếu đơn lẻ</option>
-                                <option value="hang_loat" @selected($selectedLoaiTao === 'hang_loat')>Tạo chuỗi suất chiếu hàng loạt</option>
-                            </select>
-                        </label>
+                            <div class="cine-select-wrapper">
+                                <input type="hidden" name="loai_tao" id="loai_tao" value="{{ $selectedLoaiTao }}" required>
+                                <div class="cine-select-trigger" tabindex="0">
+                                    <span class="cine-select-value">{{ $selectedLoaiTao === 'hang_loat' ? 'Tạo chuỗi suất chiếu hàng loạt' : 'Tạo 1 suất chiếu đơn lẻ' }}</span>
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                                <div class="cine-select-menu">
+                                    <div class="cine-select-option {{ $selectedLoaiTao === 'don_le' ? 'selected' : '' }}" data-value="don_le">
+                                        Tạo 1 suất chiếu đơn lẻ
+                                    </div>
+                                    <div class="cine-select-option {{ $selectedLoaiTao === 'hang_loat' ? 'selected' : '' }}" data-value="hang_loat">
+                                        Tạo chuỗi suất chiếu hàng loạt
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="showtime-mode-note">
                             <i class="fa-solid fa-shield-halved"></i>
@@ -194,49 +328,26 @@
                         <div class="showtime-grid two-cols">
                             <label class="showtime-field">
                                 <span>Ngày chiếu <b>*</b></span>
-                                <input
-                                    type="date"
-                                    name="ngay_chieu_don_le"
-                                    id="ngay_chieu_don_le"
-                                    min="{{ date('Y-m-d') }}"
-                                    value="{{ old('ngay_chieu_don_le') }}"
-                                >
+                                <input type="date" name="ngay_chieu_don_le" id="ngay_chieu_don_le" min="{{ date('Y-m-d') }}" value="{{ old('ngay_chieu_don_le') }}" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 12px; border-radius: 12px;">
                             </label>
 
                             <label class="showtime-field">
                                 <span>Giờ khởi chiếu <b>*</b></span>
-                                <input
-                                    type="time"
-                                    name="gio_chieu_don_le"
-                                    id="gio_chieu_don_le"
-                                    value="{{ old('gio_chieu_don_le') }}"
-                                >
+                                <input type="time" name="gio_chieu_don_le" id="gio_chieu_don_le" value="{{ old('gio_chieu_don_le') }}" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 12px; border-radius: 12px;">
                             </label>
                         </div>
                     </div>
 
-                    <div id="khu_hang_loat" class="showtime-mode-block">
+                    <div id="khu_hang_loat" class="showtime-mode-block" style="display: none;">
                         <div class="showtime-grid two-cols">
                             <label class="showtime-field">
                                 <span>Từ ngày <b>*</b></span>
-                                <input
-                                    type="date"
-                                    name="ngay_bat_dau"
-                                    id="ngay_bat_dau"
-                                    min="{{ date('Y-m-d') }}"
-                                    value="{{ old('ngay_bat_dau') }}"
-                                >
+                                <input type="date" name="ngay_bat_dau" id="ngay_bat_dau" min="{{ date('Y-m-d') }}" value="{{ old('ngay_bat_dau') }}" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 12px; border-radius: 12px;">
                             </label>
 
                             <label class="showtime-field">
                                 <span>Đến hết ngày <b>*</b></span>
-                                <input
-                                    type="date"
-                                    name="ngay_ket_thuc"
-                                    id="ngay_ket_thuc"
-                                    min="{{ date('Y-m-d') }}"
-                                    value="{{ old('ngay_ket_thuc') }}"
-                                >
+                                <input type="date" name="ngay_ket_thuc" id="ngay_ket_thuc" min="{{ date('Y-m-d') }}" value="{{ old('ngay_ket_thuc') }}" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 12px; border-radius: 12px;">
                             </label>
                         </div>
 
@@ -249,22 +360,17 @@
                             <div class="showtime-time-list" id="khung_gio_checkboxes">
                                 @foreach ($khungGioMacDinh as $gio)
                                     <label class="showtime-time-chip">
-                                        <input
-                                            type="checkbox"
-                                            name="khung_gio[]"
-                                            value="{{ $gio }}"
-                                            @checked(in_array($gio, $selectedKhungGio))
-                                        >
+                                        <input type="checkbox" name="khung_gio[]" value="{{ $gio }}" @checked(in_array($gio, $selectedKhungGio))>
                                         <span>{{ $gio }}</span>
                                     </label>
                                 @endforeach
                             </div>
 
-                            <div class="showtime-custom-time">
-                                <input type="time" id="custom_time_input">
-                                <button type="button" id="btn_add_custom_time">
-                                    <i class="fa-solid fa-plus"></i>
-                                    Chèn giờ khác
+                            <!-- KHU VỰC CHÈN GIỜ KHÁC -->
+                            <div class="showtime-custom-time" style="margin-top: 15px; display: flex; align-items: center; gap: 10px;">
+                                <input type="time" id="custom_time_input" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 8px 12px; border-radius: 8px;">
+                                <button type="button" id="btn_add_custom_time" style="background: #25252b; border: 1px solid #d99a32; color: #d99a32; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                                    <i class="fa-solid fa-plus"></i> Chèn giờ khác
                                 </button>
                             </div>
                         </div>
@@ -280,7 +386,7 @@
                         </div>
                     </div>
 
-                    <div id="khu_vuc_gia_ngay_le" class="showtime-holiday-price">
+                    <div id="khu_vuc_gia_ngay_le" class="showtime-holiday-price" style="display: none;">
                         <div class="showtime-holiday-head">
                             <i class="fa-solid fa-gift"></i>
                             <div>
@@ -291,13 +397,7 @@
                         <label class="showtime-field">
                             <span>Giá vé ngày lễ</span>
                             <div class="showtime-money-input">
-                                <input
-                                    type="number"
-                                    name="gia_ve_ngay_le"
-                                    id="gia_ve_ngay_le"
-                                    value="{{ old('gia_ve_ngay_le') }}"
-                                    placeholder="Ví dụ: 120000"
-                                >
+                                <input type="number" name="gia_ve_ngay_le" id="gia_ve_ngay_le" value="{{ old('gia_ve_ngay_le') }}" placeholder="Ví dụ: 120000">
                                 <em>VND</em>
                             </div>
                         </label>
@@ -307,19 +407,14 @@
                         <label class="showtime-field">
                             <span>Giá vé tùy chỉnh</span>
                             <div class="showtime-money-input">
-                                <input
-                                    type="number"
-                                    name="gia_ve_tuy_chinh"
-                                    value="{{ old('gia_ve_tuy_chinh') }}"
-                                    placeholder="Bỏ trống để dùng giá tự động"
-                                >
+                                <input type="number" name="gia_ve_tuy_chinh" value="{{ old('gia_ve_tuy_chinh') }}" placeholder="Bỏ trống để dùng giá tự động">
                                 <em>VND</em>
                             </div>
                         </label>
 
                         <div class="showtime-price-note">
                             <i class="fa-solid fa-circle-info"></i>
-                            <span>Giá tùy chỉnh sẽ ghi đè giá thường/cuối tuần. Giá ngày lễ chỉ áp dụng khi lịch rơi vào ngày lễ.</span>
+                            <span>Giá tùy chỉnh sẽ ghi đè giá thường/cuối tuần.</span>
                         </div>
                     </div>
                 </section>
@@ -348,22 +443,6 @@
                         </div>
                     </div>
                 </section>
-
-                <section class="showtime-panel showtime-guide">
-                    <div class="showtime-panel-head">
-                        <span><i class="fa-solid fa-lightbulb"></i></span>
-                        <div>
-                            <h3>Gợi ý vận hành</h3>
-                            <p>Các điểm nên kiểm tra trước khi lưu lịch.</p>
-                        </div>
-                    </div>
-
-                    <ul>
-                        <li><i class="fa-solid fa-check"></i> Chọn đúng rạp và phòng trước khi chọn giờ.</li>
-                        <li><i class="fa-solid fa-check"></i> Với lịch hàng loạt, tránh chọn quá nhiều khung giờ sát nhau.</li>
-                        <li><i class="fa-solid fa-check"></i> Dùng giá tùy chỉnh khi có chương trình đặc biệt.</li>
-                    </ul>
-                </section>
             </aside>
         </div>
 
@@ -374,12 +453,10 @@
             </div>
             <div class="showtime-save-actions">
                 <a href="{{ route('admin.suat-chieus.index') }}" class="movie-action-btn is-ghost">
-                    <i class="fa-solid fa-xmark"></i>
-                    Hủy
+                    <i class="fa-solid fa-xmark"></i> Hủy
                 </a>
                 <button type="submit" class="movie-action-btn is-primary">
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    Xác nhận lên lịch
+                    <i class="fa-solid fa-floppy-disk"></i> Xác nhận lên lịch
                 </button>
             </div>
         </div>
@@ -389,194 +466,185 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const loaiParam = document.getElementById('loai_tao');
-    const khuDonLe = document.getElementById('khu_don_le');
-    const khuHangLoat = document.getElementById('khu_hang_loat');
-    const phimSelect = document.getElementById('phim_id');
-    const rapSelect = document.getElementById('rap_chieu_phim_id');
-    const phongSelect = document.getElementById('phong_chieu_id');
-    const thoiLuongPreview = document.getElementById('thoi_luong_preview');
-    const modePreview = document.getElementById('modePreview');
-    const ngayChieuDonLe = document.getElementById('ngay_chieu_don_le');
-    const gioChieuDonLe = document.getElementById('gio_chieu_don_le');
-    const khuVucGiaNgayLe = document.getElementById('khu_vuc_gia_ngay_le');
-    const tenNgayLeLabel = document.getElementById('ten_ngay_le_label');
-    const ngayBatDauInput = document.getElementById('ngay_bat_dau');
-    const ngayKetThucInput = document.getElementById('ngay_ket_thuc');
-    const btnAddCustomTime = document.getElementById('btn_add_custom_time');
-    const customTimeInput = document.getElementById('custom_time_input');
-    const checkboxesContainer = document.getElementById('khung_gio_checkboxes');
-    const thoiGianDonPhong = {{ (int) $thoiGianDonPhong }};
-
-    const cacNgayLeVN = {
-        '01-01': 'Tết Dương Lịch',
-        '04-30': 'Ngày Giải Phóng Miền Nam',
-        '05-01': 'Ngày Quốc Tế Lao Động',
-        '09-02': 'Ngày Quốc Khánh',
-        '09-03': 'Ngày Quốc Khánh dự phòng'
-    };
-
-    function formatTime(date) {
-        return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+// 🌟 1. KHAI BÁO HÀM TẠO CHIP GIỜ TOÀN CỤC (WINDOW SCOPE)
+window.executeAddCustomTime = function(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
     }
 
-    function filterRoomsByCinema() {
-        if (!rapSelect || !phongSelect) {
-            return;
-        }
+    const customTimeInput = document.getElementById('custom_time_input');
+    const khungGioContainer = document.getElementById('khung_gio_checkboxes');
+    if (!customTimeInput || !khungGioContainer) return false;
 
-        const rapId = rapSelect.value;
-        let firstVisibleValue = '';
-        let currentStillVisible = false;
+    const rawVal = customTimeInput.value;
+    if (!rawVal) {
+        alert('Vui lòng chọn đầy đủ Giờ, Phút và Buổi (AM/PM) trước khi bấm Chèn!');
+        customTimeInput.focus();
+        return false;
+    }
 
-        Array.from(phongSelect.options).forEach(function(option) {
-            if (!option.value) {
-                option.hidden = false;
-                return;
+    // Chuẩn hóa giờ HH:MM
+    const parts = rawVal.split(':');
+    const formattedVal = parts[0].padStart(2, '0') + ':' + parts[1].substring(0, 2).padStart(2, '0');
+
+    let existingCheckbox = khungGioContainer.querySelector(`input[value="${formattedVal}"]`);
+    if (existingCheckbox) {
+        existingCheckbox.checked = true;
+    } else {
+        const newChip = document.createElement('label');
+        newChip.className = 'showtime-time-chip';
+        newChip.innerHTML = `<input type="checkbox" name="khung_gio[]" value="${formattedVal}" checked> <span>${formattedVal}</span>`;
+        khungGioContainer.appendChild(newChip);
+    }
+
+    customTimeInput.value = '';
+    if (typeof updateMonitor === 'function') updateMonitor();
+    return false;
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // 🌟 2. CHẶN BẤM ENTER TRÊN FORM ĐỂ KHÔNG BỊ PHÁT DỮ LIỆU SỚM VÂNG LỖI JSON
+    const mainForm = document.getElementById('showtimeCreateForm');
+    if (mainForm) {
+        mainForm.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const target = e.target;
+                // Nếu đang bấm Enter trong ô nhập giờ custom -> Thực hiện chèn giờ ngay lập tức
+                if (target && target.id === 'custom_time_input') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.executeAddCustomTime(e);
+                    return false;
+                }
+                // Nếu đang gõ ở các ô input khác -> Chặn hành động Submit Form bằng phím Enter
+                if (target && target.tagName === 'INPUT' && target.type !== 'submit') {
+                    e.preventDefault();
+                    return false;
+                }
             }
+        });
+    }
 
-            const isVisible = !rapId || option.dataset.rapId === rapId;
-            option.hidden = !isVisible;
+    // 🌟 3. BẮT SỰ KIỆN CLICK NÚT CHÈN GIỜ KHÁC
+    const btnAddCustomTime = document.getElementById('btn_add_custom_time');
+    if (btnAddCustomTime) {
+        btnAddCustomTime.addEventListener('click', window.executeAddCustomTime);
+    }
 
-            if (isVisible && !firstVisibleValue) {
-                firstVisibleValue = option.value;
-            }
+    // 🌟 4. DROPDOWN THUẦN
+    document.querySelectorAll('.cine-select-wrapper').forEach(function(wrapper) {
+        const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+        const trigger = wrapper.querySelector('.cine-select-trigger');
+        const triggerText = wrapper.querySelector('.cine-select-value');
+        const options = wrapper.querySelectorAll('.cine-select-option');
 
-            if (isVisible && option.selected) {
-                currentStillVisible = true;
+        options.forEach(function(opt) {
+            if (opt.classList.contains('selected')) {
+                triggerText.textContent = opt.textContent.trim();
             }
         });
 
-        if (rapId && !currentStillVisible) {
-            phongSelect.value = firstVisibleValue;
-        }
-    }
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
+                if (w !== wrapper) w.classList.remove('open');
+            });
+            wrapper.classList.toggle('open');
+        });
 
-    function checkNgayLeRealtime() {
-        const holidayFound = [];
+        options.forEach(function(opt) {
+            opt.addEventListener('click', function(e) {
+                e.stopPropagation();
+                hiddenInput.value = opt.dataset.value;
+                triggerText.textContent = opt.textContent.trim();
 
-        if (loaiParam.value === 'don_le' && ngayChieuDonLe.value) {
-            const dateParts = ngayChieuDonLe.value.split('-');
-            const key = dateParts[1] + '-' + dateParts[2];
+                options.forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
 
-            if (cacNgayLeVN[key]) {
-                holidayFound.push(cacNgayLeVN[key]);
-            }
-        }
+                wrapper.classList.remove('open');
+                hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        });
+    });
 
-        if (loaiParam.value === 'hang_loat' && ngayBatDauInput.value && ngayKetThucInput.value) {
-            const start = new Date(ngayBatDauInput.value);
-            const end = new Date(ngayKetThucInput.value);
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.cine-select-wrapper').forEach(w => w.classList.remove('open'));
+    });
 
-            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const dd = String(d.getDate()).padStart(2, '0');
-                const key = mm + '-' + dd;
-
-                if (cacNgayLeVN[key] && !holidayFound.includes(cacNgayLeVN[key])) {
-                    holidayFound.push(cacNgayLeVN[key]);
-                }
-            }
-        }
-
-        if (holidayFound.length > 0) {
-            tenNgayLeLabel.textContent = holidayFound.join(', ');
-            khuVucGiaNgayLe.classList.add('is-visible');
-            khuVucGiaNgayLe.style.display = 'block';
-            return;
-        }
-
-        tenNgayLeLabel.textContent = '';
-        khuVucGiaNgayLe.classList.remove('is-visible');
-        khuVucGiaNgayLe.style.display = 'none';
-    }
+    // 🌟 5. CHUYỂN CHẾ ĐỘ ĐƠN LẺ / HÀNG LOẠT
+    const loaiInput = document.getElementById('loai_tao');
+    const khuDonLe = document.getElementById('khu_don_le');
+    const khuHangLoat = document.getElementById('khu_hang_loat');
+    const modePreview = document.getElementById('modePreview');
 
     function switchFormMode() {
-        const isSingle = loaiParam.value === 'don_le';
-        khuDonLe.style.display = isSingle ? 'block' : 'none';
-        khuHangLoat.style.display = isSingle ? 'none' : 'block';
-        modePreview.textContent = isSingle ? 'Đơn lẻ' : 'Hàng loạt';
-        checkNgayLeRealtime();
-        updateTimePreview();
+        if (!loaiInput) return;
+        const isSingle = loaiInput.value === 'don_le';
+        if (khuDonLe) khuDonLe.style.display = isSingle ? 'block' : 'none';
+        if (khuHangLoat) khuHangLoat.style.display = isSingle ? 'none' : 'block';
+        if (modePreview) modePreview.textContent = isSingle ? 'Đơn lẻ' : 'Hàng loạt';
+        updateMonitor();
     }
 
-    function updateTimePreview() {
-        const selectedOption = phimSelect.options[phimSelect.selectedIndex];
+    if (loaiInput) {
+        loaiInput.addEventListener('change', switchFormMode);
+        switchFormMode();
+    }
 
-        if (!selectedOption || !selectedOption.value) {
-            thoiLuongPreview.value = 'Chọn phim để hệ thống phân tích thời lượng chiếm phòng.';
+    // 🌟 6. MONITOR XEM TRƯỚC LỊCH
+    const phimInput = document.getElementById('phim_id');
+    const ngayChieuInput = document.getElementById('ngay_chieu_don_le');
+    const gioChieuInput = document.getElementById('gio_chieu_don_le');
+    const previewArea = document.getElementById('thoi_luong_preview');
+    const khungGioContainer = document.getElementById('khung_gio_checkboxes');
+
+    window.updateMonitor = function() {
+        if (!previewArea) return;
+
+        const selectedPhimOpt = document.querySelector('#wrap_phim .cine-select-option.selected');
+        const tenPhim = selectedPhimOpt ? selectedPhimOpt.textContent.trim() : 'Chưa chọn phim';
+        const thoiLuong = selectedPhimOpt ? (parseInt(selectedPhimOpt.dataset.thoiLuong) || 90) : 90;
+
+        if (!phimInput.value) {
+            previewArea.value = "Vui lòng chọn Phim và Khung giờ để xem phân tích...";
             return;
         }
 
-        const thoiLuong = parseInt(selectedOption.dataset.thoiLuong, 10) || 90;
-        const tongChiếmPhong = thoiLuong + thoiGianDonPhong;
+        if (loaiInput.value === 'don_le') {
+            const ngay = ngayChieuInput.value || 'YYYY-MM-DD';
+            const gio = gioChieuInput.value || 'HH:MM';
+            previewArea.value = `[CHIẾM PHÒNG CHIẾU]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+{{ $thoiGianDonPhong }}p dọn phòng)\n- Khởi chiếu: ${gio} ngày ${ngay}`;
+        } else {
+            const checkedBoxes = document.querySelectorAll('input[name="khung_gio[]"]:checked');
+            const selectedGios = Array.from(checkedBoxes).map(cb => cb.value).join(', ');
+            previewArea.value = `[TẠO SUẤT HÀNG LOẠT]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+{{ $thoiGianDonPhong }}p dọn phòng)\n- Mốc giờ đã chọn: ${selectedGios || 'Chưa chọn mốc giờ nào'}`;
+        }
+    };
 
-        if (loaiParam.value === 'don_le') {
-            if (ngayChieuDonLe.value && gioChieuDonLe.value) {
-                const start = new Date(`${ngayChieuDonLe.value}T${gioChieuDonLe.value}`);
-                const end = new Date(start.getTime() + tongChiếmPhong * 60000);
-                thoiLuongPreview.value = `Suất đơn lẻ: ${formatTime(start)} - ${formatTime(end)}. Phòng bị chiếm ${tongChiếmPhong} phút, gồm ${thoiLuong} phút phim và ${thoiGianDonPhong} phút dọn phòng.`;
-                return;
+    if (phimInput) phimInput.addEventListener('change', updateMonitor);
+    if (ngayChieuInput) ngayChieuInput.addEventListener('change', updateMonitor);
+    if (gioChieuInput) gioChieuInput.addEventListener('change', updateMonitor);
+    if (khungGioContainer) {
+        khungGioContainer.addEventListener('change', function(e) {
+            if (e.target.name === 'khung_gio[]') updateMonitor();
+        });
+    }
+
+    // 🌟 7. CHẶN SUBMIT NẾU CHƯA CHỌN MỐC GIỜ TRONG CHẾ ĐỘ HÀNG LOẠT
+    if (mainForm) {
+        mainForm.addEventListener('submit', function(e) {
+            if (loaiInput && loaiInput.value === 'hang_loat') {
+                const checkedBoxes = document.querySelectorAll('input[name="khung_gio[]"]:checked');
+                if (checkedBoxes.length === 0) {
+                    e.preventDefault();
+                    alert('Vui lòng chọn hoặc chèn ít nhất MỘT khung giờ chiếu trước khi khởi tạo!');
+                    return false;
+                }
             }
-
-            thoiLuongPreview.value = `Phim đã chọn có thời lượng ${thoiLuong} phút. Sau khi chọn ngày giờ, hệ thống sẽ tính thời gian kết thúc dự kiến.`;
-            return;
-        }
-
-        const checkedTimes = checkboxesContainer.querySelectorAll('input[type="checkbox"]:checked').length;
-        thoiLuongPreview.value = `Chế độ hàng loạt: mỗi suất chiếm ${tongChiếmPhong} phút. Hiện đang chọn ${checkedTimes} khung giờ trong ngày.`;
+        });
     }
-
-    btnAddCustomTime.addEventListener('click', function() {
-        const customTime = customTimeInput.value;
-
-        if (!customTime) {
-            alert('Vui lòng chọn mốc giờ hợp lệ.');
-            return;
-        }
-
-        const existing = Array.from(checkboxesContainer.querySelectorAll('input[type="checkbox"]'))
-            .some(function(input) {
-                return input.value === customTime;
-            });
-
-        if (existing) {
-            alert('Khung giờ này đã có trong danh sách.');
-            return;
-        }
-
-        const newLabel = document.createElement('label');
-        newLabel.className = 'showtime-time-chip is-custom';
-        newLabel.innerHTML = `<input type="checkbox" name="khung_gio[]" value="${customTime}" checked><span>${customTime}</span>`;
-        checkboxesContainer.appendChild(newLabel);
-        customTimeInput.value = '';
-        updateTimePreview();
-    });
-
-    loaiParam.addEventListener('change', switchFormMode);
-    phimSelect.addEventListener('change', updateTimePreview);
-    rapSelect.addEventListener('change', function() {
-        filterRoomsByCinema();
-        updateTimePreview();
-    });
-    ngayChieuDonLe.addEventListener('change', function() {
-        checkNgayLeRealtime();
-        updateTimePreview();
-    });
-    gioChieuDonLe.addEventListener('change', updateTimePreview);
-    ngayBatDauInput.addEventListener('change', function() {
-        checkNgayLeRealtime();
-        updateTimePreview();
-    });
-    ngayKetThucInput.addEventListener('change', function() {
-        checkNgayLeRealtime();
-        updateTimePreview();
-    });
-    checkboxesContainer.addEventListener('change', updateTimePreview);
-
-    filterRoomsByCinema();
-    switchFormMode();
 });
 </script>
 @endpush

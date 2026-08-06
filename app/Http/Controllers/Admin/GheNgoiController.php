@@ -11,6 +11,7 @@ use App\Models\LoaiGhe;
 use App\Models\PhongChieu;
 use App\Services\AdminNotificationService;
 use App\Services\SeatGeneratorService;
+use App\Services\SeatMaintenanceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -75,14 +76,12 @@ class GheNgoiController extends Controller
 
         $loaiGhes = LoaiGhe::orderBy('ten_loai')->get();
 
-        // Nếu đã chọn phòng thì load sẵn các hàng thuộc phòng đó
         $hangGhes = $phongChieuId
             ? HangGhe::where('phong_chieu_id', $phongChieuId)
             ->orderBy('ten_hang')
             ->get()
             : collect();
 
-        // Gợi ý cột kế tiếp cho hàng đã chọn (nếu có)
         $goiYCot = 1;
         $goiYMaGhe = '';
         if ($hangGheId) {
@@ -114,10 +113,8 @@ class GheNgoiController extends Controller
 
         $ghe = GheNgoi::create($data);
 
-        // Nếu ghế vừa tạo thuộc loại couple, tự gán couple_group_id ghép với ghế liền kề
         $this->seatGenerator->attachCoupleGroupForSeat($ghe);
 
-        // Nếu người dùng tick "tiếp tục thêm ghế cho hàng này" thì quay lại form
         if ($request->boolean('tiep_tuc_tao')) {
             return redirect()
                 ->route('admin.ghe-ngois.create', [
@@ -199,7 +196,6 @@ class GheNgoiController extends Controller
         $coupleGroupId = $gheNgoi->couple_group_id;
         $phongChieu = $gheNgoi->phongChieu;
 
-        // Kiểm tra ghế có vé đang sử dụng không (tránh xóa nhầm)
         if ($phongChieu) {
             $conflicted = app(PhongChieuController::class)
                 ->findSeatsInUsePublic($phongChieu, [$maGhe]);
@@ -214,12 +210,9 @@ class GheNgoiController extends Controller
             }
         }
 
-        DB::transaction(function () use ($gheNgoi, $coupleGroupId, $maGhe) {
-            // Soft delete ghế
+        DB::transaction(function () use ($gheNgoi, $coupleGroupId) {
             $gheNgoi->delete();
 
-            // Nếu ghế thuộc cặp couple, dọn couple_group_id của ghế còn lại
-            // để tránh "mồ côi" trỏ vào group_id không còn tồn tại
             if ($coupleGroupId) {
                 GheNgoi::where('couple_group_id', $coupleGroupId)
                     ->where('id', '!=', $gheNgoi->id)
@@ -305,39 +298,69 @@ class GheNgoiController extends Controller
     }
 
     /**
-     * Schedule maintenance for a seat (AJAX).
+     * 🌟 YÊU CẦU 1: LÊN LỊCH BẢO TRÌ GHẾ (BẮT BUỘC CÓ THỜI GIAN KẾT THÚC)
      */
     public function scheduleMaintenance(Request $request, GheNgoi $gheNgoi)
     {
         $request->validate([
             'thoi_gian_bat_dau' => ['required', 'date', 'after:now'],
-            'thoi_gian_ket_thuc' => ['nullable', 'date', 'after:thoi_gian_bat_dau'],
-            'ly_do' => ['nullable', 'string', 'max:500'],
+            'thoi_gian_ket_thuc' => ['required', 'date', 'after:thoi_gian_bat_dau'], // Bắt buộc kết thúc
+            'ly_do' => ['required', 'string', 'max:500'],
+        ], [
+            'thoi_gian_bat_dau.required' => 'Vui lòng chọn thời gian bắt đầu.',
+            'thoi_gian_ket_thuc.required' => 'Vui lòng chọn thời gian kết thúc bảo trì.',
+            'thoi_gian_ket_thuc.after' => 'Thời gian kết thúc phải sau thời gian bắt đầu.',
+            'ly_do.required' => 'Vui lòng nhập lý do bảo trì.',
         ]);
 
         $service = app(SeatMaintenanceService::class);
-        $lich = $service->scheduleMaintenance(
-            $gheNgoi,
-            $request->date('thoi_gian_bat_dau'),
-            $request->filled('thoi_gian_ket_thuc') ? $request->date('thoi_gian_ket_thuc') : null,
-            auth()->id(),
-            $request->input('ly_do')
-        );
 
-        $this->ghiNhatKy($request, 'Lên lịch bảo trì ghế', 'Quản lý phòng & ghế', "Lên lịch bảo trì ghế {$gheNgoi->ma_ghe} lúc {$lich->thoi_gian_bat_dau}");
+        try {
+            $lich = $service->scheduleMaintenance(
+                $gheNgoi,
+                $request->date('thoi_gian_bat_dau'),
+                $request->date('thoi_gian_ket_thuc'),
+                auth()->id(),
+                $request->input('ly_do')
+            );
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Đã lên lịch bảo trì ghế thành công.',
-                'lich_id' => $lich->id,
-                'thoi_gian_bat_dau' => $lich->thoi_gian_bat_dau,
-            ]);
+            $this->ghiNhatKy($request, 'Lên lịch bảo trì ghế', 'Quản lý phòng & ghế', "Lên lịch bảo trì ghế {$gheNgoi->ma_ghe} lúc {$lich->thoi_gian_bat_dau}");
+
+            if ($request->expectsJson()) {
+                $gheNgoi->update(['trang_thai' => 'sap_bao_tri']);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã lên lịch bảo trì ghế thành công.',
+                    'lich_id' => $lich->id,
+                    'thoi_gian_bat_dau' => $lich->thoi_gian_bat_dau,
+                    'thoi_gian_ket_thuc' => $lich->thoi_gian_ket_thuc,
+                    'updated_seats' => [[
+                        'id' => $gheNgoi->id,
+                        'trang_thai' => 'sap_bao_tri',
+                        'loai_ghe' => $gheNgoi->loaiGhe->ten_loai ?? '',
+                        'mau_sac' => $gheNgoi->mau_sac ?? '#6b7280',
+                        'phu_thu' => $gheNgoi->phu_thu ?? 0,
+                    ]],
+                ]);
+            }
+
+            return redirect()
+                ->back()
+                ->with('success', 'Đã lên lịch bảo trì ghế thành công.');
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
+            return redirect()
+                ->back()
+                ->with('error', $e->getMessage())
+                ->withInput();
         }
-
-        return redirect()
-            ->back()
-            ->with('success', 'Đã lên lịch bảo trì ghế thành công.');
     }
 
     /**
@@ -365,6 +388,27 @@ class GheNgoiController extends Controller
         return redirect()
             ->back()
             ->with('success', 'Đã kích hoạt lại ghế thành công.');
+    }
+
+    public function cancelMaintenance(Request $request, LichBaoTriGheNgoi $lichBaoTriGheNgoi)
+    {
+        $ghe = $lichBaoTriGheNgoi->gheNgoi;
+        $maGhe = $ghe->ma_ghe ?? 'N/A';
+
+        $lichBaoTriGheNgoi->delete();
+
+        $this->ghiNhatKy($request, 'Hủy lịch bảo trì ghế', 'Quản lý phòng & ghế', "Hủy lịch bảo trì ghế {$maGhe}");
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã hủy lịch bảo trì thành công.',
+            ]);
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Đã hủy lịch bảo trì thành công.');
     }
 
     protected function buildConflictMessage(array $conflicts): string
@@ -417,7 +461,7 @@ class GheNgoiController extends Controller
                 'user_agent' => $request->userAgent(),
             ]);
         } catch (\Throwable $e) {
-            // Không chặn luồng chính nếu ghi log lỗi
+            // Silence
         }
     }
 }

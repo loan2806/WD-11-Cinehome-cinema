@@ -45,9 +45,12 @@
                 <label>Trạng thái</label>
                 <select name="trang_thai" class="select-soft">
                     <option value="">Tất cả</option>
+                    <option value="cho_thanh_toan" {{ request('trang_thai') === 'cho_thanh_toan' ? 'selected' : '' }}>Chờ thanh toán</option>
                     <option value="da_thanh_toan" {{ request('trang_thai') === 'da_thanh_toan' ? 'selected' : '' }}>Đã thanh toán</option>
+                    <option value="da_in" {{ request('trang_thai') === 'da_in' ? 'selected' : '' }}>Đã in</option>
                     <option value="da_su_dung" {{ request('trang_thai') === 'da_su_dung' ? 'selected' : '' }}>Đã sử dụng</option>
                     <option value="da_huy" {{ request('trang_thai') === 'da_huy' ? 'selected' : '' }}>Đã hủy</option>
+                    <option value="het_han" {{ request('trang_thai') === 'het_han' ? 'selected' : '' }}>Hết hạn</option>
                 </select>
             </div>
 
@@ -86,6 +89,7 @@
                         <th>Trạng thái</th>
                         <th>Người tạo</th>
                         <th>Tổng tiền</th>
+                        <th>Thao tác</th>
                     </tr>
                 </thead>
 
@@ -118,12 +122,22 @@
                             </td>
 
                             <td>
-                                @if ($ticket->trang_thai === 'da_thanh_toan')
+                                @if ($ticket->trang_thai === 'cho_thanh_toan')
+                                    <span class="status-badge status-pending">Chờ thanh toán</span>
+                                @elseif ($ticket->trang_thai === 'da_thanh_toan')
                                     <span class="status-badge status-paid">Đã thanh toán</span>
+                                @elseif ($ticket->trang_thai === 'da_in')
+                                    <span class="status-badge status-printed">Đã in</span>
                                 @elseif ($ticket->trang_thai === 'da_su_dung')
                                     <span class="status-badge status-used">Đã sử dụng</span>
-                                @else
+                                @elseif ($ticket->trang_thai === 'da_huy')
                                     <span class="status-badge status-cancel">Đã hủy</span>
+                                @elseif ($ticket->trang_thai === 'het_han')
+                                    <span class="status-badge status-expired">Hết hạn</span>
+                                @else
+                                    <span class="status-badge">
+                                        {{ $ticket->trang_thai ?: 'Không xác định' }}
+                                    </span>
                                 @endif
                             </td>
 
@@ -138,10 +152,84 @@
                             <td>
                                 <strong class="money">{{ number_format($ticket->tong_tien, 0, ',', '.') }}đ</strong>
                             </td>
+
+                            <td>
+                                @if (
+                                    $ticket->loai_ve === 'tai_quay'
+                                    && $ticket->payment_method === 'vietqr'
+                                    && $ticket->trang_thai === 'cho_thanh_toan'
+                                )
+                                    <div class="pending-actions">
+                                        <a
+                                            href="{{ route('staff.ban-ve.vietqr-waiting', ['id' => $ticket->id]) }}"
+                                            class="btn-continue-payment"
+                                            title="Tiếp tục giao dịch VietQR"
+                                        >
+                                            <i class="fa-solid fa-qrcode"></i>
+                                            <span>Tiếp tục</span>
+                                        </a>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ route('staff.ban-ve.vietqr-cancel', ['id' => $ticket->id]) }}"
+                                            onsubmit="return confirm('Hủy giao dịch này và giải phóng ghế {{ $ticket->ma_ghe }}?')"
+                                        >
+                                            @csrf
+                                            <button
+                                                type="submit"
+                                                class="btn-cancel-pending"
+                                                title="Hủy và giải phóng ghế"
+                                            >
+                                                <i class="fa-solid fa-xmark"></i>
+                                                <span>Hủy</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                @elseif (
+                                    $ticket->loai_ve === 'tai_quay'
+                                    && in_array(
+                                        $ticket->trang_thai,
+                                        ['da_thanh_toan', 'da_in'],
+                                        true
+                                    )
+                                )
+                                    <button
+                                        type="button"
+                                        class="btn-print-history"
+                                        data-ticket-id="{{ $ticket->id }}"
+                                        data-ticket-status="{{ $ticket->trang_thai }}"
+                                    >
+                                        <i class="fa-solid fa-print"></i>
+                                        <span>
+                                            {{ $ticket->trang_thai === 'da_in'
+                                                ? 'In lại'
+                                                : 'In vé'
+                                            }}
+                                        </span>
+                                    </button>
+                                @elseif ($ticket->trang_thai === 'da_su_dung')
+                                    <span class="action-note action-used">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        Đã sử dụng
+                                    </span>
+                                @elseif ($ticket->trang_thai === 'da_huy')
+                                    <span class="action-note action-cancel">
+                                        <i class="fa-solid fa-ban"></i>
+                                        Đã hủy
+                                    </span>
+                                @elseif ($ticket->trang_thai === 'het_han')
+                                    <span class="action-note action-expired">
+                                        <i class="fa-solid fa-clock"></i>
+                                        Hết hạn
+                                    </span>
+                                @else
+                                    <span class="action-note">---</span>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8">
+                            <td colspan="9">
                                 <div class="empty-box">
                                     <i class="fa-solid fa-ticket-simple"></i>
                                     <p>Chưa có vé nào phù hợp với điều kiện tìm kiếm.</p>
@@ -436,10 +524,22 @@
         border: 1px solid rgba(245,166,35,.35);
     }
 
+    .status-pending {
+        color: #fde68a;
+        background: rgba(234,179,8,.12);
+        border: 1px solid rgba(234,179,8,.35);
+    }
+
     .status-paid {
         color: #ffe4a3;
         background: rgba(245,166,35,.14);
         border: 1px solid rgba(245,166,35,.35);
+    }
+
+    .status-printed {
+        color: #c7d2fe;
+        background: rgba(99,102,241,.14);
+        border: 1px solid rgba(99,102,241,.35);
     }
 
     .status-used {
@@ -454,8 +554,116 @@
         border: 1px solid rgba(239,68,68,.35);
     }
 
+    .status-expired {
+        color: #cbd5e1;
+        background: rgba(100,116,139,.14);
+        border: 1px solid rgba(100,116,139,.35);
+    }
+
+    .pending-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .pending-actions form {
+        margin: 0;
+    }
+
+    .btn-continue-payment,
+    .btn-cancel-pending {
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 0 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 900;
+        white-space: nowrap;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all .25s ease;
+    }
+
+    .btn-continue-payment {
+        color: #16100a;
+        background: linear-gradient(135deg, #f5a623, #ffd166);
+        border: 1px solid rgba(245,166,35,.55);
+    }
+
+    .btn-continue-payment:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(245,166,35,.25);
+    }
+
+    .btn-cancel-pending {
+        color: #fecaca;
+        background: rgba(239,68,68,.12);
+        border: 1px solid rgba(239,68,68,.35);
+    }
+
+    .btn-cancel-pending:hover {
+        color: #fff;
+        background: rgba(239,68,68,.28);
+        transform: translateY(-2px);
+    }
+
+    .action-expired {
+        color: #94a3b8;
+    }
+
     .money {
         color: #f5a623;
+    }
+
+    .btn-print-history {
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 14px;
+        border: 1px solid rgba(245,166,35,.55);
+        border-radius: 12px;
+        color: #16100a;
+        background: linear-gradient(135deg, #f5a623, #ffd166);
+        font-size: 13px;
+        font-weight: 900;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all .25s ease;
+        box-shadow: 0 8px 22px rgba(245,166,35,.16);
+    }
+
+    .btn-print-history:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(245,166,35,.3);
+    }
+
+    .btn-print-history:disabled {
+        opacity: .6;
+        cursor: wait;
+        transform: none;
+    }
+
+    .action-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #888;
+        font-size: 12px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .action-used {
+        color: #86efac;
+    }
+
+    .action-cancel {
+        color: #fca5a5;
     }
 
     .empty-box {
@@ -502,7 +710,467 @@
             flex: 1;
         }
     }
+
+    /* ===== Modal xác nhận in vé ===== */
+    .print-confirm-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .print-confirm-modal.is-open {
+        display: flex;
+    }
+
+    .print-confirm-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, .72);
+        backdrop-filter: blur(5px);
+    }
+
+    .print-confirm-dialog {
+        position: relative;
+        width: min(460px, 100%);
+        overflow: hidden;
+        border: 1px solid rgba(245, 166, 35, .35);
+        border-radius: 24px;
+        background:
+            radial-gradient(circle at top right, rgba(245, 166, 35, .12), transparent 32%),
+            linear-gradient(145deg, #191919, #101010);
+        box-shadow:
+            0 28px 80px rgba(0, 0, 0, .55),
+            0 0 34px rgba(245, 166, 35, .12);
+        animation: printConfirmIn .22s ease;
+    }
+
+    .print-confirm-icon {
+        width: 58px;
+        height: 58px;
+        display: grid;
+        place-items: center;
+        margin: 26px auto 0;
+        border-radius: 18px;
+        color: #111;
+        background: linear-gradient(135deg, #ffd166, #f5a623);
+        box-shadow: 0 12px 30px rgba(245, 166, 35, .25);
+        font-size: 23px;
+    }
+
+    .print-confirm-content {
+        padding: 20px 28px 6px;
+        text-align: center;
+    }
+
+    .print-confirm-content h3 {
+        margin: 0;
+        color: #fff;
+        font-size: 22px;
+        font-weight: 900;
+    }
+
+    .print-confirm-content > p {
+        margin: 10px 0 0;
+        color: #cfcfcf;
+        font-size: 14px;
+    }
+
+    .print-confirm-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 12px 14px;
+        border: 1px solid rgba(245, 166, 35, .18);
+        border-radius: 14px;
+        color: #a9a9a9;
+        background: rgba(245, 166, 35, .06);
+        text-align: left;
+        font-size: 12px;
+        line-height: 1.55;
+    }
+
+    .print-confirm-note i {
+        margin-top: 2px;
+        color: #f5a623;
+    }
+
+    .print-confirm-note strong {
+        color: #ffd166;
+    }
+
+    .print-confirm-actions {
+        display: grid;
+        grid-template-columns: 1fr 1.25fr;
+        gap: 10px;
+        padding: 20px 24px 24px;
+    }
+
+    .print-confirm-btn {
+        min-height: 46px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: 14px;
+        border: 1px solid transparent;
+        font-size: 13px;
+        font-weight: 900;
+        cursor: pointer;
+        transition: .22s ease;
+    }
+
+    .print-confirm-cancel {
+        color: #ddd;
+        border-color: rgba(255, 255, 255, .1);
+        background: rgba(255, 255, 255, .06);
+    }
+
+    .print-confirm-cancel:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, .1);
+        transform: translateY(-1px);
+    }
+
+    .print-confirm-ok {
+        color: #16100a;
+        background: linear-gradient(135deg, #ffd166, #f5a623);
+        box-shadow: 0 10px 24px rgba(245, 166, 35, .2);
+    }
+
+    .print-confirm-ok:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(245, 166, 35, .32);
+    }
+
+    @keyframes printConfirmIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px) scale(.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @media (max-width: 560px) {
+        .print-confirm-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+
+
 </style>
+
+
+
+<div id="printConfirmModal" class="print-confirm-modal" aria-hidden="true">
+    <div class="print-confirm-backdrop" data-print-confirm-cancel></div>
+
+    <div class="print-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="printConfirmTitle">
+        <div class="print-confirm-icon">
+            <i class="fa-solid fa-print"></i>
+        </div>
+
+        <div class="print-confirm-content">
+            <h3 id="printConfirmTitle">Xác nhận in vé</h3>
+            <p>Bạn đã in vé thành công chưa?</p>
+
+            <div class="print-confirm-note">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>
+                    Chỉ khi xác nhận thành công, trạng thái vé mới chuyển sang
+                    <strong>Đã in</strong>.
+                </span>
+            </div>
+        </div>
+
+        <div class="print-confirm-actions">
+            <button type="button" class="print-confirm-btn print-confirm-cancel" data-print-confirm-cancel>
+                <i class="fa-solid fa-xmark"></i>
+                Chưa in
+            </button>
+
+            <button type="button" class="print-confirm-btn print-confirm-ok" data-print-confirm-ok>
+                <i class="fa-solid fa-check"></i>
+                Đã in thành công
+            </button>
+        </div>
+    </div>
+</div>
+
+<iframe
+    id="historyPrintFrame"
+    title="In vé"
+    style="
+        position: fixed;
+        width: 1px;
+        height: 1px;
+        right: 0;
+        bottom: 0;
+        border: 0;
+        opacity: 0;
+        pointer-events: none;
+    "
+></iframe>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const printFrame = document.getElementById('historyPrintFrame');
+        const printConfirmModal = document.getElementById('printConfirmModal');
+        const printConfirmOk = printConfirmModal?.querySelector('[data-print-confirm-ok]');
+        const printConfirmCancelButtons = printConfirmModal?.querySelectorAll('[data-print-confirm-cancel]');
+
+        function askPrintConfirmation() {
+            return new Promise((resolve) => {
+                if (!printConfirmModal || !printConfirmOk || !printConfirmCancelButtons) {
+                    resolve(false);
+                    return;
+                }
+
+                const closeModal = (result) => {
+                    printConfirmModal.classList.remove('is-open');
+                    printConfirmModal.setAttribute('aria-hidden', 'true');
+                    document.body.style.overflow = '';
+
+                    printConfirmOk.removeEventListener('click', onConfirm);
+                    printConfirmCancelButtons.forEach((button) => {
+                        button.removeEventListener('click', onCancel);
+                    });
+                    document.removeEventListener('keydown', onKeydown);
+
+                    resolve(result);
+                };
+
+                const onConfirm = () => closeModal(true);
+                const onCancel = () => closeModal(false);
+                const onKeydown = (event) => {
+                    if (event.key === 'Escape') {
+                        closeModal(false);
+                    }
+                };
+
+                printConfirmOk.addEventListener('click', onConfirm);
+                printConfirmCancelButtons.forEach((button) => {
+                    button.addEventListener('click', onCancel);
+                });
+                document.addEventListener('keydown', onKeydown);
+
+                printConfirmModal.classList.add('is-open');
+                printConfirmModal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+                printConfirmOk.focus();
+            });
+        }
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? '';
+
+        let currentButton = null;
+        let isPrinting = false;
+
+        function restoreButton() {
+            if (!currentButton) {
+                isPrinting = false;
+                return;
+            }
+
+            const status = currentButton.dataset.ticketStatus;
+
+            currentButton.disabled = false;
+
+            currentButton.innerHTML = status === 'da_in'
+                ? '<i class="fa-solid fa-print"></i><span>In lại</span>'
+                : '<i class="fa-solid fa-print"></i><span>In vé</span>';
+
+            currentButton = null;
+            isPrinting = false;
+        }
+
+        async function markTicketAsPrinted(ticketId) {
+            const urlTemplate = @json(
+                route(
+                    'staff.ban-ve.mark-printed',
+                    ['id' => '__TICKET_ID__']
+                )
+            );
+
+            const url = urlTemplate.replace(
+                '__TICKET_ID__',
+                ticketId
+            );
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.message
+                    ?? 'Không thể cập nhật trạng thái vé.'
+                );
+            }
+
+            return data;
+        }
+
+        function updatePrintedStatusOnScreen(button) {
+            if (!button) {
+                return;
+            }
+
+            button.dataset.ticketStatus = 'da_in';
+
+            const row = button.closest('tr');
+            const statusCell = row?.children[5];
+
+            if (statusCell) {
+                statusCell.innerHTML =
+                    '<span class="status-badge status-printed">'
+                    + 'Đã in'
+                    + '</span>';
+            }
+
+            button.innerHTML =
+                '<i class="fa-solid fa-print"></i>'
+                + '<span>In lại</span>';
+        }
+
+        function openPrintDialog(ticketId, originalStatus) {
+            const urlTemplate = @json(
+                route(
+                    'staff.ban-ve.print-ticket',
+                    ['id' => '__TICKET_ID__']
+                )
+            );
+
+            const printUrl = urlTemplate.replace(
+                '__TICKET_ID__',
+                ticketId
+            );
+
+            printFrame.onload = function () {
+                setTimeout(async function () {
+                    try {
+                        const printWindow = printFrame.contentWindow;
+
+                        /*
+                         * window.print() sẽ chờ cho tới khi hộp thoại in được đóng.
+                         * Vì vậy đặt bước xác nhận NGAY SAU print() sẽ ổn định hơn
+                         * so với phụ thuộc vào sự kiện afterprint của iframe.
+                         */
+                        printWindow.focus();
+                        printWindow.print();
+
+                        // Nếu đây là thao tác "In lại" thì không cần đổi trạng thái.
+                        if (originalStatus === 'da_in') {
+                            restoreButton();
+                            return;
+                        }
+
+                        const printedSuccessfully = await askPrintConfirmation();
+
+                        if (!printedSuccessfully) {
+                            restoreButton();
+                            return;
+                        }
+
+                        try {
+                            if (currentButton) {
+                                currentButton.innerHTML =
+                                    '<i class="fa-solid fa-spinner fa-spin"></i>'
+                                    + '<span>Đang xác nhận...</span>';
+                            }
+
+                            await markTicketAsPrinted(ticketId);
+
+                            updatePrintedStatusOnScreen(currentButton);
+
+                            alert('Đã xác nhận in vé thành công.');
+                        } catch (error) {
+                            console.error(error);
+
+                            alert(
+                                error.message
+                                ?? 'Không thể cập nhật trạng thái Đã in.'
+                            );
+                        } finally {
+                            restoreButton();
+                        }
+                    } catch (error) {
+                        console.error(
+                            'Không thể mở hộp thoại in:',
+                            error
+                        );
+
+                        alert(
+                            'Không thể mở hộp thoại in. '
+                            + 'Vui lòng thử lại.'
+                        );
+
+                        restoreButton();
+                    }
+                }, 500);
+            };
+
+            printFrame.src =
+                printUrl
+                + '?embedded=1&t='
+                + Date.now();
+        }
+
+        document.addEventListener('click', function (event) {
+            const button = event.target.closest(
+                '.btn-print-history'
+            );
+
+            if (!button || isPrinting) {
+                return;
+            }
+
+            const ticketId = button.dataset.ticketId;
+            const status = button.dataset.ticketStatus;
+
+            if (!ticketId) {
+                return;
+            }
+
+            if (!['da_thanh_toan', 'da_in'].includes(status)) {
+                alert(
+                    'Vé này không ở trạng thái cho phép in.'
+                );
+                return;
+            }
+
+            isPrinting = true;
+            currentButton = button;
+
+            button.disabled = true;
+            button.innerHTML =
+                '<i class="fa-solid fa-spinner fa-spin"></i>'
+                + '<span>Đang chuẩn bị...</span>';
+
+            /*
+             * QUAN TRỌNG:
+             * Không gọi markTicketAsPrinted() ở đây nữa.
+             * Mở hộp thoại in trước, sau khi hộp thoại đóng mới hỏi xác nhận.
+             */
+            openPrintDialog(ticketId, status);
+        });
+    });
+</script>
 
 @if(session('clear_food_cart'))
 <script>

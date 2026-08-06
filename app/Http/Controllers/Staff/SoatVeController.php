@@ -3,16 +3,14 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
-use App\Models\VeXemPhim;
-use Illuminate\Http\Request;
 use App\Models\VeXemPhimGhe;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SoatVeController extends Controller
 {
     /**
      * Hiển thị trang soát vé.
-     * Trang này cho phép nhân viên nhập mã vé hoặc mã lấy từ QR để kiểm tra.
      */
     public function index()
     {
@@ -20,8 +18,11 @@ class SoatVeController extends Controller
     }
 
     /**
-     * Xử lý kiểm tra vé.
-     * Nếu vé hợp lệ thì hệ thống sẽ chuyển trạng thái vé sang "đã sử dụng".
+     * Xử lý quét QR của từng ghế.
+     *
+     * Luồng trạng thái:
+     * VeXemPhim: da_thanh_toan -> da_in -> da_su_dung
+     * VeXemPhimGhe: chua_su_dung -> da_su_dung
      */
     public function check(Request $request)
     {
@@ -32,8 +33,7 @@ class SoatVeController extends Controller
                 'max:150',
             ],
         ], [
-            'qr_code.required' =>
-            'Không nhận được nội dung QR.',
+            'qr_code.required' => 'Không nhận được nội dung QR.',
         ]);
 
         try {
@@ -43,7 +43,10 @@ class SoatVeController extends Controller
                         'veXemPhim.suatChieu.phim',
                         'veXemPhim.suatChieu.phongChieu',
                     ])
-                    ->where('ma_qr', trim($validated['qr_code']))
+                    ->where(
+                        'ma_qr',
+                        trim($validated['qr_code'])
+                    )
                     ->lockForUpdate()
                     ->first();
 
@@ -67,44 +70,65 @@ class SoatVeController extends Controller
                     );
                 }
 
-                if ($seatTicket->trang_thai === 'da_huy') {
+                /*
+                 * Chỉ cho phép soát vé sau khi vé đã được in/phát hành.
+                 * da_su_dung vẫn được chấp nhận để có thể báo chính xác
+                 * trạng thái của từng QR ghế nếu một giao dịch có nhiều ghế.
+                 */
+                if (!in_array(
+                    $ve->trang_thai,
+                    ['da_in', 'da_su_dung'],
+                    true
+                )) {
+                    if ($ve->trang_thai === 'da_thanh_toan') {
+                        throw new \RuntimeException(
+                            'Vé này chưa được in. Vui lòng in vé trước khi soát.'
+                        );
+                    }
+
                     throw new \RuntimeException(
-                        'Vé ghế '
-                            . $seatTicket->ma_ghe
-                            . ' đã bị hủy.'
+                        'Vé chưa ở trạng thái cho phép soát.'
                     );
                 }
 
-                if ($seatTicket->trang_thai === 'da_su_dung') {
+                if (
+                    $seatTicket->trang_thai
+                    === VeXemPhimGhe::DA_HUY
+                ) {
+                    throw new \RuntimeException(
+                        'Vé ghế '
+                        . $seatTicket->ma_ghe
+                        . ' đã bị hủy.'
+                    );
+                }
+
+                if (
+                    $seatTicket->trang_thai
+                    === VeXemPhimGhe::DA_SU_DUNG
+                ) {
                     $usedAt = optional(
                         $seatTicket->checked_in_at
                     )->format('d/m/Y H:i:s');
 
                     throw new \RuntimeException(
                         'QR ghế '
-                            . $seatTicket->ma_ghe
-                            . ' đã được sử dụng'
-                            . ($usedAt ? ' lúc ' . $usedAt : '')
-                            . '.'
+                        . $seatTicket->ma_ghe
+                        . ' đã được sử dụng'
+                        . ($usedAt ? ' lúc ' . $usedAt : '')
+                        . '.'
                     );
                 }
 
-                /*
-             * Có thể bổ sung giới hạn chỉ cho vào trước giờ chiếu.
-             */
                 $seatTicket->update([
-                    'trang_thai' =>
-                    VeXemPhimGhe::DA_SU_DUNG,
-
+                    'trang_thai' => VeXemPhimGhe::DA_SU_DUNG,
                     'checked_in_at' => now(),
-
                     'checked_in_by' => auth()->id(),
                 ]);
 
                 /*
-             * Chỉ đánh dấu vé gốc đã sử dụng khi tất cả ghế
-             * trong giao dịch đều đã được quét.
-             */
+                 * Chỉ chuyển vé gốc sang da_su_dung khi không còn
+                 * ghế nào ở trạng thái chua_su_dung.
+                 */
                 $remainingSeatCount = VeXemPhimGhe::where(
                     've_xem_phim_id',
                     $ve->id
@@ -122,8 +146,8 @@ class SoatVeController extends Controller
                 }
 
                 return [
-                    'seat_ticket' => $seatTicket,
-                    'ticket' => $ve,
+                    'seat_ticket' => $seatTicket->fresh(),
+                    'ticket' => $ve->fresh(),
                     'remaining' => $remainingSeatCount,
                 ];
             });
@@ -134,12 +158,12 @@ class SoatVeController extends Controller
             return back()->with(
                 'success',
                 'Soát vé thành công: '
-                    . $ve->ten_phim
-                    . ' - Ghế '
-                    . $seatTicket->ma_ghe
-                    . '. Còn '
-                    . $result['remaining']
-                    . ' ghế chưa vào.'
+                . $ve->ten_phim
+                . ' - Ghế '
+                . $seatTicket->ma_ghe
+                . '. Còn '
+                . $result['remaining']
+                . ' ghế chưa vào.'
             );
         } catch (\Throwable $e) {
             report($e);

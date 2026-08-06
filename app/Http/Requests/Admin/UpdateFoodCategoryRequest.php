@@ -14,31 +14,26 @@ class UpdateFoodCategoryRequest extends FormRequest
 
     public function rules(): array
     {
+        $category = $this->route('category');
+
         return [
-            'name' => [
-                'required',
-                'string',
-                'max:150',
-                Rule::unique('food_categories', 'name')
-                    ->ignore($this->category->id),
-            ],
+            'name' => ['required', 'string', 'max:255', Rule::unique('food_categories', 'name')->ignore($category)],
         ];
+    }
+
+    public function prepareForValidation(): void
+    {
+        $this->merge([
+            'name' => trim($this->name),
+        ]);
     }
 
     public function messages(): array
     {
         return [
             'name.required' => 'Vui lòng nhập tên danh mục.',
-            'name.string' => 'Tên danh mục không hợp lệ.',
-            'name.max' => 'Tên danh mục không được vượt quá 150 ký tự.',
+            'name.max' => 'Tên danh mục không được vượt quá 255 ký tự.',
             'name.unique' => 'Danh mục đã tồn tại.',
         ];
-    }
-
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'name' => trim($this->name),
-        ]);
     }
 }

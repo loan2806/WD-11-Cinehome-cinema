@@ -27,8 +27,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('foods', function (Blueprint $table) {
-            //
-        });
+        if (Schema::hasTable('foods')) {
+            Schema::table('foods', function (Blueprint $table) {
+                if (Schema::hasColumn('foods', 'category_id')) {
+                    $table->dropConstrainedForeignId('category_id');
+                }
+
+                if (! Schema::hasColumn('foods', 'category')) {
+                    $table->string('category', 100)->nullable()->index()->after('image');
+                }
+            });
+        }
     }
 };

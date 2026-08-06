@@ -1348,6 +1348,14 @@ body {
         radial-gradient(circle at 20% 0%, rgba(229, 9, 20, 0.24), transparent 34%),
         linear-gradient(180deg, rgba(8, 10, 15, 0.98), rgba(13, 17, 25, 0.96)) !important;
     box-shadow: 22px 0 70px rgba(0, 0, 0, 0.34);
+    scrollbar-width: none !important;
+    -ms-overflow-style: none;
+}
+
+#adminSidebar::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
 }
 
 #adminSidebar > div:first-child {
@@ -4499,7 +4507,7 @@ body {
 }
 
 #adminDropdownMenu {
-    width: 240px !important;
+    width: min(300px, calc(100vw - 24px)) !important;
 }
 
 #adminDropdownMenu > div,
@@ -4518,6 +4526,93 @@ body {
     border-radius: 10px !important;
     text-align: left !important;
     text-decoration: none !important;
+}
+
+#adminDropdownMenu.admin-profile-menu {
+    padding: 0 !important;
+    border-color: rgba(255, 255, 255, 0.11) !important;
+    background:
+        linear-gradient(180deg, rgba(18, 22, 31, 0.98), rgba(13, 16, 23, 0.98)) !important;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.48) !important;
+    overflow: hidden !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-head {
+    padding: 16px 16px 14px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)) !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-avatar {
+    box-shadow: 0 14px 28px rgba(217, 154, 50, 0.18) !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-role {
+    display: inline-flex !important;
+    align-items: center !important;
+    min-height: 24px !important;
+    margin-top: 8px !important;
+    padding: 0 10px !important;
+    border: 1px solid rgba(246, 186, 76, 0.22) !important;
+    border-radius: 999px !important;
+    background: rgba(246, 186, 76, 0.08) !important;
+    color: #f6ba4c !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-section {
+    padding: 10px !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    padding: 10px 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: #e9eef8 !important;
+    font-size: 13px !important;
+    font-weight: 900 !important;
+    text-decoration: none !important;
+    transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link i:first-child {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    flex: 0 0 34px !important;
+    border-radius: 12px !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--cinema-red-soft) !important;
+    font-size: 13px !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link:hover {
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link.is-danger {
+    border-color: rgba(255, 59, 70, 0.16) !important;
+    background: rgba(255, 59, 70, 0.08) !important;
+    color: #ffd7dc !important;
+}
+
+#adminDropdownMenu.admin-profile-menu .admin-profile-menu-link.is-danger i:first-child {
+    background: rgba(255, 59, 70, 0.15) !important;
+    color: #ff6a76 !important;
 }
 
 #adminMain > section {
@@ -4859,6 +4954,30 @@ body {
 
 #adminMain > section {
     padding-top: 24px !important;
+}
+
+#adminContent {
+    display: block !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+}
+
+#adminContent:has(.admin-dashboard) {
+    padding-top: 18px !important;
+}
+
+#adminContent:has(.admin-dashboard),
+#adminContent:has(.admin-dashboard) .admin-dashboard,
+#adminContent:has(.admin-dashboard) .admin-dashboard-hero {
+    align-content: start !important;
+    align-items: stretch !important;
+    justify-content: stretch !important;
+    margin-top: 0 !important;
+    transform: none !important;
+}
+
+#adminContent:has(.admin-dashboard) .admin-dashboard {
+    min-height: 0 !important;
 }
 
 #sidebarToggle {
@@ -7463,6 +7582,16 @@ body {
     line-height: 1.55;
 }
 
+.movie-detail-empty .movie-action-btn {
+    align-self: center;
+    min-width: 240px;
+}
+
+.movie-detail-empty .movie-action-btn i:last-child {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
 @media (max-width: 1180px) {
     .movie-detail-layout {
         grid-template-columns: 1fr;
@@ -8728,6 +8857,16 @@ body {
     line-height: 1.55;
 }
 
+.showtime-empty-card .movie-action-btn {
+    align-self: center;
+    min-width: 236px;
+}
+
+.showtime-empty-card .movie-action-btn i:last-child {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
 .showtime-index-pagination {
     padding: 0 18px 22px;
 }
@@ -9230,6 +9369,116 @@ body {
 .genre-filter-control select option {
     background: #11141b;
     color: #ffffff;
+}
+
+/* CUSTOM STATUS DROPDOWN (thay cho <select> gốc trình duyệt) */
+.genre-status-select {
+    position: relative;
+    width: 100%;
+}
+
+.genre-status-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 50px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.055);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.genre-status-trigger i:first-child {
+    color: #f6ba4c;
+}
+
+.genre-status-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.genre-status-select.is-open .genre-status-trigger {
+    border-color: rgba(255, 47, 69, 0.52);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(255, 47, 69, 0.12);
+}
+
+.genre-status-trigger .label {
+    flex: 1;
+    text-align: left;
+}
+
+.genre-status-trigger .chevron {
+    color: #7f8898;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.genre-status-select.is-open .chevron {
+    transform: rotate(180deg);
+}
+
+.genre-status-menu {
+    position: fixed;
+    z-index: 3000;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #14141c;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.genre-status-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 14px;
+    border: 0;
+    background: transparent;
+    color: #c3c9d6;
+    font-size: 14px;
+    font-weight: 750;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.genre-status-option:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.genre-status-option i {
+    color: #7f8898;
+    width: 16px;
+    text-align: center;
+}
+
+.genre-status-option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+.genre-status-option.is-selected {
+    background: rgba(255, 47, 69, 0.12);
+    color: #ffffff;
+}
+
+.genre-status-option.is-selected i {
+    color: #ff3b46;
+}
+
+.genre-status-option[data-value="1"] i {
+    color: #22c55e;
+}
+
+.genre-status-option[data-value="0"] i {
+    color: #f6ba4c;
 }
 
 .genre-filter-actions {
@@ -10278,6 +10527,116 @@ body {
 .country-filter-control select option {
     background: #11141b;
     color: #ffffff;
+}
+
+/* CUSTOM STATUS DROPDOWN (thay cho <select> gốc trình duyệt) */
+.country-status-select {
+    position: relative;
+    width: 100%;
+}
+
+.country-status-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 50px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.055);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.country-status-trigger i:first-child {
+    color: #f6ba4c;
+}
+
+.country-status-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.country-status-select.is-open .country-status-trigger {
+    border-color: rgba(255, 47, 69, 0.52);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(255, 47, 69, 0.12);
+}
+
+.country-status-trigger .label {
+    flex: 1;
+    text-align: left;
+}
+
+.country-status-trigger .chevron {
+    color: #7f8898;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.country-status-select.is-open .chevron {
+    transform: rotate(180deg);
+}
+
+.country-status-menu {
+    position: fixed;
+    z-index: 3000;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #14141c;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.country-status-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 14px;
+    border: 0;
+    background: transparent;
+    color: #c3c9d6;
+    font-size: 14px;
+    font-weight: 750;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.country-status-option:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.country-status-option i {
+    color: #7f8898;
+    width: 16px;
+    text-align: center;
+}
+
+.country-status-option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+.country-status-option.is-selected {
+    background: rgba(255, 47, 69, 0.12);
+    color: #ffffff;
+}
+
+.country-status-option.is-selected i {
+    color: #ff3b46;
+}
+
+.country-status-option[data-value="1"] i {
+    color: #22c55e;
+}
+
+.country-status-option[data-value="0"] i {
+    color: #f6ba4c;
 }
 
 .country-filter-actions {
@@ -11384,6 +11743,117 @@ body {
     color: #ffffff;
 }
 
+/* CUSTOM FILTER DROPDOWN (thay cho <select> gốc trình duyệt) */
+.ticket-filter-dropdown {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+}
+
+.ticket-filter-dropdown-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    height: 50px;
+    padding: 0 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.055);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ticket-filter-dropdown-trigger i:first-child {
+    color: #f6ba4c;
+}
+
+.ticket-filter-dropdown-trigger:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.ticket-filter-dropdown.is-open .ticket-filter-dropdown-trigger {
+    border-color: rgba(255, 47, 69, 0.52);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(255, 47, 69, 0.12);
+}
+
+.ticket-filter-dropdown-trigger .label {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ticket-filter-dropdown-trigger .chevron {
+    flex: 0 0 auto;
+    color: #7f8898;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.ticket-filter-dropdown.is-open .chevron {
+    transform: rotate(180deg);
+}
+
+.ticket-filter-dropdown-menu {
+    position: fixed;
+    z-index: 3000;
+    overflow: hidden;
+    overflow-y: auto;
+    max-height: 320px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #14141c;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.ticket-filter-dropdown-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 14px;
+    border: 0;
+    background: transparent;
+    color: #c3c9d6;
+    font-size: 14px;
+    font-weight: 750;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ticket-filter-dropdown-option:not(:last-child) {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.ticket-filter-dropdown-option i {
+    color: #7f8898;
+    width: 16px;
+    text-align: center;
+}
+
+.ticket-filter-dropdown-option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+}
+
+.ticket-filter-dropdown-option.is-selected {
+    background: rgba(255, 47, 69, 0.12);
+    color: #ffffff;
+}
+
+.ticket-filter-dropdown-option.is-selected i {
+    color: #ff3b46;
+}
+
 .ticket-table-wrap {
     overflow-x: auto;
     padding: 20px 24px 0;
@@ -11523,19 +11993,41 @@ body {
 }
 
 .ticket-status-select {
+    --ticket-status-bg: rgba(148, 163, 184, 0.1);
+    --ticket-status-border: rgba(148, 163, 184, 0.18);
+    --ticket-status-color: #cbd5e1;
+    appearance: none;
+    -webkit-appearance: none;
     min-width: 142px;
     height: 38px;
     border-radius: 999px;
-    padding: 0 12px;
-    border: 1px solid transparent;
+    padding: 0 34px 0 14px;
+    border: 1px solid var(--ticket-status-border);
     outline: none;
+    background-color: var(--ticket-status-bg);
+    background-image:
+        linear-gradient(45deg, transparent 50%, currentColor 50%),
+        linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+        calc(100% - 18px) 50%,
+        calc(100% - 13px) 50%;
+    background-repeat: no-repeat;
+    background-size: 5px 5px, 5px 5px;
+    color: var(--ticket-status-color);
+    color-scheme: dark;
     font-size: 12px;
     font-weight: 950;
+    line-height: 1;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    white-space: nowrap;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.ticket-status-select:hover {
+.ticket-status-select:hover,
+.ticket-status-select:focus {
+    background-color: var(--ticket-status-bg);
+    color: var(--ticket-status-color);
     transform: translateY(-1px);
     box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
 }
@@ -11546,21 +12038,21 @@ body {
 }
 
 .ticket-status-select.status-da_thanh_toan {
-    color: #8ef1c5;
-    background: rgba(16, 185, 129, 0.12);
-    border-color: rgba(52, 211, 153, 0.24);
+    --ticket-status-bg: rgba(16, 185, 129, 0.12);
+    --ticket-status-border: rgba(52, 211, 153, 0.24);
+    --ticket-status-color: #8ef1c5;
 }
 
 .ticket-status-select.status-da_su_dung {
-    color: #cbd5e1;
-    background: rgba(148, 163, 184, 0.1);
-    border-color: rgba(148, 163, 184, 0.18);
+    --ticket-status-bg: rgba(148, 163, 184, 0.1);
+    --ticket-status-border: rgba(148, 163, 184, 0.18);
+    --ticket-status-color: #cbd5e1;
 }
 
 .ticket-status-select.status-da_huy {
-    color: #ff9aa4;
-    background: rgba(255, 47, 69, 0.1);
-    border-color: rgba(255, 47, 69, 0.22);
+    --ticket-status-bg: rgba(255, 47, 69, 0.1);
+    --ticket-status-border: rgba(255, 47, 69, 0.22);
+    --ticket-status-color: #ff9aa4;
 }
 
 .ticket-actions form,
@@ -15715,7 +16207,7 @@ body {
 
 .food-menu-metrics {
     display: grid;
-    grid-template-columns: repeat(4, minmax(82px, 1fr));
+    grid-template-columns: repeat(5, minmax(74px, 1fr));
     gap: 8px;
 }
 
@@ -16134,7 +16626,7 @@ body {
 
 .food-show-stats {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 12px;
 }
 

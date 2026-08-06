@@ -36,6 +36,9 @@ class VeXemPhim extends Model
         'change_amount',
         'seat_total',
         'food_total',
+        'payos_order_code',
+        'payos_checkout_url',
+        'payos_qr_code',
     ];
 
     protected $casts = [
@@ -48,6 +51,7 @@ class VeXemPhim extends Model
         'change_amount' => 'decimal:2',
         'seat_total' => 'decimal:2',
         'food_total' => 'decimal:2',
+        'payos_order_code' => 'integer',
     ];
 
     public function canCancel(): bool
@@ -64,6 +68,13 @@ class VeXemPhim extends Model
     {
         return $this->thoi_gian_het_han
             && now()->greaterThan($this->thoi_gian_het_han);
+    }
+
+    public function isActivePendingPayment(): bool
+    {
+        return $this->isPendingPayment()
+            && $this->thoi_gian_het_han
+            && now()->lessThanOrEqualTo($this->thoi_gian_het_han);
     }
 
     public function nguoiDung(): BelongsTo

@@ -17,17 +17,14 @@ class FoodCategoryController extends Controller
 
     public function index(Request $request)
     {
-        $query = DanhMucDoAn::query();
+        $query = DanhMucDoAn::where('is_combo', false)->orderBy('name');
 
         if ($request->filled('search')) {
             $keyword = trim($request->search);
             $query->where('name', 'like', "%{$keyword}%");
         }
 
-        $categories = $query
-            ->orderBy('name')
-            ->paginate(20)
-            ->withQueryString();
+        $categories = $query->paginate(20)->withQueryString();
 
         return view('admin.foods.categories.index', compact('categories'));
     }
@@ -40,15 +37,22 @@ class FoodCategoryController extends Controller
     public function store(StoreFoodCategoryRequest $request)
     {
         $data = $request->validated();
-
         $data['slug'] = Str::slug($data['name']);
+        $data['is_combo'] = false;
 
         $category = DanhMucDoAn::create($data);
 
         AdminNotificationService::push(
-            '🍿 Thêm danh mục',
-            'Đã thêm danh mục ' . $category->name,
+            'Thêm danh mục món lẻ',
+            "Đã thêm danh mục {$category->name}",
             'Success'
+        );
+
+        $this->ghiNhatKy(
+            $request,
+            'Thêm danh mục',
+            'Quản lý đồ ăn lẻ',
+            "Đã thêm danh mục {$category->name}"
         );
 
         return redirect()
@@ -65,12 +69,18 @@ class FoodCategoryController extends Controller
     {
         $data = $request->validated();
 
-        // 🔥 update slug khi đổi name
         if ($category->name !== $data['name']) {
             $data['slug'] = Str::slug($data['name']);
         }
 
         $category->update($data);
+
+        $this->ghiNhatKy(
+            $request,
+            'Cập nhật danh mục',
+            'Quản lý đồ ăn lẻ',
+            "Cập nhật danh mục {$category->name}"
+        );
 
         return redirect()
             ->route('admin.foods.categories.index')
@@ -79,9 +89,8 @@ class FoodCategoryController extends Controller
 
     public function destroy(DanhMucDoAn $category)
     {
-        // 🔥 chặn xoá nếu đang có food
-        if ($category->foods()->exists()) {
-            return back()->with('error', 'Không thể xóa vì danh mục đang có sản phẩm.');
+        if ($category->doAns()->exists()) {
+            return back()->with('error', 'Không thể xóa vì danh mục đang có món.');
         }
 
         $category->delete();

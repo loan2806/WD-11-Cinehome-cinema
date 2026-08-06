@@ -101,15 +101,11 @@
 
                     <label class="food-edit-field is-wide">
                         <span>Danh mục</span>
-                        <select class="admin-input" disabled>
-                            @foreach ($categories as $category)
-                                <option value="{{ $category->id }}" @selected($food->category_id == $category->id)>
-                                    {{ $category->name }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="rounded-xl border border-white/10 bg-[#111111] p-4 text-white">
+                            {{ optional($food->category)->name ?? 'Combo' }}
+                        </div>
                         <input type="hidden" name="category_id" value="{{ $food->category_id }}">
-                        <em>Danh mục được khóa để tránh đổi sai loại món/combo sau khi đã tạo.</em>
+                        <em>Danh mục đã được cố định cho combo này.</em>
                         @error('category_id')
                             <small>{{ $message }}</small>
                         @enderror

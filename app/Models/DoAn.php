@@ -64,6 +64,11 @@ class DoAn extends Model
         return (float) ($this->saleVariant()?->price ?? 0);
     }
 
+    /**
+     * Tồn kho khả dụng: số lượng thực sự có thể bán ngay bây giờ.
+     * Món lẻ nhiều biến thể -> cộng dồn tồn kho của các biến thể ĐANG BÁN (is_active).
+     * Combo -> giới hạn bởi biến thể thành phần ít nhất (không đổi so với trước).
+     */
     public function getStockQuantityAttribute(): int
     {
         if ($this->isCombo()) {
@@ -81,7 +86,29 @@ class DoAn extends Model
                 ->min();
         }
 
-        return (int) ($this->saleVariant()?->stock_quantity ?? 0);
+        $variants = $this->relationLoaded('variants')
+            ? $this->variants
+            : $this->variants()->get();
+
+        return (int) $variants->where('is_active', true)->sum('stock_quantity');
+    }
+
+    /**
+     * Tổng tồn kho vật lý: cộng dồn tồn kho TẤT CẢ biến thể (kể cả đang tạm ẩn),
+     * dùng để đối chiếu với tồn kho khả dụng (chỉ tính biến thể đang bán).
+     * Combo không có khái niệm "tồn kho vật lý" riêng nên bằng tồn kho khả dụng.
+     */
+    public function getTongTonKhoAttribute(): int
+    {
+        if ($this->isCombo()) {
+            return $this->stock_quantity;
+        }
+
+        $variants = $this->relationLoaded('variants')
+            ? $this->variants
+            : $this->variants()->get();
+
+        return (int) $variants->sum('stock_quantity');
     }
 
     public function getMinStockQuantityAttribute(): int
@@ -89,10 +116,10 @@ class DoAn extends Model
         return self::NGUONG_TON_KHO_THAP;
     }
 
-    public function isCombo(): bool
-    {
-        return str_contains(strtolower($this->category?->name ?? ''), 'combo');
-    }
+  public function isCombo(): bool
+{
+    return $this->category?->is_combo ?? false;
+}
 
     public function saleVariant(): ?BienTheDoAn
     {
@@ -119,7 +146,7 @@ class DoAn extends Model
     }
 
     public function category()
-    {
-        return $this->belongsTo(DanhMucDoAn::class, 'category_id');
-    }
+{
+    return $this->belongsTo(DanhMucDoAn::class, 'category_id');
+}
 }

@@ -47,18 +47,10 @@ $baseSeatPrice = (float) $seatTotal;
             </div>
         </div>
 
-        {{-- 2. THANH THỜI GIAN GIỮ VÉ --}}
-        <div class="bg-zinc-900 border border-white/10 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-sm">
-                <span class="text-yellow-400 font-bold uppercase tracking-wider block">Thời gian giữ ghế</span>
-                <p class="text-xs text-gray-400">Hoàn tất đơn hàng trong thời gian quy định trước khi ghế tự động giải phóng.</p>
-            </div>
-            <div class="flex items-center gap-3 w-full md:w-auto flex-1 md:justify-end">
-                <div class="h-2 bg-black rounded-full overflow-hidden flex-1 md:w-64 border border-white/5">
-                    <div id="countdownBar" class="bg-gradient-to-r from-yellow-500 to-red-500 h-full w-full transition-all duration-1000"></div>
-                </div>
-                <span id="countdownText" class="text-xl font-black text-red-500 font-mono">07:00</span>
-            </div>
+        {{-- 2. THÔNG TIN GIỮ GHẾ --}}
+        <div class="bg-zinc-900 border border-white/10 rounded-2xl p-4">
+            <span class="text-yellow-400 font-bold uppercase tracking-wider block">Giữ ghế khi thanh toán VietQR</span>
+            <p class="mt-1 text-xs text-gray-400">Ghế chỉ bắt đầu được khóa 7 phút sau khi nhân viên tạo giao dịch VietQR ở bước thanh toán. Việc chuyển trang hoặc tải lại trang này không tạo khóa ghế giả.</p>
         </div>
 
         {{-- 3. KHU VỰC CHI TIẾT ĐỒ ĂN & GIỎ HÀNG --}}
@@ -96,13 +88,19 @@ $baseSeatPrice = (float) $seatTotal;
                             @foreach($category['foods'] as $food)
                             <div class="food-card bg-zinc-900 border border-white/10 rounded-2xl p-4 flex flex-col justify-between hover:border-yellow-400 transition" data-search-term="{{ mb_strtolower($food['name']) }}">
                                 <div class="h-28 bg-black rounded-xl flex items-center justify-center overflow-hidden mb-3 relative border border-white/5">
-                                    @if (!empty($food['image']))
-                                    <img src="{{ asset('storage/' . $food['image']) }}" class="h-full object-contain hover:scale-110 transition duration-300" alt="{{ $food['name'] }}">
-                                    @else
-                                    <span class="text-xs text-gray-600">
-                                        No Image
-                                    </span>
-                                    @endif
+                                    @php
+                                    $imagePath = trim((string) ($food['image'] ?? ''));
+
+                                    if ($imagePath !== '' && !str_starts_with($imagePath, 'foods/')) {
+                                    $imagePath = 'foods/' . $imagePath;
+                                    }
+
+                                    $imageUrl = $imagePath
+                                    ? asset('storage/' . $imagePath)
+                                    : asset('assets/images/LOGO copy.png');
+                                    @endphp
+
+                                    <img src="{{ $imageUrl }}" alt="{{ $food['name'] }}" class="h-full w-full object-contain hover:scale-110 transition duration-300" onerror="this.src='{{ asset('assets/images/LOGO copy.png') }}';">
 
                                     @if (($food['available'] ?? 0) <= 0) <div class="absolute inset-0 bg-black/75 flex items-center justify-center">
                                         <span class="rounded-lg bg-red-500 px-3 py-1 text-xs font-black text-white">
@@ -295,26 +293,6 @@ $baseSeatPrice = (float) $seatTotal;
         });
     });
 
-    // 3. ĐẾM NGƯỢC THỜI GIAN GIỮ VÉ (7 PHÚT)
-    const duration = 7 * 60;
-    let timeRemaining = duration;
-    const countText = document.getElementById('countdownText');
-    const countBar = document.getElementById('countdownBar');
-
-    const timer = setInterval(() => {
-        timeRemaining--;
-        if (timeRemaining <= 0) {
-            clearInterval(timer);
-            alert("Hết thời gian giữ vé!");
-            window.location.reload();
-            return;
-        }
-        const mins = String(Math.floor(timeRemaining / 60)).padStart(2, '0');
-        const secs = String(timeRemaining % 60).padStart(2, '0');
-        countText.innerText = `${mins}:${secs}`;
-        countBar.style.width = `${(timeRemaining / duration) * 100}%`;
-    }, 1000);
-
     // 4. BẮT CÁC SỰ KIỆN CLICK (THÊM, BỚT, TĂNG, GIẢM, XÓA MÓN)
     document.addEventListener('click', function(e) {
         // Thêm từ ngoài Menu card
@@ -337,7 +315,7 @@ $baseSeatPrice = (float) $seatTotal;
             quantity = Math.max(quantity, 1);
 
             const currentQuantity =
-                Number(cart[cartItemKey]?.qty) || 0;
+                Number(cart[cartItemKey] ? .qty) || 0;
 
             if (currentQuantity + quantity > available) {
                 alert(

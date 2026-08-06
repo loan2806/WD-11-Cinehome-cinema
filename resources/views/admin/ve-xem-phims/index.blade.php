@@ -17,15 +17,42 @@
         ];
 
         $statusLabels = [
+            'cho_thanh_toan' => 'Chờ thanh toán',
             'da_thanh_toan' => 'Đã thanh toán',
+            'da_in' => 'Đã in',
             'da_su_dung' => 'Đã sử dụng',
             'da_huy' => 'Đã hủy',
+            'het_han' => 'Hết hạn',
         ];
 
         $typeLabels = [
             'truc_tuyen' => 'Online',
             'tai_quay' => 'Tại quầy',
         ];
+
+        $statusIcons = [
+            'cho_thanh_toan' => 'fa-clock',
+            'da_thanh_toan' => 'fa-circle-check',
+            'da_in' => 'fa-print',
+            'da_su_dung' => 'fa-ticket',
+            'da_huy' => 'fa-circle-xmark',
+            'het_han' => 'fa-hourglass-end',
+        ];
+
+        $typeIcons = [
+            'truc_tuyen' => 'fa-globe',
+            'tai_quay' => 'fa-store',
+        ];
+
+        $currentTrangThaiFilter = (string) request('trang_thai', '');
+        if ($currentTrangThaiFilter !== '' && !isset($statusLabels[$currentTrangThaiFilter])) {
+            $currentTrangThaiFilter = '';
+        }
+
+        $currentLoaiVeFilter = (string) request('loai_ve', '');
+        if ($currentLoaiVeFilter !== '' && !isset($typeLabels[$currentLoaiVeFilter])) {
+            $currentLoaiVeFilter = '';
+        }
     @endphp
 
     <div class="ticket-page">
@@ -39,8 +66,7 @@
                 </span>
                 <h1>Quản lý vé xem phim</h1>
                 <p>
-                    Tra cứu vé, kiểm tra suất chiếu, cập nhật trạng thái sử dụng và xử lý hủy vé trong một màn hình.
-                    Giao diện được tối ưu để nhân sự vận hành đọc nhanh, thao tác chắc tay hơn.
+                    Tra cứu vé, kiểm tra suất chiếu và theo dõi trạng thái sử dụng vé minh bạch trong một màn hình.
                 </p>
 
                 <div class="ticket-hero-metrics">
@@ -119,7 +145,7 @@
                         Danh sách vận hành
                     </span>
                     <h2>Danh sách vé xem phim</h2>
-                    <p>Tra cứu theo mã vé, phim, rạp, phòng hoặc ghế và cập nhật trạng thái ngay trên từng dòng.</p>
+                    <p>Tra cứu theo mã vé, phim, rạp, phòng hoặc ghế.</p>
                 </div>
             </div>
 
@@ -139,31 +165,53 @@
 
                 <label class="ticket-filter-field">
                     <span>Trạng thái</span>
-                    <div class="ticket-filter-control">
-                        <i class="fa-solid fa-sliders"></i>
-                        <select name="trang_thai">
-                            <option value="">Tất cả trạng thái</option>
+                    <div class="ticket-filter-dropdown" data-value="{{ $currentTrangThaiFilter }}">
+                        <input type="hidden" name="trang_thai" value="{{ $currentTrangThaiFilter }}">
+
+                        <button type="button" class="ticket-filter-dropdown-trigger">
+                            <i class="fa-solid {{ $statusIcons[$currentTrangThaiFilter] ?? 'fa-sliders' }}"></i>
+                            <span class="label">{{ $statusLabels[$currentTrangThaiFilter] ?? 'Tất cả trạng thái' }}</span>
+                            <i class="fa-solid fa-chevron-down chevron"></i>
+                        </button>
+
+                        <div class="ticket-filter-dropdown-menu hidden">
+                            <button type="button" class="ticket-filter-dropdown-option {{ $currentTrangThaiFilter === '' ? 'is-selected' : '' }}" data-value="" data-label="Tất cả trạng thái" data-icon="fa-sliders">
+                                <i class="fa-solid fa-sliders"></i>
+                                <span>Tất cả trạng thái</span>
+                            </button>
                             @foreach ($statusLabels as $value => $label)
-                                <option value="{{ $value }}" @selected(request('trang_thai') === $value)>
-                                    {{ $label }}
-                                </option>
+                                <button type="button" class="ticket-filter-dropdown-option {{ $value === $currentTrangThaiFilter ? 'is-selected' : '' }}" data-value="{{ $value }}" data-label="{{ $label }}" data-icon="{{ $statusIcons[$value] }}">
+                                    <i class="fa-solid {{ $statusIcons[$value] }}"></i>
+                                    <span>{{ $label }}</span>
+                                </button>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
                 </label>
 
                 <label class="ticket-filter-field">
                     <span>Loại vé</span>
-                    <div class="ticket-filter-control">
-                        <i class="fa-solid fa-layer-group"></i>
-                        <select name="loai_ve">
-                            <option value="">Tất cả loại vé</option>
+                    <div class="ticket-filter-dropdown" data-value="{{ $currentLoaiVeFilter }}">
+                        <input type="hidden" name="loai_ve" value="{{ $currentLoaiVeFilter }}">
+
+                        <button type="button" class="ticket-filter-dropdown-trigger">
+                            <i class="fa-solid {{ $typeIcons[$currentLoaiVeFilter] ?? 'fa-layer-group' }}"></i>
+                            <span class="label">{{ $typeLabels[$currentLoaiVeFilter] ?? 'Tất cả loại vé' }}</span>
+                            <i class="fa-solid fa-chevron-down chevron"></i>
+                        </button>
+
+                        <div class="ticket-filter-dropdown-menu hidden">
+                            <button type="button" class="ticket-filter-dropdown-option {{ $currentLoaiVeFilter === '' ? 'is-selected' : '' }}" data-value="" data-label="Tất cả loại vé" data-icon="fa-layer-group">
+                                <i class="fa-solid fa-layer-group"></i>
+                                <span>Tất cả loại vé</span>
+                            </button>
                             @foreach ($typeLabels as $value => $label)
-                                <option value="{{ $value }}" @selected(request('loai_ve') === $value)>
-                                    {{ $label }}
-                                </option>
+                                <button type="button" class="ticket-filter-dropdown-option {{ $value === $currentLoaiVeFilter ? 'is-selected' : '' }}" data-value="{{ $value }}" data-label="{{ $label }}" data-icon="{{ $typeIcons[$value] }}">
+                                    <i class="fa-solid {{ $typeIcons[$value] }}"></i>
+                                    <span>{{ $label }}</span>
+                                </button>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
                 </label>
 
@@ -254,26 +302,12 @@
                                     </strong>
                                 </td>
                                 <td>
-                                    <form method="POST" action="{{ route('admin.ve-xem-phims.cap-nhat-trang-thai', $ticket) }}">
-                                        @csrf
-                                        @method('PATCH')
-
-                                        <select
-                                            name="trang_thai"
-                                            onchange="confirmTicketStatus(this)"
-                                            data-current="{{ $ticket->trang_thai }}"
-                                            class="ticket-status-select status-{{ $ticket->trang_thai }}"
-                                            aria-label="Cập nhật trạng thái vé {{ $ticket->ma_ve }}"
-                                        >
-                                            @foreach ($statusLabels as $value => $label)
-                                                <option value="{{ $value }}" @selected($ticket->trang_thai === $value)>
-                                                    {{ $label }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </form>
+                                    <span class="ticket-status-static status-{{ $ticket->trang_thai }}">
+                                        <i class="fa-solid {{ $statusIcons[$ticket->trang_thai] ?? 'fa-circle-info' }}"></i>
+                                        {{ $statusLabels[$ticket->trang_thai] ?? $ticket->trang_thai }}
+                                    </span>
                                 </td>
-                                <td>
+                                <td class="ticket-actions-cell">
                                     <div class="ticket-actions">
                                         <a
                                             href="{{ route('admin.ve-xem-phims.show', $ticket) }}"
@@ -339,51 +373,216 @@
         </section>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* 🌟 BADGE TRẠNG THÁI CỐ ĐỊNH */
+        .ticket-status-static {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            min-height: 32px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .ticket-status-static.status-cho_thanh_toan {
+            color: #fde68a;
+            background: rgba(234, 179, 8, .12);
+            border: 1px solid rgba(234, 179, 8, .35);
+        }
+
+        .ticket-status-static.status-da_thanh_toan {
+            color: #86efac;
+            background: rgba(34, 197, 94, .12);
+            border: 1px solid rgba(34, 197, 94, .35);
+        }
+
+        .ticket-status-static.status-da_in {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, .12);
+            border: 1px solid rgba(56, 189, 248, .35);
+        }
+
+        .ticket-status-static.status-da_su_dung {
+            color: #c084fc;
+            background: rgba(168, 85, 247, .12);
+            border: 1px solid rgba(168, 85, 247, .35);
+        }
+
+        .ticket-status-static.status-da_huy {
+            color: #fca5a5;
+            background: rgba(239, 68, 68, .12);
+            border: 1px solid rgba(239, 68, 68, .35);
+        }
+
+        .ticket-status-static.status-het_han {
+            color: #cbd5e1;
+            background: rgba(100, 116, 139, .14);
+            border: 1px solid rgba(100, 116, 139, .35);
+        }
+
+        /* 🌟 KHÓA CỘT THAO TÁC CỐ ĐỊNH THEO HÀNG NGANG CHỐNG XUỐNG DÒNG */
+        .ticket-table th.is-right,
+        .ticket-table td.ticket-actions-cell {
+            text-align: right !important;
+            white-space: nowrap !important;
+            width: 1% !important;
+            min-width: 130px !important;
+        }
+
+        .ticket-actions {
+            display: inline-flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 6px !important;
+            flex-wrap: nowrap !important;
+            width: max-content !important;
+            margin-left: auto !important;
+        }
+
+        .ticket-actions form {
+            display: inline-flex !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .ticket-action-btn {
+            width: 34px !important;
+            height: 34px !important;
+            min-width: 34px !important;
+            min-height: 34px !important;
+            flex-shrink: 0 !important;
+            border-radius: 10px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 13px !important;
+            text-decoration: none !important;
+            border: none !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            margin: 0 !important;
+        }
+
+        .ticket-action-btn.view {
+            background: rgba(59, 130, 246, 0.15) !important;
+            color: #60a5fa !important;
+            border: 1px solid rgba(59, 130, 246, 0.3) !important;
+        }
+
+        .ticket-action-btn.view:hover {
+            background: rgba(59, 130, 246, 0.3) !important;
+            color: #ffffff !important;
+        }
+
+        .ticket-action-btn.success {
+            background: rgba(34, 197, 94, 0.15) !important;
+            color: #4ade80 !important;
+            border: 1px solid rgba(34, 197, 94, 0.3) !important;
+        }
+
+        .ticket-action-btn.success:hover {
+            background: rgba(34, 197, 94, 0.3) !important;
+            color: #ffffff !important;
+        }
+
+        .ticket-action-btn.danger {
+            background: rgba(239, 68, 68, 0.15) !important;
+            color: #f87171 !important;
+            border: 1px solid rgba(239, 68, 68, 0.3) !important;
+        }
+
+        .ticket-action-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.3) !important;
+            color: #ffffff !important;
+        }
+
+        .ticket-action-note {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            height: 30px !important;
+            padding: 0 10px !important;
+            border-radius: 8px !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            color: #9ca3af !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+            margin: 0 !important;
+        }
+    </style>
+
     <script>
-        function confirmTicketStatus(select) {
-            const oldValue = select.dataset.current;
-            const newValue = select.value;
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.ticket-filter-dropdown').forEach(function (wrap) {
+                const trigger = wrap.querySelector('.ticket-filter-dropdown-trigger');
+                const menu = wrap.querySelector('.ticket-filter-dropdown-menu');
+                const hiddenInput = wrap.querySelector('input[type="hidden"]');
+                const labelEl = trigger.querySelector('.label');
+                const iconEl = trigger.querySelector('i:first-child');
+                const options = wrap.querySelectorAll('.ticket-filter-dropdown-option');
 
-            if (oldValue === newValue) {
-                return;
-            }
+                document.body.appendChild(menu);
 
-            const statusMap = {
-                da_thanh_toan: 'Đã thanh toán',
-                da_su_dung: 'Đã sử dụng',
-                da_huy: 'Đã hủy'
-            };
+                function closeMenu() {
+                    wrap.classList.remove('is-open');
+                    menu.classList.add('hidden');
+                }
 
-            const submitChange = () => {
-                select.dataset.current = newValue;
-                select.form.submit();
-            };
+                function positionMenu() {
+                    const rect = trigger.getBoundingClientRect();
+                    menu.style.left = rect.left + 'px';
+                    menu.style.width = rect.width + 'px';
 
-            if (window.Swal) {
-                Swal.fire({
-                    title: 'Xác nhận cập nhật',
-                    text: `Bạn có chắc muốn chuyển vé sang "${statusMap[newValue] || newValue}" không?`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: 'Xác nhận',
-                    cancelButtonText: 'Hủy',
-                    confirmButtonColor: '#ff2f45',
-                    cancelButtonColor: '#6b7280',
-                    background: '#151923',
-                    color: '#ffffff'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        submitChange();
+                    const menuHeight = menu.offsetHeight;
+                    const spaceBelow = window.innerHeight - rect.bottom;
+                    const spaceAbove = rect.top;
+
+                    if (spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow) {
+                        menu.style.top = (rect.top - menuHeight - 8) + 'px';
                     } else {
-                        select.value = oldValue;
+                        menu.style.top = (rect.bottom + 8) + 'px';
+                    }
+                }
+
+                trigger.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    const willOpen = menu.classList.contains('hidden');
+                    closeMenu();
+                    if (willOpen) {
+                        wrap.classList.add('is-open');
+                        menu.classList.remove('hidden');
+                        positionMenu();
                     }
                 });
-            } else if (confirm(`Chuyển vé sang "${statusMap[newValue] || newValue}"?`)) {
-                submitChange();
-            } else {
-                select.value = oldValue;
-            }
-        }
+
+                window.addEventListener('scroll', closeMenu, true);
+                window.addEventListener('resize', closeMenu);
+
+                options.forEach(function (opt) {
+                    opt.addEventListener('click', function () {
+                        hiddenInput.value = opt.dataset.value;
+                        labelEl.textContent = opt.dataset.label;
+                        iconEl.className = 'fa-solid ' + opt.dataset.icon;
+
+                        options.forEach((o) => o.classList.toggle('is-selected', o === opt));
+                        closeMenu();
+                    });
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!wrap.contains(event.target) && !menu.contains(event.target)) {
+                        closeMenu();
+                    }
+                });
+            });
+        });
     </script>
 @endsection
