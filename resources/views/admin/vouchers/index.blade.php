@@ -87,11 +87,17 @@
                     </label>
                     <label class="voucher-field is-wide">
                         <span>Loại voucher</span>
-                        <select name="loai_voucher" class="admin-input" required>
-                            @foreach ($voucherTypeLabels as $value => $label)
-                                <option value="{{ $value }}" @selected(old('loai_voucher', 'giam_gia_ve') === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
+                        <div class="voucher-select">
+                            <button type="button" class="voucher-select__trigger">
+                                <span class="voucher-select__value">Chọn loại voucher</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <select name="loai_voucher" class="hidden" required>
+                                @foreach ($voucherTypeLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('loai_voucher', 'giam_gia_ve') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </label>
                     <label class="voucher-field">
                         <span>Giá trị giảm</span>
@@ -135,25 +141,37 @@
                 <div class="voucher-form-grid">
                     <label class="voucher-field is-wide">
                         <span>Voucher mẫu</span>
-                        <select name="voucher_id" class="admin-input" required>
-                            <option value="">Chọn voucher đang hiệu lực</option>
-                            @foreach ($activeVouchers as $voucher)
-                                <option value="{{ $voucher->id }}" @selected(old('voucher_id') == $voucher->id)>
-                                    {{ $voucher->ma_voucher }} - {{ $voucher->ten_voucher }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="voucher-select">
+                            <button type="button" class="voucher-select__trigger">
+                                <span class="voucher-select__value">Chọn voucher đang hiệu lực</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <select name="voucher_id" class="hidden" required>
+                                <option value="">Chọn voucher đang hiệu lực</option>
+                                @foreach ($activeVouchers as $voucher)
+                                    <option value="{{ $voucher->id }}" @selected(old('voucher_id') == $voucher->id)>
+                                        {{ $voucher->ma_voucher }} - {{ $voucher->ten_voucher }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </label>
                     <label class="voucher-field is-wide">
                         <span>Khách hàng</span>
-                        <select name="nguoi_dung_id" class="admin-input" required>
-                            <option value="">Chọn khách hàng</option>
-                            @foreach ($customers as $customer)
-                                <option value="{{ $customer->id }}" @selected(old('nguoi_dung_id') == $customer->id)>
-                                    {{ $customer->ho_ten }} - {{ $customer->email }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="voucher-search-select">
+                            <div class="voucher-search-select__control">
+                                <input type="text" class="voucher-search-select__input" placeholder="Tìm hoặc chọn khách hàng..." autocomplete="off">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </div>
+                            <select name="nguoi_dung_id" class="hidden" required>
+                                <option value="">Chọn khách hàng</option>
+                                @foreach ($customers as $customer)
+                                    <option value="{{ $customer->id }}" @selected(old('nguoi_dung_id') == $customer->id)>
+                                        {{ $customer->ho_ten }} - {{ $customer->email }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </label>
                     <label class="voucher-field">
                         <span>Số lượng</span>
@@ -194,12 +212,18 @@
                         <i class="fa-solid fa-magnifying-glass"></i>
                         <input name="q" value="{{ request('q') }}" placeholder="Tìm mã hoặc tên voucher...">
                     </label>
-                    <select name="loai_voucher" class="admin-input">
-                        <option value="">Tất cả loại</option>
-                        @foreach ($voucherTypeLabels as $value => $label)
-                            <option value="{{ $value }}" @selected(request('loai_voucher') === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
+                    <div class="voucher-select">
+                        <button type="button" class="voucher-select__trigger">
+                            <span class="voucher-select__value">Tất cả loại</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <select name="loai_voucher" class="hidden">
+                            <option value="">Tất cả loại</option>
+                            @foreach ($voucherTypeLabels as $value => $label)
+                                <option value="{{ $value }}" @selected(request('loai_voucher') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <select name="trang_thai" class="admin-input">
                         <option value="">Tất cả trạng thái</option>
                         <option value="active" @selected(request('trang_thai') === 'active')>Đang hiệu lực</option>
@@ -444,3 +468,333 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    /* 🌟 DROPDOWN "LOẠI VOUCHER" — thay cho <select> gốc của trình duyệt.
+       .voucher-panel có overflow:hidden + backdrop-filter nên menu PHẢI được
+       document.body.appendChild và position:fixed để thoát ra ngoài, nếu không
+       sẽ bị cắt mất (giống lỗi genre-filter-panel đã gặp trước đây). */
+    .voucher-select {
+        position: relative;
+        width: 100%;
+    }
+
+    .voucher-select__trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        color: #f3f4f6;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .voucher-select__trigger:hover,
+    .voucher-select__trigger.is-open {
+        border-color: #f4c56a;
+        box-shadow: 0 0 0 3px rgba(244, 197, 106, 0.16);
+    }
+
+    .voucher-select__trigger i {
+        color: #f4c56a;
+        font-size: 12px;
+        transition: transform 0.15s ease;
+    }
+
+    .voucher-select__trigger.is-open i {
+        transform: rotate(180deg);
+    }
+
+    .voucher-select__menu {
+        display: none;
+        background: #18181c;
+        border: 1px solid rgba(244, 197, 106, 0.3);
+        border-radius: 14px;
+        padding: 6px;
+        box-shadow: 0 20px 44px rgba(0, 0, 0, 0.55);
+        z-index: 99999;
+        max-height: 260px;
+        overflow-y: auto;
+    }
+
+    .voucher-select__option {
+        padding: 9px 12px;
+        border-radius: 9px;
+        color: #d1d5db;
+        font-size: 13.5px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.12s ease, color 0.12s ease;
+    }
+
+    .voucher-select__option:hover {
+        background: rgba(244, 197, 106, 0.14);
+        color: #f4c56a;
+    }
+
+    .voucher-select__option.is-selected {
+        background: rgba(244, 197, 106, 0.22);
+        color: #f4c56a;
+        font-weight: 800;
+    }
+
+    /* 🌟 DROPDOWN "KHÁCH HÀNG" CÓ Ô TÌM KIẾM — dùng chung style menu/option
+       với .voucher-select ở trên, chỉ khác phần trigger là ô nhập chữ. */
+    .voucher-search-select {
+        position: relative;
+        width: 100%;
+    }
+
+    .voucher-search-select__control {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        padding: 0 14px;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .voucher-search-select__control:focus-within,
+    .voucher-search-select__control.is-open {
+        border-color: #f4c56a;
+        box-shadow: 0 0 0 3px rgba(244, 197, 106, 0.16);
+    }
+
+    .voucher-search-select__input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        background: transparent;
+        color: #f3f4f6;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 10px 0;
+        outline: none;
+    }
+
+    .voucher-search-select__input::placeholder {
+        color: rgba(243, 244, 246, 0.4);
+        font-weight: 500;
+    }
+
+    .voucher-search-select__control i {
+        color: #f4c56a;
+        font-size: 12px;
+        transition: transform 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    .voucher-search-select__control.is-open i {
+        transform: rotate(180deg);
+    }
+
+    .voucher-search-select__empty {
+        padding: 10px 12px;
+        color: rgba(243, 244, 246, 0.5);
+        font-size: 13px;
+        font-weight: 600;
+        text-align: center;
+    }
+</style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    function closeAllMenus() {
+        document.querySelectorAll('.voucher-select__menu').forEach(function (m) { m.style.display = 'none'; });
+        document.querySelectorAll('.voucher-select__trigger').forEach(function (t) { t.classList.remove('is-open'); });
+        document.querySelectorAll('.voucher-search-select__control').forEach(function (c) { c.classList.remove('is-open'); });
+    }
+
+    document.querySelectorAll('.voucher-select').forEach(function (wrapper) {
+        const select = wrapper.querySelector('select');
+        const trigger = wrapper.querySelector('.voucher-select__trigger');
+        const valueEl = wrapper.querySelector('.voucher-select__value');
+        if (!select || !trigger || !valueEl) return;
+
+        let menu = null;
+
+        function buildMenu() {
+            menu = document.createElement('div');
+            menu.className = 'voucher-select__menu';
+            Array.from(select.options).forEach(function (opt) {
+                const item = document.createElement('div');
+                item.className = 'voucher-select__option' + (opt.selected ? ' is-selected' : '');
+                item.textContent = opt.textContent;
+                item.dataset.value = opt.value;
+                item.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    select.value = opt.value;
+                    valueEl.textContent = opt.textContent;
+                    menu.querySelectorAll('.voucher-select__option').forEach(function (o) { o.classList.remove('is-selected'); });
+                    item.classList.add('is-selected');
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    closeAllMenus();
+                });
+                menu.appendChild(item);
+            });
+            document.body.appendChild(menu);
+        }
+
+        function positionMenu() {
+            const rect = trigger.getBoundingClientRect();
+            menu.style.left = rect.left + 'px';
+            menu.style.width = rect.width + 'px';
+            menu.style.display = 'block';
+
+            const menuHeight = menu.offsetHeight;
+            const spaceBelow = window.innerHeight - rect.bottom;
+
+            if (spaceBelow < menuHeight + 12 && rect.top > menuHeight + 12) {
+                menu.style.top = (rect.top - menuHeight - 6) + 'px';
+            } else {
+                menu.style.top = (rect.bottom + 6) + 'px';
+            }
+        }
+
+        trigger.addEventListener('click', function (e) {
+            e.stopPropagation();
+            const isOpen = menu && menu.style.display === 'block';
+            closeAllMenus();
+            if (isOpen) return;
+
+            if (!menu) buildMenu();
+            menu.style.position = 'fixed';
+            positionMenu();
+            trigger.classList.add('is-open');
+        });
+
+        const selectedOpt = select.options[select.selectedIndex];
+        if (selectedOpt) valueEl.textContent = selectedOpt.textContent;
+    });
+
+    // 🌟 DROPDOWN "KHÁCH HÀNG" CÓ TÌM KIẾM
+    function foldVietnamese(str) {
+        return (str || '')
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .replace(/đ/gi, 'd')
+            .toLowerCase();
+    }
+
+    document.querySelectorAll('.voucher-search-select').forEach(function (wrapper) {
+        const select = wrapper.querySelector('select');
+        const control = wrapper.querySelector('.voucher-search-select__control');
+        const input = wrapper.querySelector('.voucher-search-select__input');
+        if (!select || !control || !input) return;
+
+        const options = Array.from(select.options).filter(function (opt) { return opt.value !== ''; });
+        let menu = null;
+        let selectedLabel = '';
+
+        const selectedOpt = select.options[select.selectedIndex];
+        if (selectedOpt && selectedOpt.value !== '') {
+            selectedLabel = selectedOpt.textContent.trim();
+            input.value = selectedLabel;
+        }
+
+        function buildMenu() {
+            menu = document.createElement('div');
+            menu.className = 'voucher-select__menu';
+            document.body.appendChild(menu);
+        }
+
+        function renderOptions(filterText) {
+            if (!menu) buildMenu();
+            menu.innerHTML = '';
+            const needle = foldVietnamese(filterText);
+            const matched = options.filter(function (opt) {
+                return !needle || foldVietnamese(opt.textContent).includes(needle);
+            });
+
+            if (matched.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'voucher-search-select__empty';
+                empty.textContent = 'Không tìm thấy khách hàng phù hợp';
+                menu.appendChild(empty);
+                return;
+            }
+
+            matched.forEach(function (opt) {
+                const item = document.createElement('div');
+                item.className = 'voucher-select__option' + (opt.value === select.value ? ' is-selected' : '');
+                item.textContent = opt.textContent.trim();
+                item.addEventListener('mousedown', function (e) {
+                    // mousedown (không phải click) để chạy TRƯỚC sự kiện blur của input
+                    e.preventDefault();
+                    select.value = opt.value;
+                    selectedLabel = opt.textContent.trim();
+                    input.value = selectedLabel;
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    closeMenu();
+                });
+                menu.appendChild(item);
+            });
+        }
+
+        function positionMenu() {
+            const rect = control.getBoundingClientRect();
+            menu.style.position = 'fixed';
+            menu.style.left = rect.left + 'px';
+            menu.style.width = rect.width + 'px';
+            menu.style.display = 'block';
+
+            const menuHeight = menu.offsetHeight;
+            const spaceBelow = window.innerHeight - rect.bottom;
+
+            if (spaceBelow < menuHeight + 12 && rect.top > menuHeight + 12) {
+                menu.style.top = (rect.top - menuHeight - 6) + 'px';
+            } else {
+                menu.style.top = (rect.bottom + 6) + 'px';
+            }
+        }
+
+        function openMenu() {
+            renderOptions(input.value === selectedLabel ? '' : input.value);
+            positionMenu();
+            control.classList.add('is-open');
+        }
+
+        function closeMenu() {
+            if (menu) menu.style.display = 'none';
+            control.classList.remove('is-open');
+            // Nếu đóng menu mà chưa chọn gì khớp với chữ đang gõ -> khôi phục lại nhãn đã chọn trước đó
+            if (input.value !== selectedLabel) {
+                input.value = selectedLabel;
+            }
+        }
+
+        input.addEventListener('focus', openMenu);
+        input.addEventListener('click', function (e) {
+            e.stopPropagation();
+            openMenu();
+        });
+        input.addEventListener('input', function () {
+            renderOptions(input.value);
+            positionMenu();
+        });
+        input.addEventListener('blur', function () {
+            // Cho phép mousedown trên option chạy trước khi đóng
+            setTimeout(closeMenu, 120);
+        });
+    });
+
+    document.addEventListener('click', closeAllMenus);
+    window.addEventListener('scroll', closeAllMenus, true);
+    window.addEventListener('resize', closeAllMenus);
+});
+</script>
+@endpush
