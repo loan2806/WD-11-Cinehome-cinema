@@ -83,9 +83,14 @@ class BanVeController extends Controller
 
         $bookedSeats = $blockedSeatCodes->flip();
 
+        // QUAN TRỌNG: KHÔNG orderBy('cot') ở đây — DatVeController::chonGhe() lấy
+        // ghế theo đúng thứ tự tự nhiên của bảng (không orderBy gì cả) rồi mới gom
+        // theo hàng, nên thứ tự HÀNG A,B,C... phụ thuộc thứ tự này. Nếu orderBy
+        // theo cột, tất cả ghế cột 1 của mọi hàng đứng lẫn lộn trước, làm xáo trộn
+        // thứ tự hàng khi gom nhóm — đúng như lỗi đã gặp (A,H,E,B,F,G,D,C).
         $gheNgois = GheNgoi::with('loaiGhe')
             ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
-            ->orderBy('cot')
+            ->orderBy('id')
             ->get();
 
         // Xây $gheTheoHang ĐÚNG CÙNG CẤU TRÚC với DatVeController::chonGhe()
