@@ -168,35 +168,45 @@
             <div class="food-builder-section">
                 <div class="food-section-title">
                     <span>Thanh toán</span>
-                    <small>Chọn trạng thái đúng để hệ thống trừ kho.</small>
+                    <small>Hóa đơn được ghi nhận là đã thanh toán ngay, kho trừ ngay lập tức.</small>
                 </div>
                 <div class="food-payment-grid">
                     <label class="food-field">
                         <span>Giảm giá</span>
                         <input name="discount" id="discountInput" type="number" min="0" value="{{ old('discount', 0) }}" class="admin-input" placeholder="0">
                     </label>
+
                     <label class="food-field">
-                        <span>Trạng thái</span>
-                        <select name="payment_status" class="admin-input">
-                            @foreach ($statusLabels as $value => $label)
-                                <option value="{{ $value }}" @selected(old('payment_status', 'pending') === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </label>
-                    <label class="food-field">
-                        <span>Phương thức</span>
-                        <select name="payment_method" class="admin-input">
+                        <span>Phương thức thanh toán</span>
+                        <select name="payment_method" id="paymentMethodSelect" class="admin-input" required>
                             <option value="">Chọn phương thức</option>
                             @foreach ($paymentMethods as $value => $label)
                                 <option value="{{ $value }}" @selected(old('payment_method') === $value)>{{ $label }}</option>
                             @endforeach
                         </select>
                     </label>
+
                     <div class="food-total-box">
                         <span>Tổng thanh toán</span>
                         <strong id="grandTotal">0đ</strong>
                     </div>
                 </div>
+
+                <div class="food-payment-grid food-cash-grid hidden" id="cashFields">
+                    <label class="food-field">
+                        <span>Tiền khách đưa</span>
+                        <input name="received_amount" id="receivedAmountInput" type="number" min="0" value="{{ old('received_amount') }}" class="admin-input" placeholder="0">
+                    </label>
+                    <div class="food-total-box">
+                        <span>Tiền thối</span>
+                        <strong id="changeAmountText">0đ</strong>
+                    </div>
+                </div>
+
+                <p id="bankTransferHint" class="food-hint hidden">
+                    <i class="fa-solid fa-qrcode"></i>
+                    Sau khi lưu, hệ thống sẽ tạo mã QR để khách quét chuyển khoản. Hóa đơn chỉ được đánh dấu "Đã thanh toán" và trừ kho khi PayOS xác nhận đã nhận tiền.
+                </p>
 
                 <div class="food-total-breakdown">
                     <span>Tạm tính: <strong id="subtotalText">0đ</strong></span>
@@ -286,13 +296,33 @@
                                 <span>{{ $statusLabels[$invoice->payment_status] ?? $invoice->payment_status }}</span>
                             </div>
 
-                            <form method="POST" action="{{ route('admin.food-invoices.destroy', $invoice) }}" onsubmit="return confirm('Xóa hóa đơn {{ $invoice->invoice_code }}?')">
-                                @csrf
-                                @method('DELETE')
-                                <button class="food-delete-btn" type="submit" title="Xóa hóa đơn">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </form>
+                            <div class="food-invoice-card-actions">
+                                @if ($invoice->payment_method === 'chuyển khoản' && $invoice->payment_status === 'pending')
+                                    <a href="{{ route('admin.food-invoices.vietqr-waiting', $invoice) }}" class="food-continue-btn" title="Tiếp tục thanh toán VietQR">
+                                        <i class="fa-solid fa-qrcode"></i>
+                                    </a>
+                                @endif
+
+                                @if ($invoice->payment_status === 'paid')
+                                    @if ($invoice->isPrinted())
+                                        <span class="food-print-btn is-disabled" title="Đã in lúc {{ $invoice->printed_at->format('H:i d/m/Y') }} — không thể in lại">
+                                            <i class="fa-solid fa-check"></i>
+                                        </span>
+                                    @else
+                                        <a href="{{ route('admin.food-invoices.print', $invoice) }}" target="_blank" class="food-print-btn" title="In hóa đơn cho khách ra quầy nhận đồ ăn">
+                                            <i class="fa-solid fa-print"></i>
+                                        </a>
+                                    @endif
+                                @endif
+
+                                <form method="POST" action="{{ route('admin.food-invoices.destroy', $invoice) }}" onsubmit="return confirm('Xóa hóa đơn {{ $invoice->invoice_code }}?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="food-delete-btn" type="submit" title="Xóa hóa đơn">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
 
                         <div class="food-invoice-items">
@@ -406,6 +436,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const subtotalText = document.getElementById('subtotalText');
     const discountText = document.getElementById('discountText');
     const grandTotal = document.getElementById('grandTotal');
+    const paymentMethodSelect = document.getElementById('paymentMethodSelect');
+    const cashFields = document.getElementById('cashFields');
+    const receivedAmountInput = document.getElementById('receivedAmountInput');
+    const changeAmountText = document.getElementById('changeAmountText');
+    const bankTransferHint = document.getElementById('bankTransferHint');
     const oldItems = Object.values(@json(old('items', [])) || {});
 
     function money(value) {
@@ -437,6 +472,12 @@ document.addEventListener('DOMContentLoaded', function () {
         subtotalText.textContent = money(subtotal);
         discountText.textContent = money(discount);
         grandTotal.textContent = money(total);
+
+        if (receivedAmountInput) {
+            const received = Math.max(0, Number(receivedAmountInput.value || 0));
+            const change = Math.max(received - total, 0);
+            changeAmountText.textContent = money(change);
+        }
     }
 
     function fillRow(row, food = {}) {
@@ -515,6 +556,28 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     discountInput.addEventListener('input', calculate);
+
+    // 🌟 Tiền mặt: hiện ô "Tiền khách đưa" + tự tính tiền thối.
+    // Chuyển khoản: hiện gợi ý là hệ thống sẽ tạo mã QR sau khi lưu.
+    function applyPaymentMethod() {
+        const isCash = paymentMethodSelect.value === 'tiền mặt';
+        const isBankTransfer = paymentMethodSelect.value === 'chuyển khoản';
+
+        cashFields.classList.toggle('hidden', !isCash);
+        receivedAmountInput.required = isCash;
+        bankTransferHint.classList.toggle('hidden', !isBankTransfer);
+
+        if (!isCash) {
+            receivedAmountInput.value = '';
+            changeAmountText.textContent = money(0);
+        }
+
+        calculate();
+    }
+
+    paymentMethodSelect.addEventListener('change', applyPaymentMethod);
+    receivedAmountInput.addEventListener('input', calculate);
+    applyPaymentMethod();
 
     if (oldItems.length) {
         oldItems.forEach((item) => addRow(item));
