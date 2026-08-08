@@ -43,7 +43,10 @@ class ThongKeService
     protected function getPaidTicketBaseQuery()
     {
         return VeXemPhim::query()
-            ->whereBetween('created_at', [$this->from, $this->to])
+            ->whereBetween('created_at', [
+                $this->from,
+                $this->to
+            ])
             ->whereIn('trang_thai', [
                 'da_thanh_toan',
                 'da_su_dung',
@@ -58,31 +61,37 @@ class ThongKeService
     protected function getPaidFoodInvoiceBaseQuery()
     {
         return FoodInvoice::query()
-            ->whereBetween('created_at', [$this->from, $this->to])
+            ->whereBetween('created_at', [
+                $this->from,
+                $this->to
+            ])
             ->where('payment_status', 'paid');
     }
 
     /**
-     * Kiểm tra hiện tại có đang lọc phim/phòng hay không.
+     * Có đang lọc phim hoặc phòng hay không.
      */
     protected function hasMovieOrRoomFilter(): bool
     {
-        return !empty($this->phimId) || !empty($this->phongChieuId);
+        return !empty($this->phimId)
+            || !empty($this->phongChieuId);
     }
 
     /**
      * Lọc vé theo phim.
+     *
+     * Quan hệ:
+     * ve_xem_phims
+     *      -> suat_chieus
+     *      -> phim_id
      */
     protected function applyMovieFilter($query)
     {
         if ($this->phimId) {
-            return $query->where(function ($q) {
-                $q->whereHas('suatChieu', function ($sq) {
-                    $sq->where('phim_id', $this->phimId);
-                })
-                ->orWhereRaw(
-                    'ten_phim IN (SELECT ten_phim FROM phims WHERE id = ?)',
-                    [$this->phimId]
+            $query->whereHas('suatChieu', function ($q) {
+                $q->where(
+                    'phim_id',
+                    $this->phimId
                 );
             });
         }
@@ -96,8 +105,11 @@ class ThongKeService
     protected function applyRoomFilter($query)
     {
         if ($this->phongChieuId) {
-            return $query->whereHas('suatChieu', function ($q) {
-                $q->where('phong_chieu_id', $this->phongChieuId);
+            $query->whereHas('suatChieu', function ($q) {
+                $q->where(
+                    'phong_chieu_id',
+                    $this->phongChieuId
+                );
             });
         }
 
@@ -111,21 +123,14 @@ class ThongKeService
     public function getKPISummary(): array
     {
         try {
-            /*
-             * DOANH THU VÉ
-             * Luôn áp dụng filter phim/phòng.
-             */
             $ticketRevenue = $this->getTicketRevenue();
 
-            /*
-             * ĐỒ ĂN
-             *
-             * Chỉ tính khi KHÔNG lọc phim/phòng.
-             *
-             * Vì đồ ăn mua ngoài không biết thuộc phim/phòng nào.
-             */
             $foodStats = $this->getFoodRevenueStats();
 
+            /*
+             * Nếu lọc phim/phòng:
+             * Không tính đồ ăn.
+             */
             if ($this->hasMovieOrRoomFilter()) {
                 $comboRevenue = 0;
                 $snackRevenue = 0;
@@ -152,18 +157,32 @@ class ThongKeService
                     ? $ticketRevenue / $ticketsSold
                     : 0;
 
-            $totalShowtimes = $this->getTotalShowtimes();
+            $totalShowtimes =
+                $this->getTotalShowtimes();
 
-            $vouchersUsed = $this->getVouchersUsedCount();
+            $vouchersUsed =
+                $this->getVouchersUsedCount();
 
             return [
-                'total_revenue' => round($totalRevenue, 0),
+                'total_revenue' => round(
+                    $totalRevenue,
+                    0
+                ),
 
-                'ticket_revenue' => round($ticketRevenue, 0),
+                'ticket_revenue' => round(
+                    $ticketRevenue,
+                    0
+                ),
 
-                'combo_revenue' => round($comboRevenue, 0),
+                'combo_revenue' => round(
+                    $comboRevenue,
+                    0
+                ),
 
-                'snack_revenue' => round($snackRevenue, 0),
+                'snack_revenue' => round(
+                    $snackRevenue,
+                    0
+                ),
 
                 'tickets_sold' => $ticketsSold,
 
@@ -209,30 +228,22 @@ class ThongKeService
 
     protected function getTicketRevenue(): float
     {
-        return (float) $this->getPaidTicketBaseQuery()
-            ->when(
-                $this->phimId,
-                fn($q) => $this->applyMovieFilter($q)
-            )
-            ->when(
-                $this->phongChieuId,
-                fn($q) => $this->applyRoomFilter($q)
-            )
-            ->sum('tong_tien');
+        $query = $this->getPaidTicketBaseQuery();
+
+        $this->applyMovieFilter($query);
+        $this->applyRoomFilter($query);
+
+        return (float) $query->sum('tong_tien');
     }
 
     protected function getTicketsSoldCount(): int
     {
-        return (int) $this->getPaidTicketBaseQuery()
-            ->when(
-                $this->phimId,
-                fn($q) => $this->applyMovieFilter($q)
-            )
-            ->when(
-                $this->phongChieuId,
-                fn($q) => $this->applyRoomFilter($q)
-            )
-            ->count();
+        $query = $this->getPaidTicketBaseQuery();
+
+        $this->applyMovieFilter($query);
+        $this->applyRoomFilter($query);
+
+        return (int) $query->count();
     }
 
     // =========================================================
@@ -253,44 +264,52 @@ class ThongKeService
             $category->name ?? ''
         );
 
-        return str_contains($name, 'combo');
+        return str_contains(
+            $name,
+            'combo'
+        );
     }
 
-    /**
-     * Thống kê đồ ăn toàn rạp.
-     *
-     * Hàm này KHÔNG lọc phim/phòng.
-     *
-     * Việc có đưa kết quả vào thống kê hay không
-     * được quyết định bởi hasMovieOrRoomFilter().
-     */
     protected function getFoodRevenueStats(): array
     {
-        $foodInvoices = $this->getPaidFoodInvoiceBaseQuery()
-            ->with([
-                'items.food',
-                'items.food.category',
-            ])
-            ->get();
+        $foodInvoices =
+            $this->getPaidFoodInvoiceBaseQuery()
+                ->with([
+                    'items.food',
+                    'items.food.category',
+                ])
+                ->get();
 
         $comboRevenue = 0;
         $snackRevenue = 0;
+
         $count = $foodInvoices->count();
 
         foreach ($foodInvoices as $invoice) {
+
             foreach ($invoice->items as $item) {
+
                 $itemTotal =
-                    (float) ($item->unit_price ?? 0)
+                    (float) (
+                        $item->unit_price ?? 0
+                    )
                     *
-                    (int) ($item->quantity ?? 1);
+                    (int) (
+                        $item->quantity ?? 1
+                    );
 
                 if (
-                    $item->food_id &&
-                    $item->food
+                    $item->food_id
+                    && $item->food
                 ) {
-                    $category = $item->food->category;
+                    $category =
+                        $item->food->category;
 
-                    if ($this->isComboCategory($category)) {
+                    if (
+                        $this->isComboCategory(
+                            $category
+                        )
+                    ) {
                         $comboRevenue += $itemTotal;
                     } else {
                         $snackRevenue += $itemTotal;
@@ -317,7 +336,10 @@ class ThongKeService
         return (int) SuatChieu::query()
             ->whereBetween(
                 'thoi_gian_chieu',
-                [$this->from, $this->to]
+                [
+                    $this->from,
+                    $this->to
+                ]
             )
             ->when(
                 $this->phimId,
@@ -345,7 +367,10 @@ class ThongKeService
         return (int) NguoiDungVoucher::query()
             ->whereBetween(
                 'ngay_su_dung',
-                [$this->from, $this->to]
+                [
+                    $this->from,
+                    $this->to
+                ]
             )
             ->where(
                 'da_su_dung',
@@ -363,33 +388,42 @@ class ThongKeService
     ): array {
         try {
             return match ($periodType) {
-                'month' => $this->getMonthlyRevenue(),
-                'quarter' => $this->getQuarterlyRevenue(),
-                'year' => $this->getYearlyRevenue(),
-                default => $this->getDailyRevenue(),
+                'month' =>
+                    $this->getMonthlyRevenue(),
+
+                'quarter' =>
+                    $this->getQuarterlyRevenue(),
+
+                'year' =>
+                    $this->getYearlyRevenue(),
+
+                default =>
+                    $this->getDailyRevenue(),
             };
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
 
     protected function getDailyRevenue(): array
     {
-        $ticketData = $this->getTicketRevenueByPeriod(
-            '%Y-%m-%d'
-        );
-
-        /*
-         * Nếu đang lọc phim/phòng:
-         * Không đưa đồ ăn vào.
-         */
-        if ($this->hasMovieOrRoomFilter()) {
-            $foodData = [];
-        } else {
-            $foodData = $this->getFoodRevenueByPeriod(
+        $ticketData =
+            $this->getTicketRevenueByPeriod(
                 '%Y-%m-%d'
             );
+
+        if (
+            $this->hasMovieOrRoomFilter()
+        ) {
+            $foodData = [];
+        } else {
+            $foodData =
+                $this->getFoodRevenueByPeriod(
+                    '%Y-%m-%d'
+                );
         }
 
         return $this->mergeRevenueData(
@@ -401,16 +435,20 @@ class ThongKeService
 
     protected function getMonthlyRevenue(): array
     {
-        $ticketData = $this->getTicketRevenueByPeriod(
-            '%Y-%m'
-        );
-
-        if ($this->hasMovieOrRoomFilter()) {
-            $foodData = [];
-        } else {
-            $foodData = $this->getFoodRevenueByPeriod(
+        $ticketData =
+            $this->getTicketRevenueByPeriod(
                 '%Y-%m'
             );
+
+        if (
+            $this->hasMovieOrRoomFilter()
+        ) {
+            $foodData = [];
+        } else {
+            $foodData =
+                $this->getFoodRevenueByPeriod(
+                    '%Y-%m'
+                );
         }
 
         return $this->mergeRevenueData(
@@ -422,16 +460,20 @@ class ThongKeService
 
     protected function getQuarterlyRevenue(): array
     {
-        $ticketData = $this->getTicketRevenueByPeriod(
-            '%Y-%m'
-        );
-
-        if ($this->hasMovieOrRoomFilter()) {
-            $foodData = [];
-        } else {
-            $foodData = $this->getFoodRevenueByPeriod(
+        $ticketData =
+            $this->getTicketRevenueByPeriod(
                 '%Y-%m'
             );
+
+        if (
+            $this->hasMovieOrRoomFilter()
+        ) {
+            $foodData = [];
+        } else {
+            $foodData =
+                $this->getFoodRevenueByPeriod(
+                    '%Y-%m'
+                );
         }
 
         return $this->processQuarterlyData(
@@ -442,16 +484,20 @@ class ThongKeService
 
     protected function getYearlyRevenue(): array
     {
-        $ticketData = $this->getTicketRevenueByPeriod(
-            '%Y'
-        );
-
-        if ($this->hasMovieOrRoomFilter()) {
-            $foodData = [];
-        } else {
-            $foodData = $this->getFoodRevenueByPeriod(
+        $ticketData =
+            $this->getTicketRevenueByPeriod(
                 '%Y'
             );
+
+        if (
+            $this->hasMovieOrRoomFilter()
+        ) {
+            $foodData = [];
+        } else {
+            $foodData =
+                $this->getFoodRevenueByPeriod(
+                    '%Y'
+                );
         }
 
         return $this->mergeRevenueData(
@@ -468,15 +514,13 @@ class ThongKeService
     protected function getTicketRevenueByPeriod(
         string $format
     ): array {
-        return $this->getPaidTicketBaseQuery()
-            ->when(
-                $this->phimId,
-                fn($q) => $this->applyMovieFilter($q)
-            )
-            ->when(
-                $this->phongChieuId,
-                fn($q) => $this->applyRoomFilter($q)
-            )
+        $query =
+            $this->getPaidTicketBaseQuery();
+
+        $this->applyMovieFilter($query);
+        $this->applyRoomFilter($query);
+
+        return $query
             ->select(
                 DB::raw(
                     "DATE_FORMAT(
@@ -504,42 +548,43 @@ class ThongKeService
     protected function getFoodRevenueByPeriod(
         string $format
     ): array {
-        /*
-         * LƯU Ý:
-         *
-         * Hàm này chỉ được gọi khi không lọc phim/phòng.
-         *
-         * Đồ ăn mua ngoài là doanh thu toàn rạp.
-         */
+        $foodInvoices =
+            $this->getPaidFoodInvoiceBaseQuery()
+                ->with([
+                    'items.food',
+                    'items.food.category',
+                ])
+                ->get()
+                ->groupBy(
+                    function ($invoice) use ($format) {
 
-        $foodInvoices = $this->getPaidFoodInvoiceBaseQuery()
-            ->with([
-                'items.food',
-                'items.food.category',
-            ])
-            ->get()
-            ->groupBy(
-                function ($invoice) use ($format) {
-                    return Carbon::parse(
-                        $invoice->created_at
-                    )->format(
-                        str_replace(
-                            '%',
-                            '',
-                            $format
-                        )
-                    );
-                }
-            );
+                        return Carbon::parse(
+                            $invoice->created_at
+                        )->format(
+                            str_replace(
+                                '%',
+                                '',
+                                $format
+                            )
+                        );
+                    }
+                );
 
         $result = [];
 
-        foreach ($foodInvoices as $period => $invoices) {
+        foreach (
+            $foodInvoices as $period => $invoices
+        ) {
+
             $comboRevenue = 0;
             $snackRevenue = 0;
 
             foreach ($invoices as $invoice) {
-                foreach ($invoice->items as $item) {
+
+                foreach (
+                    $invoice->items as $item
+                ) {
+
                     $itemTotal =
                         (float) (
                             $item->unit_price ?? 0
@@ -550,22 +595,27 @@ class ThongKeService
                         );
 
                     if (
-                        $item->food_id &&
-                        $item->food &&
-                        $this->isComboCategory(
+                        $item->food_id
+                        && $item->food
+                        && $this->isComboCategory(
                             $item->food->category
                         )
                     ) {
-                        $comboRevenue += $itemTotal;
+                        $comboRevenue +=
+                            $itemTotal;
                     } else {
-                        $snackRevenue += $itemTotal;
+                        $snackRevenue +=
+                            $itemTotal;
                     }
                 }
             }
 
             $result[$period] = [
-                'combo_revenue' => $comboRevenue,
-                'snack_revenue' => $snackRevenue,
+                'combo_revenue' =>
+                    $comboRevenue,
+
+                'snack_revenue' =>
+                    $snackRevenue,
             ];
         }
 
@@ -581,9 +631,11 @@ class ThongKeService
         array $foodData,
         string $format
     ): array {
-        $allPeriods = collect(
-            array_keys($ticketData)
-        )
+
+        $allPeriods =
+            collect(
+                array_keys($ticketData)
+            )
             ->merge(
                 collect(
                     array_keys($foodData)
@@ -597,6 +649,7 @@ class ThongKeService
         $result = [];
 
         foreach ($allPeriods as $period) {
+
             $ticket =
                 $ticketData[$period]
                 ?? null;
@@ -606,13 +659,16 @@ class ThongKeService
                 ?? null;
 
             $ticketRevenue =
-                $ticket['revenue'] ?? 0;
+                $ticket['revenue']
+                ?? 0;
 
             $comboRevenue =
-                $food['combo_revenue'] ?? 0;
+                $food['combo_revenue']
+                ?? 0;
 
             $snackRevenue =
-                $food['snack_revenue'] ?? 0;
+                $food['snack_revenue']
+                ?? 0;
 
             $result[] = [
                 'period' => $period,
@@ -627,7 +683,8 @@ class ThongKeService
                     $snackRevenue,
 
                 'tickets' =>
-                    $ticket['tickets'] ?? 0,
+                    $ticket['tickets']
+                    ?? 0,
 
                 'total_revenue' =>
                     $ticketRevenue
@@ -647,28 +704,42 @@ class ThongKeService
         array $ticketData,
         array $foodData
     ): array {
+
         $result = [];
 
-        foreach ($ticketData as $period => $ticket) {
-            $year = substr($period, 0, 4);
+        foreach (
+            $ticketData as $period => $ticket
+        ) {
 
-            $month = (int) substr(
-                $period,
-                5,
-                2
-            );
+            $year =
+                substr($period, 0, 4);
 
-            $quarter = ceil($month / 3);
+            $month =
+                (int) substr(
+                    $period,
+                    5,
+                    2
+                );
 
-            $key = "{$year}-Q{$quarter}";
+            $quarter =
+                ceil($month / 3);
+
+            $key =
+                "{$year}-Q{$quarter}";
 
             if (!isset($result[$key])) {
+
                 $result[$key] = [
                     'period' => $key,
+
                     'ticket_revenue' => 0,
+
                     'combo_revenue' => 0,
+
                     'snack_revenue' => 0,
+
                     'tickets' => 0,
+
                     'total_revenue' => 0,
                 ];
             }
@@ -680,26 +751,39 @@ class ThongKeService
                 += $ticket['tickets'];
         }
 
-        foreach ($foodData as $period => $food) {
-            $year = substr($period, 0, 4);
+        foreach (
+            $foodData as $period => $food
+        ) {
 
-            $month = (int) substr(
-                $period,
-                5,
-                2
-            );
+            $year =
+                substr($period, 0, 4);
 
-            $quarter = ceil($month / 3);
+            $month =
+                (int) substr(
+                    $period,
+                    5,
+                    2
+                );
 
-            $key = "{$year}-Q{$quarter}";
+            $quarter =
+                ceil($month / 3);
+
+            $key =
+                "{$year}-Q{$quarter}";
 
             if (!isset($result[$key])) {
+
                 $result[$key] = [
                     'period' => $key,
+
                     'ticket_revenue' => 0,
+
                     'combo_revenue' => 0,
+
                     'snack_revenue' => 0,
+
                     'tickets' => 0,
+
                     'total_revenue' => 0,
                 ];
             }
@@ -712,6 +796,7 @@ class ThongKeService
         }
 
         foreach ($result as &$item) {
+
             $item['total_revenue'] =
                 $item['ticket_revenue']
                 + $item['combo_revenue']
@@ -732,20 +817,22 @@ class ThongKeService
     public function getRevenueStructure(): array
     {
         try {
+
             $ticketRevenue =
                 $this->getTicketRevenue();
 
             $foodStats =
                 $this->getFoodRevenueStats();
 
-            /*
-             * Khi lọc phim/phòng:
-             * Không phân bổ đồ ăn vào phim/phòng.
-             */
-            if ($this->hasMovieOrRoomFilter()) {
+            if (
+                $this->hasMovieOrRoomFilter()
+            ) {
+
                 $comboRevenue = 0;
                 $snackRevenue = 0;
+
             } else {
+
                 $comboRevenue =
                     $foodStats['combo_revenue'];
 
@@ -759,6 +846,7 @@ class ThongKeService
                 + $snackRevenue;
 
             if ($totalRevenue == 0) {
+
                 return [
                     'ticket' => [
                         'revenue' => 0,
@@ -847,7 +935,9 @@ class ThongKeService
                         0
                     ),
             ];
+
         } catch (Exception $e) {
+
             report($e);
 
             return [
@@ -881,52 +971,52 @@ class ThongKeService
     public function getRevenueByFilm(
         int $limit = 5
     ): array {
+
         try {
+
             $query =
                 $this->getPaidTicketBaseQuery();
 
-            if ($this->phimId) {
-                $query->where(
-                    'ten_phim',
-                    function ($subq) {
-                        $subq->select(
-                            'ten_phim'
-                        )
-                        ->from('phims')
-                        ->where(
-                            'id',
-                            $this->phimId
-                        );
-                    }
-                );
-            }
+            /*
+             * QUAN TRỌNG:
+             * Áp dụng cả filter phim và phòng.
+             */
+            $this->applyMovieFilter($query);
+            $this->applyRoomFilter($query);
 
             $result =
-                $query->select(
-                    'ten_phim',
+                $query
+                    ->select(
+                        'ten_phim',
 
-                    DB::raw(
-                        'SUM(tong_tien) as total_revenue'
-                    ),
+                        DB::raw(
+                            'SUM(tong_tien) as total_revenue'
+                        ),
 
-                    DB::raw(
-                        'COUNT(*) as tickets_sold'
-                    ),
+                        DB::raw(
+                            'COUNT(*) as tickets_sold'
+                        ),
 
-                    DB::raw(
-                        'AVG(tong_tien) as avg_price'
+                        DB::raw(
+                            'AVG(tong_tien) as avg_price'
+                        )
                     )
-                )
-                ->groupBy('ten_phim')
-                ->orderByDesc(
-                    'total_revenue'
-                )
-                ->limit($limit)
-                ->get();
+                    ->groupBy(
+                        'ten_phim'
+                    )
+                    ->orderByDesc(
+                        'total_revenue'
+                    )
+                    ->limit($limit)
+                    ->get();
 
             return $result
                 ->map(
-                    function ($item, $index) {
+                    function (
+                        $item,
+                        $index
+                    ) {
+
                         return [
                             'stt' =>
                                 $index + 1,
@@ -949,8 +1039,11 @@ class ThongKeService
                     }
                 )
                 ->toArray();
+
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
@@ -962,18 +1055,18 @@ class ThongKeService
     public function getRevenueByRoom(): array
     {
         try {
+
+            $query =
+                $this->getPaidTicketBaseQuery();
+
+            /*
+             * Áp dụng filter phim + phòng.
+             */
+            $this->applyMovieFilter($query);
+            $this->applyRoomFilter($query);
+
             $result =
-                $this->getPaidTicketBaseQuery()
-                    ->when(
-                        $this->phimId,
-                        fn($q) =>
-                            $this->applyMovieFilter($q)
-                    )
-                    ->when(
-                        $this->phongChieuId,
-                        fn($q) =>
-                            $this->applyRoomFilter($q)
-                    )
+                $query
                     ->select(
                         'ten_phong',
 
@@ -998,7 +1091,11 @@ class ThongKeService
 
             return $result
                 ->map(
-                    function ($item, $index) {
+                    function (
+                        $item,
+                        $index
+                    ) {
+
                         return [
                             'id' =>
                                 $index + 1,
@@ -1017,8 +1114,11 @@ class ThongKeService
                     }
                 )
                 ->toArray();
+
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
@@ -1030,18 +1130,15 @@ class ThongKeService
     public function getRevenueBySeatType(): array
     {
         try {
+
+            $query =
+                $this->getPaidTicketBaseQuery();
+
+            $this->applyMovieFilter($query);
+            $this->applyRoomFilter($query);
+
             $tickets =
-                $this->getPaidTicketBaseQuery()
-                    ->when(
-                        $this->phimId,
-                        fn($q) =>
-                            $this->applyMovieFilter($q)
-                    )
-                    ->when(
-                        $this->phongChieuId,
-                        fn($q) =>
-                            $this->applyRoomFilter($q)
-                    )
+                $query
                     ->with([
                         'suatChieu.phongChieu.gheNgois.loaiGhe',
                         'suatChieu.phongChieu.hangGhes.loaiGheMacDinh',
@@ -1050,12 +1147,16 @@ class ThongKeService
 
             $seatTypeRevenue = [];
 
-            foreach ($tickets as $ticket) {
+            foreach (
+                $tickets as $ticket
+            ) {
+
                 $seatCodesRaw =
                     str_replace(
                         ['|', ' '],
                         ',',
-                        (string) $ticket->ma_ghe
+                        (string)
+                        $ticket->ma_ghe
                     );
 
                 $seatCodes =
@@ -1072,12 +1173,16 @@ class ThongKeService
                 $seatCount =
                     count($seatCodes);
 
-                if ($seatCount == 0) {
+                if (
+                    $seatCount == 0
+                ) {
                     continue;
                 }
 
                 $room =
-                    $ticket->suatChieu?->phongChieu;
+                    $ticket
+                        ->suatChieu
+                        ?->phongChieu;
 
                 if (!$room) {
                     continue;
@@ -1088,26 +1193,33 @@ class ThongKeService
                     $ticket->tong_tien
                     / $seatCount;
 
-                foreach ($seatCodes as $seatCode) {
+                foreach (
+                    $seatCodes as $seatCode
+                ) {
+
                     $seatCode =
                         strtoupper(
                             trim($seatCode)
                         );
 
-                    if (empty($seatCode)) {
+                    if (
+                        empty($seatCode)
+                    ) {
                         continue;
                     }
 
                     $seat =
-                        $room->gheNgois->first(
-                            fn($ghe) =>
-                                strtoupper(
-                                    trim(
-                                        (string)
-                                        $ghe->ma_ghe
-                                    )
-                                ) === $seatCode
-                        );
+                        $room
+                            ->gheNgois
+                            ->first(
+                                fn($ghe) =>
+                                    strtoupper(
+                                        trim(
+                                            (string)
+                                            $ghe->ma_ghe
+                                        )
+                                    ) === $seatCode
+                            );
 
                     $seatTypeName =
                         $seat?->loaiGhe?->ten_loai
@@ -1124,9 +1236,11 @@ class ThongKeService
                             ]
                         )
                     ) {
+
                         $seatTypeRevenue[
                             $seatTypeId
                         ] = [
+
                             'id' =>
                                 $seatTypeId,
 
@@ -1164,8 +1278,11 @@ class ThongKeService
             return array_values(
                 $seatTypeRevenue
             );
+
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
@@ -1177,21 +1294,23 @@ class ThongKeService
     public function getPaymentMethodStats(): array
     {
         try {
+
             /*
              * VÉ
              */
+            $ticketQuery =
+                $this->getPaidTicketBaseQuery();
+
+            $this->applyMovieFilter(
+                $ticketQuery
+            );
+
+            $this->applyRoomFilter(
+                $ticketQuery
+            );
+
             $ticketPayments =
-                $this->getPaidTicketBaseQuery()
-                    ->when(
-                        $this->phimId,
-                        fn($q) =>
-                            $this->applyMovieFilter($q)
-                    )
-                    ->when(
-                        $this->phongChieuId,
-                        fn($q) =>
-                            $this->applyRoomFilter($q)
-                    )
+                $ticketQuery
                     ->select(
                         DB::raw(
                             "COALESCE(
@@ -1228,13 +1347,21 @@ class ThongKeService
             /*
              * ĐỒ ĂN
              *
-             * Nếu đang lọc phim/phòng thì bỏ đồ ăn.
+             * Khi lọc phim/phòng:
+             * không tính đồ ăn.
              */
-            if ($this->hasMovieOrRoomFilter()) {
-                $foodPayments = collect();
-            } else {
+            if (
+                $this->hasMovieOrRoomFilter()
+            ) {
+
                 $foodPayments =
-                    $this->getPaidFoodInvoiceBaseQuery()
+                    collect();
+
+            } else {
+
+                $foodPayments =
+                    $this
+                        ->getPaidFoodInvoiceBaseQuery()
                         ->select(
                             DB::raw(
                                 "COALESCE(
@@ -1274,19 +1401,38 @@ class ThongKeService
                     ->unique();
 
             $methodLabels = [
-                'truc_tuyen' => 'Trực tuyến',
-                'tai_quay' => 'Tại quầy',
-                'cash' => 'Tiền mặt',
-                'vnpay' => 'VNPay',
-                'vietqr' => 'VietQR',
-                'zalopay' => 'ZaloPay',
-                'momo' => 'MoMo',
-                'payos' => 'PayOS',
+
+                'truc_tuyen' =>
+                    'Trực tuyến',
+
+                'tai_quay' =>
+                    'Tại quầy',
+
+                'cash' =>
+                    'Tiền mặt',
+
+                'vnpay' =>
+                    'VNPay',
+
+                'vietqr' =>
+                    'VietQR',
+
+                'zalopay' =>
+                    'ZaloPay',
+
+                'momo' =>
+                    'MoMo',
+
+                'payos' =>
+                    'PayOS',
             ];
 
             $methods = [];
 
-            foreach ($allMethods as $method) {
+            foreach (
+                $allMethods as $method
+            ) {
+
                 $ticket =
                     $ticketPayments->get(
                         $method
@@ -1299,15 +1445,18 @@ class ThongKeService
 
                 $ticketRevenue =
                     (float) (
-                        $ticket->total ?? 0
+                        $ticket->total
+                        ?? 0
                     );
 
                 $foodRevenue =
                     (float) (
-                        $food->total ?? 0
+                        $food->total
+                        ?? 0
                     );
 
                 $methods[] = [
+
                     'method' =>
                         $method,
 
@@ -1349,8 +1498,11 @@ class ThongKeService
             );
 
             return $methods;
+
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
@@ -1362,12 +1514,16 @@ class ThongKeService
     public function getVoucherStats(): array
     {
         try {
+
             $totalIssued =
                 (int)
                 NguoiDungVoucher::query()
                     ->whereBetween(
                         'ngay_nhan',
-                        [$this->from, $this->to]
+                        [
+                            $this->from,
+                            $this->to
+                        ]
                     )
                     ->count();
 
@@ -1375,7 +1531,10 @@ class ThongKeService
                 NguoiDungVoucher::query()
                     ->whereBetween(
                         'ngay_su_dung',
-                        [$this->from, $this->to]
+                        [
+                            $this->from,
+                            $this->to
+                        ]
                     )
                     ->where(
                         'da_su_dung',
@@ -1389,8 +1548,14 @@ class ThongKeService
 
             $totalDiscount = 0;
 
-            foreach ($usedVouchers as $usedVoucher) {
-                if ($usedVoucher->voucher) {
+            foreach (
+                $usedVouchers as $usedVoucher
+            ) {
+
+                if (
+                    $usedVoucher->voucher
+                ) {
+
                     $totalDiscount +=
                         (float)
                         $usedVoucher
@@ -1400,6 +1565,7 @@ class ThongKeService
             }
 
             return [
+
                 'total_issued' =>
                     $totalIssued,
 
@@ -1423,7 +1589,9 @@ class ThongKeService
                         )
                         : 0,
             ];
+
         } catch (Exception $e) {
+
             report($e);
 
             return [
@@ -1442,18 +1610,16 @@ class ThongKeService
     public function getTopShowtimes(
         int $limit = 5
     ): array {
+
         try {
-            return $this->getPaidTicketBaseQuery()
-                ->when(
-                    $this->phimId,
-                    fn($q) =>
-                        $this->applyMovieFilter($q)
-                )
-                ->when(
-                    $this->phongChieuId,
-                    fn($q) =>
-                        $this->applyRoomFilter($q)
-                )
+
+            $query =
+                $this->getPaidTicketBaseQuery();
+
+            $this->applyMovieFilter($query);
+            $this->applyRoomFilter($query);
+
+            return $query
                 ->join(
                     'suat_chieus',
                     've_xem_phims.suat_chieu_id',
@@ -1473,6 +1639,7 @@ class ThongKeService
                     'phong_chieus.id'
                 )
                 ->select(
+
                     'suat_chieus.id',
 
                     'phims.ten_phim',
@@ -1505,8 +1672,11 @@ class ThongKeService
                 ->limit($limit)
                 ->get()
                 ->toArray();
+
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
@@ -1518,17 +1688,14 @@ class ThongKeService
     public function getRevenueByTimeSlot(): array
     {
         try {
-            return $this->getPaidTicketBaseQuery()
-                ->when(
-                    $this->phimId,
-                    fn($q) =>
-                        $this->applyMovieFilter($q)
-                )
-                ->when(
-                    $this->phongChieuId,
-                    fn($q) =>
-                        $this->applyRoomFilter($q)
-                )
+
+            $query =
+                $this->getPaidTicketBaseQuery();
+
+            $this->applyMovieFilter($query);
+            $this->applyRoomFilter($query);
+
+            return $query
                 ->join(
                     'suat_chieus',
                     've_xem_phims.suat_chieu_id',
@@ -1536,6 +1703,7 @@ class ThongKeService
                     'suat_chieus.id'
                 )
                 ->select(
+
                     DB::raw(
                         "CASE
                             WHEN HOUR(
@@ -1583,8 +1751,11 @@ class ThongKeService
                 )
                 ->get()
                 ->toArray();
+
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
@@ -1596,6 +1767,7 @@ class ThongKeService
     public function getMoviesList(): array
     {
         try {
+
             return Phims::query()
                 ->orderBy(
                     'ten_phim'
@@ -1605,8 +1777,11 @@ class ThongKeService
                     'id'
                 )
                 ->toArray();
+
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
@@ -1618,6 +1793,7 @@ class ThongKeService
     public function getRoomsList(): array
     {
         try {
+
             return PhongChieu::query()
                 ->orderBy(
                     'ten_phong'
@@ -1627,8 +1803,11 @@ class ThongKeService
                     'id'
                 )
                 ->toArray();
+
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
@@ -1640,7 +1819,9 @@ class ThongKeService
     public function getFullExportData(): array
     {
         try {
+
             return [
+
                 'kpi' =>
                     $this->getKPISummary(),
 
@@ -1689,8 +1870,11 @@ class ThongKeService
                 'phong_chieu_id' =>
                     $this->phongChieuId,
             ];
+
         } catch (Exception $e) {
+
             report($e);
+
             return [];
         }
     }
@@ -1702,10 +1886,13 @@ class ThongKeService
     public function getApiResponse(): array
     {
         try {
+
             return [
+
                 'success' => true,
 
                 'data' => [
+
                     'summary' =>
                         $this->getKPISummary(),
 
@@ -1742,6 +1929,7 @@ class ThongKeService
                 ],
 
                 'filters' => [
+
                     'from' =>
                         $this->from,
 
@@ -1758,10 +1946,13 @@ class ThongKeService
                         $this->phongChieuId,
                 ],
             ];
+
         } catch (Exception $e) {
+
             report($e);
 
             return [
+
                 'success' => false,
 
                 'message' =>
