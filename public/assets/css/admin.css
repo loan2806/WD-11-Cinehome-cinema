@@ -18042,15 +18042,23 @@ body {
 .voucher-code-badge,
 .voucher-status,
 .issued-status,
-.voucher-no-action {
+.voucher-no-action,
+.issued-voucher-card span.issued-status,
+.issued-voucher-card span.voucher-no-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 34px;
+    min-height: 44px;
     border-radius: 999px;
     font-size: 12px;
     font-weight: 950;
+    text-align: center;
+    line-height: 1;
+}
+
+.issued-voucher-card form {
+    margin: 0;
 }
 
 .voucher-code-badge {
