@@ -6,17 +6,17 @@
 
 @section('content')
 @php
-    $isActive = (bool) old('trang_thai_hoat_dong', $khachHang->trang_thai_hoat_dong);
-    $displayName = old('ho_ten', $khachHang->ho_ten) ?: 'Khách hàng';
-    $displayEmail = old('email', $khachHang->email) ?: 'Chưa có email';
-    $displayPhone = old('so_dien_thoai', $khachHang->so_dien_thoai) ?: 'Chưa có số điện thoại';
-    $displayBirthday = old('ngay_sinh', $khachHang->ngay_sinh?->format('Y-m-d'));
-    try {
-        $displayBirthdayText = $displayBirthday ? \Carbon\Carbon::parse($displayBirthday)->format('d/m/Y') : 'Chưa nhập ngày sinh';
-    } catch (\Throwable $e) {
-        $displayBirthdayText = $displayBirthday ?: 'Chưa nhập ngày sinh';
-    }
-    $memberCard = $khachHang->thanhVien;
+$isActive = (bool) old('trang_thai_hoat_dong', $khachHang->trang_thai_hoat_dong);
+$displayName = old('ho_ten', $khachHang->ho_ten) ?: 'Khách hàng';
+$displayEmail = old('email', $khachHang->email) ?: 'Chưa có email';
+$displayPhone = old('so_dien_thoai', $khachHang->so_dien_thoai) ?: 'Chưa có số điện thoại';
+$displayBirthday = old('ngay_sinh', $khachHang->ngay_sinh?->format('Y-m-d'));
+try {
+$displayBirthdayText = $displayBirthday ? \Carbon\Carbon::parse($displayBirthday)->format('d/m/Y') : 'Chưa nhập ngày sinh';
+} catch (\Throwable $e) {
+$displayBirthdayText = $displayBirthday ?: 'Chưa nhập ngày sinh';
+}
+$memberCard = $khachHang->thanhVien;
 @endphp
 
 <div class="staff-create-page customer-create-page customer-edit-page">
@@ -45,13 +45,13 @@
     </section>
 
     @if ($errors->any())
-        <section class="staff-create-alert">
-            <i class="fa-solid fa-circle-exclamation"></i>
-            <div>
-                <strong>Thông tin cập nhật chưa hợp lệ</strong>
-                <p>Vui lòng kiểm tra lại các trường đang báo lỗi rồi lưu lại hồ sơ khách hàng.</p>
-            </div>
-        </section>
+    <section class="staff-create-alert">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <div>
+            <strong>Thông tin cập nhật chưa hợp lệ</strong>
+            <p>Vui lòng kiểm tra lại các trường đang báo lỗi rồi lưu lại hồ sơ khách hàng.</p>
+        </div>
+    </section>
     @endif
 
     <form method="POST" action="{{ route('admin.khach-hang.update', $khachHang) }}" class="staff-create-layout">
@@ -82,11 +82,10 @@
                             placeholder="VD: Nguyễn Văn A"
                             autocomplete="name"
                             required
-                            autofocus
-                        >
+                            autofocus>
                     </div>
                     @error('ho_ten')
-                        <small class="staff-create-error">{{ $message }}</small>
+                    <small class="staff-create-error">{{ $message }}</small>
                     @enderror
                 </label>
 
@@ -100,12 +99,9 @@
                             value="{{ old('email', $khachHang->email) }}"
                             placeholder="khachhang@cinehome.vn"
                             autocomplete="email"
-                            required
-                        >
+                            disabled
+                            class="bg-white/5 text-gray-400 border border-white/10 opacity-50 cursor-not-allowed">
                     </div>
-                    @error('email')
-                        <small class="staff-create-error">{{ $message }}</small>
-                    @enderror
                 </label>
 
                 <label class="staff-create-field">
@@ -117,13 +113,12 @@
                             name="so_dien_thoai"
                             value="{{ old('so_dien_thoai', $khachHang->so_dien_thoai) }}"
                             placeholder="VD: 0987654321"
-                            autocomplete="tel"
-                        >
+                            autocomplete="tel">
                     </div>
                     @error('so_dien_thoai')
-                        <small class="staff-create-error">{{ $message }}</small>
+                    <small class="staff-create-error">{{ $message }}</small>
                     @else
-                        <small class="staff-create-hint">Nên nhập số điện thoại để tìm khách nhanh tại quầy vé.</small>
+                    <small class="staff-create-hint">Nên nhập số điện thoại để tìm khách nhanh tại quầy vé.</small>
                     @enderror
                 </label>
 
@@ -137,41 +132,27 @@
                         </select>
                     </div>
                     @error('trang_thai_hoat_dong')
-                        <small class="staff-create-error">{{ $message }}</small>
+                    <small class="staff-create-error">{{ $message }}</small>
                     @else
-                        <small class="staff-create-hint">Khóa tài khoản sẽ ngăn khách sử dụng một số thao tác trên website.</small>
+                    <small class="staff-create-hint">Khóa tài khoản sẽ ngăn khách sử dụng một số thao tác trên website.</small>
                     @enderror
                 </label>
 
                 <label class="staff-create-field is-wide">
                     <span>Ngày sinh</span>
-                    @if($khachHang->ngay_sinh)
-                        <div class="staff-create-control is-disabled">
-                            <i class="fa-solid fa-cake-candles"></i>
-                            <input
-                                type="date"
-                                value="{{ $khachHang->ngay_sinh->format('Y-m-d') }}"
-                                disabled
-                            >
-                        </div>
-                        <input type="hidden" name="ngay_sinh" value="{{ $khachHang->ngay_sinh->format('Y-m-d') }}">
-                        <small class="staff-create-hint is-warning">Ngày sinh đã được khóa để đảm bảo chính sách voucher sinh nhật.</small>
-                    @else
-                        <div class="staff-create-control @error('ngay_sinh') is-invalid @enderror">
-                            <i class="fa-solid fa-cake-candles"></i>
-                            <input
-                                type="date"
-                                name="ngay_sinh"
-                                value="{{ old('ngay_sinh') }}"
-                                autocomplete="bday"
-                            >
-                        </div>
-                        @error('ngay_sinh')
-                            <small class="staff-create-error">{{ $message }}</small>
-                        @else
-                            <small class="staff-create-hint">Ngày sinh chỉ được nhập một lần, sau khi lưu sẽ không thể chỉnh sửa.</small>
-                        @enderror
-                    @endif
+
+                    <div class="staff-create-control is-disabled">
+                        <i class="fa-solid fa-cake-candles"></i>
+
+                        <input
+                            type="date"
+                            value="{{ $khachHang->ngay_sinh?->format('Y-m-d') }}"
+                            disabled>
+                    </div>
+
+                    <small class="staff-create-hint is-warning">
+                        Ngày sinh do khách hàng cung cấp và không cho phép quản trị viên thay đổi.
+                    </small>
                 </label>
             </div>
 

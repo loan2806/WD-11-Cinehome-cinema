@@ -39,6 +39,7 @@ class DatabaseSeeder extends Seeder
             FoodCategorySeeder::class,
             FoodSeeder::class,
             FoodVariantSeeder::class,
+            ComboFakeSeeder::class,
         ]);
 
         // Đồng bộ vai trò Spatie cho các tài khoản mặc định

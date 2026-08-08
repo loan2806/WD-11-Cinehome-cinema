@@ -60,7 +60,6 @@
                             value="{{ old('ho_ten') }}"
                             placeholder="VD: Nguyễn Văn A"
                             autocomplete="name"
-                            required
                             autofocus
                         >
                     </div>
@@ -79,7 +78,7 @@
                             value="{{ old('email') }}"
                             placeholder="khachhang@cinehome.vn"
                             autocomplete="email"
-                            required
+                            
                         >
                     </div>
                     @error('email')
@@ -134,7 +133,7 @@
                             placeholder="Tối thiểu 6 ký tự"
                             autocomplete="new-password"
                             minlength="6"
-                            required
+                        
                         >
                     </div>
                     @error('mat_khau')

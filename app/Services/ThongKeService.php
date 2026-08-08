@@ -7,8 +7,6 @@ use App\Models\FoodInvoice;
 use App\Models\SuatChieu;
 use App\Models\Phims;
 use App\Models\PhongChieu;
-use App\Models\GheNgoi;
-use App\Models\LoaiGhe;
 use App\Models\NguoiDungVoucher;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -20,6 +18,7 @@ class ThongKeService
     protected string $to;
     protected ?int $phimId;
     protected ?int $phongChieuId;
+
     protected array $cachedQueries = [];
 
     public function __construct(
@@ -34,17 +33,28 @@ class ThongKeService
         $this->phongChieuId = $phongChieuId;
     }
 
-    // ==========================================
-    // QUERY BUILDERS - Reusable base queries
-    // ==========================================
+    // =========================================================
+    // I. QUERY BUILDERS
+    // =========================================================
 
+    /**
+     * Hóa đơn vé đã thanh toán.
+     */
     protected function getPaidTicketBaseQuery()
     {
         return VeXemPhim::query()
             ->whereBetween('created_at', [$this->from, $this->to])
-            ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung']);
+            ->whereIn('trang_thai', [
+                'da_thanh_toan',
+                'da_su_dung',
+            ]);
     }
 
+    /**
+     * Hóa đơn đồ ăn đã thanh toán.
+     *
+     * Đồ ăn mua ngoài không gắn với phim/phòng.
+     */
     protected function getPaidFoodInvoiceBaseQuery()
     {
         return FoodInvoice::query()
@@ -52,6 +62,17 @@ class ThongKeService
             ->where('payment_status', 'paid');
     }
 
+    /**
+     * Kiểm tra hiện tại có đang lọc phim/phòng hay không.
+     */
+    protected function hasMovieOrRoomFilter(): bool
+    {
+        return !empty($this->phimId) || !empty($this->phongChieuId);
+    }
+
+    /**
+     * Lọc vé theo phim.
+     */
     protected function applyMovieFilter($query)
     {
         if ($this->phimId) {
@@ -59,12 +80,19 @@ class ThongKeService
                 $q->whereHas('suatChieu', function ($sq) {
                     $sq->where('phim_id', $this->phimId);
                 })
-                ->orWhereRaw('ten_phim IN (SELECT ten_phim FROM phims WHERE id = ?)', [$this->phimId]);
+                ->orWhereRaw(
+                    'ten_phim IN (SELECT ten_phim FROM phims WHERE id = ?)',
+                    [$this->phimId]
+                );
             });
         }
+
         return $query;
     }
 
+    /**
+     * Lọc vé theo phòng.
+     */
     protected function applyRoomFilter($query)
     {
         if ($this->phongChieuId) {
@@ -72,45 +100,89 @@ class ThongKeService
                 $q->where('phong_chieu_id', $this->phongChieuId);
             });
         }
+
         return $query;
     }
 
-    // ==========================================
-    // I. THẺ THỐNG KÊ TỔNG QUAN (KPI Summary)
-    // ==========================================
+    // =========================================================
+    // II. KPI
+    // =========================================================
 
     public function getKPISummary(): array
     {
         try {
+            /*
+             * DOANH THU VÉ
+             * Luôn áp dụng filter phim/phòng.
+             */
             $ticketRevenue = $this->getTicketRevenue();
 
+            /*
+             * ĐỒ ĂN
+             *
+             * Chỉ tính khi KHÔNG lọc phim/phòng.
+             *
+             * Vì đồ ăn mua ngoài không biết thuộc phim/phòng nào.
+             */
             $foodStats = $this->getFoodRevenueStats();
-            $comboRevenue = $foodStats['combo_revenue'];
-            $snackRevenue = $foodStats['snack_revenue'];
 
-            $totalRevenue = $ticketRevenue + $comboRevenue + $snackRevenue;
+            if ($this->hasMovieOrRoomFilter()) {
+                $comboRevenue = 0;
+                $snackRevenue = 0;
+                $foodInvoicesCount = 0;
+            } else {
+                $comboRevenue = $foodStats['combo_revenue'];
+                $snackRevenue = $foodStats['snack_revenue'];
+                $foodInvoicesCount = $foodStats['count'];
+            }
+
+            $totalRevenue =
+                $ticketRevenue
+                + $comboRevenue
+                + $snackRevenue;
+
             $ticketsSold = $this->getTicketsSoldCount();
-            $foodInvoicesCount = $foodStats['count'];
-            $totalInvoices = $ticketsSold + $foodInvoicesCount;
-            $averageTicketPrice = $ticketsSold > 0 ? $ticketRevenue / $ticketsSold : 0;
+
+            $totalInvoices =
+                $ticketsSold
+                + $foodInvoicesCount;
+
+            $averageTicketPrice =
+                $ticketsSold > 0
+                    ? $ticketRevenue / $ticketsSold
+                    : 0;
 
             $totalShowtimes = $this->getTotalShowtimes();
+
             $vouchersUsed = $this->getVouchersUsedCount();
 
             return [
                 'total_revenue' => round($totalRevenue, 0),
+
                 'ticket_revenue' => round($ticketRevenue, 0),
+
                 'combo_revenue' => round($comboRevenue, 0),
+
                 'snack_revenue' => round($snackRevenue, 0),
+
                 'tickets_sold' => $ticketsSold,
+
                 'total_invoices' => $totalInvoices,
+
                 'food_invoices' => $foodInvoicesCount,
-                'average_ticket_price' => round($averageTicketPrice, 0),
+
+                'average_ticket_price' => round(
+                    $averageTicketPrice,
+                    0
+                ),
+
                 'total_showtimes' => $totalShowtimes,
+
                 'vouchers_used' => $vouchersUsed,
             ];
         } catch (Exception $e) {
             report($e);
+
             return $this->getEmptyKPISummary();
         }
     }
@@ -131,44 +203,74 @@ class ThongKeService
         ];
     }
 
+    // =========================================================
+    // III. DOANH THU VÉ
+    // =========================================================
+
     protected function getTicketRevenue(): float
     {
         return (float) $this->getPaidTicketBaseQuery()
-            ->when($this->phimId, fn($q) => $this->applyMovieFilter($q))
-            ->when($this->phongChieuId, fn($q) => $this->applyRoomFilter($q))
+            ->when(
+                $this->phimId,
+                fn($q) => $this->applyMovieFilter($q)
+            )
+            ->when(
+                $this->phongChieuId,
+                fn($q) => $this->applyRoomFilter($q)
+            )
             ->sum('tong_tien');
     }
 
     protected function getTicketsSoldCount(): int
     {
         return (int) $this->getPaidTicketBaseQuery()
-            ->when($this->phimId, fn($q) => $this->applyMovieFilter($q))
-            ->when($this->phongChieuId, fn($q) => $this->applyRoomFilter($q))
+            ->when(
+                $this->phimId,
+                fn($q) => $this->applyMovieFilter($q)
+            )
+            ->when(
+                $this->phongChieuId,
+                fn($q) => $this->applyRoomFilter($q)
+            )
             ->count();
     }
 
-    // ==========================================
-    // HELPER FUNCTIONS
-    // ==========================================
+    // =========================================================
+    // IV. HELPER ĐỒ ĂN
+    // =========================================================
 
     protected function isComboCategory($category): bool
     {
-        if (!$category) return false;
+        if (!$category) {
+            return false;
+        }
 
-        // Kiểm tra flag is_combo
-        if ($category->is_combo) return true;
+        if ($category->is_combo) {
+            return true;
+        }
 
-        // Fallback: kiểm tra tên category có chứa "Combo"
-        $name = strtolower($category->name ?? '');
-        if (str_contains($name, 'combo')) return true;
+        $name = strtolower(
+            $category->name ?? ''
+        );
 
-        return false;
+        return str_contains($name, 'combo');
     }
 
+    /**
+     * Thống kê đồ ăn toàn rạp.
+     *
+     * Hàm này KHÔNG lọc phim/phòng.
+     *
+     * Việc có đưa kết quả vào thống kê hay không
+     * được quyết định bởi hasMovieOrRoomFilter().
+     */
     protected function getFoodRevenueStats(): array
     {
         $foodInvoices = $this->getPaidFoodInvoiceBaseQuery()
-            ->with(['items.food', 'items.food.category'])
+            ->with([
+                'items.food',
+                'items.food.category',
+            ])
             ->get();
 
         $comboRevenue = 0;
@@ -177,10 +279,17 @@ class ThongKeService
 
         foreach ($foodInvoices as $invoice) {
             foreach ($invoice->items as $item) {
-                $itemTotal = (float) ($item->unit_price ?? 0) * (int) ($item->quantity ?? 1);
+                $itemTotal =
+                    (float) ($item->unit_price ?? 0)
+                    *
+                    (int) ($item->quantity ?? 1);
 
-                if ($item->food_id && $item->food) {
+                if (
+                    $item->food_id &&
+                    $item->food
+                ) {
                     $category = $item->food->category;
+
                     if ($this->isComboCategory($category)) {
                         $comboRevenue += $itemTotal;
                     } else {
@@ -199,30 +308,59 @@ class ThongKeService
         ];
     }
 
+    // =========================================================
+    // V. SUẤT CHIẾU
+    // =========================================================
+
     protected function getTotalShowtimes(): int
     {
         return (int) SuatChieu::query()
-            ->whereBetween('thoi_gian_chieu', [$this->from, $this->to])
-            ->when($this->phimId, fn($q) => $q->where('phim_id', $this->phimId))
-            ->when($this->phongChieuId, fn($q) => $q->where('phong_chieu_id', $this->phongChieuId))
-            ->whereNotIn('trang_thai', ['huy'])
+            ->whereBetween(
+                'thoi_gian_chieu',
+                [$this->from, $this->to]
+            )
+            ->when(
+                $this->phimId,
+                fn($q) => $q->where(
+                    'phim_id',
+                    $this->phimId
+                )
+            )
+            ->when(
+                $this->phongChieuId,
+                fn($q) => $q->where(
+                    'phong_chieu_id',
+                    $this->phongChieuId
+                )
+            )
+            ->whereNotIn(
+                'trang_thai',
+                ['huy']
+            )
             ->count();
     }
 
     protected function getVouchersUsedCount(): int
     {
         return (int) NguoiDungVoucher::query()
-            ->whereBetween('ngay_su_dung', [$this->from, $this->to])
-            ->where('da_su_dung', true)
+            ->whereBetween(
+                'ngay_su_dung',
+                [$this->from, $this->to]
+            )
+            ->where(
+                'da_su_dung',
+                true
+            )
             ->count();
     }
 
-    // ==========================================
-    // II. BIỂU ĐỒ DOANH THU THEO THỜI GIAN
-    // ==========================================
+    // =========================================================
+    // VI. DOANH THU THEO THỜI GIAN
+    // =========================================================
 
-    public function getRevenueByTime(string $periodType = 'day'): array
-    {
+    public function getRevenueByTime(
+        string $periodType = 'day'
+    ): array {
         try {
             return match ($periodType) {
                 'month' => $this->getMonthlyRevenue(),
@@ -238,45 +376,120 @@ class ThongKeService
 
     protected function getDailyRevenue(): array
     {
-        $ticketData = $this->getTicketRevenueByPeriod('%Y-%m-%d');
-        $foodData = $this->getFoodRevenueByPeriod('%Y-%m-%d');
+        $ticketData = $this->getTicketRevenueByPeriod(
+            '%Y-%m-%d'
+        );
 
-        return $this->mergeRevenueData($ticketData, $foodData, '%Y-%m-%d');
+        /*
+         * Nếu đang lọc phim/phòng:
+         * Không đưa đồ ăn vào.
+         */
+        if ($this->hasMovieOrRoomFilter()) {
+            $foodData = [];
+        } else {
+            $foodData = $this->getFoodRevenueByPeriod(
+                '%Y-%m-%d'
+            );
+        }
+
+        return $this->mergeRevenueData(
+            $ticketData,
+            $foodData,
+            '%Y-%m-%d'
+        );
     }
 
     protected function getMonthlyRevenue(): array
     {
-        $ticketData = $this->getTicketRevenueByPeriod('%Y-%m');
-        $foodData = $this->getFoodRevenueByPeriod('%Y-%m');
+        $ticketData = $this->getTicketRevenueByPeriod(
+            '%Y-%m'
+        );
 
-        return $this->mergeRevenueData($ticketData, $foodData, '%Y-%m');
+        if ($this->hasMovieOrRoomFilter()) {
+            $foodData = [];
+        } else {
+            $foodData = $this->getFoodRevenueByPeriod(
+                '%Y-%m'
+            );
+        }
+
+        return $this->mergeRevenueData(
+            $ticketData,
+            $foodData,
+            '%Y-%m'
+        );
     }
 
     protected function getQuarterlyRevenue(): array
     {
-        $ticketData = $this->getTicketRevenueByPeriod('%Y-%m');
-        $foodData = $this->getFoodRevenueByPeriod('%Y-%m');
+        $ticketData = $this->getTicketRevenueByPeriod(
+            '%Y-%m'
+        );
 
-        return $this->processQuarterlyData($ticketData, $foodData);
+        if ($this->hasMovieOrRoomFilter()) {
+            $foodData = [];
+        } else {
+            $foodData = $this->getFoodRevenueByPeriod(
+                '%Y-%m'
+            );
+        }
+
+        return $this->processQuarterlyData(
+            $ticketData,
+            $foodData
+        );
     }
 
     protected function getYearlyRevenue(): array
     {
-        $ticketData = $this->getTicketRevenueByPeriod('%Y');
-        $foodData = $this->getFoodRevenueByPeriod('%Y');
+        $ticketData = $this->getTicketRevenueByPeriod(
+            '%Y'
+        );
 
-        return $this->mergeRevenueData($ticketData, $foodData, '%Y');
+        if ($this->hasMovieOrRoomFilter()) {
+            $foodData = [];
+        } else {
+            $foodData = $this->getFoodRevenueByPeriod(
+                '%Y'
+            );
+        }
+
+        return $this->mergeRevenueData(
+            $ticketData,
+            $foodData,
+            '%Y'
+        );
     }
 
-    protected function getTicketRevenueByPeriod(string $format): array
-    {
+    // =========================================================
+    // VII. DOANH THU VÉ THEO THỜI GIAN
+    // =========================================================
+
+    protected function getTicketRevenueByPeriod(
+        string $format
+    ): array {
         return $this->getPaidTicketBaseQuery()
-            ->when($this->phimId, fn($q) => $this->applyMovieFilter($q))
-            ->when($this->phongChieuId, fn($q) => $this->applyRoomFilter($q))
+            ->when(
+                $this->phimId,
+                fn($q) => $this->applyMovieFilter($q)
+            )
+            ->when(
+                $this->phongChieuId,
+                fn($q) => $this->applyRoomFilter($q)
+            )
             ->select(
-                DB::raw("DATE_FORMAT(created_at, '{$format}') as period"),
-                DB::raw('SUM(tong_tien) as revenue'),
-                DB::raw('COUNT(*) as tickets')
+                DB::raw(
+                    "DATE_FORMAT(
+                        created_at,
+                        '{$format}'
+                    ) as period"
+                ),
+                DB::raw(
+                    'SUM(tong_tien) as revenue'
+                ),
+                DB::raw(
+                    'COUNT(*) as tickets'
+                )
             )
             ->groupBy('period')
             ->get()
@@ -284,25 +497,65 @@ class ThongKeService
             ->toArray();
     }
 
-    protected function getFoodRevenueByPeriod(string $format): array
-    {
+    // =========================================================
+    // VIII. DOANH THU ĐỒ ĂN THEO THỜI GIAN
+    // =========================================================
+
+    protected function getFoodRevenueByPeriod(
+        string $format
+    ): array {
+        /*
+         * LƯU Ý:
+         *
+         * Hàm này chỉ được gọi khi không lọc phim/phòng.
+         *
+         * Đồ ăn mua ngoài là doanh thu toàn rạp.
+         */
+
         $foodInvoices = $this->getPaidFoodInvoiceBaseQuery()
-            ->with(['items.food', 'items.food.category'])
+            ->with([
+                'items.food',
+                'items.food.category',
+            ])
             ->get()
-            ->groupBy(function ($invoice) use ($format) {
-                return Carbon::parse($invoice->created_at)->format(str_replace('%', '', $format));
-            });
+            ->groupBy(
+                function ($invoice) use ($format) {
+                    return Carbon::parse(
+                        $invoice->created_at
+                    )->format(
+                        str_replace(
+                            '%',
+                            '',
+                            $format
+                        )
+                    );
+                }
+            );
 
         $result = [];
+
         foreach ($foodInvoices as $period => $invoices) {
             $comboRevenue = 0;
             $snackRevenue = 0;
 
             foreach ($invoices as $invoice) {
                 foreach ($invoice->items as $item) {
-                    $itemTotal = (float) ($item->unit_price ?? 0) * (int) ($item->quantity ?? 1);
+                    $itemTotal =
+                        (float) (
+                            $item->unit_price ?? 0
+                        )
+                        *
+                        (int) (
+                            $item->quantity ?? 1
+                        );
 
-                    if ($item->food_id && $item->food && $this->isComboCategory($item->food->category)) {
+                    if (
+                        $item->food_id &&
+                        $item->food &&
+                        $this->isComboCategory(
+                            $item->food->category
+                        )
+                    ) {
                         $comboRevenue += $itemTotal;
                     } else {
                         $snackRevenue += $itemTotal;
@@ -319,41 +572,94 @@ class ThongKeService
         return $result;
     }
 
-    protected function mergeRevenueData(array $ticketData, array $foodData, string $format): array
-    {
-        $allPeriods = collect(array_keys($ticketData))
-            ->merge(collect(array_keys($foodData)))
+    // =========================================================
+    // IX. MERGE DOANH THU
+    // =========================================================
+
+    protected function mergeRevenueData(
+        array $ticketData,
+        array $foodData,
+        string $format
+    ): array {
+        $allPeriods = collect(
+            array_keys($ticketData)
+        )
+            ->merge(
+                collect(
+                    array_keys($foodData)
+                )
+            )
             ->unique()
             ->sort()
             ->values()
             ->toArray();
 
         $result = [];
+
         foreach ($allPeriods as $period) {
-            $ticket = $ticketData[$period] ?? null;
-            $food = $foodData[$period] ?? null;
+            $ticket =
+                $ticketData[$period]
+                ?? null;
+
+            $food =
+                $foodData[$period]
+                ?? null;
+
+            $ticketRevenue =
+                $ticket['revenue'] ?? 0;
+
+            $comboRevenue =
+                $food['combo_revenue'] ?? 0;
+
+            $snackRevenue =
+                $food['snack_revenue'] ?? 0;
 
             $result[] = [
                 'period' => $period,
-                'ticket_revenue' => $ticket['revenue'] ?? 0,
-                'combo_revenue' => $food['combo_revenue'] ?? 0,
-                'snack_revenue' => $food['snack_revenue'] ?? 0,
-                'tickets' => $ticket['tickets'] ?? 0,
-                'total_revenue' => ($ticket['revenue'] ?? 0) + ($food['combo_revenue'] ?? 0) + ($food['snack_revenue'] ?? 0),
+
+                'ticket_revenue' =>
+                    $ticketRevenue,
+
+                'combo_revenue' =>
+                    $comboRevenue,
+
+                'snack_revenue' =>
+                    $snackRevenue,
+
+                'tickets' =>
+                    $ticket['tickets'] ?? 0,
+
+                'total_revenue' =>
+                    $ticketRevenue
+                    + $comboRevenue
+                    + $snackRevenue,
             ];
         }
 
         return $result;
     }
 
-    protected function processQuarterlyData(array $ticketData, array $foodData): array
-    {
+    // =========================================================
+    // X. QUÝ
+    // =========================================================
+
+    protected function processQuarterlyData(
+        array $ticketData,
+        array $foodData
+    ): array {
         $result = [];
 
         foreach ($ticketData as $period => $ticket) {
             $year = substr($period, 0, 4);
-            $month = (int) substr($period, 5, 2);
+
+            $month = (int) substr(
+                $period,
+                5,
+                2
+            );
+
             $quarter = ceil($month / 3);
+
             $key = "{$year}-Q{$quarter}";
 
             if (!isset($result[$key])) {
@@ -367,14 +673,24 @@ class ThongKeService
                 ];
             }
 
-            $result[$key]['ticket_revenue'] += $ticket['revenue'];
-            $result[$key]['tickets'] += $ticket['tickets'];
+            $result[$key]['ticket_revenue']
+                += $ticket['revenue'];
+
+            $result[$key]['tickets']
+                += $ticket['tickets'];
         }
 
         foreach ($foodData as $period => $food) {
             $year = substr($period, 0, 4);
-            $month = (int) substr($period, 5, 2);
+
+            $month = (int) substr(
+                $period,
+                5,
+                2
+            );
+
             $quarter = ceil($month / 3);
+
             $key = "{$year}-Q{$quarter}";
 
             if (!isset($result[$key])) {
@@ -388,237 +704,574 @@ class ThongKeService
                 ];
             }
 
-            $result[$key]['combo_revenue'] += $food['combo_revenue'];
-            $result[$key]['snack_revenue'] += $food['snack_revenue'];
+            $result[$key]['combo_revenue']
+                += $food['combo_revenue'];
+
+            $result[$key]['snack_revenue']
+                += $food['snack_revenue'];
         }
 
-        foreach ($result as $key => &$item) {
-            $item['total_revenue'] = $item['ticket_revenue'] + $item['combo_revenue'] + $item['snack_revenue'];
+        foreach ($result as &$item) {
+            $item['total_revenue'] =
+                $item['ticket_revenue']
+                + $item['combo_revenue']
+                + $item['snack_revenue'];
         }
+
+        unset($item);
 
         ksort($result);
+
         return array_values($result);
     }
 
-    // ==========================================
-    // III. CƠ CẤU DOANH THU
-    // ==========================================
+    // =========================================================
+    // XI. CƠ CẤU DOANH THU
+    // =========================================================
 
     public function getRevenueStructure(): array
     {
         try {
-            $ticketRevenue = $this->getTicketRevenue();
-            $foodStats = $this->getFoodRevenueStats();
-            $totalRevenue = $ticketRevenue + $foodStats['combo_revenue'] + $foodStats['snack_revenue'];
+            $ticketRevenue =
+                $this->getTicketRevenue();
+
+            $foodStats =
+                $this->getFoodRevenueStats();
+
+            /*
+             * Khi lọc phim/phòng:
+             * Không phân bổ đồ ăn vào phim/phòng.
+             */
+            if ($this->hasMovieOrRoomFilter()) {
+                $comboRevenue = 0;
+                $snackRevenue = 0;
+            } else {
+                $comboRevenue =
+                    $foodStats['combo_revenue'];
+
+                $snackRevenue =
+                    $foodStats['snack_revenue'];
+            }
+
+            $totalRevenue =
+                $ticketRevenue
+                + $comboRevenue
+                + $snackRevenue;
 
             if ($totalRevenue == 0) {
                 return [
-                    'ticket' => ['revenue' => 0, 'percentage' => 0, 'label' => 'Vé'],
-                    'combo' => ['revenue' => 0, 'percentage' => 0, 'label' => 'Combo'],
-                    'food' => ['revenue' => 0, 'percentage' => 0, 'label' => 'Đồ ăn & Nước'],
+                    'ticket' => [
+                        'revenue' => 0,
+                        'percentage' => 0,
+                        'label' => 'Vé',
+                    ],
+
+                    'combo' => [
+                        'revenue' => 0,
+                        'percentage' => 0,
+                        'label' => 'Combo',
+                    ],
+
+                    'food' => [
+                        'revenue' => 0,
+                        'percentage' => 0,
+                        'label' => 'Đồ ăn & Nước',
+                    ],
+
                     'total' => 0,
                 ];
             }
 
             return [
                 'ticket' => [
-                    'revenue' => round($ticketRevenue, 0),
-                    'percentage' => round(($ticketRevenue / $totalRevenue) * 100, 2),
+                    'revenue' =>
+                        round(
+                            $ticketRevenue,
+                            0
+                        ),
+
+                    'percentage' =>
+                        round(
+                            (
+                                $ticketRevenue
+                                / $totalRevenue
+                            ) * 100,
+                            2
+                        ),
+
                     'label' => 'Vé',
                 ],
+
                 'combo' => [
-                    'revenue' => round($foodStats['combo_revenue'], 0),
-                    'percentage' => round(($foodStats['combo_revenue'] / $totalRevenue) * 100, 2),
+                    'revenue' =>
+                        round(
+                            $comboRevenue,
+                            0
+                        ),
+
+                    'percentage' =>
+                        round(
+                            (
+                                $comboRevenue
+                                / $totalRevenue
+                            ) * 100,
+                            2
+                        ),
+
                     'label' => 'Combo',
                 ],
+
                 'food' => [
-                    'revenue' => round($foodStats['snack_revenue'], 0),
-                    'percentage' => round(($foodStats['snack_revenue'] / $totalRevenue) * 100, 2),
-                    'label' => 'Đồ ăn & Nước',
+                    'revenue' =>
+                        round(
+                            $snackRevenue,
+                            0
+                        ),
+
+                    'percentage' =>
+                        round(
+                            (
+                                $snackRevenue
+                                / $totalRevenue
+                            ) * 100,
+                            2
+                        ),
+
+                    'label' =>
+                        'Đồ ăn & Nước',
                 ],
-                'total' => round($totalRevenue, 0),
+
+                'total' =>
+                    round(
+                        $totalRevenue,
+                        0
+                    ),
             ];
         } catch (Exception $e) {
             report($e);
+
             return [
-                'ticket' => ['revenue' => 0, 'percentage' => 0, 'label' => 'Vé'],
-                'combo' => ['revenue' => 0, 'percentage' => 0, 'label' => 'Combo'],
-                'food' => ['revenue' => 0, 'percentage' => 0, 'label' => 'Đồ ăn & Nước'],
+                'ticket' => [
+                    'revenue' => 0,
+                    'percentage' => 0,
+                    'label' => 'Vé',
+                ],
+
+                'combo' => [
+                    'revenue' => 0,
+                    'percentage' => 0,
+                    'label' => 'Combo',
+                ],
+
+                'food' => [
+                    'revenue' => 0,
+                    'percentage' => 0,
+                    'label' => 'Đồ ăn & Nước',
+                ],
+
                 'total' => 0,
             ];
         }
     }
 
-    // ==========================================
-    // IV. TOP PHIM DOANH THU CAO
-    // ==========================================
+    // =========================================================
+    // XII. TOP PHIM
+    // =========================================================
 
-    public function getRevenueByFilm(int $limit = 5): array
-    {
+    public function getRevenueByFilm(
+        int $limit = 5
+    ): array {
         try {
-            $query = $this->getPaidTicketBaseQuery();
+            $query =
+                $this->getPaidTicketBaseQuery();
 
             if ($this->phimId) {
-                $query->where(function ($q) {
-                    $q->where('ten_phim', function ($subq) {
-                        $subq->select('ten_phim')
-                            ->from('phims')
-                            ->where('id', $this->phimId);
-                    });
-                });
+                $query->where(
+                    'ten_phim',
+                    function ($subq) {
+                        $subq->select(
+                            'ten_phim'
+                        )
+                        ->from('phims')
+                        ->where(
+                            'id',
+                            $this->phimId
+                        );
+                    }
+                );
             }
 
-            $result = $query->select(
+            $result =
+                $query->select(
                     'ten_phim',
-                    DB::raw('SUM(tong_tien) as total_revenue'),
-                    DB::raw('COUNT(*) as tickets_sold'),
-                    DB::raw('AVG(tong_tien) as avg_price')
+
+                    DB::raw(
+                        'SUM(tong_tien) as total_revenue'
+                    ),
+
+                    DB::raw(
+                        'COUNT(*) as tickets_sold'
+                    ),
+
+                    DB::raw(
+                        'AVG(tong_tien) as avg_price'
+                    )
                 )
                 ->groupBy('ten_phim')
-                ->orderByDesc('total_revenue')
+                ->orderByDesc(
+                    'total_revenue'
+                )
                 ->limit($limit)
                 ->get();
 
-            return $result->map(function ($item, $index) {
-                return [
-                    'stt' => $index + 1,
-                    'ten_phim' => $item->ten_phim,
-                    'tickets_sold' => (int) $item->tickets_sold,
-                    'total_revenue' => (float) $item->total_revenue,
-                    'avg_price' => (float) $item->avg_price,
-                ];
-            })->toArray();
+            return $result
+                ->map(
+                    function ($item, $index) {
+                        return [
+                            'stt' =>
+                                $index + 1,
+
+                            'ten_phim' =>
+                                $item->ten_phim,
+
+                            'tickets_sold' =>
+                                (int)
+                                $item->tickets_sold,
+
+                            'total_revenue' =>
+                                (float)
+                                $item->total_revenue,
+
+                            'avg_price' =>
+                                (float)
+                                $item->avg_price,
+                        ];
+                    }
+                )
+                ->toArray();
         } catch (Exception $e) {
             report($e);
             return [];
         }
     }
 
-    // ==========================================
-    // V. DOANH THU THEO PHÒNG
-    // ==========================================
+    // =========================================================
+    // XIII. DOANH THU THEO PHÒNG
+    // =========================================================
 
     public function getRevenueByRoom(): array
     {
         try {
-            $result = $this->getPaidTicketBaseQuery()
-                ->when($this->phimId, fn($q) => $this->applyMovieFilter($q))
-                ->select(
-                    'ten_phong',
-                    DB::raw('SUM(tong_tien) as total_revenue'),
-                    DB::raw('COUNT(*) as tickets_sold')
-                )
-                ->whereNotNull('ten_phong')
-                ->groupBy('ten_phong')
-                ->orderByDesc('total_revenue')
-                ->get();
+            $result =
+                $this->getPaidTicketBaseQuery()
+                    ->when(
+                        $this->phimId,
+                        fn($q) =>
+                            $this->applyMovieFilter($q)
+                    )
+                    ->when(
+                        $this->phongChieuId,
+                        fn($q) =>
+                            $this->applyRoomFilter($q)
+                    )
+                    ->select(
+                        'ten_phong',
 
-            return $result->map(function ($item, $index) {
-                return [
-                    'id' => $index + 1,
-                    'ten_phong' => $item->ten_phong,
-                    'total_revenue' => (float) $item->total_revenue,
-                    'tickets_sold' => (int) $item->tickets_sold,
-                ];
-            })->toArray();
+                        DB::raw(
+                            'SUM(tong_tien) as total_revenue'
+                        ),
+
+                        DB::raw(
+                            'COUNT(*) as tickets_sold'
+                        )
+                    )
+                    ->whereNotNull(
+                        'ten_phong'
+                    )
+                    ->groupBy(
+                        'ten_phong'
+                    )
+                    ->orderByDesc(
+                        'total_revenue'
+                    )
+                    ->get();
+
+            return $result
+                ->map(
+                    function ($item, $index) {
+                        return [
+                            'id' =>
+                                $index + 1,
+
+                            'ten_phong' =>
+                                $item->ten_phong,
+
+                            'total_revenue' =>
+                                (float)
+                                $item->total_revenue,
+
+                            'tickets_sold' =>
+                                (int)
+                                $item->tickets_sold,
+                        ];
+                    }
+                )
+                ->toArray();
         } catch (Exception $e) {
             report($e);
             return [];
         }
     }
 
-    // ==========================================
-    // VI. DOANH THU THEO LOẠI GHẾ
-    // ==========================================
+    // =========================================================
+    // XIV. DOANH THU THEO LOẠI GHẾ
+    // =========================================================
 
     public function getRevenueBySeatType(): array
     {
         try {
-            $tickets = $this->getPaidTicketBaseQuery()
-                ->when($this->phimId, fn($q) => $this->applyMovieFilter($q))
-                ->when($this->phongChieuId, fn($q) => $this->applyRoomFilter($q))
-                ->with([
-                    'suatChieu.phongChieu.gheNgois.loaiGhe',
-                    'suatChieu.phongChieu.hangGhes.loaiGheMacDinh'
-                ])
-                ->get();
+            $tickets =
+                $this->getPaidTicketBaseQuery()
+                    ->when(
+                        $this->phimId,
+                        fn($q) =>
+                            $this->applyMovieFilter($q)
+                    )
+                    ->when(
+                        $this->phongChieuId,
+                        fn($q) =>
+                            $this->applyRoomFilter($q)
+                    )
+                    ->with([
+                        'suatChieu.phongChieu.gheNgois.loaiGhe',
+                        'suatChieu.phongChieu.hangGhes.loaiGheMacDinh',
+                    ])
+                    ->get();
 
             $seatTypeRevenue = [];
 
             foreach ($tickets as $ticket) {
-                $seatCodesRaw = str_replace(['|', ' '], ',', (string) $ticket->ma_ghe);
-                $seatCodes = array_filter(array_map('trim', explode(',', $seatCodesRaw)));
-                $seatCount = count($seatCodes);
-
-                if ($seatCount == 0) continue;
-
-                $room = $ticket->suatChieu?->phongChieu;
-                if (!$room) continue;
-
-                $pricePerSeat = (float) $ticket->tong_tien / $seatCount;
-
-                foreach ($seatCodes as $seatCode) {
-                    $seatCode = strtoupper(trim($seatCode));
-                    if (empty($seatCode)) continue;
-
-                    $seat = $room->gheNgois->first(fn($ghe) =>
-                        strtoupper(trim((string) $ghe->ma_ghe)) === $seatCode
+                $seatCodesRaw =
+                    str_replace(
+                        ['|', ' '],
+                        ',',
+                        (string) $ticket->ma_ghe
                     );
 
-                    $seatTypeName = $seat?->loaiGhe?->ten_loai ?? 'Ghế thường';
-                    $seatTypeId = $seat?->loai_ghe_id ?? 'default';
+                $seatCodes =
+                    array_filter(
+                        array_map(
+                            'trim',
+                            explode(
+                                ',',
+                                $seatCodesRaw
+                            )
+                        )
+                    );
 
-                    if (!isset($seatTypeRevenue[$seatTypeId])) {
-                        $seatTypeRevenue[$seatTypeId] = [
-                            'id' => $seatTypeId,
-                            'ten_loai' => $seatTypeName,
-                            'total_revenue' => 0,
-                            'tickets_sold' => 0,
+                $seatCount =
+                    count($seatCodes);
+
+                if ($seatCount == 0) {
+                    continue;
+                }
+
+                $room =
+                    $ticket->suatChieu?->phongChieu;
+
+                if (!$room) {
+                    continue;
+                }
+
+                $pricePerSeat =
+                    (float)
+                    $ticket->tong_tien
+                    / $seatCount;
+
+                foreach ($seatCodes as $seatCode) {
+                    $seatCode =
+                        strtoupper(
+                            trim($seatCode)
+                        );
+
+                    if (empty($seatCode)) {
+                        continue;
+                    }
+
+                    $seat =
+                        $room->gheNgois->first(
+                            fn($ghe) =>
+                                strtoupper(
+                                    trim(
+                                        (string)
+                                        $ghe->ma_ghe
+                                    )
+                                ) === $seatCode
+                        );
+
+                    $seatTypeName =
+                        $seat?->loaiGhe?->ten_loai
+                        ?? 'Ghế thường';
+
+                    $seatTypeId =
+                        $seat?->loai_ghe_id
+                        ?? 'default';
+
+                    if (
+                        !isset(
+                            $seatTypeRevenue[
+                                $seatTypeId
+                            ]
+                        )
+                    ) {
+                        $seatTypeRevenue[
+                            $seatTypeId
+                        ] = [
+                            'id' =>
+                                $seatTypeId,
+
+                            'ten_loai' =>
+                                $seatTypeName,
+
+                            'total_revenue' =>
+                                0,
+
+                            'tickets_sold' =>
+                                0,
                         ];
                     }
 
-                    $seatTypeRevenue[$seatTypeId]['total_revenue'] += $pricePerSeat;
-                    $seatTypeRevenue[$seatTypeId]['tickets_sold'] += 1;
+                    $seatTypeRevenue[
+                        $seatTypeId
+                    ]['total_revenue']
+                        += $pricePerSeat;
+
+                    $seatTypeRevenue[
+                        $seatTypeId
+                    ]['tickets_sold']
+                        += 1;
                 }
             }
 
-            usort($seatTypeRevenue, fn($a, $b) => $b['total_revenue'] <=> $a['total_revenue']);
+            usort(
+                $seatTypeRevenue,
+                fn($a, $b) =>
+                    $b['total_revenue']
+                    <=>
+                    $a['total_revenue']
+            );
 
-            return array_values($seatTypeRevenue);
+            return array_values(
+                $seatTypeRevenue
+            );
         } catch (Exception $e) {
             report($e);
             return [];
         }
     }
 
-    // ==========================================
-    // VII. PHƯƠNG THỨC THANH TOÁN
-    // ==========================================
+    // =========================================================
+    // XV. PHƯƠNG THỨC THANH TOÁN
+    // =========================================================
 
     public function getPaymentMethodStats(): array
     {
         try {
-            $ticketPayments = $this->getPaidTicketBaseQuery()
-                ->select(
-                    DB::raw("COALESCE(ve_xem_phims.payment_method, 'truc_tuyen') as payment_method"),
-                    DB::raw('SUM(ve_xem_phims.tong_tien) as total'),
-                    DB::raw('COUNT(ve_xem_phims.id) as count')
-                )
-                ->groupBy(DB::raw("COALESCE(ve_xem_phims.payment_method, 'truc_tuyen')"))
-                ->get()
-                ->keyBy('payment_method');
+            /*
+             * VÉ
+             */
+            $ticketPayments =
+                $this->getPaidTicketBaseQuery()
+                    ->when(
+                        $this->phimId,
+                        fn($q) =>
+                            $this->applyMovieFilter($q)
+                    )
+                    ->when(
+                        $this->phongChieuId,
+                        fn($q) =>
+                            $this->applyRoomFilter($q)
+                    )
+                    ->select(
+                        DB::raw(
+                            "COALESCE(
+                                ve_xem_phims.payment_method,
+                                'truc_tuyen'
+                            ) as payment_method"
+                        ),
 
-            $foodPayments = $this->getPaidFoodInvoiceBaseQuery()
-                ->select(
-                    DB::raw("COALESCE(payment_method, 'cash') as payment_method"),
-                    DB::raw('SUM(total) as total'),
-                    DB::raw('COUNT(*) as count')
-                )
-                ->groupBy(DB::raw("COALESCE(payment_method, 'cash')"))
-                ->get()
-                ->keyBy('payment_method');
+                        DB::raw(
+                            'SUM(
+                                ve_xem_phims.tong_tien
+                            ) as total'
+                        ),
 
-            $allMethods = $ticketPayments->keys()->merge($foodPayments->keys())->unique();
+                        DB::raw(
+                            'COUNT(
+                                ve_xem_phims.id
+                            ) as count'
+                        )
+                    )
+                    ->groupBy(
+                        DB::raw(
+                            "COALESCE(
+                                ve_xem_phims.payment_method,
+                                'truc_tuyen'
+                            )"
+                        )
+                    )
+                    ->get()
+                    ->keyBy(
+                        'payment_method'
+                    );
+
+            /*
+             * ĐỒ ĂN
+             *
+             * Nếu đang lọc phim/phòng thì bỏ đồ ăn.
+             */
+            if ($this->hasMovieOrRoomFilter()) {
+                $foodPayments = collect();
+            } else {
+                $foodPayments =
+                    $this->getPaidFoodInvoiceBaseQuery()
+                        ->select(
+                            DB::raw(
+                                "COALESCE(
+                                    payment_method,
+                                    'cash'
+                                ) as payment_method"
+                            ),
+
+                            DB::raw(
+                                'SUM(total) as total'
+                            ),
+
+                            DB::raw(
+                                'COUNT(*) as count'
+                            )
+                        )
+                        ->groupBy(
+                            DB::raw(
+                                "COALESCE(
+                                    payment_method,
+                                    'cash'
+                                )"
+                            )
+                        )
+                        ->get()
+                        ->keyBy(
+                            'payment_method'
+                        );
+            }
+
+            $allMethods =
+                $ticketPayments
+                    ->keys()
+                    ->merge(
+                        $foodPayments->keys()
+                    )
+                    ->unique();
 
             $methodLabels = [
                 'truc_tuyen' => 'Trực tuyến',
@@ -632,21 +1285,68 @@ class ThongKeService
             ];
 
             $methods = [];
+
             foreach ($allMethods as $method) {
-                $ticket = $ticketPayments->get($method);
-                $food = $foodPayments->get($method);
+                $ticket =
+                    $ticketPayments->get(
+                        $method
+                    );
+
+                $food =
+                    $foodPayments->get(
+                        $method
+                    );
+
+                $ticketRevenue =
+                    (float) (
+                        $ticket->total ?? 0
+                    );
+
+                $foodRevenue =
+                    (float) (
+                        $food->total ?? 0
+                    );
 
                 $methods[] = [
-                    'method' => $method,
-                    'label' => $methodLabels[$method] ?? ucfirst($method),
-                    'ticket_revenue' => (float) ($ticket->total ?? 0),
-                    'food_revenue' => (float) ($food->total ?? 0),
-                    'total_revenue' => (float) ($ticket->total ?? 0) + (float) ($food->total ?? 0),
-                    'count' => (int) ($ticket->count ?? 0) + (int) ($food->count ?? 0),
+                    'method' =>
+                        $method,
+
+                    'label' =>
+                        $methodLabels[
+                            $method
+                        ]
+                        ?? ucfirst($method),
+
+                    'ticket_revenue' =>
+                        $ticketRevenue,
+
+                    'food_revenue' =>
+                        $foodRevenue,
+
+                    'total_revenue' =>
+                        $ticketRevenue
+                        + $foodRevenue,
+
+                    'count' =>
+                        (int) (
+                            $ticket->count
+                            ?? 0
+                        )
+                        +
+                        (int) (
+                            $food->count
+                            ?? 0
+                        ),
                 ];
             }
 
-            usort($methods, fn($a, $b) => $b['total_revenue'] <=> $a['total_revenue']);
+            usort(
+                $methods,
+                fn($a, $b) =>
+                    $b['total_revenue']
+                    <=>
+                    $a['total_revenue']
+            );
 
             return $methods;
         } catch (Exception $e) {
@@ -655,41 +1355,77 @@ class ThongKeService
         }
     }
 
-    // ==========================================
-    // VIII. THỐNG KÊ VOUCHER
-    // ==========================================
+    // =========================================================
+    // XVI. VOUCHER
+    // =========================================================
 
     public function getVoucherStats(): array
     {
         try {
-            $totalIssued = (int) NguoiDungVoucher::query()
-                ->whereBetween('ngay_nhan', [$this->from, $this->to])
-                ->count();
+            $totalIssued =
+                (int)
+                NguoiDungVoucher::query()
+                    ->whereBetween(
+                        'ngay_nhan',
+                        [$this->from, $this->to]
+                    )
+                    ->count();
 
-            $usedVouchers = NguoiDungVoucher::query()
-                ->whereBetween('ngay_su_dung', [$this->from, $this->to])
-                ->where('da_su_dung', true)
-                ->with('voucher')
-                ->get();
+            $usedVouchers =
+                NguoiDungVoucher::query()
+                    ->whereBetween(
+                        'ngay_su_dung',
+                        [$this->from, $this->to]
+                    )
+                    ->where(
+                        'da_su_dung',
+                        true
+                    )
+                    ->with('voucher')
+                    ->get();
 
-            $totalUsed = $usedVouchers->count();
+            $totalUsed =
+                $usedVouchers->count();
 
-            // Tính tổng discount từ gia_tri_giam của voucher
             $totalDiscount = 0;
+
             foreach ($usedVouchers as $usedVoucher) {
                 if ($usedVoucher->voucher) {
-                    $totalDiscount += (float) $usedVoucher->voucher->gia_tri_giam;
+                    $totalDiscount +=
+                        (float)
+                        $usedVoucher
+                            ->voucher
+                            ->gia_tri_giam;
                 }
             }
 
             return [
-                'total_issued' => $totalIssued,
-                'total_used' => $totalUsed,
-                'total_discount' => round($totalDiscount, 0),
-                'usage_rate' => $totalIssued > 0 ? round(($totalUsed / $totalIssued) * 100, 2) : 0,
+                'total_issued' =>
+                    $totalIssued,
+
+                'total_used' =>
+                    $totalUsed,
+
+                'total_discount' =>
+                    round(
+                        $totalDiscount,
+                        0
+                    ),
+
+                'usage_rate' =>
+                    $totalIssued > 0
+                        ? round(
+                            (
+                                $totalUsed
+                                / $totalIssued
+                            ) * 100,
+                            2
+                        )
+                        : 0,
             ];
         } catch (Exception $e) {
             report($e);
+
             return [
                 'total_issued' => 0,
                 'total_used' => 0,
@@ -699,29 +1435,73 @@ class ThongKeService
         }
     }
 
-    // ==========================================
-    // IX. TOP SUẤT CHIẾU BÁN CHẠY
-    // ==========================================
+    // =========================================================
+    // XVII. TOP SUẤT CHIẾU
+    // =========================================================
 
-    public function getTopShowtimes(int $limit = 5): array
-    {
+    public function getTopShowtimes(
+        int $limit = 5
+    ): array {
         try {
             return $this->getPaidTicketBaseQuery()
-                ->when($this->phimId, fn($q) => $this->applyMovieFilter($q))
-                ->when($this->phongChieuId, fn($q) => $this->applyRoomFilter($q))
-                ->join('suat_chieus', 've_xem_phims.suat_chieu_id', '=', 'suat_chieus.id')
-                ->join('phims', 'suat_chieus.phim_id', '=', 'phims.id')
-                ->join('phong_chieus', 'suat_chieus.phong_chieu_id', '=', 'phong_chieus.id')
+                ->when(
+                    $this->phimId,
+                    fn($q) =>
+                        $this->applyMovieFilter($q)
+                )
+                ->when(
+                    $this->phongChieuId,
+                    fn($q) =>
+                        $this->applyRoomFilter($q)
+                )
+                ->join(
+                    'suat_chieus',
+                    've_xem_phims.suat_chieu_id',
+                    '=',
+                    'suat_chieus.id'
+                )
+                ->join(
+                    'phims',
+                    'suat_chieus.phim_id',
+                    '=',
+                    'phims.id'
+                )
+                ->join(
+                    'phong_chieus',
+                    'suat_chieus.phong_chieu_id',
+                    '=',
+                    'phong_chieus.id'
+                )
                 ->select(
+                    'suat_chieus.id',
+
+                    'phims.ten_phim',
+
+                    'phong_chieus.ten_phong',
+
+                    'suat_chieus.thoi_gian_chieu',
+
+                    DB::raw(
+                        'SUM(
+                            ve_xem_phims.tong_tien
+                        ) as total_revenue'
+                    ),
+
+                    DB::raw(
+                        'COUNT(
+                            ve_xem_phims.id
+                        ) as tickets_sold'
+                    )
+                )
+                ->groupBy(
                     'suat_chieus.id',
                     'phims.ten_phim',
                     'phong_chieus.ten_phong',
-                    'suat_chieus.thoi_gian_chieu',
-                    DB::raw('SUM(ve_xem_phims.tong_tien) as total_revenue'),
-                    DB::raw('COUNT(ve_xem_phims.id) as tickets_sold')
+                    'suat_chieus.thoi_gian_chieu'
                 )
-                ->groupBy('suat_chieus.id', 'phims.ten_phim', 'phong_chieus.ten_phong', 'suat_chieus.thoi_gian_chieu')
-                ->orderByDesc('tickets_sold')
+                ->orderByDesc(
+                    'tickets_sold'
+                )
                 ->limit($limit)
                 ->get()
                 ->toArray();
@@ -731,29 +1511,76 @@ class ThongKeService
         }
     }
 
-    // ==========================================
-    // X. DOANH THU THEO KHUNG GIỜ
-    // ==========================================
+    // =========================================================
+    // XVIII. DOANH THU THEO KHUNG GIỜ
+    // =========================================================
 
     public function getRevenueByTimeSlot(): array
     {
         try {
             return $this->getPaidTicketBaseQuery()
-                ->when($this->phimId, fn($q) => $this->applyMovieFilter($q))
-                ->when($this->phongChieuId, fn($q) => $this->applyRoomFilter($q))
-                ->join('suat_chieus', 've_xem_phims.suat_chieu_id', '=', 'suat_chieus.id')
-                ->select(
-                    DB::raw("CASE
-                        WHEN HOUR(suat_chieus.thoi_gian_chieu) BETWEEN 6 AND 11 THEN 'Sáng (06:00 - 12:00)'
-                        WHEN HOUR(suat_chieus.thoi_gian_chieu) BETWEEN 12 AND 17 THEN 'Chiều (12:00 - 18:00)'
-                        WHEN HOUR(suat_chieus.thoi_gian_chieu) BETWEEN 18 AND 21 THEN 'Tối (18:00 - 22:00)'
-                        ELSE 'Khuya (22:00 - 06:00)'
-                    END as time_slot"),
-                    DB::raw('SUM(ve_xem_phims.tong_tien) as total_revenue'),
-                    DB::raw('COUNT(ve_xem_phims.id) as tickets_sold')
+                ->when(
+                    $this->phimId,
+                    fn($q) =>
+                        $this->applyMovieFilter($q)
                 )
-                ->groupBy('time_slot')
-                ->orderByRaw("FIELD(time_slot, 'Sáng (06:00 - 12:00)', 'Chiều (12:00 - 18:00)', 'Tối (18:00 - 22:00)', 'Khuya (22:00 - 06:00)')")
+                ->when(
+                    $this->phongChieuId,
+                    fn($q) =>
+                        $this->applyRoomFilter($q)
+                )
+                ->join(
+                    'suat_chieus',
+                    've_xem_phims.suat_chieu_id',
+                    '=',
+                    'suat_chieus.id'
+                )
+                ->select(
+                    DB::raw(
+                        "CASE
+                            WHEN HOUR(
+                                suat_chieus.thoi_gian_chieu
+                            ) BETWEEN 6 AND 11
+                            THEN 'Sáng (06:00 - 12:00)'
+
+                            WHEN HOUR(
+                                suat_chieus.thoi_gian_chieu
+                            ) BETWEEN 12 AND 17
+                            THEN 'Chiều (12:00 - 18:00)'
+
+                            WHEN HOUR(
+                                suat_chieus.thoi_gian_chieu
+                            ) BETWEEN 18 AND 21
+                            THEN 'Tối (18:00 - 22:00)'
+
+                            ELSE 'Khuya (22:00 - 06:00)'
+                        END as time_slot"
+                    ),
+
+                    DB::raw(
+                        'SUM(
+                            ve_xem_phims.tong_tien
+                        ) as total_revenue'
+                    ),
+
+                    DB::raw(
+                        'COUNT(
+                            ve_xem_phims.id
+                        ) as tickets_sold'
+                    )
+                )
+                ->groupBy(
+                    'time_slot'
+                )
+                ->orderByRaw(
+                    "FIELD(
+                        time_slot,
+                        'Sáng (06:00 - 12:00)',
+                        'Chiều (12:00 - 18:00)',
+                        'Tối (18:00 - 22:00)',
+                        'Khuya (22:00 - 06:00)'
+                    )"
+                )
                 ->get()
                 ->toArray();
         } catch (Exception $e) {
@@ -762,29 +1589,43 @@ class ThongKeService
         }
     }
 
-    // ==========================================
-    // HELPER METHODS
-    // ==========================================
+    // =========================================================
+    // XIX. DANH SÁCH PHIM
+    // =========================================================
 
     public function getMoviesList(): array
     {
         try {
             return Phims::query()
-                ->orderBy('ten_phim')
-                ->pluck('ten_phim', 'id')
+                ->orderBy(
+                    'ten_phim'
+                )
+                ->pluck(
+                    'ten_phim',
+                    'id'
+                )
                 ->toArray();
         } catch (Exception $e) {
             report($e);
             return [];
         }
     }
+
+    // =========================================================
+    // XX. DANH SÁCH PHÒNG
+    // =========================================================
 
     public function getRoomsList(): array
     {
         try {
             return PhongChieu::query()
-                ->orderBy('ten_phong')
-                ->pluck('ten_phong', 'id')
+                ->orderBy(
+                    'ten_phong'
+                )
+                ->pluck(
+                    'ten_phong',
+                    'id'
+                )
                 ->toArray();
         } catch (Exception $e) {
             report($e);
@@ -792,28 +1633,61 @@ class ThongKeService
         }
     }
 
-    // ==========================================
-    // FULL EXPORT DATA
-    // ==========================================
+    // =========================================================
+    // XXI. FULL EXPORT
+    // =========================================================
 
     public function getFullExportData(): array
     {
         try {
             return [
-                'kpi' => $this->getKPISummary(),
-                'revenue_by_time' => $this->getRevenueByTime('day'),
-                'revenue_structure' => $this->getRevenueStructure(),
-                'top_films' => $this->getRevenueByFilm(10),
-                'revenue_by_room' => $this->getRevenueByRoom(),
-                'revenue_by_seat_type' => $this->getRevenueBySeatType(),
-                'revenue_by_time_slot' => $this->getRevenueByTimeSlot(),
-                'payment_methods' => $this->getPaymentMethodStats(),
-                'voucher_stats' => $this->getVoucherStats(),
-                'top_showtimes' => $this->getTopShowtimes(10),
-                'from' => $this->from,
-                'to' => $this->to,
-                'phim_id' => $this->phimId,
-                'phong_chieu_id' => $this->phongChieuId,
+                'kpi' =>
+                    $this->getKPISummary(),
+
+                'revenue_by_time' =>
+                    $this->getRevenueByTime(
+                        'day'
+                    ),
+
+                'revenue_structure' =>
+                    $this->getRevenueStructure(),
+
+                'top_films' =>
+                    $this->getRevenueByFilm(
+                        10
+                    ),
+
+                'revenue_by_room' =>
+                    $this->getRevenueByRoom(),
+
+                'revenue_by_seat_type' =>
+                    $this->getRevenueBySeatType(),
+
+                'revenue_by_time_slot' =>
+                    $this->getRevenueByTimeSlot(),
+
+                'payment_methods' =>
+                    $this->getPaymentMethodStats(),
+
+                'voucher_stats' =>
+                    $this->getVoucherStats(),
+
+                'top_showtimes' =>
+                    $this->getTopShowtimes(
+                        10
+                    ),
+
+                'from' =>
+                    $this->from,
+
+                'to' =>
+                    $this->to,
+
+                'phim_id' =>
+                    $this->phimId,
+
+                'phong_chieu_id' =>
+                    $this->phongChieuId,
             ];
         } catch (Exception $e) {
             report($e);
@@ -821,41 +1695,82 @@ class ThongKeService
         }
     }
 
-    // ==========================================
-    // API RESPONSE FORMATTER
-    // ==========================================
+    // =========================================================
+    // XXII. API RESPONSE
+    // =========================================================
 
     public function getApiResponse(): array
     {
         try {
             return [
                 'success' => true,
+
                 'data' => [
-                    'summary' => $this->getKPISummary(),
-                    'lineChart' => $this->getRevenueByTime('day'),
-                    'revenueStructure' => $this->getRevenueStructure(),
-                    'topMovies' => $this->getRevenueByFilm(5),
-                    'roomRevenue' => $this->getRevenueByRoom(),
-                    'seatRevenue' => $this->getRevenueBySeatType(),
-                    'paymentMethods' => $this->getPaymentMethodStats(),
-                    'voucherStatistics' => $this->getVoucherStats(),
-                    'movies' => $this->getMoviesList(),
-                    'rooms' => $this->getRoomsList(),
+                    'summary' =>
+                        $this->getKPISummary(),
+
+                    'lineChart' =>
+                        $this->getRevenueByTime(
+                            'day'
+                        ),
+
+                    'revenueStructure' =>
+                        $this->getRevenueStructure(),
+
+                    'topMovies' =>
+                        $this->getRevenueByFilm(
+                            5
+                        ),
+
+                    'roomRevenue' =>
+                        $this->getRevenueByRoom(),
+
+                    'seatRevenue' =>
+                        $this->getRevenueBySeatType(),
+
+                    'paymentMethods' =>
+                        $this->getPaymentMethodStats(),
+
+                    'voucherStatistics' =>
+                        $this->getVoucherStats(),
+
+                    'movies' =>
+                        $this->getMoviesList(),
+
+                    'rooms' =>
+                        $this->getRoomsList(),
                 ],
+
                 'filters' => [
-                    'from' => $this->from,
-                    'to' => $this->to,
-                    'period_type' => 'day',
-                    'phim_id' => $this->phimId,
-                    'phong_chieu_id' => $this->phongChieuId,
+                    'from' =>
+                        $this->from,
+
+                    'to' =>
+                        $this->to,
+
+                    'period_type' =>
+                        'day',
+
+                    'phim_id' =>
+                        $this->phimId,
+
+                    'phong_chieu_id' =>
+                        $this->phongChieuId,
                 ],
             ];
         } catch (Exception $e) {
             report($e);
+
             return [
                 'success' => false,
-                'message' => 'Đã xảy ra lỗi khi lấy dữ liệu thống kê',
-                'error' => config('app.debug') ? $e->getMessage() : null,
+
+                'message' =>
+                    'Đã xảy ra lỗi khi lấy dữ liệu thống kê',
+
+                'error' =>
+                    config('app.debug')
+                        ? $e->getMessage()
+                        : null,
             ];
         }
     }

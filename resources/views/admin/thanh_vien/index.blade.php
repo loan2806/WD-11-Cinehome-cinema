@@ -6,20 +6,20 @@
 
 @section('content')
 @php
-    $rankStats = [
-        ['label' => 'Tổng thành viên', 'value' => $tongThanhVien, 'icon' => 'fa-users', 'tone' => 'is-total'],
-        ['label' => 'Member', 'value' => $tongMember, 'icon' => 'fa-user', 'tone' => 'is-member'],
-        ['label' => 'Silver', 'value' => $tongSilver, 'icon' => 'fa-medal', 'tone' => 'is-silver'],
-        ['label' => 'Gold', 'value' => $tongGold, 'icon' => 'fa-crown', 'tone' => 'is-gold'],
-        ['label' => 'Platinum', 'value' => $tongPlatinum, 'icon' => 'fa-gem', 'tone' => 'is-platinum'],
-    ];
+$rankStats = [
+['label' => 'Tổng thành viên', 'value' => $tongThanhVien, 'icon' => 'fa-users', 'tone' => 'is-total'],
+['label' => 'Member', 'value' => $tongMember, 'icon' => 'fa-user', 'tone' => 'is-member'],
+['label' => 'Silver', 'value' => $tongSilver, 'icon' => 'fa-medal', 'tone' => 'is-silver'],
+['label' => 'Gold', 'value' => $tongGold, 'icon' => 'fa-crown', 'tone' => 'is-gold'],
+['label' => 'Platinum', 'value' => $tongPlatinum, 'icon' => 'fa-gem', 'tone' => 'is-platinum'],
+];
 
-    $rankMeta = [
-        'member' => ['label' => 'Member', 'icon' => 'fa-user', 'tone' => 'is-member'],
-        'silver' => ['label' => 'Silver', 'icon' => 'fa-medal', 'tone' => 'is-silver'],
-        'gold' => ['label' => 'Gold', 'icon' => 'fa-crown', 'tone' => 'is-gold'],
-        'platinum' => ['label' => 'Platinum', 'icon' => 'fa-gem', 'tone' => 'is-platinum'],
-    ];
+$rankMeta = [
+'member' => ['label' => 'Member', 'icon' => 'fa-user', 'tone' => 'is-member'],
+'silver' => ['label' => 'Silver', 'icon' => 'fa-medal', 'tone' => 'is-silver'],
+'gold' => ['label' => 'Gold', 'icon' => 'fa-crown', 'tone' => 'is-gold'],
+'platinum' => ['label' => 'Platinum', 'icon' => 'fa-gem', 'tone' => 'is-platinum'],
+];
 @endphp
 
 <div class="member-admin-page">
@@ -54,13 +54,13 @@
 
     <section class="member-stat-grid">
         @foreach($rankStats as $stat)
-            <article class="member-stat-card {{ $stat['tone'] }}">
-                <span><i class="fa-solid {{ $stat['icon'] }}"></i></span>
-                <div>
-                    <small>{{ $stat['label'] }}</small>
-                    <strong>{{ number_format($stat['value']) }}</strong>
-                </div>
-            </article>
+        <article class="member-stat-card {{ $stat['tone'] }}">
+            <span><i class="fa-solid {{ $stat['icon'] }}"></i></span>
+            <div>
+                <small>{{ $stat['label'] }}</small>
+                <strong>{{ number_format($stat['value']) }}</strong>
+            </div>
+        </article>
         @endforeach
     </section>
 
@@ -82,10 +82,10 @@
 
             <select name="hang_thanh_vien" class="member-select">
                 <option value="">Tất cả hạng</option>
-                <option value="member" @selected(request('hang_thanh_vien') === 'member')>Member</option>
-                <option value="silver" @selected(request('hang_thanh_vien') === 'silver')>Silver</option>
-                <option value="gold" @selected(request('hang_thanh_vien') === 'gold')>Gold</option>
-                <option value="platinum" @selected(request('hang_thanh_vien') === 'platinum')>Platinum</option>
+                <option value="member" @selected(request('hang_thanh_vien')==='member' )>Member</option>
+                <option value="silver" @selected(request('hang_thanh_vien')==='silver' )>Silver</option>
+                <option value="gold" @selected(request('hang_thanh_vien')==='gold' )>Gold</option>
+                <option value="platinum" @selected(request('hang_thanh_vien')==='platinum' )>Platinum</option>
             </select>
 
             <button type="submit" class="member-filter-btn">
@@ -94,9 +94,9 @@
             </button>
 
             @if(request()->hasAny(['tim_kiem', 'hang_thanh_vien']))
-                <a href="{{ route('admin.thanh-vien.index') }}" class="member-reset-btn">
-                    <i class="fa-solid fa-rotate-left"></i>
-                </a>
+            <a href="{{ route('admin.thanh-vien.index') }}" class="member-reset-btn">
+                <i class="fa-solid fa-rotate-left"></i>
+            </a>
             @endif
         </form>
     </section>
@@ -108,10 +108,21 @@
                 <h3>Thành viên thân thiết</h3>
                 <p>Ưu tiên khách có tổng điểm cao để dễ nhận diện nhóm VIP và chăm sóc lại.</p>
             </div>
-            <span class="member-result-count">
-                <i class="fa-solid fa-id-card"></i>
-                {{ number_format($thanhViens->total()) }} thẻ
-            </span>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+
+                <a href="{{ route('admin.thanh-vien.diem-tat-ca') }}"
+                    class="member-point-manage-btn">
+                    <i class="fa-solid fa-coins"></i>
+                    Tặng / Thu hồi điểm
+                </a>
+
+                <span class="member-result-count">
+                    <i class="fa-solid fa-id-card"></i>
+                    {{ number_format($thanhViens->total()) }} thẻ
+                </span>
+
+            </div>
         </div>
 
         <div class="member-table-wrap">
@@ -130,66 +141,66 @@
                 </thead>
                 <tbody>
                     @forelse($thanhViens as $item)
-                        @php
-                            $user = $item->nguoiDung;
-                            $name = $user?->ho_ten ?: 'Khách chưa cập nhật';
-                            $initial = mb_strtoupper(mb_substr($name, 0, 1));
-                            $rank = $rankMeta[$item->hang_thanh_vien] ?? $rankMeta['member'];
-                        @endphp
-                        <tr>
-                            <td data-label="Khách hàng">
-                                <div class="member-profile">
-                                    <span class="member-avatar {{ $rank['tone'] }}">{{ $initial }}</span>
-                                    <div>
-                                        <strong>{{ $name }}</strong>
-                                        <small>{{ $user?->email ?? 'Chưa có email' }}</small>
-                                    </div>
+                    @php
+                    $user = $item->nguoiDung;
+                    $name = $user?->ho_ten ?: 'Khách chưa cập nhật';
+                    $initial = mb_strtoupper(mb_substr($name, 0, 1));
+                    $rank = $rankMeta[$item->hang_thanh_vien] ?? $rankMeta['member'];
+                    @endphp
+                    <tr>
+                        <td data-label="Khách hàng">
+                            <div class="member-profile">
+                                <span class="member-avatar {{ $rank['tone'] }}">{{ $initial }}</span>
+                                <div>
+                                    <strong>{{ $name }}</strong>
+                                    <small>{{ $user?->email ?? 'Chưa có email' }}</small>
                                 </div>
-                            </td>
-                            <td data-label="Mã thành viên">
-                                <span class="member-code">{{ $item->ma_thanh_vien }}</span>
-                            </td>
-                            <td data-label="Liên hệ">
-                                <span class="member-contact">
-                                    <i class="fa-solid fa-phone"></i>
-                                    {{ $user?->so_dien_thoai ?? 'Chưa cập nhật' }}
-                                </span>
-                            </td>
-                            <td data-label="Hạng">
-                                <span class="member-rank-chip {{ $rank['tone'] }}">
-                                    <i class="fa-solid {{ $rank['icon'] }}"></i>
-                                    {{ $rank['label'] }}
-                                </span>
-                            </td>
-                            <td data-label="Điểm hiện tại">
-                                <span class="member-point is-current">{{ number_format($item->diem_hien_tai) }}</span>
-                            </td>
-                            <td data-label="Tổng tích lũy">
-                                <span class="member-point">{{ number_format($item->tong_diem_tich_luy) }}</span>
-                            </td>
-                            <td data-label="Ngày tham gia">
-                                <span class="member-date">
-                                    <i class="fa-regular fa-calendar"></i>
-                                    {{ $item->ngay_tham_gia?->format('d/m/Y') ?? '---' }}
-                                </span>
-                            </td>
-                            <td data-label="Thao tác" class="is-right">
-                                <a href="{{ route('admin.thanh-vien.show', $item) }}" class="member-action-btn">
-                                    <i class="fa-solid fa-eye"></i>
-                                    Chi tiết
-                                </a>
-                            </td>
-                        </tr>
+                            </div>
+                        </td>
+                        <td data-label="Mã thành viên">
+                            <span class="member-code">{{ $item->ma_thanh_vien }}</span>
+                        </td>
+                        <td data-label="Liên hệ">
+                            <span class="member-contact">
+                                <i class="fa-solid fa-phone"></i>
+                                {{ $user?->so_dien_thoai ?? 'Chưa cập nhật' }}
+                            </span>
+                        </td>
+                        <td data-label="Hạng">
+                            <span class="member-rank-chip {{ $rank['tone'] }}">
+                                <i class="fa-solid {{ $rank['icon'] }}"></i>
+                                {{ $rank['label'] }}
+                            </span>
+                        </td>
+                        <td data-label="Điểm hiện tại">
+                            <span class="member-point is-current">{{ number_format($item->diem_hien_tai) }}</span>
+                        </td>
+                        <td data-label="Tổng tích lũy">
+                            <span class="member-point">{{ number_format($item->tong_diem_tich_luy) }}</span>
+                        </td>
+                        <td data-label="Ngày tham gia">
+                            <span class="member-date">
+                                <i class="fa-regular fa-calendar"></i>
+                                {{ $item->ngay_tham_gia?->format('d/m/Y') ?? '---' }}
+                            </span>
+                        </td>
+                        <td data-label="Thao tác" class="is-right">
+                            <a href="{{ route('admin.thanh-vien.show', $item) }}" class="member-action-btn">
+                                <i class="fa-solid fa-eye"></i>
+                                Chi tiết
+                            </a>
+                        </td>
+                    </tr>
                     @empty
-                        <tr>
-                            <td colspan="8">
-                                <div class="member-empty">
-                                    <i class="fa-regular fa-id-card"></i>
-                                    <h3>Chưa có thẻ thành viên</h3>
-                                    <p>Khi khách hàng đăng ký hoặc phát sinh điểm, dữ liệu sẽ hiển thị tại đây.</p>
-                                </div>
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="8">
+                            <div class="member-empty">
+                                <i class="fa-regular fa-id-card"></i>
+                                <h3>Chưa có thẻ thành viên</h3>
+                                <p>Khi khách hàng đăng ký hoặc phát sinh điểm, dữ liệu sẽ hiển thị tại đây.</p>
+                            </div>
+                        </td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>

@@ -8,10 +8,12 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\ThanhVien;
 use App\Notifications\ResetPasswordNotification;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\HoaDon;
 
 class NguoiDung extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles , SoftDeletes;
 
     protected $table = 'nguoi_dungs';
 
@@ -102,7 +104,10 @@ class NguoiDung extends Authenticatable
             'id'
         );
     }
-
+public function hoaDons()
+{
+    return $this->hasMany(HoaDon::class, 'nguoi_dung_id');
+}
 
     /**
      * Người giới thiệu tài khoản này

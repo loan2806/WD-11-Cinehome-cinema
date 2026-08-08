@@ -36,7 +36,7 @@ class NotificationController extends Controller
             ->first();
 
         $thongBaos = (clone $baseQuery)
-            ->when($activeType, fn ($query) => $query->where('loai_thong_bao', $activeType))
+            ->when($activeType, fn($query) => $query->where('loai_thong_bao', $activeType))
             ->latest()
             ->paginate(8)
             ->withQueryString();
@@ -54,5 +54,20 @@ class NotificationController extends Controller
             'activeType',
             'latestUnread'
         ));
+    }
+    public function markAllRead()
+    {
+        $user = Auth::user();
+
+        ThongBaoCaNhan::where('nguoi_dung_id', $user->id)
+            ->where('da_doc', false)
+            ->update([
+                'da_doc' => true,
+                'doc_luc' => now(),
+            ]);
+
+        return response()->json([
+            'success' => true,
+        ]);
     }
 }

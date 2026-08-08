@@ -10,13 +10,12 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Validator;
 use Exception;
 
 class ThongKeController extends Controller
 {
     /**
-     * Hiển thị trang thống kê doanh thu
+     * Trang thống kê
      */
     public function index(Request $request)
     {
@@ -30,7 +29,11 @@ class ThongKeController extends Controller
         );
 
         $kpi = $service->getKPISummary();
-        $revenueByTime = $service->getRevenueByTime($params['period_type']);
+
+        $revenueByTime = $service->getRevenueByTime(
+            $params['period_type']
+        );
+
         $topFilms = $service->getRevenueByFilm();
         $revenueByRoom = $service->getRevenueByRoom();
         $revenueBySeatType = $service->getRevenueBySeatType();
@@ -48,25 +51,52 @@ class ThongKeController extends Controller
             'revenueByTime' => $revenueByTime,
             'topFilms' => $topFilms,
             'topShowtimes' => $topShowtimes,
+
             'revenueByRoom' => $revenueByRoom,
             'revenueBySeatType' => $revenueBySeatType,
             'revenueByTimeSlot' => $revenueByTimeSlot,
+
             'paymentMethods' => $paymentMethods,
             'voucherStats' => $voucherStats,
             'revenueStructure' => $revenueStructure,
+
             'movies' => $movies,
             'rooms' => $rooms,
+
+            // Khoảng query DB
             'from' => $params['from'],
             'to' => $params['to'],
+
+            // Loại filter
             'periodType' => $params['period_type'],
+
+            // Phim / phòng
             'phimId' => $params['phim_id'],
             'phongChieuId' => $params['phong_chieu_id'],
+
+            // Ngày
+            'fromDate' => $params['from_date'],
+            'toDate' => $params['to_date'],
+
+            // Tháng
+            'fromMonth' => $params['from_month'],
+            'toMonth' => $params['to_month'],
+
+            // Quý
+            'fromQuarter' => $params['from_quarter'],
+            'fromQuarterYear' => $params['from_quarter_year'],
+            'toQuarter' => $params['to_quarter'],
+            'toQuarterYear' => $params['to_quarter_year'],
+
+            // Năm
+            'fromYear' => $params['from_year'],
+            'toYear' => $params['to_year'],
         ]);
     }
 
+
     /**
-     * API: Lấy dữ liệu thống kê (JSON)
-     * Endpoint: GET /admin/api/statistics
+     * API thống kê
      */
     public function apiIndex(Request $request): JsonResponse
     {
@@ -80,20 +110,52 @@ class ThongKeController extends Controller
                 $params['phong_chieu_id']
             );
 
-            return response()->json($service->getApiResponse());
+            $response = $service->getApiResponse();
+
+            $response['filters'] = [
+                'period_type' => $params['period_type'],
+
+                'from' => $params['from'],
+                'to' => $params['to'],
+
+                'from_date' => $params['from_date'],
+                'to_date' => $params['to_date'],
+
+                'from_month' => $params['from_month'],
+                'to_month' => $params['to_month'],
+
+                'from_quarter' => $params['from_quarter'],
+                'from_quarter_year' => $params['from_quarter_year'],
+
+                'to_quarter' => $params['to_quarter'],
+                'to_quarter_year' => $params['to_quarter_year'],
+
+                'from_year' => $params['from_year'],
+                'to_year' => $params['to_year'],
+
+                'phim_id' => $params['phim_id'],
+                'phong_chieu_id' => $params['phong_chieu_id'],
+            ];
+
+            return response()->json($response);
+
         } catch (Exception $e) {
+
             report($e);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Đã xảy ra lỗi khi lấy dữ liệu thống kê',
-                'error' => config('app.debug') ? $e->getMessage() : null,
+                'error' => config('app.debug')
+                    ? $e->getMessage()
+                    : null,
             ], 500);
         }
     }
 
+
     /**
-     * Xuất báo cáo Excel
+     * Excel
      */
     public function exportExcel(Request $request)
     {
@@ -107,18 +169,32 @@ class ThongKeController extends Controller
                 $params['phong_chieu_id']
             );
 
-            $fileName = 'Thong-ke-doanh-thu-' . Carbon::parse($params['from'])->format('Y-m-d') . '.xlsx';
+            $fileName =
+                'Thong-ke-doanh-thu-' .
+                Carbon::parse($params['from'])->format('Y-m-d') .
+                '.xlsx';
 
-            return Excel::download(new RevenueExport($service), $fileName);
+            return Excel::download(
+                new RevenueExport($service),
+                $fileName
+            );
+
         } catch (Exception $e) {
+
             report($e);
 
-            return redirect()->back()->with('error', 'Đã xảy ra lỗi khi xuất file Excel');
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Đã xảy ra lỗi khi xuất file Excel'
+                );
         }
     }
 
+
     /**
-     * Xuất báo cáo PDF
+     * PDF
      */
     public function exportPdf(Request $request)
     {
@@ -133,76 +209,500 @@ class ThongKeController extends Controller
             );
 
             $kpi = $service->getKPISummary();
-            $revenueByTime = $service->getRevenueByTime('day');
-            $topFilms = $service->getRevenueByFilm();
-            $revenueStructure = $service->getRevenueStructure();
 
-            $pdf = Pdf::loadView('admin.thong_ke.pdf', compact(
-                'kpi',
-                'revenueByTime',
-                'topFilms',
-                'revenueStructure',
-                'from',
-                'to'
-            ) + [
-                'from' => $params['from'],
-                'to' => $params['to'],
-            ]);
+            $revenueByTime =
+                $service->getRevenueByTime('day');
 
-            $fileName = 'Thong-ke-doanh-thu-' . Carbon::parse($params['from'])->format('Y-m-d') . '.pdf';
+            $topFilms =
+                $service->getRevenueByFilm();
+
+            $revenueStructure =
+                $service->getRevenueStructure();
+
+            $from = $params['from'];
+            $to = $params['to'];
+
+            $pdf = Pdf::loadView(
+                'admin.thong_ke.pdf',
+                compact(
+                    'kpi',
+                    'revenueByTime',
+                    'topFilms',
+                    'revenueStructure',
+                    'from',
+                    'to'
+                )
+            );
+
+            $fileName =
+                'Thong-ke-doanh-thu-' .
+                Carbon::parse($params['from'])->format('Y-m-d') .
+                '.pdf';
 
             return $pdf->download($fileName);
+
         } catch (Exception $e) {
+
             report($e);
 
-            return redirect()->back()->with('error', 'Đã xảy ra lỗi khi xuất file PDF');
+            return redirect()
+                ->back()
+                ->with(
+                    'error',
+                    'Đã xảy ra lỗi khi xuất file PDF'
+                );
         }
     }
 
+
     /**
-     * Parse và validate các tham số filter từ request
+     * =========================================================
+     * PARSE FILTER
+     * =========================================================
      */
     protected function parseFilterParams(Request $request): array
     {
         $periodType = $request->input('period_type', 'day');
-        $fromInput = $request->input('from');
-        $toInput = $request->input('to');
-        $phimId = $request->input('phim_id') ? (int) $request->input('phim_id') : null;
-        $phongChieuId = $request->input('phong_chieu_id') ? (int) $request->input('phong_chieu_id') : null;
 
-        // Xử lý from/to dựa trên period_type hoặc input trực tiếp
-        if ($fromInput && $toInput) {
-            $from = Carbon::parse($fromInput)->startOfDay()->toDateTimeString();
-            $to = Carbon::parse($toInput)->endOfDay()->toDateTimeString();
-        } else {
-            $now = Carbon::now();
-            switch ($periodType) {
-                case 'month':
-                    $from = $now->copy()->startOfMonth()->startOfDay()->toDateTimeString();
-                    $to = $now->copy()->endOfMonth()->endOfDay()->toDateTimeString();
-                    break;
-                case 'quarter':
-                    $currentQuarter = ceil($now->month / 3);
-                    $from = $now->copy()->quarter($currentQuarter)->startOfQuarter()->startOfDay()->toDateTimeString();
-                    $to = $now->copy()->quarter($currentQuarter)->endOfQuarter()->endOfDay()->toDateTimeString();
-                    break;
-                case 'year':
-                    $from = $now->copy()->startOfYear()->startOfDay()->toDateTimeString();
-                    $to = $now->copy()->endOfYear()->endOfDay()->toDateTimeString();
-                    break;
-                default: // day
-                    $from = $now->copy()->startOfDay()->toDateTimeString();
-                    $to = $now->copy()->endOfDay()->toDateTimeString();
-                    break;
+        $phimId = $request->filled('phim_id')
+            ? (int) $request->input('phim_id')
+            : null;
+
+        $phongChieuId = $request->filled('phong_chieu_id')
+            ? (int) $request->input('phong_chieu_id')
+            : null;
+
+        $now = Carbon::now();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Khởi tạo
+        |--------------------------------------------------------------------------
+        */
+
+        $from = null;
+        $to = null;
+
+        $fromDate = null;
+        $toDate = null;
+
+        $fromMonth = null;
+        $toMonth = null;
+
+        $fromQuarter = null;
+        $fromQuarterYear = null;
+
+        $toQuarter = null;
+        $toQuarterYear = null;
+
+        $fromYear = null;
+        $toYear = null;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | NGÀY
+        |--------------------------------------------------------------------------
+        */
+
+        if ($periodType === 'day') {
+
+            $fromDate = $request->input('from_date')
+                ?: $request->input('from');
+
+            $toDate = $request->input('to_date')
+                ?: $request->input('to');
+
+            $fromDate = $fromDate ?: $now->format('Y-m-d');
+            $toDate = $toDate ?: $fromDate;
+
+            try {
+
+                $fromCarbon = Carbon::createFromFormat(
+                    'Y-m-d',
+                    substr($fromDate, 0, 10)
+                )->startOfDay();
+
+                $toCarbon = Carbon::createFromFormat(
+                    'Y-m-d',
+                    substr($toDate, 0, 10)
+                )->endOfDay();
+
+            } catch (Exception $e) {
+
+                $fromDate = $now->format('Y-m-d');
+                $toDate = $fromDate;
+
+                $fromCarbon = $now->copy()->startOfDay();
+                $toCarbon = $now->copy()->endOfDay();
             }
+
+            $from = $fromCarbon->toDateTimeString();
+            $to = $toCarbon->toDateTimeString();
         }
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | THÁNG
+        |--------------------------------------------------------------------------
+        */
+
+        elseif ($periodType === 'month') {
+
+            $fromMonth = $request->input('from_month')
+                ?: $request->input('from');
+
+            $toMonth = $request->input('to_month')
+                ?: $request->input('to');
+
+            $fromMonth = $fromMonth
+                ? substr($fromMonth, 0, 7)
+                : $now->format('Y-m');
+
+            $toMonth = $toMonth
+                ? substr($toMonth, 0, 7)
+                : $fromMonth;
+
+            try {
+
+                $fromCarbon = Carbon::createFromFormat(
+                    'Y-m',
+                    $fromMonth
+                )->startOfMonth();
+
+                $toCarbon = Carbon::createFromFormat(
+                    'Y-m',
+                    $toMonth
+                )->endOfMonth();
+
+            } catch (Exception $e) {
+
+                $fromMonth = $now->format('Y-m');
+                $toMonth = $fromMonth;
+
+                $fromCarbon = $now->copy()->startOfMonth();
+                $toCarbon = $now->copy()->endOfMonth();
+            }
+
+            $fromMonth = $fromCarbon->format('Y-m');
+            $toMonth = $toCarbon->format('Y-m');
+
+            $from = $fromCarbon->startOfDay()->toDateTimeString();
+            $to = $toCarbon->endOfDay()->toDateTimeString();
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | QUÝ
+        |--------------------------------------------------------------------------
+        */
+
+        elseif ($periodType === 'quarter') {
+
+            /*
+             * QUAN TRỌNG:
+             *
+             * Không dùng:
+             * input('from_quarter', 1)
+             *
+             * vì khi JS không gửi giá trị sẽ tự thành Q1.
+             *
+             * Ta lấy riêng từng giá trị và fallback hợp lý.
+             */
+
+            $fromQuarterInput = $request->input('from_quarter');
+            $fromQuarterYearInput = $request->input('from_quarter_year');
+
+            $toQuarterInput = $request->input('to_quarter');
+            $toQuarterYearInput = $request->input('to_quarter_year');
+
+
+            /*
+             * Hỗ trợ trường hợp frontend gửi:
+             *
+             * from=Q3/2021
+             * to=Q2/2022
+             */
+
+            if (
+                (!$fromQuarterInput || !$fromQuarterYearInput)
+                && preg_match(
+                    '/^Q([1-4])\/(\d{4})$/i',
+                    (string) $request->input('from'),
+                    $matches
+                )
+            ) {
+                $fromQuarterInput = (int) $matches[1];
+                $fromQuarterYearInput = (int) $matches[2];
+            }
+
+            if (
+                (!$toQuarterInput || !$toQuarterYearInput)
+                && preg_match(
+                    '/^Q([1-4])\/(\d{4})$/i',
+                    (string) $request->input('to'),
+                    $matches
+                )
+            ) {
+                $toQuarterInput = (int) $matches[1];
+                $toQuarterYearInput = (int) $matches[2];
+            }
+
+
+            /*
+             * Giá trị mặc định
+             */
+
+            $currentQuarter = (int) ceil($now->month / 3);
+
+            $fromQuarter = $fromQuarterInput !== null
+                ? (int) $fromQuarterInput
+                : $currentQuarter;
+
+            $fromQuarterYear = $fromQuarterYearInput !== null
+                ? (int) $fromQuarterYearInput
+                : $now->year;
+
+            $toQuarter = $toQuarterInput !== null
+                ? (int) $toQuarterInput
+                : $fromQuarter;
+
+            $toQuarterYear = $toQuarterYearInput !== null
+                ? (int) $toQuarterYearInput
+                : $fromQuarterYear;
+
+
+            /*
+             * Bảo vệ
+             */
+
+            $fromQuarter = max(1, min(4, $fromQuarter));
+            $toQuarter = max(1, min(4, $toQuarter));
+
+            $fromQuarterYear = max(
+                1900,
+                min(2100, $fromQuarterYear)
+            );
+
+            $toQuarterYear = max(
+                1900,
+                min(2100, $toQuarterYear)
+            );
+
+
+            /*
+             * Tính tháng bắt đầu
+             */
+
+            $fromStartMonth =
+                (($fromQuarter - 1) * 3) + 1;
+
+            $toStartMonth =
+                (($toQuarter - 1) * 3) + 1;
+
+
+            /*
+             * Ngày bắt đầu
+             */
+
+            $fromCarbon = Carbon::create(
+                $fromQuarterYear,
+                $fromStartMonth,
+                1,
+                0,
+                0,
+                0
+            )->startOfMonth();
+
+
+            /*
+             * Ngày kết thúc
+             */
+
+            $toCarbon = Carbon::create(
+                $toQuarterYear,
+                $toStartMonth,
+                1,
+                0,
+                0,
+                0
+            )
+                ->addMonths(2)
+                ->endOfMonth();
+
+
+            $from = $fromCarbon
+                ->startOfDay()
+                ->toDateTimeString();
+
+            $to = $toCarbon
+                ->endOfDay()
+                ->toDateTimeString();
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | NĂM
+        |--------------------------------------------------------------------------
+        */
+
+        elseif ($periodType === 'year') {
+
+            $fromYearInput = $request->input('from_year');
+            $toYearInput = $request->input('to_year');
+
+
+            /*
+             * Hỗ trợ frontend cũ:
+             */
+
+            if (
+                $fromYearInput === null &&
+                is_numeric($request->input('from'))
+            ) {
+                $fromYearInput = $request->input('from');
+            }
+
+            if (
+                $toYearInput === null &&
+                is_numeric($request->input('to'))
+            ) {
+                $toYearInput = $request->input('to');
+            }
+
+
+            /*
+             * Lấy năm
+             */
+
+            $fromYear = $fromYearInput !== null
+                ? (int) $fromYearInput
+                : $now->year;
+
+            $toYear = $toYearInput !== null
+                ? (int) $toYearInput
+                : $fromYear;
+
+
+            /*
+             * Giới hạn
+             */
+
+            $fromYear = max(
+                1900,
+                min(2100, $fromYear)
+            );
+
+            $toYear = max(
+                1900,
+                min(2100, $toYear)
+            );
+
+
+            /*
+             * Query DB
+             */
+
+            $fromCarbon = Carbon::create(
+                $fromYear,
+                1,
+                1,
+                0,
+                0,
+                0
+            )->startOfYear();
+
+
+            $toCarbon = Carbon::create(
+                $toYear,
+                12,
+                31,
+                23,
+                59,
+                59
+            )->endOfYear();
+
+
+            $from = $fromCarbon
+                ->startOfDay()
+                ->toDateTimeString();
+
+            $to = $toCarbon
+                ->endOfDay()
+                ->toDateTimeString();
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | FALLBACK
+        |--------------------------------------------------------------------------
+        */
+
+        else {
+
+            $periodType = 'day';
+
+            $fromDate = $now->format('Y-m-d');
+            $toDate = $fromDate;
+
+            $from = $now
+                ->copy()
+                ->startOfDay()
+                ->toDateTimeString();
+
+            $to = $now
+                ->copy()
+                ->endOfDay()
+                ->toDateTimeString();
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RETURN
+        |--------------------------------------------------------------------------
+        */
+
         return [
-            'period_type' => $periodType,
+
             'from' => $from,
             'to' => $to,
+
+            'period_type' => $periodType,
+
             'phim_id' => $phimId,
             'phong_chieu_id' => $phongChieuId,
+
+            /*
+             * Ngày
+             */
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+
+            /*
+             * Tháng
+             */
+            'from_month' => $fromMonth,
+            'to_month' => $toMonth,
+
+            /*
+             * Quý
+             */
+            'from_quarter' => $fromQuarter,
+            'from_quarter_year' => $fromQuarterYear,
+
+            'to_quarter' => $toQuarter,
+            'to_quarter_year' => $toQuarterYear,
+
+            /*
+             * Năm
+             */
+            'from_year' => $fromYear,
+            'to_year' => $toYear,
         ];
     }
 }

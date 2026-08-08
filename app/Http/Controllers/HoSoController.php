@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use App\Models\ThongBaoCaNhan;
 
 class HoSoController extends Controller
 {
@@ -51,15 +52,6 @@ class HoSoController extends Controller
                 'max:255',
             ],
 
-            'email' => [
-                'required',
-                'string',
-                'lowercase',
-                'email',
-                'max:255',
-                Rule::unique('nguoi_dungs', 'email')->ignore($user->id),
-            ],
-
             'ngay_sinh' => [
                 'nullable',
                 'date',
@@ -75,10 +67,6 @@ class HoSoController extends Controller
             'ho_ten.required' => 'Vui lòng nhập họ và tên của bạn.',
             'ho_ten.max' => 'Họ và tên không được vượt quá 255 ký tự.',
 
-            'email.required' => 'Vui lòng nhập địa chỉ email liên hệ.',
-            'email.email' => 'Địa chỉ email không đúng định dạng.',
-            'email.unique' => 'Địa chỉ email này đã được đăng ký bởi thành viên khác.',
-
             'ngay_sinh.date' => 'Ngày sinh không đúng định dạng ngày tháng.',
             'ngay_sinh.before_or_equal' => 'Ngày sinh không được lớn hơn ngày hiện tại.',
 
@@ -87,23 +75,27 @@ class HoSoController extends Controller
         ]);
 
         /*
-         * Chuẩn hóa mã giới thiệu:
-         * - Xóa khoảng trắng đầu/cuối.
-         * - Chuyển thành chữ in hoa.
-         */
+     * Chuẩn hóa mã giới thiệu.
+     */
         $maGioiThieu = strtoupper(
             trim((string) ($data['ma_gioi_thieu'] ?? ''))
         );
 
         /*
-         * ma_gioi_thieu không nằm trong bảng nguoi_dungs,
-         * vì vậy phải loại khỏi dữ liệu cập nhật người dùng.
-         */
+     * ma_gioi_thieu không thuộc bảng nguoi_dungs.
+     */
         unset($data['ma_gioi_thieu']);
 
         /*
-         * Ngày sinh chỉ được thiết lập một lần.
-         */
+     * Ngày sinh chỉ được thiết lập một lần.
+     *
+     * Chưa có ngày sinh:
+     *     -> cho phép lưu ngày sinh lần đầu.
+     *
+     * Đã có ngày sinh:
+     *     -> loại bỏ khỏi dữ liệu cập nhật,
+     *        không thể thay đổi nữa.
+     */
         if ($user->ngay_sinh) {
             unset($data['ngay_sinh']);
         }
@@ -116,20 +108,35 @@ class HoSoController extends Controller
             $maGioiThieu,
             &$daLienKetGioiThieu
         ): void {
+
             /*
-             * Cập nhật thông tin hồ sơ.
-             */
+         * Cập nhật thông tin hồ sơ.
+         */
+            /*
+ * Cập nhật thông tin hồ sơ.
+ */
             $user->fill($data);
 
-            if ($user->isDirty('email')) {
-                $user->email_verified_at = null;
+            $coThayDoi = $user->isDirty();
+
+            if ($coThayDoi) {
+                $user->save();
+
+                ThongBaoCaNhan::create([
+                    'nguoi_dung_id' => $user->id,
+                    'tieu_de' => 'Thông tin tài khoản đã được cập nhật',
+                    'noi_dung' => 'Thông tin cá nhân của bạn đã được cập nhật thành công.',
+                    'loai_thong_bao' => 'tai_khoan',
+                    'duong_dan' => route('profile.edit'),
+                    'da_doc' => 0,
+                    'doc_luc' => null,
+                ]);
             }
 
-            $user->save();
-
             /*
-             * Người dùng không nhập mã thì chỉ cập nhật hồ sơ.
-             */
+         * Người dùng không nhập mã giới thiệu
+         * thì chỉ cập nhật hồ sơ.
+         */
             if ($maGioiThieu === '') {
                 return;
             }

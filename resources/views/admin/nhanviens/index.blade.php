@@ -6,17 +6,17 @@
 
 @section('content')
 @php
-    $summary = $summary ?? [
-        'total' => $nhanViens->total(),
-        'active' => 0,
-        'locked' => 0,
-        'new_this_month' => 0,
-    ];
+$summary = $summary ?? [
+'total' => $nhanViens->total(),
+'active' => 0,
+'locked' => 0,
+'new_this_month' => 0,
+];
 
-    $activeFilters = collect([
-        request('keyword'),
-        request('status'),
-    ])->filter()->count();
+$activeFilters = collect([
+request('keyword'),
+request('status'),
+])->filter()->count();
 @endphp
 
 <div class="staff-list-page">
@@ -37,10 +37,20 @@
             </div>
         </div>
 
-        <a href="{{ route('admin.nhanviens.create') }}" class="staff-list-primary-btn">
-            <i class="fa-solid fa-plus"></i>
-            Thêm nhân viên
-        </a>
+        <div class="d-flex gap-2">
+
+            <a href="{{ route('admin.nhanviens.trash') }}"
+                class="staff-list-secondary-btn">
+                <i class="fa-solid fa-trash"></i>
+                Thùng rác
+            </a>
+            <a href="{{ route('admin.nhanviens.create') }}"
+                class="staff-list-primary-btn">
+                <i class="fa-solid fa-plus"></i>
+                Thêm nhân viên
+            </a>
+
+        </div>
     </section>
 
     <section class="staff-list-stats">
@@ -90,28 +100,27 @@
                     type="text"
                     name="keyword"
                     value="{{ request('keyword') }}"
-                    placeholder="Tìm theo tên hoặc email..."
-                >
+                    placeholder="Tìm theo tên hoặc email...">
             </label>
 
             <select name="status" class="admin-input">
                 <option value="">Tất cả trạng thái</option>
-                <option value="active" @selected(request('status') === 'active')>Đang hoạt động</option>
-                <option value="locked" @selected(request('status') === 'locked')>Đã khóa</option>
+                <option value="active" @selected(request('status')==='active' )>Đang hoạt động</option>
+                <option value="locked" @selected(request('status')==='locked' )>Đã khóa</option>
             </select>
 
             <button class="staff-list-filter-btn" type="submit">
                 <i class="fa-solid fa-filter"></i>
                 Lọc
                 @if ($activeFilters)
-                    <span>{{ $activeFilters }}</span>
+                <span>{{ $activeFilters }}</span>
                 @endif
             </button>
 
             @if ($activeFilters)
-                <a href="{{ route('admin.nhanviens.index') }}" class="staff-list-reset-btn" title="Xóa bộ lọc">
-                    <i class="fa-solid fa-rotate-left"></i>
-                </a>
+            <a href="{{ route('admin.nhanviens.index') }}" class="staff-list-reset-btn" title="Xóa bộ lọc">
+                <i class="fa-solid fa-rotate-left"></i>
+            </a>
             @endif
         </form>
 
@@ -129,90 +138,122 @@
                 </thead>
                 <tbody>
                     @forelse($nhanViens as $nhanVien)
-                        @php
-                            $isActive = (bool) $nhanVien->trang_thai_hoat_dong;
-                            $isSelf = auth()->id() === $nhanVien->id;
-                        @endphp
+                    @php
+                    $isActive = (bool) $nhanVien->trang_thai_hoat_dong;
+                    $isSelf = auth()->id() === $nhanVien->id;
+                    @endphp
 
-                        <tr>
-                            <td>
-                                <span class="staff-id-badge">#{{ $nhanVien->id }}</span>
-                            </td>
-                            <td>
-                                <div class="staff-profile-cell">
-                                    <span class="staff-avatar">
-                                        <i class="fa-solid fa-user-tie"></i>
-                                    </span>
-                                    <div>
-                                        <strong>{{ $nhanVien->ho_ten }}</strong>
-                                        <small>
-                                            <i class="fa-solid fa-briefcase"></i>
-                                            Nhân viên hệ thống
-                                            @if ($isSelf)
-                                                <em>Tài khoản của bạn</em>
-                                            @endif
-                                        </small>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="staff-email">{{ $nhanVien->email }}</span>
-                            </td>
-                            <td>
-                                <span class="staff-status {{ $isActive ? 'is-active' : 'is-locked' }}">
-                                    <i class="fa-solid {{ $isActive ? 'fa-circle-check' : 'fa-lock' }}"></i>
-                                    {{ $isActive ? 'Hoạt động' : 'Đã khóa' }}
+                    <tr>
+                        <td>
+                            <span class="staff-id-badge">#{{ $nhanVien->id }}</span>
+                        </td>
+                        <td>
+                            <div class="staff-profile-cell">
+                                <span class="staff-avatar">
+                                    <i class="fa-solid fa-user-tie"></i>
                                 </span>
-                            </td>
-                            <td>
-                                <span class="staff-date">
-                                    <i class="fa-regular fa-calendar"></i>
-                                    {{ $nhanVien->created_at?->format('d/m/Y') ?? '-' }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="staff-actions">
-                                    <a href="{{ route('admin.nhanviens.edit', $nhanVien) }}" class="staff-action-btn is-edit" title="Chỉnh sửa">
-                                        <i class="fa-solid fa-pen"></i>
-                                    </a>
-
-                                    <form method="POST" action="{{ route('admin.nhanviens.toggle-status', $nhanVien) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button
-                                            class="staff-action-btn {{ $isActive ? 'is-lock' : 'is-unlock' }}"
-                                            type="submit"
-                                            title="{{ $isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản' }}"
-                                            @disabled($isSelf)
-                                        >
-                                            <i class="fa-solid {{ $isActive ? 'fa-lock' : 'fa-lock-open' }}"></i>
-                                        </button>
-                                    </form>
-
-                                    <form method="POST" action="{{ route('admin.nhanviens.destroy', $nhanVien) }}" onsubmit="return confirm('Xóa nhân viên {{ $nhanVien->ho_ten }}?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="staff-action-btn is-delete" type="submit" title="Xóa nhân viên" @disabled($isSelf)>
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    </form>
+                                <div>
+                                    <strong>{{ $nhanVien->ho_ten }}</strong>
+                                    <small>
+                                        <i class="fa-solid fa-briefcase"></i>
+                                        Nhân viên hệ thống
+                                        @if ($isSelf)
+                                        <em>Tài khoản của bạn</em>
+                                        @endif
+                                    </small>
                                 </div>
-                            </td>
-                        </tr>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="staff-email">{{ $nhanVien->email }}</span>
+                        </td>
+                        <td>
+                            <span class="staff-status {{ $isActive ? 'is-active' : 'is-locked' }}">
+                                <i class="fa-solid {{ $isActive ? 'fa-circle-check' : 'fa-lock' }}"></i>
+                                {{ $isActive ? 'Hoạt động' : 'Đã khóa' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="staff-date">
+                                <i class="fa-regular fa-calendar"></i>
+                                {{ $nhanVien->created_at?->format('d/m/Y') ?? '-' }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="staff-actions">
+
+                                <a href="{{ route('admin.nhanviens.edit', $nhanVien) }}"
+                                    class="staff-action-btn is-edit"
+                                    title="Chỉnh sửa">
+                                    <i class="fa-solid fa-pen"></i>
+                                </a>
+
+
+                                @if($nhanVien->trashed())
+
+                                {{-- Khôi phục nhân viên --}}
+                                <form method="POST" action="{{ route('admin.nhanviens.restore', $nhanVien->id) }}">
+                                    @csrf
+                                    <button class="staff-action-btn is-unlock"
+                                        type="submit"
+                                        title="Khôi phục nhân viên">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </form>
+
+                                @else
+
+                                {{-- Khóa / mở khóa --}}
+                                <form method="POST" action="{{ route('admin.nhanviens.toggle-status', $nhanVien) }}">
+                                    @csrf
+                                    @method('PATCH')
+
+                                    <button
+                                        class="staff-action-btn {{ $isActive ? 'is-lock' : 'is-unlock' }}"
+                                        type="submit"
+                                        title="{{ $isActive ? 'Khóa tài khoản' : 'Mở khóa tài khoản' }}"
+                                        @disabled($isSelf)>
+                                        <i class="fa-solid {{ $isActive ? 'fa-lock' : 'fa-lock-open' }}"></i>
+                                    </button>
+                                </form>
+
+
+                                {{-- Xóa --}}
+                                <form method="POST"
+                                    action="{{ route('admin.nhanviens.destroy', $nhanVien) }}"
+                                    onsubmit="return confirm('Xóa nhân viên {{ $nhanVien->ho_ten }}?')">
+
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button class="staff-action-btn is-delete"
+                                        type="submit"
+                                        title="Xóa nhân viên"
+                                        @disabled($isSelf)>
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+
+                                </form>
+
+                                @endif
+
+                            </div>
+                        </td>
+                    </tr>
                     @empty
-                        <tr>
-                            <td colspan="6">
-                                <div class="staff-list-empty">
-                                    <i class="fa-solid fa-user-group"></i>
-                                    <h3>Chưa có nhân viên phù hợp</h3>
-                                    <p>Thử đổi bộ lọc hoặc tạo tài khoản nhân viên mới để bắt đầu phân quyền vận hành.</p>
-                                    <a href="{{ route('admin.nhanviens.create') }}" class="staff-list-primary-btn">
-                                        <i class="fa-solid fa-plus"></i>
-                                        Thêm nhân viên
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
+                    <tr>
+                        <td colspan="6">
+                            <div class="staff-list-empty">
+                                <i class="fa-solid fa-user-group"></i>
+                                <h3>Chưa có nhân viên phù hợp</h3>
+                                <p>Thử đổi bộ lọc hoặc tạo tài khoản nhân viên mới để bắt đầu phân quyền vận hành.</p>
+                                <a href="{{ route('admin.nhanviens.create') }}" class="staff-list-primary-btn">
+                                    <i class="fa-solid fa-plus"></i>
+                                    Thêm nhân viên
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>

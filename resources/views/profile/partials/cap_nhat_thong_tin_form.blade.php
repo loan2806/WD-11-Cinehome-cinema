@@ -122,14 +122,10 @@
                     name="email"
                     type="email"
                     value="{{ old('email', $user->email) }}"
-                    required
+                    disabled
                     autocomplete="username"
                 >
             </div>
-
-            @error('email')
-                <small class="profile-error">{{ $message }}</small>
-            @enderror
         </label>
 
         {{-- Mã giới thiệu --}}

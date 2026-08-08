@@ -26,107 +26,87 @@
     </div>
 
     {{-- Danh sách --}}
-    <div class="space-y-4 p-5">
+   <div class="space-y-3 p-5">
 
-        @forelse($variants as $variant)
+@forelse($variants as $variant)
 
-            <div class="rounded-3xl border border-white/10 bg-[#0f0f0f] p-5">
+<div class="rounded-2xl border border-white/10 bg-[#111111] px-6 py-5">
 
-                <div class="grid gap-4 lg:grid-cols-[1fr_auto]">
+    <div class="grid grid-cols-5 items-center gap-4">
 
-                    <div>
+        {{-- Biến thể --}}
+        <div>
+            <p class="text-xs text-gray-500 mb-1">
+                Biến thể
+            </p>
 
-                        <div class="mb-3 flex flex-wrap items-center gap-2">
+            <p class="font-semibold text-white">
+                {{ $variant->value }}
+            </p>
+        </div>
 
-                            <span class="rounded-full bg-[#d99a32]/20 px-3 py-1 text-xs font-bold text-[#f4c56a]">
-                                {{ $variant->value }}
-                            </span>
+        {{-- Giá --}}
+        <div>
+            <p class="text-xs text-gray-500 mb-1">
+                Giá
+            </p>
 
-                            @if($variant->is_active)
-                                <span class="rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-xs font-bold text-green-300">
-                                    Hiển thị
-                                </span>
-                            @else
-                                <span class="rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-bold text-red-300">
-                                    Tạm ẩn
-                                </span>
-                            @endif
+            <p class="font-bold text-[#f4c56a]">
+                {{ number_format($variant->price) }}đ
+            </p>
+        </div>
 
-                        </div>
+        {{-- Tồn kho --}}
+        <div>
+            <p class="text-xs text-gray-500 mb-1">
+                Tồn kho
+            </p>
 
-                        <div class="grid gap-3 md:grid-cols-3">
+            <p class="font-bold text-white">
+                {{ $variant->stock_quantity }}
+            </p>
+        </div>
 
-                            <div>
-                                <p class="text-xs text-gray-500">
-                                    Giá bán
-                                </p>
+        {{-- Trạng thái --}}
+        <div>
+            <p class="text-xs text-gray-500 mb-1">
+                Trạng thái
+            </p>
 
-                                <p class="text-lg font-black text-[#f4c56a]">
-                                    {{ number_format($variant->price) }}đ
-                                </p>
-                            </div>
+            @if($variant->is_active)
+                <span class="text-green-400 font-semibold">
+                    Đang bán
+                </span>
+            @else
+                <span class="text-red-400 font-semibold">
+                    Ngừng bán
+                </span>
+            @endif
+        </div>
 
-                            <div>
-                                <p class="text-xs text-gray-500">
-                                    Tồn kho
-                                </p>
+        {{-- Action --}}
+        <div class="flex justify-end">
 
-                                <p class="text-lg font-black text-white">
-                                    {{ $variant->stock_quantity }}
-                                </p>
-                            </div>
+            <a href="{{ route('admin.foods.variants.edit',[$food,$variant]) }}"
+               class="w-10 h-10 rounded-xl bg-yellow-500/15 hover:bg-yellow-500/25 transition flex items-center justify-center text-yellow-400">
+                <i class="fa-solid fa-pen"></i>
+            </a>
 
-                            <div>
-                                <p class="text-xs text-gray-500">
-                                    ID
-                                </p>
-
-                                <p class="text-lg font-black text-white">
-                                    #{{ $variant->id }}
-                                </p>
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                    <div class="flex items-center gap-2">
-
-                        <a href="{{ route('admin.foods.variants.edit', [$food, $variant]) }}"
-                          class="h-10 w-10 flex items-center justify-center rounded-xl bg-yellow-500/15 text-yellow-300">
-                                        <i class="fa-solid fa-pen"></i>
-                        </a>
-
-                        <form
-                            action="{{ route('admin.foods.variants.destroy',[$food,$variant]) }}"
-                            method="POST"
-                            onsubmit="return confirm('Xóa biến thể này?')">
-
-                            @csrf
-                            @method('DELETE')
-
-                            <button onclick="return confirm('Xóa biến thể này?')"
-                                            class="h-10 w-10 rounded-xl bg-red-500/15 text-red-300">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-
-                        </form>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        @empty
-
-            <div class="rounded-3xl border border-dashed border-white/10 p-10 text-center text-gray-400">
-                Chưa có biến thể nào.
-            </div>
-
-        @endforelse
+        </div>
 
     </div>
+
+</div>
+
+@empty
+
+<div class="rounded-2xl border border-dashed border-white/10 p-10 text-center text-gray-400">
+    Chưa có biến thể nào.
+</div>
+
+@endforelse
+
+</div>
 
     <div class="border-t border-white/10 p-4">
         {{ $variants->links() }}

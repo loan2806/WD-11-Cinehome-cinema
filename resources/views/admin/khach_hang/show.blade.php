@@ -99,13 +99,6 @@
             </div>
 
             <div>
-                <p class="text-sm text-gray-400">Trạng thái email</p>
-                <p class="mt-1 font-bold text-white">
-                    {{ $khachHang->email_verified_at ? 'Đã xác minh' : 'Chưa xác minh' }}
-                </p>
-            </div>
-
-            <div>
                 <p class="text-sm text-gray-400">Số điện thoại</p>
                 <p class="mt-1 font-bold text-white">
                     {{ $khachHang->so_dien_thoai ?? '---' }}

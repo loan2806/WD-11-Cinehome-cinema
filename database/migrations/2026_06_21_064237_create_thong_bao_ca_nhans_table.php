@@ -33,6 +33,7 @@ return new class extends Migration
                 've',
                 'hang_thanh_vien',
                 'he_thong',
+                'tai_khoan',
             ])->default('he_thong');
 
             // Đường dẫn khi click
