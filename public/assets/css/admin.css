@@ -18635,8 +18635,8 @@ body {
     width: 100%;
     display: flex !important;
     align-items: flex-end !important;
-    flex-wrap: wrap !important;
-    gap: 12px !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
 
     position: relative !important;
     margin: 0 !important;

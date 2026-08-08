@@ -62,8 +62,7 @@ class DashboardController extends Controller
             $luongKhachHomNay = $veDaBanHomNay;
         }
 
-        // 6. Doanh thu đồ ăn & Combo hôm nay (Bảng food_invoices, cột 'total', status 'paid')
-        $doanhThuDoAnHomNay = DB::table('food_invoices')
+
             ->where('payment_status', 'paid')
             ->whereDate('created_at', $today)
             ->sum('total');
