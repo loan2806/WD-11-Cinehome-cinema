@@ -193,8 +193,11 @@ class VoucherController extends Controller
                     ->where('trang_thai_hoat_dong', true)),
             ],
             'quantity' => ['required', 'integer', 'min:1', 'max:20'],
-            'loai_cap_phat' => ['required', 'in:admin_tang,khach_hang_than_thiet'],
+            'loai_cap_phat' => ['required', 'in:admin_tang,khach_hang_than_thiet,khac'],
+            'ly_do_khac' => ['nullable', 'required_if:loai_cap_phat,khac', 'string', 'max:255'],
             'ngay_het_han' => ['nullable', 'date', 'after_or_equal:today'],
+        ], [
+            'ly_do_khac.required_if' => 'Vui lòng nhập lý do cấp.',
         ]);
 
         $voucher = Voucher::findOrFail($data['voucher_id']);
@@ -223,6 +226,7 @@ class VoucherController extends Controller
                     'voucher_id' => $voucher->id,
                     'ma_voucher_ca_nhan' => $this->personalCode($voucher),
                     'loai_cap_phat' => $data['loai_cap_phat'],
+                    'ly_do_khac' => $data['loai_cap_phat'] === 'khac' ? ($data['ly_do_khac'] ?? null) : null,
                     'nam_ap_dung' => now()->year,
                     'da_su_dung' => false,
                     'ngay_nhan' => now(),
@@ -231,11 +235,13 @@ class VoucherController extends Controller
             }
         });
 
+        $lyDoText = $data['loai_cap_phat'] === 'khac' ? " — Lý do: {$data['ly_do_khac']}" : '';
+
         $this->ghiNhatKy(
             $request,
             'Cấp voucher cho khách',
             'Khuyến mãi & Voucher',
-            "Cấp {$data['quantity']} voucher {$voucher->ma_voucher} cho {$customer->ho_ten}"
+            "Cấp {$data['quantity']} voucher {$voucher->ma_voucher} cho {$customer->ho_ten}{$lyDoText}"
         );
 
         return back()->with('success', 'Đã cấp voucher cho khách hàng.');
