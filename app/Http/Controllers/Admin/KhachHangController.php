@@ -143,9 +143,7 @@ class KhachHangController extends Controller
 
         $data = $request->validate([
             'ho_ten' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:nguoi_dungs,email,' . $khachHang->id],
 
-            // SĐT là mã nhận diện thực tế để tìm khách nhanh.
             'so_dien_thoai' => [
                 'nullable',
                 'string',
@@ -153,14 +151,13 @@ class KhachHangController extends Controller
                 'unique:nguoi_dungs,so_dien_thoai,' . $khachHang->id,
             ],
 
-            'ngay_sinh' => ['nullable', 'date', 'before:today'],
             'trang_thai_hoat_dong' => ['required', 'boolean'],
         ]);
 
-        // Nếu khách đã có ngày sinh thì giữ nguyên, không cho sửa lại
-        if ($khachHang->ngay_sinh) {
-            $data['ngay_sinh'] = $khachHang->ngay_sinh;
-        }
+
+        // Không cập nhật ngày sinh
+        unset($data['ngay_sinh']);
+
 
         $khachHang->update($data);
 
@@ -179,9 +176,29 @@ class KhachHangController extends Controller
         $data = $request->validate([
             'ho_ten' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:nguoi_dungs,email'],
-            'so_dien_thoai' => ['nullable', 'string', 'max:20', 'unique:nguoi_dungs,so_dien_thoai'],
-            'ngay_sinh' => ['nullable', 'date', 'before:today'],
+            'so_dien_thoai' => ['nullable', 'string', 'max:20'],
+            'ngay_sinh' => [
+                'required',
+                'date_format:Y-m-d',
+                'after_or_equal:1900-01-01',
+                'before:today',
+            ],
             'mat_khau' => ['required', 'string', 'min:6'],
+        ], [
+
+            'ho_ten.required' => 'Vui lòng nhập họ tên khách hàng.',
+            'email.required' => 'Vui lòng nhập email.',
+            'email.email' => 'Email không đúng định dạng.',
+            'email.unique' => 'Email này đã tồn tại.',
+            'mat_khau.required' => 'Vui lòng nhập mật khẩu.',
+            'mat_khau.min' => 'Mật khẩu tối thiểu 6 ký tự.',
+
+            'ngay_sinh.required' => 'Vui lòng nhập ngày sinh.',
+            'ngay_sinh.date_format' => 'Ngày sinh không đúng định dạng.',
+            'ngay_sinh.after_or_equal' => 'Năm sinh không hợp lệ.',
+            'ngay_sinh.before' => 'Ngày sinh phải trước ngày hôm nay.',
+
+
         ]);
 
         $data['vai_tro'] = 'khach_hang';

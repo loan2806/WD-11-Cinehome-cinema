@@ -9007,6 +9007,60 @@ body.profile-body {
     color: #ffffff;
     text-decoration: none;
 }
+.profile-notification-wrapper {
+    position: relative;
+}
+
+.profile-notification-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+
+    width: 380px;
+    max-width: calc(100vw - 30px);
+
+    background: #191c23;
+    border: 1px solid #363b46;
+    border-radius: 16px;
+
+    overflow: hidden;
+    display: none;
+
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    z-index: 99999;
+}
+
+.profile-notification-dropdown.show {
+    display: block !important;
+}
+
+.profile-notification-wrapper .booking-notification-badge {
+    position: absolute !important;
+    top: -5px !important;
+    right: -5px !important;
+
+    min-width: 18px !important;
+    width: auto !important;
+    height: 18px !important;
+
+    padding: 0 5px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    background: #dc2626 !important;
+    color: #fff !important;
+
+    border: 2px solid #111 !important;
+    border-radius: 999px !important;
+
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+
+    z-index: 999999 !important;
+}
 
 .profile-icon-btn span {
     position: absolute;

@@ -16,8 +16,7 @@ class NhanVienController extends Controller
 
     public function index(Request $request)
     {
-        $staffBase = NguoiDung::query()
-            ->where('vai_tro', 'nhan_vien');
+        $staffBase = NguoiDung::where('vai_tro', 'nhan_vien');
 
         $query = (clone $staffBase);
 
@@ -63,6 +62,16 @@ class NhanVienController extends Controller
             'ho_ten' => 'required|max:255',
             'email' => 'required|email|unique:nguoi_dungs,email',
             'mat_khau' => 'required|min:6',
+        ], [
+            'ho_ten.required' => 'Vui lòng nhập họ và tên.',
+            'ho_ten.max' => 'Họ và tên không được quá 255 ký tự.',
+
+            'email.required' => 'Vui lòng nhập email.',
+            'email.email' => 'Email không đúng định dạng.',
+            'email.unique' => 'Email này đã tồn tại trong hệ thống.',
+
+            'mat_khau.required' => 'Vui lòng nhập mật khẩu.',
+            'mat_khau.min' => 'Mật khẩu phải có ít nhất 6 ký tự.',
         ]);
 
         $email = strtolower(trim($request->email));
@@ -143,15 +152,22 @@ class NhanVienController extends Controller
         }
 
         if ($nhanvien->id == Auth::id()) {
-            return back()->with('error', 'Không thể xóa chính tài khoản của bạn');
+            return back()->with('error', 'Không thể xóa chính tài khoản của bạn.');
         }
 
         $ten = $nhanvien->ho_ten;
+
+        // Khóa tài khoản
+        $nhanvien->update([
+            'trang_thai_hoat_dong' => false
+        ]);
+
+        // Xóa mềm
         $nhanvien->delete();
 
         AdminNotificationService::push(
             '🗑️ Xóa nhân viên',
-            "Đã xóa nhân viên {$ten}",
+            "Đã chuyển nhân viên {$ten} vào thùng rác",
             'Warning'
         );
 
@@ -159,11 +175,114 @@ class NhanVienController extends Controller
             $request,
             'Xóa nhân viên',
             'Quản lý nhân viên',
-            "Xóa nhân viên: {$ten}"
+            "Đã chuyển nhân viên {$ten} vào thùng rác"
         );
 
-        return back()->with('success', 'Đã xóa nhân viên');
+        return back()->with(
+            'success',
+            'Đã chuyển nhân viên vào thùng rác.'
+        );
     }
+    public function restore(Request $request, $id)
+    {
+        $nhanvien = NguoiDung::onlyTrashed()
+            ->findOrFail($id);
+
+        $nhanvien->restore();
+
+        $nhanvien->update([
+            'trang_thai_hoat_dong' => true
+        ]);
+
+        AdminNotificationService::push(
+            '♻️ Khôi phục nhân viên',
+            "Đã khôi phục nhân viên {$nhanvien->ho_ten}",
+            'Success'
+        );
+
+        $this->ghiNhatKy(
+            $request,
+            'Khôi phục nhân viên',
+            'Quản lý nhân viên',
+            "Khôi phục nhân viên {$nhanvien->ho_ten}"
+        );
+
+        return back()->with(
+            'success',
+            'Khôi phục nhân viên thành công.'
+        );
+    }
+
+    public function forceDelete(Request $request, $id)
+    {
+        $nhanvien = NguoiDung::onlyTrashed()
+            ->findOrFail($id);
+
+        $daLamViec =
+            $nhanvien->hoaDons()->exists()
+            || $nhanvien->veXemPhims()->exists()
+            || $nhanvien->chamCongs()->exists()
+            || $nhanvien->bangLuongs()->exists();
+
+        if ($daLamViec) {
+            return back()->with(
+                'error',
+                'Không thể xóa vĩnh viễn vì nhân viên đã phát sinh dữ liệu.'
+            );
+        }
+
+        $ten = $nhanvien->ho_ten;
+
+        $nhanvien->forceDelete();
+
+        AdminNotificationService::push(
+            '❌ Xóa vĩnh viễn nhân viên',
+            "Đã xóa vĩnh viễn nhân viên {$ten}",
+            'Danger'
+        );
+
+        $this->ghiNhatKy(
+            $request,
+            'Xóa vĩnh viễn nhân viên',
+            'Quản lý nhân viên',
+            "Đã xóa vĩnh viễn nhân viên {$ten}"
+        );
+
+        return back()->with(
+            'success',
+            'Đã xóa vĩnh viễn nhân viên.'
+        );
+    }
+
+  public function trash(Request $request)
+{
+    $query = NguoiDung::onlyTrashed()
+        ->where('vai_tro', 'nhan_vien');
+
+    if ($request->filled('keyword')) {
+        $keyword = trim($request->keyword);
+
+        $query->where(function ($q) use ($keyword) {
+            $q->where('ho_ten', 'like', "%{$keyword}%")
+              ->orWhere('email', 'like', "%{$keyword}%");
+        });
+    }
+
+    if ($request->filled('deleted_from')) {
+        $query->whereDate('deleted_at', '>=', $request->deleted_from);
+    }
+
+    if ($request->filled('deleted_to')) {
+        $query->whereDate('deleted_at', '<=', $request->deleted_to);
+    }
+
+    $nhanViens = $query
+        ->latest('deleted_at')
+        ->paginate(10)
+        ->withQueryString();
+
+    return view('admin.nhanviens.trash', compact('nhanViens'));
+}
 
     public function toggleStatus(Request $request, NguoiDung $nhanvien)
     {

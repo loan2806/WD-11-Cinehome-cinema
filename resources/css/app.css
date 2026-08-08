@@ -18,7 +18,411 @@
     isolation: isolate;
     overflow: hidden;
 }
+.booking-notification-btn {
+    position: relative;
+    width: 42px;
+    height: 42px;
 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #fff;
+    text-decoration: none;
+    border-radius: 50%;
+
+    transition: all 0.2s ease;
+}
+
+.booking-notification-btn:hover {
+    color: #f5c451;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.booking-notification-btn i {
+    font-size: 19px;
+}
+
+
+/* =========================================
+   USER NOTIFICATION
+========================================= */
+
+.booking-notification-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+
+/* NÚT CHUÔNG */
+
+.booking-notification-btn {
+    position: relative;
+
+    width: 42px;
+    height: 42px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+
+    background: rgba(255,255,255,0.05);
+
+    color: #fff;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.booking-notification-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #f5c451;
+}
+
+.booking-notification-btn i {
+    font-size: 17px;
+}
+
+
+
+.booking-notification-btn {
+    position: relative;
+}
+
+
+.booking-notification-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #dc2626;
+    color: #fff;
+
+    border: 2px solid #111;
+    border-radius: 999px;
+
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+
+    z-index: 10;
+}
+
+/* =========================================
+   DROPDOWN
+========================================= */
+
+.booking-notification-dropdown {
+    position: absolute;
+
+    top: calc(100% + 10px);
+    right: 0;
+
+    width: 325px;
+
+    background: #171b23;
+
+    border: 1px solid rgba(255,255,255,0.12);
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 20px 45px rgba(0,0,0,0.45),
+        0 5px 15px rgba(0,0,0,0.25);
+
+    overflow: hidden;
+
+    z-index: 9999;
+
+    display: none;
+}
+
+
+/* Khi mở */
+
+.booking-notification-dropdown.show {
+    display: block;
+
+    animation: notificationDropdownShow 0.18s ease;
+}
+
+@keyframes notificationDropdownShow {
+
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.booking-notification-header {
+    padding: 14px 16px;
+
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.booking-notification-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.booking-notification-title-icon {
+    width: 32px;
+    height: 32px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: rgba(220,38,38,0.15);
+
+    color: #ef4444;
+}
+
+.booking-notification-title strong {
+    display: block;
+
+    color: #fff;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.booking-notification-title small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #8d95a5;
+
+    font-size: 10px;
+}
+
+
+/* =========================================
+   LIST
+========================================= */
+
+.booking-notification-list {
+    max-height: 330px;
+
+    overflow-y: auto;
+}
+
+
+/* scrollbar */
+
+.booking-notification-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.booking-notification-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.booking-notification-list::-webkit-scrollbar-thumb {
+    background: #8f2439;
+    border-radius: 10px;
+}
+
+
+/* =========================================
+   ITEM
+========================================= */
+
+.booking-notification-item {
+    display: flex;
+
+    gap: 10px;
+
+    padding: 12px 14px;
+
+    color: inherit;
+
+    text-decoration: none;
+
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+
+    transition: background 0.2s ease;
+}
+
+.booking-notification-item:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+
+/* chưa đọc */
+
+.booking-notification-item.is-unread {
+    background: rgba(255,255,255,0.025);
+}
+
+
+/* ICON */
+
+.booking-notification-item-icon {
+    flex: 0 0 32px;
+
+    width: 32px;
+    height: 32px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255,255,255,0.07);
+
+    border-radius: 9px;
+
+    color: #ef4444;
+
+    font-size: 12px;
+}
+
+
+/* CONTENT */
+
+.booking-notification-item-content {
+    min-width: 0;
+}
+
+.booking-notification-item-content strong {
+    display: block;
+
+    color: #fff;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.booking-notification-item-content p {
+    margin: 3px 0 3px;
+
+    color: #c0c5cf;
+
+    font-size: 10px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.booking-notification-item-content time {
+    display: block;
+
+    color: #8991a1;
+
+    font-size: 9px;
+    font-weight: 600;
+}
+
+
+/* =========================================
+   EMPTY
+========================================= */
+
+.booking-notification-empty {
+    padding: 35px 15px;
+
+    text-align: center;
+
+    color: #8991a1;
+}
+
+.booking-notification-empty i {
+    display: block;
+
+    margin-bottom: 10px;
+
+    font-size: 26px;
+
+    color: #8f2439;
+}
+
+.booking-notification-empty strong {
+    display: block;
+
+    color: #fff;
+
+    font-size: 12px;
+}
+
+.booking-notification-empty span {
+    display: block;
+
+    margin-top: 4px;
+
+    font-size: 10px;
+}
+
+
+/* =========================================
+   FOOTER
+========================================= */
+
+.booking-notification-footer {
+    padding: 9px 10px;
+
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.booking-notification-footer a {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    height: 34px;
+
+    border-radius: 10px;
+
+    background: rgba(143,36,57,0.35);
+
+    color: #fff;
+
+    text-decoration: none;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    transition: all 0.2s ease;
+}
+
+.booking-notification-footer a:hover {
+    background: rgba(143,36,57,0.55);
+}
 #adminSidebar .cinehome-logo-sparkle,
 #staffSidebar .cinehome-logo-sparkle {
     isolation: auto;

@@ -3,18 +3,16 @@
 namespace App\Exports;
 
 use App\Services\ThongKeService;
-use Maatwebsite\Excel\Facades\Excel;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\FromArray;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Carbon\Carbon;
 
-class RevenueExport implements WithHeadings, WithStyles, ShouldAutoSize
+class RevenueExport implements FromArray, WithStyles, ShouldAutoSize
 {
     protected ThongKeService $service;
     protected array $data;
@@ -25,216 +23,530 @@ class RevenueExport implements WithHeadings, WithStyles, ShouldAutoSize
         $this->data = $service->getFullExportData();
     }
 
-    public function headings(): array
+    /**
+     * Dữ liệu xuất Excel
+     */
+    public function array(): array
     {
         $rows = [];
 
-        // Row 1: Tiêu đề báo cáo
-        $rows[] = ['BAO CAO THONG KE DOANH THU CINEHOME'];
+        // =========================================
+        // THÔNG TIN BÁO CÁO
+        // =========================================
+
+        // Row 1: Tiêu đề
+        $rows[] = [
+            'BÁO CÁO THỐNG KÊ DOANH THU CINEHOME'
+        ];
 
         // Row 2: Ngày tháng
-        $from = isset($this->data['from']) ? Carbon::parse($this->data['from'])->format('d/m/Y') : '';
-        $to = isset($this->data['to']) ? Carbon::parse($this->data['to'])->format('d/m/Y') : '';
-        $rows[] = ['Tu ngay: ' . $from . ' - Den ngay: ' . $to];
+        $from = isset($this->data['from'])
+            ? Carbon::parse($this->data['from'])->format('d/m/Y')
+            : '';
 
-        // Row 3: Thông tin bộ lọc
-        $phimInfo = !empty($this->data['phim_id']) ? 'Phim ID: ' . $this->data['phim_id'] : 'Tat ca phim';
-        $phongInfo = !empty($this->data['phong_chieu_id']) ? 'Phong ID: ' . $this->data['phong_chieu_id'] : 'Tat ca phong';
-        $rows[] = [$phimInfo . ' | ' . $phongInfo];
+        $to = isset($this->data['to'])
+            ? Carbon::parse($this->data['to'])->format('d/m/Y')
+            : '';
 
-        // Row 4: Empty
-        $rows[] = [''];
-
-        // =========================================
-        // I. TOM TAT KPI
-        // =========================================
-        $rows[] = ['I. TOM TAT CAC CHI SO CHINH'];
-        $rows[] = ['Chi so', 'Gia tri'];
-        $rows[] = ['Tong doanh thu', $this->toCurrency($this->data['kpi']['total_revenue'] ?? 0)];
-        $rows[] = ['Doanh thu ve', $this->toCurrency($this->data['kpi']['ticket_revenue'] ?? 0)];
-        $rows[] = ['Doanh thu combo', $this->toCurrency($this->data['kpi']['combo_revenue'] ?? 0)];
-        $rows[] = ['Doanh thu do an & nuoc', $this->toCurrency($this->data['kpi']['snack_revenue'] ?? 0)];
-        $rows[] = ['So ve da ban', $this->toNumber($this->data['kpi']['tickets_sold'] ?? 0)];
-        $rows[] = ['Tong so hoa don', $this->toNumber($this->data['kpi']['total_invoices'] ?? 0)];
-        $rows[] = ['Gia ve trung binh', $this->toCurrency($this->data['kpi']['average_ticket_price'] ?? 0)];
-        $rows[] = ['Tong so suat chieu', $this->toNumber($this->data['kpi']['total_showtimes'] ?? 0)];
-        $rows[] = ['Voucher da su dung', $this->toNumber($this->data['kpi']['vouchers_used'] ?? 0)];
-        $rows[] = [''];
-
-        // =========================================
-        // II. CO CAU DOANH THU
-        // =========================================
-        $rows[] = ['II. CO CAU DOANH THU'];
-        $rows[] = ['Loai', 'Doanh thu', 'Ti le (%)'];
-        $structure = $this->data['revenue_structure'] ?? [];
         $rows[] = [
-            'Ve xem phim',
-            $this->toCurrency($structure['ticket']['revenue'] ?? 0),
-            $this->toPercent($structure['ticket']['percentage'] ?? 0)
+            'Từ ngày: ' . $from . ' - Đến ngày: ' . $to
         ];
+
+        // Row 3: Bộ lọc
+        $phimInfo = !empty($this->data['phim_id'])
+            ? 'Phim ID: ' . $this->data['phim_id']
+            : 'Tất cả phim';
+
+        $phongInfo = !empty($this->data['phong_chieu_id'])
+            ? 'Phòng ID: ' . $this->data['phong_chieu_id']
+            : 'Tất cả phòng';
+
+        $rows[] = [
+            $phimInfo . ' | ' . $phongInfo
+        ];
+
+        // Row 4: Khoảng trống
+        $rows[] = [''];
+
+        // =========================================
+        // I. TÓM TẮT CÁC CHỈ SỐ CHÍNH
+        // =========================================
+
+        $rows[] = [
+            'I. TÓM TẮT CÁC CHỈ SỐ CHÍNH'
+        ];
+
+        $rows[] = [
+            'Chỉ số',
+            'Giá trị'
+        ];
+
+        $rows[] = [
+            'Tổng doanh thu',
+            $this->toCurrency(
+                $this->data['kpi']['total_revenue'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Doanh thu vé',
+            $this->toCurrency(
+                $this->data['kpi']['ticket_revenue'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Doanh thu combo',
+            $this->toCurrency(
+                $this->data['kpi']['combo_revenue'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Doanh thu đồ ăn & nước',
+            $this->toCurrency(
+                $this->data['kpi']['snack_revenue'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Số vé đã bán',
+            $this->toNumber(
+                $this->data['kpi']['tickets_sold'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Tổng số hóa đơn',
+            $this->toNumber(
+                $this->data['kpi']['total_invoices'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Giá vé trung bình',
+            $this->toCurrency(
+                $this->data['kpi']['average_ticket_price'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Tổng số suất chiếu',
+            $this->toNumber(
+                $this->data['kpi']['total_showtimes'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Voucher đã sử dụng',
+            $this->toNumber(
+                $this->data['kpi']['vouchers_used'] ?? 0
+            )
+        ];
+
+        $rows[] = [''];
+
+        // =========================================
+        // II. CƠ CẤU DOANH THU
+        // =========================================
+
+        $rows[] = [
+            'II. CƠ CẤU DOANH THU'
+        ];
+
+        $rows[] = [
+            'Loại',
+            'Doanh thu',
+            'Tỷ lệ (%)'
+        ];
+
+        $structure = $this->data['revenue_structure'] ?? [];
+
+        $rows[] = [
+            'Vé xem phim',
+            $this->toCurrency(
+                $structure['ticket']['revenue'] ?? 0
+            ),
+            $this->toPercent(
+                $structure['ticket']['percentage'] ?? 0
+            )
+        ];
+
         $rows[] = [
             'Combo',
-            $this->toCurrency($structure['combo']['revenue'] ?? 0),
-            $this->toPercent($structure['combo']['percentage'] ?? 0)
+            $this->toCurrency(
+                $structure['combo']['revenue'] ?? 0
+            ),
+            $this->toPercent(
+                $structure['combo']['percentage'] ?? 0
+            )
         ];
+
         $rows[] = [
-            'Do an & Nuoc',
-            $this->toCurrency($structure['food']['revenue'] ?? 0),
-            $this->toPercent($structure['food']['percentage'] ?? 0)
+            'Đồ ăn & nước',
+            $this->toCurrency(
+                $structure['food']['revenue'] ?? 0
+            ),
+            $this->toPercent(
+                $structure['food']['percentage'] ?? 0
+            )
         ];
+
         $rows[] = [
-            'TONG CONG',
-            $this->toCurrency($structure['total'] ?? 0),
+            'TỔNG CỘNG',
+            $this->toCurrency(
+                $structure['total'] ?? 0
+            ),
             '100%'
         ];
+
         $rows[] = [''];
 
         // =========================================
         // III. TOP PHIM DOANH THU CAO
         // =========================================
-        $rows[] = ['III. TOP PHIM DOANH THU CAO'];
-        $rows[] = ['STT', 'Ten phim', 'So ve ban', 'Doanh thu'];
+
+        $rows[] = [
+            'III. TOP PHIM DOANH THU CAO'
+        ];
+
+        $rows[] = [
+            'STT',
+            'Tên phim',
+            'Số vé bán',
+            'Doanh thu'
+        ];
+
         $topFilms = $this->data['top_films'] ?? [];
+
         if (!empty($topFilms)) {
+
             foreach ($topFilms as $index => $film) {
+
                 $rows[] = [
                     $index + 1,
-                    $film['ten_phim'] ?? 'N/A',
-                    $this->toNumber($film['tickets_sold'] ?? 0),
-                    $this->toCurrency($film['total_revenue'] ?? 0),
+                    $film['ten_phim'] ?? 'Không xác định',
+                    $this->toNumber(
+                        $film['tickets_sold'] ?? 0
+                    ),
+                    $this->toCurrency(
+                        $film['total_revenue'] ?? 0
+                    ),
                 ];
             }
+
         } else {
-            $rows[] = ['Chua co du lieu', '', '', ''];
+
+            $rows[] = [
+                'Chưa có dữ liệu',
+                '',
+                '',
+                ''
+            ];
         }
+
         $rows[] = [''];
 
         // =========================================
-        // IV. DOANH THU THEO PHONG CHIEU
+        // IV. DOANH THU THEO PHÒNG CHIẾU
         // =========================================
-        $rows[] = ['IV. DOANH THU THEO PHONG CHIEU'];
-        $rows[] = ['STT', 'Phong chieu', 'So ve ban', 'Doanh thu'];
+
+        $rows[] = [
+            'IV. DOANH THU THEO PHÒNG CHIẾU'
+        ];
+
+        $rows[] = [
+            'STT',
+            'Phòng chiếu',
+            'Số vé bán',
+            'Doanh thu'
+        ];
+
         $revenueByRoom = $this->data['revenue_by_room'] ?? [];
+
         if (!empty($revenueByRoom)) {
+
             foreach ($revenueByRoom as $index => $room) {
+
                 $rows[] = [
                     $index + 1,
-                    $room['ten_phong'] ?? 'N/A',
-                    $this->toNumber($room['tickets_sold'] ?? 0),
-                    $this->toCurrency($room['total_revenue'] ?? 0),
+                    $room['ten_phong'] ?? 'Không xác định',
+                    $this->toNumber(
+                        $room['tickets_sold'] ?? 0
+                    ),
+                    $this->toCurrency(
+                        $room['total_revenue'] ?? 0
+                    ),
                 ];
             }
+
         } else {
-            $rows[] = ['Chua co du lieu', '', '', ''];
+
+            $rows[] = [
+                'Chưa có dữ liệu',
+                '',
+                '',
+                ''
+            ];
         }
+
         $rows[] = [''];
 
         // =========================================
-        // V. DOANH THU THEO LOAI GHE
+        // V. DOANH THU THEO LOẠI GHẾ
         // =========================================
-        $rows[] = ['V. DOANH THU THEO LOAI GHE'];
-        $rows[] = ['STT', 'Loai ghe', 'So ve ban', 'Doanh thu'];
-        $revenueBySeatType = $this->data['revenue_by_seat_type'] ?? [];
+
+        $rows[] = [
+            'V. DOANH THU THEO LOẠI GHẾ'
+        ];
+
+        $rows[] = [
+            'STT',
+            'Loại ghế',
+            'Số vé bán',
+            'Doanh thu'
+        ];
+
+        $revenueBySeatType =
+            $this->data['revenue_by_seat_type'] ?? [];
+
         if (!empty($revenueBySeatType)) {
+
             foreach ($revenueBySeatType as $index => $seatType) {
+
                 $rows[] = [
                     $index + 1,
-                    $seatType['ten_loai'] ?? 'N/A',
-                    $this->toNumber($seatType['tickets_sold'] ?? 0),
-                    $this->toCurrency($seatType['total_revenue'] ?? 0),
+                    $seatType['ten_loai'] ?? 'Không xác định',
+                    $this->toNumber(
+                        $seatType['tickets_sold'] ?? 0
+                    ),
+                    $this->toCurrency(
+                        $seatType['total_revenue'] ?? 0
+                    ),
                 ];
             }
+
         } else {
-            $rows[] = ['Chua co du lieu', '', '', ''];
+
+            $rows[] = [
+                'Chưa có dữ liệu',
+                '',
+                '',
+                ''
+            ];
         }
+
         $rows[] = [''];
 
         // =========================================
-        // VI. DOANH THU THEO KHUNG GIO
+        // VI. DOANH THU THEO KHUNG GIỜ
         // =========================================
-        $rows[] = ['VI. DOANH THU THEO KHUNG GIO'];
-        $rows[] = ['STT', 'Khung gio', 'So ve ban', 'Doanh thu'];
-        $revenueByTimeSlot = $this->data['revenue_by_time_slot'] ?? [];
+
+        $rows[] = [
+            'VI. DOANH THU THEO KHUNG GIỜ'
+        ];
+
+        $rows[] = [
+            'STT',
+            'Khung giờ',
+            'Số vé bán',
+            'Doanh thu'
+        ];
+
+        $revenueByTimeSlot =
+            $this->data['revenue_by_time_slot'] ?? [];
+
         if (!empty($revenueByTimeSlot)) {
+
             foreach ($revenueByTimeSlot as $index => $slot) {
+
                 $rows[] = [
                     $index + 1,
-                    $slot['time_slot'] ?? 'N/A',
-                    $this->toNumber($slot['tickets_sold'] ?? 0),
-                    $this->toCurrency($slot['total_revenue'] ?? 0),
+                    $slot['time_slot'] ?? 'Không xác định',
+                    $this->toNumber(
+                        $slot['tickets_sold'] ?? 0
+                    ),
+                    $this->toCurrency(
+                        $slot['total_revenue'] ?? 0
+                    ),
                 ];
             }
+
         } else {
-            $rows[] = ['Chua co du lieu', '', '', ''];
+
+            $rows[] = [
+                'Chưa có dữ liệu',
+                '',
+                '',
+                ''
+            ];
         }
+
         $rows[] = [''];
 
         // =========================================
-        // VII. PHUONG THUC THANH TOAN
+        // VII. THỐNG KÊ PHƯƠNG THỨC THANH TOÁN
         // =========================================
-        $rows[] = ['VII. THONG KE PHUONG THUC THANH TOAN'];
-        $rows[] = ['STT', 'Phuong thuc', 'So giao dich', 'Doanh thu'];
-        $paymentMethods = $this->data['payment_methods'] ?? [];
+
+        $rows[] = [
+            'VII. THỐNG KÊ PHƯƠNG THỨC THANH TOÁN'
+        ];
+
+        $rows[] = [
+            'STT',
+            'Phương thức',
+            'Số giao dịch',
+            'Doanh thu'
+        ];
+
+        $paymentMethods =
+            $this->data['payment_methods'] ?? [];
+
         if (!empty($paymentMethods)) {
+
             foreach ($paymentMethods as $index => $method) {
+
                 $rows[] = [
                     $index + 1,
-                    $method['label'] ?? 'N/A',
-                    $this->toNumber($method['count'] ?? 0),
-                    $this->toCurrency($method['total_revenue'] ?? 0),
+                    $method['label'] ?? 'Không xác định',
+                    $this->toNumber(
+                        $method['count'] ?? 0
+                    ),
+                    $this->toCurrency(
+                        $method['total_revenue'] ?? 0
+                    ),
                 ];
             }
+
         } else {
-            $rows[] = ['Chua co du lieu', '', '', ''];
+
+            $rows[] = [
+                'Chưa có dữ liệu',
+                '',
+                '',
+                ''
+            ];
         }
+
         $rows[] = [''];
 
         // =========================================
-        // VIII. THONG KE VOUCHER
+        // VIII. THỐNG KÊ VOUCHER
         // =========================================
-        $rows[] = ['VIII. THONG KE VOUCHER'];
-        $voucherStats = $this->data['voucher_stats'] ?? [];
-        $rows[] = ['Chi so', 'Gia tri'];
-        $rows[] = ['Da phat hanh', $this->toNumber($voucherStats['total_issued'] ?? 0)];
-        $rows[] = ['Da su dung', $this->toNumber($voucherStats['total_used'] ?? 0)];
-        $rows[] = ['Ti le su dung', $this->toPercent($voucherStats['usage_rate'] ?? 0)];
-        $rows[] = ['Tong tien giam gia', $this->toCurrency($voucherStats['total_discount'] ?? 0)];
+
+        $rows[] = [
+            'VIII. THỐNG KÊ VOUCHER'
+        ];
+
+        $voucherStats =
+            $this->data['voucher_stats'] ?? [];
+
+        $rows[] = [
+            'Chỉ số',
+            'Giá trị'
+        ];
+
+        $rows[] = [
+            'Đã phát hành',
+            $this->toNumber(
+                $voucherStats['total_issued'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Đã sử dụng',
+            $this->toNumber(
+                $voucherStats['total_used'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Tỷ lệ sử dụng',
+            $this->toPercent(
+                $voucherStats['usage_rate'] ?? 0
+            )
+        ];
+
+        $rows[] = [
+            'Tổng tiền giảm giá',
+            $this->toCurrency(
+                $voucherStats['total_discount'] ?? 0
+            )
+        ];
+
         $rows[] = [''];
 
         // =========================================
-        // IX. TOP SUAT CHIEU BAN CHAY
+        // IX. TOP SUẤT CHIẾU BÁN CHẠY
         // =========================================
-        $rows[] = ['IX. TOP SUAT CHIEU BAN CHAY'];
-        $rows[] = ['STT', 'Phim', 'Phong chieu', 'Gio chieu', 'So ve ban', 'Doanh thu'];
-        $topShowtimes = $this->data['top_showtimes'] ?? [];
+
+        $rows[] = [
+            'IX. TOP SUẤT CHIẾU BÁN CHẠY'
+        ];
+
+        $rows[] = [
+            'STT',
+            'Phim',
+            'Phòng chiếu',
+            'Giờ chiếu',
+            'Số vé bán',
+            'Doanh thu'
+        ];
+
+        $topShowtimes =
+            $this->data['top_showtimes'] ?? [];
+
         if (!empty($topShowtimes)) {
+
             foreach ($topShowtimes as $index => $showtime) {
+
                 $showtimeTime = '';
+
                 if (!empty($showtime['thoi_gian_chieu'])) {
+
                     try {
-                        $showtimeTime = Carbon::parse($showtime['thoi_gian_chieu'])->format('d/m/Y H:i');
+
+                        $showtimeTime = Carbon::parse(
+                            $showtime['thoi_gian_chieu']
+                        )->format('d/m/Y H:i');
+
                     } catch (\Exception $e) {
+
                         $showtimeTime = '';
                     }
                 }
+
                 $rows[] = [
                     $index + 1,
-                    $showtime['ten_phim'] ?? 'N/A',
-                    $showtime['ten_phong'] ?? 'N/A',
+                    $showtime['ten_phim'] ?? 'Không xác định',
+                    $showtime['ten_phong'] ?? 'Không xác định',
                     $showtimeTime,
-                    $this->toNumber($showtime['tickets_sold'] ?? 0),
-                    $this->toCurrency($showtime['total_revenue'] ?? 0),
+                    $this->toNumber(
+                        $showtime['tickets_sold'] ?? 0
+                    ),
+                    $this->toCurrency(
+                        $showtime['total_revenue'] ?? 0
+                    ),
                 ];
             }
+
         } else {
-            $rows[] = ['Chua co du lieu', '', '', '', '', ''];
+
+            $rows[] = [
+                'Chưa có dữ liệu',
+                '',
+                '',
+                '',
+                '',
+                ''
+            ];
         }
 
         return $rows;
     }
 
     /**
-     * Convert value to currency format
+     * Định dạng tiền
      */
     protected function toCurrency($value): string
     {
@@ -242,11 +554,16 @@ class RevenueExport implements WithHeadings, WithStyles, ShouldAutoSize
             return '0';
         }
 
-        return number_format((float) $value, 0, ',', '.');
+        return number_format(
+            (float) $value,
+            0,
+            ',',
+            '.'
+        );
     }
 
     /**
-     * Convert value to number format
+     * Định dạng số
      */
     protected function toNumber($value): string
     {
@@ -254,11 +571,16 @@ class RevenueExport implements WithHeadings, WithStyles, ShouldAutoSize
             return '0';
         }
 
-        return number_format((int) $value, 0, ',', '.');
+        return number_format(
+            (int) $value,
+            0,
+            ',',
+            '.'
+        );
     }
 
     /**
-     * Convert value to percentage format
+     * Định dạng phần trăm
      */
     protected function toPercent($value): string
     {
@@ -266,66 +588,294 @@ class RevenueExport implements WithHeadings, WithStyles, ShouldAutoSize
             return '0%';
         }
 
-        return number_format((float) $value, 2, ',', '.') . '%';
+        return number_format(
+            (float) $value,
+            2,
+            ',',
+            '.'
+        ) . '%';
     }
 
+    /**
+     * Style Excel
+     */
     public function styles(Worksheet $sheet)
     {
         $highestRow = $sheet->getHighestRow();
         $highestColumn = $sheet->getHighestColumn();
 
-        // Style header row (row 1)
-        $sheet->getStyle('A1:' . $highestColumn . '1')->applyFromArray([
-            'font' => ['bold' => true, 'size' => 16],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'D99A32']],
+        // =========================================
+        // TIÊU ĐỀ CHÍNH - MÀU VÀNG
+        // =========================================
+
+        $sheet->getStyle(
+            'A1:' . $highestColumn . '1'
+        )->applyFromArray([
+
+            'font' => [
+                'bold' => true,
+                'size' => 16,
+                'color' => [
+                    'rgb' => 'FFFFFF'
+                ],
+            ],
+
+            'alignment' => [
+                'horizontal' =>
+                    Alignment::HORIZONTAL_CENTER,
+
+                'vertical' =>
+                    Alignment::VERTICAL_CENTER,
+
+                'wrapText' => true,
+            ],
+
+            'fill' => [
+                'fillType' =>
+                    Fill::FILL_SOLID,
+
+                'startColor' => [
+                    'rgb' => 'D99A32'
+                ],
+            ],
         ]);
 
-        // Style section headers
+        // =========================================
+        // CÁC DÒNG CÒN LẠI
+        // NỀN TRẮNG - CHỮ ĐEN
+        // =========================================
+
+        if ($highestRow >= 2) {
+
+            $sheet->getStyle(
+                'A2:' . $highestColumn . $highestRow
+            )->applyFromArray([
+
+                'font' => [
+                    'color' => [
+                        'rgb' => '000000'
+                    ],
+                ],
+
+                'fill' => [
+                    'fillType' =>
+                        Fill::FILL_SOLID,
+
+                    'startColor' => [
+                        'rgb' => 'FFFFFF'
+                    ],
+                ],
+
+                'alignment' => [
+                    'horizontal' =>
+                        Alignment::HORIZONTAL_CENTER,
+
+                    'vertical' =>
+                        Alignment::VERTICAL_CENTER,
+
+                    'wrapText' => true,
+                ],
+            ]);
+        }
+
+        // =========================================
+        // STYLE CÁC TIÊU ĐỀ MỤC
+        // I. ...
+        // II. ...
+        // III. ...
+        // =========================================
+
         for ($row = 1; $row <= $highestRow; $row++) {
-            $cellA = $sheet->getCell('A' . $row)->getValue();
+
+            $cellA = $sheet
+                ->getCell('A' . $row)
+                ->getValue();
+
             if ($cellA && is_string($cellA)) {
+
                 $trimmed = trim($cellA);
 
-                // Main section headers (Roman numerals)
-                if (preg_match('/^[IVX]+\.\s/', $trimmed)) {
-                    $sheet->getStyle('A' . $row . ':' . $highestColumn . $row)->applyFromArray([
-                        'font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => 'D99A32']],
-                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1F2937']],
-                    ]);
-                }
-                // Sub-headers (columns)
-                elseif (in_array($trimmed, [
-                    'Chi so', 'Gia tri', 'Loai', 'Doanh thu', 'Ti le (%)',
-                    'STT', 'Ten phim', 'So ve ban', 'Doanh thu',
-                    'Phong chieu', 'Loai ghe', 'Khung gio', 'So giao dich',
-                    'Phim', 'Gio chieu', 'Phuong thuc', 'Ti le su dung',
-                    'Da phat hanh', 'Da su dung', 'Tong tien giam gia'
-                ])) {
-                    $sheet->getStyle('A' . $row . ':' . $highestColumn . $row)->applyFromArray([
-                        'font' => ['bold' => true, 'size' => 11],
-                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '374151']],
+                // Tiêu đề mục I, II, III...
+                if (
+                    preg_match(
+                        '/^[IVX]+\.\s/',
+                        $trimmed
+                    )
+                ) {
+
+                    $sheet->getStyle(
+                        'A' . $row . ':' .
+                        $highestColumn . $row
+                    )->applyFromArray([
+
+                        'font' => [
+                            'bold' => true,
+                            'size' => 12,
+                            'color' => [
+                                'rgb' => '000000'
+                            ],
+                        ],
+
+                        'fill' => [
+                            'fillType' =>
+                                Fill::FILL_SOLID,
+
+                            'startColor' => [
+                                'rgb' => 'FFFFFF'
+                            ],
+                        ],
+
+                        'alignment' => [
+                            'horizontal' =>
+                                Alignment::HORIZONTAL_CENTER,
+
+                            'vertical' =>
+                                Alignment::VERTICAL_CENTER,
+
+                            'wrapText' => true,
+                        ],
                     ]);
                 }
             }
         }
 
-        // Borders for all data
-        $sheet->getStyle('A1:' . $highestColumn . $highestRow)->applyFromArray([
+        // =========================================
+        // HEADER CÁC BẢNG
+        // =========================================
+
+        $headerTexts = [
+
+            'Chỉ số',
+            'Giá trị',
+
+            'Loại',
+            'Doanh thu',
+            'Tỷ lệ (%)',
+
+            'STT',
+            'Tên phim',
+            'Số vé bán',
+
+            'Phòng chiếu',
+            'Loại ghế',
+            'Khung giờ',
+
+            'Số giao dịch',
+            'Phương thức',
+
+            'Phim',
+            'Giờ chiếu',
+
+            'Tỷ lệ sử dụng',
+            'Đã phát hành',
+            'Đã sử dụng',
+            'Tổng tiền giảm giá',
+        ];
+
+        for ($row = 1; $row <= $highestRow; $row++) {
+
+            $cellA = $sheet
+                ->getCell('A' . $row)
+                ->getValue();
+
+            if (
+                $cellA &&
+                is_string($cellA) &&
+                in_array(trim($cellA), $headerTexts)
+            ) {
+
+                $sheet->getStyle(
+                    'A' . $row . ':' .
+                    $highestColumn . $row
+                )->applyFromArray([
+
+                    'font' => [
+                        'bold' => true,
+                        'size' => 11,
+                        'color' => [
+                            'rgb' => '000000'
+                        ],
+                    ],
+
+                    'fill' => [
+                        'fillType' =>
+                            Fill::FILL_SOLID,
+
+                        'startColor' => [
+                            'rgb' => 'FFFFFF'
+                        ],
+                    ],
+
+                    'alignment' => [
+                        'horizontal' =>
+                            Alignment::HORIZONTAL_CENTER,
+
+                        'vertical' =>
+                            Alignment::VERTICAL_CENTER,
+
+                        'wrapText' => true,
+                    ],
+                ]);
+            }
+        }
+
+        // =========================================
+        // VIỀN TOÀN BỘ BẢNG
+        // =========================================
+
+        $sheet->getStyle(
+            'A1:' . $highestColumn . $highestRow
+        )->applyFromArray([
+
             'borders' => [
+
                 'allBorders' => [
-                    'borderStyle' => Border::BORDER_THIN,
-                    'color' => ['rgb' => '4B5563'],
+
+                    'borderStyle' =>
+                        Border::BORDER_THIN,
+
+                    'color' => [
+                        'rgb' => 'D9D9D9'
+                    ],
                 ],
             ],
+
             'alignment' => [
-                'vertical' => Alignment::VERTICAL_CENTER,
+
+                'horizontal' =>
+                    Alignment::HORIZONTAL_CENTER,
+
+                'vertical' =>
+                    Alignment::VERTICAL_CENTER,
+
+                'wrapText' => true,
             ],
         ]);
 
-        // Auto size columns
-        foreach (range('A', $highestColumn) as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+        // =========================================
+        // CHIỀU CAO DÒNG
+        // =========================================
+
+        $sheet->getRowDimension(1)
+            ->setRowHeight(30);
+
+        for ($row = 2; $row <= $highestRow; $row++) {
+
+            $sheet->getRowDimension($row)
+                ->setRowHeight(22);
+        }
+
+        // =========================================
+        // TỰ ĐỘNG ĐỘ RỘNG CỘT
+        // =========================================
+
+        foreach (
+            range('A', $highestColumn)
+            as $column
+        ) {
+
+            $sheet->getColumnDimension($column)
+                ->setAutoSize(true);
         }
 
         return [];
