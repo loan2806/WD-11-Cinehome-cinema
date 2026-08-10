@@ -107,7 +107,9 @@
                 notifyBox.classList.toggle('hidden');
 
                 if (wasHidden) {
-                    fetch('/admin/notifications/mark-all-read', {
+                    fetch("{{ (Auth::user()->vai_tro ?? null) === 'nhan_vien'
+                        ? route('staff.notifications.mark-all-read')
+                        : route('admin.notifications.markAllRead') }}", {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
@@ -482,14 +484,29 @@
                     {{-- ADMIN USER --}}
                     <div class="flex items-center gap-3">
                         @php
-                            $notificationCount = $notificationCount ?? 0;
                             $userRole = Auth::user()->vai_tro ?? Auth::user()->role;
+                            $isStaff = $userRole === 'nhan_vien';
+
                             $adminRoleLabel = match ($userRole) {
                                 'super_admin', 'admin', 'quan_ly_he_thong' => 'Quản trị viên (Super-admin)',
                                 'quan_ly' => 'Quản lý rạp',
                                 'nhan_vien' => 'Nhân viên quầy',
                                 default => 'Người dùng',
                             };
+
+                            if ($isStaff) {
+                                $notificationCount = \App\Models\ThongBaoCaNhan::where('nguoi_dung_id', Auth::id())
+                                    ->where('da_doc', false)
+                                    ->count();
+
+                                $layoutNotifications = \App\Models\ThongBaoCaNhan::where('nguoi_dung_id', Auth::id())
+                                    ->latest()
+                                    ->take(10)
+                                    ->get();
+                            } else {
+                                $notificationCount = $notificationCount ?? 0;
+                                $layoutNotifications = $adminNotifications ?? collect();
+                            }
                         @endphp
 
                         @php
@@ -512,13 +529,13 @@
                                 <div class="admin-notify-head">
                                     <span style="font-size:16px;">{!! $bellSvg !!}</span>
                                     <div>
-                                        <h3>Thông báo hệ thống</h3>
+                                        <h3>{{ $isStaff ? 'Thông báo nhân viên' : 'Thông báo hệ thống' }}</h3>
                                         <small>{{ $notificationCount }} thông báo chưa đọc</small>
                                     </div>
                                 </div>
 
                                 <div class="admin-notify-list">
-                                    @forelse($adminNotifications ?? [] as $item)
+                                    @forelse($layoutNotifications as $item)
                                     <article class="admin-notify-item {{ $item->da_doc ? '' : 'is-unread' }}">
                                         <span class="admin-notify-icon">
                                             {!! $bellSvg !!}
@@ -539,7 +556,7 @@
                                 </div>
 
                                 <div class="admin-notify-footer">
-                                    <a href="{{ route('admin.notifications.index') }}">
+                                    <a href="{{ $isStaff ? route('staff.notifications.index') : route('admin.notifications.index') }}">
                                         Xem tất cả {!! $arrowSvg !!}
                                     </a>
                                 </div>

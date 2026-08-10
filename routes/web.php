@@ -37,6 +37,7 @@ use App\Http\Controllers\DongBoDuLieuController;
 use App\Http\Controllers\HoSoController;
 use App\Http\Controllers\Staff\BanVeController;
 use App\Http\Controllers\Staff\LichSuVeController;
+use App\Http\Controllers\Staff\NotificationController as StaffNotificationController;
 use App\Http\Controllers\Staff\SoatVeController;
 use App\Http\Controllers\Staff\StaffDashboardController;
 use App\Http\Controllers\System\CaiDatThanhToanController;
@@ -230,6 +231,12 @@ Route::middleware(['auth'])
     ->name('staff.')
     ->group(function () {
         Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
+
+        // Thông báo cá nhân của nhân viên
+        Route::get('/notifications', [StaffNotificationController::class, 'index'])
+            ->name('notifications.index');
+        Route::post('/notifications/mark-all-read', [StaffNotificationController::class, 'markAllRead'])
+            ->name('notifications.mark-all-read');
 
         Route::get('/cham-congs', [\App\Http\Controllers\Staff\ChamCongController::class, 'index'])->name('cham-congs.index');
         Route::post('/cham-congs/check-in', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkIn'])->name('cham-congs.check-in');
