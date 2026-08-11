@@ -235,7 +235,7 @@ class DatVeXemPhimService
                         'loai_ghe' => 'Thường',
                         'mau_sac' => '#2a2a2a',
                         'phu_thu' => 0,
-                        'gia' => (float) $suatChieu->gia_ve,
+                        'gia' => (float) $suatChieu->gia_ve_cuoi_cung,
                         'da_dat' => in_array($maGhe, $gheDaDat, true),
                         'bao_tri' => false,
                         'chon_duoc' => ! in_array($maGhe, $gheDaDat, true),
@@ -251,10 +251,10 @@ class DatVeXemPhimService
         $phuThu = (float) ($ghe->loaiGhe?->phu_thu ?? 0);
         $daDat = in_array(strtoupper($ghe->ma_ghe), $gheDaDat, true);
         $baoTri = $ghe->trang_thai !== 'hoat_dong';
-        $gia = (float) $suatChieu->gia_ve + $phuThu;
+        $gia = (float) $suatChieu->gia_ve_cuoi_cung + $phuThu;
 
         if ($ghe->loaiGhe?->la_couple) {
-            $gia = ($suatChieu->gia_ve * 2) + $phuThu;
+            $gia = ($suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
         }
 
         return [

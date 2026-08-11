@@ -249,7 +249,7 @@
                 {{-- 3. CƠ SỞ VẬT CHẤT PHÒNG --}}
                 @if(coBatKyQuyenNao(['phong_chieu.xem', 'loai_ghe.xem']))
                     @php
-                        $isPhongGheActive = request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*');
+                        $isPhongGheActive = request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*') || request()->routeIs('admin.loai-phong-gia.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isPhongGheActive ? 'open' : '' }}">
                         <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
@@ -263,6 +263,9 @@
                             @if(coQuyen('phong_chieu.xem'))
                             <a href="{{ route('admin.phong-chieus.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phong-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
                                 Quản lý phòng chiếu
+                            </a>
+                            <a href="{{ route('admin.loai-phong-gia.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.loai-phong-gia.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Giá theo phòng chiếu
                             </a>
                             @endif
 

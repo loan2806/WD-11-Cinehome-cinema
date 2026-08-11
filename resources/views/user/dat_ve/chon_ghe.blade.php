@@ -29,9 +29,9 @@
         $hasVip = !is_null($vipSeat);
         $hasDouble = !is_null($doubleSeat);
 
-        $normalPrice = $normalSeat['gia'] ?? ($suatChieu->gia_ve ?? 0);
+        $normalPrice = $normalSeat['gia'] ?? ($suatChieu->gia_ve_cuoi_cung ?? 0);
         $vipPrice = $vipSeat['gia'] ?? $normalPrice;
-        $doublePrice = $doubleSeat['gia'] ?? (($suatChieu->gia_ve ?? 0) * 2);
+        $doublePrice = $doubleSeat['gia'] ?? (($suatChieu->gia_ve_cuoi_cung ?? 0) * 2);
 
         $totalSeats = $flatSeats->count();
         $availableSeats = $flatSeats->where('chon_duoc', true)->count();
@@ -64,7 +64,7 @@
                         <span>Đã đặt / giữ</span>
                     </div>
                     <div>
-                        <strong>{{ number_format($suatChieu->gia_ve, 0, ',', '.') }}đ</strong>
+                        <strong>{{ number_format($suatChieu->gia_ve_cuoi_cung, 0, ',', '.') }}đ</strong>
                         <span>Giá từ</span>
                     </div>
                 </div>

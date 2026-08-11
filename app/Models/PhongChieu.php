@@ -20,10 +20,12 @@ class PhongChieu extends Model
         'loai_phong',
         'suc_chua',
         'trang_thai',
+        'phu_thu',
     ];
 
     protected $casts = [
         'suc_chua' => 'integer',
+        'phu_thu' => 'decimal:2',
     ];
 
     public const LOAI_PHONG = [
@@ -31,6 +33,19 @@ class PhongChieu extends Model
         '3d' => '3D',
         'imax' => 'IMAX',
         '4dx' => '4DX',
+    ];
+
+    /**
+     * Phụ thu vé GỢI Ý theo từng loại phòng — chỉ dùng để tự điền sẵn khi
+     * Quản trị viên tạo phòng mới (chọn loại phòng nào thì gợi ý đúng mức phụ
+     * thu của loại đó). Sau khi tạo, phụ thu vẫn chỉnh được riêng theo TỪNG
+     * phòng ở trang "Giá theo phòng chiếu" — đây chỉ là giá trị khởi tạo.
+     */
+    public const PHU_THU_GOI_Y = [
+        '2d' => 0,
+        '3d' => 15000,
+        'imax' => 20000,
+        '4dx' => 20000,
     ];
 
     public const TRANG_THAI = [

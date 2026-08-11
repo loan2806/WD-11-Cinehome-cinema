@@ -177,7 +177,7 @@
                 </div>
                 <div>
                     <small class="text-xs text-gray-500">Giá vé niêm yết</small>
-                    <p class="text-xl font-black text-red-400">{{ number_format($suatChieu->gia_ve) }}đ</p>
+                    <p class="text-xl font-black text-red-400">{{ number_format($suatChieu->gia_ve_cuoi_cung) }}đ</p>
                 </div>
                 <div>
                     <small class="text-xs text-gray-500">Trạng thái vận hành</small>
