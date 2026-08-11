@@ -127,6 +127,22 @@
 
             </div>
 
+            {{-- PHU THU VE THEO LOAI PHONG --}}
+            <div>
+
+                <label for="phu_thu" class="mb-2 block text-sm font-medium text-gray-300">
+                    Phụ Thu Vé (VNĐ)
+                </label>
+
+                <input type="number" name="phu_thu" id="phu_thu"
+                    value="{{ old('phu_thu', 0) }}"
+                    min="0" step="1000"
+                    class="w-full rounded-2xl border border-white/10 bg-[#151515] px-4 py-3 text-white outline-none transition focus:border-[#d99a32]">
+
+                <small class="mt-1 block text-xs text-gray-500">Tự gợi ý theo loại phòng đã chọn ở trên, có thể chỉnh lại. Cộng thêm vào giá vé ngày thường/cuối tuần khi tạo suất chiếu.</small>
+
+            </div>
+
             {{-- TRANG THAI --}}
             <div class="lg:col-span-2">
 
@@ -181,5 +197,33 @@
     </form>
 
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const loaiPhongSelect = document.getElementById('loai_phong');
+    const phuThuInput = document.getElementById('phu_thu');
+    if (!loaiPhongSelect || !phuThuInput) return;
+
+    // Mức phụ thu gợi ý theo loại phòng — khớp với PhongChieu::PHU_THU_GOI_Y
+    const phuThuGoiY = @json(\App\Models\PhongChieu::PHU_THU_GOI_Y);
+
+    let daTuChinhPhuThu = false;
+    phuThuInput.addEventListener('input', function () {
+        daTuChinhPhuThu = true;
+    });
+
+    loaiPhongSelect.addEventListener('change', function () {
+        // Chỉ tự điền nếu người dùng CHƯA tự tay sửa ô phụ thu, tránh ghi đè
+        // giá trị họ vừa nhập tay.
+        if (daTuChinhPhuThu) return;
+        const goiY = phuThuGoiY[loaiPhongSelect.value];
+        if (goiY !== undefined) {
+            phuThuInput.value = goiY;
+        }
+    });
+});
+</script>
+@endpush
 
 @endsection

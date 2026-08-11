@@ -106,7 +106,7 @@ class BanVeController extends Controller
             $baoTri = $ghe->isEffectivelyUnderMaintenance();
             $chonDuoc = !$daDat && !$baoTri;
 
-            $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai_ghe ?? 'Thường');
+            $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai ?? 'Thường');
             $laCouple = (bool) ($ghe->loaiGhe->la_couple ?? false) ||
                 str_contains($loaiGheNorm, 'couple') ||
                 str_contains($loaiGheNorm, 'đôi') ||
@@ -114,16 +114,16 @@ class BanVeController extends Controller
                 str_contains($loaiGheNorm, 'double');
 
             $phuThu = (float) ($ghe->loaiGhe->phu_thu ?? 0);
-            $giaVe = (float) $suatChieu->gia_ve + $phuThu;
+            $giaVe = (float) $suatChieu->gia_ve_cuoi_cung + $phuThu;
 
             if ($laCouple) {
-                $giaVe = ((float) $suatChieu->gia_ve * 2) + $phuThu;
+                $giaVe = ((float) $suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
             }
 
             $gheTheoHang[$hang][] = [
                 'id' => $ghe->id,
                 'ma_ghe' => $ghe->ma_ghe,
-                'loai_ghe' => $ghe->loaiGhe->ten_loai_ghe ?? 'Thường',
+                'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
                 'la_couple' => $laCouple,
                 'gia' => $giaVe,
                 'phu_thu' => $phuThu,
@@ -160,7 +160,7 @@ class BanVeController extends Controller
             ->get();
 
         $seatTotal = $gheList->sum(function ($ghe) use ($suatChieu) {
-            $giaVe = (float) ($suatChieu->gia_ve ?? 0);
+            $giaVe = (float) ($suatChieu->gia_ve_cuoi_cung ?? 0);
             $phuThu = (float) ($ghe->loaiGhe?->phu_thu ?? 0);
 
             if ($ghe->loaiGhe?->la_couple) {
@@ -378,7 +378,7 @@ $menu = $foods
             ->get();
 
         $seatTotal = $gheList->sum(function ($ghe) use ($suatChieu) {
-            $giaVe = (float) ($suatChieu->gia_ve ?? 0);
+            $giaVe = (float) ($suatChieu->gia_ve_cuoi_cung ?? 0);
             $phuThu = (float) ($ghe->loaiGhe?->phu_thu ?? 0);
 
             if ($ghe->loaiGhe?->la_couple) {
@@ -639,7 +639,7 @@ $menu = $foods
                 $seatTotal = $gheList->sum(
                     function ($ghe) use ($suatChieu) {
                         $giaVe = (float) (
-                            $suatChieu->gia_ve ?? 0
+                            $suatChieu->gia_ve_cuoi_cung ?? 0
                         );
 
                         $phuThu = (float) (

@@ -127,14 +127,24 @@
                         Ghi Đè Biểu Giá Suất Chiếu Tùy Chỉnh
                     </label>
                     <div class="relative flex items-center">
-                        <input type="number" name="gia_ve_tuy_chinh" placeholder="Dùng biểu giá ma trận tự động..." 
-                            value="{{ old('gia_ve_tuy_chinh', $suatChieu->gia_ve) }}"
+                        <input type="number" name="gia_ve_tuy_chinh" id="gia_ve_tuy_chinh" placeholder="Dùng biểu giá ma trận tự động..."
+                            value="{{ old('gia_ve_tuy_chinh', $suatChieu->gia_ve_tu_dong ? '' : $suatChieu->gia_ve) }}"
                             class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] pl-4 pr-12 text-sm text-[#f4c56a] font-black outline-none focus:border-[#d99a32] transition [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
                         <span class="absolute right-4 text-xs text-gray-500 font-bold select-none">VND</span>
                     </div>
-                    <small class="text-gray-500 block leading-relaxed text-[11px]">
-                        Nếu bạn xóa trống ô này, hệ thống sẽ tự động tính toán lại giá vé dựa trên cài đặt tham số ngày thường/cuối tuần và loại phòng máy của rạp.
-                    </small>
+                    <div class="flex items-center justify-between gap-2">
+                        <small class="text-gray-500 block leading-relaxed text-[11px]">
+                            @if ($suatChieu->gia_ve_tu_dong)
+                                Đang ở chế độ <b>tự động</b>: giá cuối cùng hiện tại là <b>{{ number_format($suatChieu->gia_ve_cuoi_cung) }}đ</b> (giá ngày thường/cuối tuần + phụ thu phòng). Để trống ô này và Lưu để giữ chế độ tự động — mỗi khi phòng đổi phụ thu, giá vé sẽ tự cập nhật ngay, không cần vào sửa lại.
+                            @else
+                                Suất này đang dùng <b>giá cố định thủ công</b> ({{ number_format($suatChieu->gia_ve) }}đ), sẽ KHÔNG tự cộng thêm phụ thu phòng dù phòng có đổi giá. Muốn quay lại tự động, bấm nút bên cạnh rồi Lưu.
+                            @endif
+                        </small>
+                        <button type="button" id="btnDungGiaTuDong"
+                            class="shrink-0 rounded-lg border border-[#d99a32]/40 bg-[#d99a32]/10 px-3 py-1.5 text-[11px] font-bold text-[#f4c56a] hover:bg-[#d99a32]/20 transition whitespace-nowrap">
+                            <i class="fa-solid fa-rotate mr-1"></i>Dùng giá tự động
+                        </button>
+                    </div>
                 </div>
 
                 {{-- 💡 LOGIC TRẠNG THÁI MỚI: Chỉ cho phép chọn chạy tự động hoặc hủy suất --}}
@@ -191,6 +201,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const ngayChieuInput = document.getElementById('ngay_chieu');
     const gioChieuInput = document.getElementById('gio_chieu');
     const thoiLuongPreview = document.getElementById('thoi_luong_preview');
+
+    const giaVeTuyChinhInput = document.getElementById('gia_ve_tuy_chinh');
+    const btnDungGiaTuDong = document.getElementById('btnDungGiaTuDong');
+    if (btnDungGiaTuDong && giaVeTuyChinhInput) {
+        btnDungGiaTuDong.addEventListener('click', function () {
+            giaVeTuyChinhInput.value = '';
+            giaVeTuyChinhInput.focus();
+        });
+    }
 
     // Đọc tham số động giãn cách dọn rạp từ controller truyền xuống
     const thoiGianDonPhong = {{ $thoiGianDonPhong }};

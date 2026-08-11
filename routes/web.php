@@ -320,6 +320,9 @@ Route::middleware(['auth'])
             Route::post('phong-chieus/{phong_chieu}/create-seat', [AdminPhongChieuController::class, 'createSeat'])->name('phong-chieus.create-seat');
             Route::post('phong-chieus/{phong_chieu}/create-row', [AdminPhongChieuController::class, 'createRow'])->name('phong-chieus.create-row');
             Route::post('phong-chieus/{phongChieu}/schedule-row-maintenance', [AdminPhongChieuController::class, 'scheduleRowMaintenance'])->name('admin.phong-chieus.schedule-row-maintenance');
+
+            Route::get('loai-phong-gia', [\App\Http\Controllers\Admin\LoaiPhongGiaController::class, 'index'])->name('loai-phong-gia.index');
+            Route::put('loai-phong-gia', [\App\Http\Controllers\Admin\LoaiPhongGiaController::class, 'update'])->name('loai-phong-gia.update');
         });
 
         Route::middleware(['quyen:loai_ghe.xem'])->group(function () {

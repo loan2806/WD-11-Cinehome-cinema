@@ -500,7 +500,7 @@
                                                         {{ $suat->thoi_gian_ket_thuc?->format('H:i') ?? '--:--' }}
                                                     </span>
                                                 </td>
-                                                <td><strong class="showtime-price">{{ number_format((float) $suat->gia_ve) }}đ</strong></td>
+                                                <td><strong class="showtime-price">{{ number_format((float) $suat->gia_ve_cuoi_cung) }}đ</strong></td>
                                                 <td>
                                                     <span class="showtime-status {{ $statusClass }}">
                                                         {{ $statusLabels[$status] ?? $status }}
