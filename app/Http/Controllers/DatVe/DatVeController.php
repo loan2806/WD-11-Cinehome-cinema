@@ -230,7 +230,7 @@ public function chonGhe($id)
         $baoTri = $ghe->trang_thai !== 'hoat_dong';
         $chonDuoc = !$daDat && !$baoTri;
 
-        $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai_ghe ?? 'Thường');
+        $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai ?? 'Thường');
         $laCouple = (bool)($ghe->loaiGhe->la_couple ?? false) ||
                     str_contains($loaiGheNorm, 'couple') ||
                     str_contains($loaiGheNorm, 'đôi') ||
@@ -238,16 +238,16 @@ public function chonGhe($id)
                     str_contains($loaiGheNorm, 'double');
 
         $phuThu = (float)($ghe->loaiGhe->phu_thu ?? 0);
-        $giaVe = (float)$suatChieu->gia_ve + $phuThu;
+        $giaVe = (float)$suatChieu->gia_ve_cuoi_cung + $phuThu;
 
         if ($laCouple) {
-            $giaVe = ((float)$suatChieu->gia_ve * 2) + $phuThu;
+            $giaVe = ((float)$suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
         }
 
         $gheTheoHang[$hang][] = [
             'id' => $ghe->id,
             'ma_ghe' => $ghe->ma_ghe,
-            'loai_ghe' => $ghe->loaiGhe->ten_loai_ghe ?? 'Thường',
+            'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
             'la_couple' => $laCouple,
             'gia' => $giaVe,
             'phu_thu' => $phuThu,
@@ -330,8 +330,8 @@ public function chonGhe($id)
     $seatModels = GheNgoi::with('loaiGhe')->where('phong_chieu_id', $suatChieu->phong_chieu_id)->whereIn('ma_ghe', $selectedSeats)->get();
 
     $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
-        $price = $suatChieu->gia_ve + ($seat->loaiGhe->phu_thu ?? 0);
-        if ($seat->loaiGhe?->la_couple) $price = ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0);
+        $price = $suatChieu->gia_ve_cuoi_cung + ($seat->loaiGhe->phu_thu ?? 0);
+        if ($seat->loaiGhe?->la_couple) $price = ($suatChieu->gia_ve_cuoi_cung * 2) + ($seat->loaiGhe->phu_thu ?? 0);
         return $price;
     });
 
@@ -504,9 +504,9 @@ public function chonGhe($id)
         $seatModels = GheNgoi::with('loaiGhe')->where('phong_chieu_id', $suatChieu->phong_chieu_id)->whereIn('ma_ghe', $selectedSeats)->get();
         $seatTotal = $selectedSeats->count();
         $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
-            $price = $suatChieu->gia_ve + ($seat->loaiGhe->phu_thu ?? 0);
+            $price = $suatChieu->gia_ve_cuoi_cung + ($seat->loaiGhe->phu_thu ?? 0);
             if ($seat->loaiGhe?->la_couple) {
-                $price = ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0);
+                $price = ($suatChieu->gia_ve_cuoi_cung * 2) + ($seat->loaiGhe->phu_thu ?? 0);
             }
             return $price;
         });
@@ -673,9 +673,9 @@ public function chonGhe($id)
 
         $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
             if ($seat->loaiGhe?->la_couple) {
-                return ($suatChieu->gia_ve * 2) + ($seat->loaiGhe->phu_thu ?? 0);
+                return ($suatChieu->gia_ve_cuoi_cung * 2) + ($seat->loaiGhe->phu_thu ?? 0);
             }
-            return $suatChieu->gia_ve + ($seat->loaiGhe->phu_thu ?? 0);
+            return $suatChieu->gia_ve_cuoi_cung + ($seat->loaiGhe->phu_thu ?? 0);
         });
 
         $foodItems = collect(json_decode($request->input('food_cart', '[]'), true));

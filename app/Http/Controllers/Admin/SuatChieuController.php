@@ -162,9 +162,11 @@ class SuatChieuController extends Controller
                 return redirect()->back()->withInput()->with('suat_chieu_trung_danh_sach', $suatChieuTrung);
             }
 
-            $giaVeCuoiCung = $request->filled('gia_ve_tuy_chinh') ? $request->gia_ve_tuy_chinh : $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings);
+            $giaVeTuDong = ! $request->filled('gia_ve_tuy_chinh');
+            $giaVeCuoiCung = $giaVeTuDong ? $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings) : $request->gia_ve_tuy_chinh;
             if ($this->isNgayLe($thoiGianChieu) && $request->filled('gia_ve_ngay_le')) {
                 $giaVeCuoiCung = $request->gia_ve_ngay_le;
+                $giaVeTuDong = false;
             }
 
             SuatChieu::create([
@@ -175,6 +177,7 @@ class SuatChieuController extends Controller
                 'thoi_luong' => $thoiLuongPhim,
                 'thoi_gian_ket_thuc' => $thoiGianKetThucChiemDung,
                 'gia_ve' => $giaVeCuoiCung,
+                'gia_ve_tu_dong' => $giaVeTuDong,
                 'trang_thai' => $this->xacDinhTrangThaiBanDau($thoiGianChieu, $thoiGianKetThucChiemDung),
             ]);
 
@@ -214,9 +217,11 @@ class SuatChieuController extends Controller
                             $tatCaSuatChieuTrungDb->put($scTrung->id, $scTrung);
                         }
                     } else {
-                        $giaVeCuoiCung = $request->filled('gia_ve_tuy_chinh') ? $request->gia_ve_tuy_chinh : $this->tinhGiaVeTuDong($curStart, $phongChieu, $settings);
+                        $giaVeTuDong = ! $request->filled('gia_ve_tuy_chinh');
+                        $giaVeCuoiCung = $giaVeTuDong ? $this->tinhGiaVeTuDong($curStart, $phongChieu, $settings) : $request->gia_ve_tuy_chinh;
                         if ($this->isNgayLe($curStart) && $request->filled('gia_ve_ngay_le')) {
                             $giaVeCuoiCung = $request->gia_ve_ngay_le;
+                            $giaVeTuDong = false;
                         }
 
                         $suatChieuCanTao[] = [
@@ -227,6 +232,7 @@ class SuatChieuController extends Controller
                             'thoi_luong' => $thoiLuongPhim,
                             'thoi_gian_ket_thuc' => $curEndChiemDung->copy(),
                             'gia_ve' => $giaVeCuoiCung,
+                            'gia_ve_tu_dong' => $giaVeTuDong,
                             'trang_thai' => $this->xacDinhTrangThaiBanDau($curStart, $curEndChiemDung),
                             'created_at' => now(),
                             'updated_at' => now()
@@ -276,9 +282,11 @@ class SuatChieuController extends Controller
                             $tatCaSuatChieuTrungDb->put($scTrung->id, $scTrung);
                         }
                     } else {
-                        $giaVeCuoiCung = $request->filled('gia_ve_tuy_chinh') ? $request->gia_ve_tuy_chinh : $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings);
+                        $giaVeTuDong = ! $request->filled('gia_ve_tuy_chinh');
+                        $giaVeCuoiCung = $giaVeTuDong ? $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings) : $request->gia_ve_tuy_chinh;
                         if ($this->isNgayLe($thoiGianChieu) && $request->filled('gia_ve_ngay_le')) {
                             $giaVeCuoiCung = $request->gia_ve_ngay_le;
+                            $giaVeTuDong = false;
                         }
 
                         $suatChieuCanTao[] = [
@@ -289,6 +297,7 @@ class SuatChieuController extends Controller
                             'thoi_luong' => $thoiLuongPhim,
                             'thoi_gian_ket_thuc' => $thoiGianKetThucChiemDung,
                             'gia_ve' => $giaVeCuoiCung,
+                            'gia_ve_tu_dong' => $giaVeTuDong,
                             'trang_thai' => $this->xacDinhTrangThaiBanDau($thoiGianChieu, $thoiGianKetThucChiemDung),
                             'created_at' => now(),
                             'updated_at' => now()
@@ -442,17 +451,19 @@ class SuatChieuController extends Controller
             return redirect()->back()->withInput()->with('error', 'Không thể cập nhật! Khung giờ điều chỉnh đã bị trùng lịch với suất chiếu khác cùng phòng.'); 
         }
 
-        $giaVeCuoiCung = $request->filled('gia_ve_tuy_chinh') ? $request->gia_ve_tuy_chinh : $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings);
+        $giaVeTuDong = ! $request->filled('gia_ve_tuy_chinh');
+        $giaVeCuoiCung = $giaVeTuDong ? $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings) : $request->gia_ve_tuy_chinh;
         $trangThaiCuoi = $request->trang_thai === 'huy' ? 'huy' : $this->xacDinhTrangThaiBanDau($thoiGianChieu, $thoiGianKetThucChiemDung);
-        
+
         $suatChieu->update([
-            'phim_id' => $request->phim_id, 
-            'rap_chieu_phim_id' => $rapChieuId, 
-            'phong_chieu_id' => $request->phong_chieu_id, 
-            'thoi_gian_chieu' => $thoiGianChieu, 
-            'thoi_luong' => $thoiLuongPhim, 
-            'thoi_gian_ket_thuc' => $thoiGianKetThucChiemDung, 
-            'gia_ve' => $giaVeCuoiCung, 
+            'phim_id' => $request->phim_id,
+            'rap_chieu_phim_id' => $rapChieuId,
+            'phong_chieu_id' => $request->phong_chieu_id,
+            'thoi_gian_chieu' => $thoiGianChieu,
+            'thoi_luong' => $thoiLuongPhim,
+            'thoi_gian_ket_thuc' => $thoiGianKetThucChiemDung,
+            'gia_ve' => $giaVeCuoiCung,
+            'gia_ve_tu_dong' => $giaVeTuDong,
             'trang_thai' => $trangThaiCuoi
         ]);
 
@@ -539,15 +550,11 @@ class SuatChieuController extends Controller
         return 'sap_chieu';
     }
 
-    private function tinhGiaVeTuDong(Carbon $thoiGianChieu, PhongChieu $phongChieu, $settings): float 
+    private function tinhGiaVeTuDong(Carbon $thoiGianChieu, PhongChieu $phongChieu, $settings): float
     {
-        $giaNgayThuong = $settings ? $settings->gia_ngay_thuong : 75000; 
-        $giaCuoiTuan = $settings ? $settings->gia_cuoi_tuan : 120000; 
-        $phuThuVip = $settings ? $settings->phu_thu_ghe_vip : 20000;
-        
-        $giaCoBas = in_array($thoiGianChieu->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY]) ? $giaCuoiTuan : $giaNgayThuong;
-        if (strtolower($phongChieu->loai_phong) === 'imax' || strtolower($phongChieu->loai_phong) === '4dx') $giaCoBas += $phuThuVip;
-        
-        return $giaCoBas;
+        $giaNgayThuong = $settings ? $settings->gia_ngay_thuong : 75000;
+        $giaCuoiTuan = $settings ? $settings->gia_cuoi_tuan : 120000;
+
+        return in_array($thoiGianChieu->dayOfWeek, [Carbon::FRIDAY, Carbon::SATURDAY, Carbon::SUNDAY]) ? $giaCuoiTuan : $giaNgayThuong;
     }
 }

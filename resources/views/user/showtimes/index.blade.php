@@ -185,7 +185,7 @@
                                             </p>
 
                                             <div class="schedule-card-footer">
-                                                <span>{{ number_format((float) $suatChieu->gia_ve, 0, ',', '.') }}đ</span>
+                                                <span>{{ number_format((float) $suatChieu->gia_ve_cuoi_cung, 0, ',', '.') }}đ</span>
                                                 <div>
                                                     <a href="{{ route('user.showtimes.show', $suatChieu) }}"
                                                         class="schedule-detail-btn">Chi tiết</a>

@@ -68,7 +68,14 @@ class PhongChieuController extends Controller
     public function store(StorePhongChieuRequest $request)
     {
         $data = $request->validated();
-        
+
+        // Nếu không nhập phụ thu, dùng mức gợi ý theo đúng loại phòng đã chọn
+        // (2D/3D/IMAX/4DX) thay vì luôn mặc định 0 — vẫn chỉnh riêng được sau
+        // ở trang "Giá theo phòng chiếu".
+        if (! isset($data['phu_thu']) || $data['phu_thu'] === null || $data['phu_thu'] === '') {
+            $data['phu_thu'] = PhongChieu::PHU_THU_GOI_Y[$data['loai_phong']] ?? 0;
+        }
+
         PhongChieu::create($data);
 
         $this->ghiNhatKy($request, 'Thêm phòng chiếu', 'Quản lý phòng & ghế', "Thêm phòng: {$data['ten_phong']}");
@@ -162,6 +169,13 @@ class PhongChieuController extends Controller
             }
         }
         
+        // Nếu để trống phụ thu khi sửa, giữ nguyên mức phụ thu hiện tại của
+        // phòng thay vì xóa về NULL/0 — phòng đã có giá thật rồi, không cần
+        // gợi ý lại như lúc tạo mới.
+        if (! isset($data['phu_thu']) || $data['phu_thu'] === null || $data['phu_thu'] === '') {
+            $data['phu_thu'] = $phongChieu->phu_thu;
+        }
+
         $phongChieu->update($data);
 
         $this->ghiNhatKy($request, 'Cập nhật phòng chiếu', 'Quản lý phòng & ghế', "Cập nhật phòng: {$phongChieu->ten_phong}");
