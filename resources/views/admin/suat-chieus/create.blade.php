@@ -5,11 +5,13 @@
 
 @php
     $selectedLoaiTao = old('loai_tao', 'don_le');
+    $selectedCheDoHangLoat = old('che_do_hang_loat', 'tu_dong');
     $selectedPhimId = old('phim_id', request('phim_id'));
     $selectedPhongId = old('phong_chieu_id', $phongChieuId ?? request('phong_chieu_id'));
     $selectedKhungGio = old('khung_gio', []);
     $selectedKhungGio = is_array($selectedKhungGio) ? $selectedKhungGio : [];
     $khungGioMacDinh = ['08:30', '11:00', '13:30', '16:00', '18:30', '21:00', '23:30'];
+    $valDonPhong = old('thoi_gian_don_phong', $thoiGianDonPhong ?? 15);
 @endphp
 
 @push('styles')
@@ -147,6 +149,61 @@
         background: rgba(250, 204, 21, 0.15) !important;
         color: #facc15 !important;
     }
+
+    /* Form Cảnh báo trùng */
+    .showtime-conflict-box {
+        background: rgba(239, 68, 68, 0.1) !important;
+        border: 1px solid rgba(239, 68, 68, 0.4) !important;
+        border-radius: 16px !important;
+        padding: 20px !important;
+        margin-bottom: 24px !important;
+    }
+    .showtime-conflict-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        color: #f87171;
+        margin-bottom: 16px;
+    }
+    .showtime-conflict-head i {
+        font-size: 24px;
+        margin-top: 2px;
+    }
+    .showtime-conflict-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+    }
+    .btn-conflict-continue {
+        background: #ef4444;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-conflict-continue:hover {
+        background: #dc2626;
+    }
+    .btn-conflict-cancel {
+        background: #27272a;
+        color: #d4d4d8;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        padding: 10px 20px;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-conflict-cancel:hover {
+        background: #3f3f46;
+    }
 </style>
 @endpush
 
@@ -186,45 +243,69 @@
         </div>
     </section>
 
-    @if (session('suat_chieu_trung_danh_sach'))
-        <section class="showtime-alert is-danger">
-            <div class="showtime-alert-head">
-                <span><i class="fa-solid fa-triangle-exclamation"></i></span>
+    <!-- FORM BÁO CẢNH BÁO TRÙNG LỊCH KHI TẠO HÀNG LOẠT -->
+    @if (session('suat_chieu_trung_danh_sach') || session('khung_gio_trung_noibo'))
+        <section class="showtime-conflict-box">
+            <div class="showtime-conflict-head">
+                <i class="fa-solid fa-triangle-exclamation"></i>
                 <div>
-                    <strong>Phát hiện trùng lịch phòng chiếu</strong>
-                    <p>Hệ thống đã chặn thao tác vì khung giờ bạn chọn đè lên các suất chiếu bên dưới.</p>
+                    <h3 style="margin: 0 0 4px 0; font-size: 18px; font-weight: 700; color: #f87171;">Phát hiện trùng lịch suất chiếu!</h3>
+                    <p style="margin: 0; font-size: 14px; color: #fca5a5;">
+                        Thời lượng phim là <strong>{{ session('thoi_luong_phim_phut', 90) }} phút</strong> (+{{ session('thoi_gian_don_phong_phut', 15) }}p dọn phòng). Một số khung giờ bạn chọn bị chồng chéo thời gian:
+                    </p>
                 </div>
             </div>
 
-            <div class="showtime-conflict-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID suất</th>
-                            <th>Phim đang chiếm chỗ</th>
-                            <th>Phòng</th>
-                            <th>Thời gian chiếu</th>
-                            <th>Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (session('suat_chieu_trung_danh_sach') as $scTrung)
+            @if (session('khung_gio_trung_noibo') && count(session('khung_gio_trung_noibo')) > 0)
+                <div style="background: rgba(0,0,0,0.3); border-radius: 10px; padding: 12px; margin-bottom: 12px; color: #fecaca; font-size: 13.5px;">
+                    <strong><i class="fa-solid fa-clock"></i> Khung giờ chọn thủ công bị trùng nhau:</strong>
+                    <span style="color: #facc15; font-weight: 700;">{{ implode(', ', session('khung_gio_trung_noibo')) }}</span>
+                    <br><small style="color: #a1a1aa;">Các mốc giờ này quá gần nhau so với thời lượng phim nên không thể chiếu cùng phòng.</small>
+                </div>
+            @endif
+
+            @if (session('suat_chieu_trung_danh_sach') && count(session('suat_chieu_trung_danh_sach')) > 0)
+                <div class="showtime-conflict-table" style="margin-bottom: 12px;">
+                    <strong style="color: #fecaca; display: block; margin-bottom: 8px;"><i class="fa-solid fa-database"></i> Trùng với các suất chiếu đã có sẵn trong phòng:</strong>
+                    <table>
+                        <thead>
                             <tr>
-                                <td>#{{ $scTrung->id }}</td>
-                                <td>{{ $scTrung->phim->ten_phim ?? 'Không rõ' }}</td>
-                                <td>{{ $scTrung->phongChieu->ten_phong ?? 'Không rõ' }}</td>
-                                <td>
-                                    {{ \Carbon\Carbon::parse($scTrung->thoi_gian_chieu)->format('H:i d/m/Y') }} - {{ \Carbon\Carbon::parse($scTrung->thoi_gian_ket_thuc)->format('H:i d/m/Y') }}
-                                </td>
-                                <td>
-                                    <a href="{{ route('admin.suat-chieus.edit', $scTrung->id) }}" target="_blank">
-                                        Sửa suất này <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                    </a>
-                                </td>
+                                <th>ID suất</th>
+                                <th>Phim đang chiếm chỗ</th>
+                                <th>Phòng</th>
+                                <th>Thời gian chiếu</th>
+                                <th>Thao tác</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (session('suat_chieu_trung_danh_sach') as $scTrung)
+                                <tr>
+                                    <td>#{{ $scTrung->id }}</td>
+                                    <td>{{ $scTrung->phim->ten_phim ?? 'Không rõ' }}</td>
+                                    <td>{{ $scTrung->phongChieu->ten_phong ?? 'Không rõ' }}</td>
+                                    <td>
+                                        {{ \Carbon\Carbon::parse($scTrung->thoi_gian_chieu)->format('H:i d/m/Y') }} - {{ \Carbon\Carbon::parse($scTrung->thoi_gian_ket_thuc)->format('H:i d/m/Y') }}
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('admin.suat-chieus.edit', $scTrung->id) }}" target="_blank">
+                                            Sửa suất này <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
+            <div class="showtime-conflict-actions">
+                <button type="button" class="btn-conflict-continue" onclick="submitIgnoreConflicts()">
+                    <i class="fa-solid fa-forward"></i> Tiếp tục (Loại bỏ suất trùng & Thêm suất hợp lệ)
+                </button>
+
+                <button type="button" class="btn-conflict-cancel" onclick="cancelConflictWarning()">
+                    <i class="fa-solid fa-pen-to-square"></i> Hủy & Sửa lại dữ liệu
+                </button>
             </div>
         </section>
     @endif
@@ -232,6 +313,7 @@
     <form id="showtimeCreateForm" action="{{ route('admin.suat-chieus.store') }}" method="POST" class="showtime-form">
         @csrf
         <input type="hidden" name="rap_chieu_phim_id" value="{{ $rapMacDinh->id ?? 1 }}">
+        <input type="hidden" name="bo_qua_trung" id="bo_qua_trung" value="0">
 
         <div class="showtime-form-layout">
             <main class="showtime-main">
@@ -298,7 +380,7 @@
                         </div>
                     </div>
 
-                    <div class="showtime-mode-row">
+                    <div class="showtime-mode-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; margin-bottom: 20px;">
                         <div class="showtime-field">
                             <span>Chế độ tạo lịch <b>*</b></span>
                             <div class="cine-select-wrapper">
@@ -318,12 +400,15 @@
                             </div>
                         </div>
 
-                        <div class="showtime-mode-note">
-                            <i class="fa-solid fa-shield-halved"></i>
-                            <span>Hệ thống sẽ kiểm tra trùng lịch theo thời lượng phim và thời gian dọn phòng.</span>
+                        <!-- Ô THỜI GIAN DỌN PHÒNG -->
+                        <div class="showtime-field">
+                            <span>Thời gian dọn phòng (Phút) <b>*</b></span>
+                            <input type="number" name="thoi_gian_don_phong" id="thoi_gian_don_phong" min="15" max="30" value="{{ $valDonPhong }}" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 12px; border-radius: 12px;">
+                            <small style="color: #a1a1aa; margin-top: 4px;">Tối thiểu 15 phút - Tối đa 30 phút.</small>
                         </div>
                     </div>
 
+                    <!-- KHU VỰC TẠO ĐƠN LẺ -->
                     <div id="khu_don_le" class="showtime-mode-block">
                         <div class="showtime-grid two-cols">
                             <label class="showtime-field">
@@ -338,8 +423,9 @@
                         </div>
                     </div>
 
+                    <!-- KHU VỰC TẠO HÀNG LOẠT -->
                     <div id="khu_hang_loat" class="showtime-mode-block" style="display: none;">
-                        <div class="showtime-grid two-cols">
+                        <div class="showtime-grid two-cols" style="margin-bottom: 20px;">
                             <label class="showtime-field">
                                 <span>Từ ngày <b>*</b></span>
                                 <input type="date" name="ngay_bat_dau" id="ngay_bat_dau" min="{{ date('Y-m-d') }}" value="{{ old('ngay_bat_dau') }}" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 12px; border-radius: 12px;">
@@ -351,13 +437,48 @@
                             </label>
                         </div>
 
-                        <div class="showtime-time-picker">
-                            <div>
-                                <strong>Khung giờ trong ngày <b>*</b></strong>
-                                <span>Chọn một hoặc nhiều mốc giờ để tạo lịch hàng loạt.</span>
+                        <!-- LỰA CHỌN 2 CHẾ ĐỘ TẠO HÀNG LOẠT -->
+                        <div style="background: rgba(250, 204, 21, 0.05); border: 1px solid rgba(250, 204, 21, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                            <span style="font-size: 14px; font-weight: 700; color: #facc15; display: block; margin-bottom: 10px;">
+                                <i class="fa-solid fa-gears"></i> Lựa chọn kiểu sinh suất chiếu hàng loạt:
+                            </span>
+
+                            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                                <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 14px; cursor: pointer; font-weight: 600;">
+                                    <input type="radio" name="che_do_hang_loat" value="tu_dong" @checked($selectedCheDoHangLoat === 'tu_dong') onchange="window.switchSubBatchMode()" style="accent-color: #facc15;">
+                                    <span>Chế độ 1: Tự động tính theo khung giờ Đầu - Cuối</span>
+                                </label>
+
+                                <label style="display: flex; align-items: center; gap: 8px; color: #fff; font-size: 14px; cursor: pointer; font-weight: 600;">
+                                    <input type="radio" name="che_do_hang_loat" value="thu_cong" @checked($selectedCheDoHangLoat === 'thu_cong') onchange="window.switchSubBatchMode()" style="accent-color: #facc15;">
+                                    <span>Chế độ 2: Chọn các khung giờ chiếu thủ công</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- CHẾ ĐỘ 1: TỰ ĐỘNG TÍNH THEO GIỜ ĐẦU - CUỐI -->
+                        <div id="sub_che_do_tu_dong" class="showtime-grid two-cols" style="background: #18181c; padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;">
+                            <label class="showtime-field">
+                                <span>Giờ bắt đầu (Suất chiếu đầu) <b>*</b></span>
+                                <input type="time" name="gio_bat_dau_tu_dong" id="gio_bat_dau_tu_dong" value="{{ old('gio_bat_dau_tu_dong', '08:00') }}" style="color-scheme: dark; background: #25252b; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 12px; border-radius: 12px;">
+                                <small style="color: #a1a1aa; margin-top: 4px;">Ví dụ: 08:00</small>
+                            </label>
+
+                            <label class="showtime-field">
+                                <span>Giờ kết thúc (Giờ muộn nhất) <b>*</b></span>
+                                <input type="time" name="gio_ket_thuc_tu_dong" id="gio_ket_thuc_tu_dong" value="{{ old('gio_ket_thuc_tu_dong', '23:30') }}" style="color-scheme: dark; background: #25252b; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 12px; border-radius: 12px;">
+                                <small style="color: #a1a1aa; margin-top: 4px;" id="sub_tu_dong_note">Hệ thống tự tính thời lượng + {{ $valDonPhong }}p dọn phòng để tạo suất tiếp theo.</small>
+                            </label>
+                        </div>
+
+                        <!-- CHẾ ĐỘ 2: CHỌN KHUNG GIỜ THỦ CÔNG (GIỐNG HỆT ẢNH 2) -->
+                        <div id="sub_che_do_thu_cong" style="background: #18181c; padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; display: none;">
+                            <div style="margin-bottom: 12px;">
+                                <strong style="color: #fff; font-size: 15px; display: block;">Khung giờ trong ngày <b style="color: #ef4444;">*</b></strong>
+                                <span style="color: #a1a1aa; font-size: 13px;">Chọn một hoặc nhiều mốc giờ để tạo lịch hàng loạt.</span>
                             </div>
 
-                            <div class="showtime-time-list" id="khung_gio_checkboxes">
+                            <div class="showtime-time-list" id="khung_gio_checkboxes" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
                                 @foreach ($khungGioMacDinh as $gio)
                                     <label class="showtime-time-chip">
                                         <input type="checkbox" name="khung_gio[]" value="{{ $gio }}" @checked(in_array($gio, $selectedKhungGio))>
@@ -367,9 +488,9 @@
                             </div>
 
                             <!-- KHU VỰC CHÈN GIỜ KHÁC -->
-                            <div class="showtime-custom-time" style="margin-top: 15px; display: flex; align-items: center; gap: 10px;">
-                                <input type="time" id="custom_time_input" style="color-scheme: dark; background: #18181c; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 8px 12px; border-radius: 8px;">
-                                <button type="button" id="btn_add_custom_time" style="background: #25252b; border: 1px solid #d99a32; color: #d99a32; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                            <div class="showtime-custom-time" style="display: flex; align-items: center; gap: 10px;">
+                                <input type="time" id="custom_time_input" style="color-scheme: dark; background: #25252b; border: 1px solid rgba(255,255,255,0.18); color: #fff; padding: 10px 14px; border-radius: 8px;">
+                                <button type="button" id="btn_add_custom_time" onclick="window.executeAddCustomTime(event)" style="background: #25252b; border: 1px solid #d99a32; color: #d99a32; padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                                     <i class="fa-solid fa-plus"></i> Chèn giờ khác
                                 </button>
                             </div>
@@ -435,7 +556,7 @@
                     <div class="showtime-monitor-metrics">
                         <div>
                             <small>Dọn phòng</small>
-                            <strong>{{ $thoiGianDonPhong }} phút</strong>
+                            <strong id="metric_don_phong">{{ $valDonPhong }} phút</strong>
                         </div>
                         <div>
                             <small>Chế độ</small>
@@ -466,7 +587,40 @@
 
 @push('scripts')
 <script>
-// 🌟 1. KHAI BÁO HÀM TẠO CHIP GIỜ TOÀN CỤC (WINDOW SCOPE)
+function submitIgnoreConflicts() {
+    document.getElementById('bo_qua_trung').value = '1';
+    document.getElementById('showtimeCreateForm').submit();
+}
+
+function cancelConflictWarning() {
+    const conflictBox = document.querySelector('.showtime-conflict-box');
+    if (conflictBox) conflictBox.style.display = 'none';
+    document.getElementById('bo_qua_trung').value = '0';
+}
+
+// Hàm ẩn / hiện Chế độ 1 và Chế độ 2
+window.switchSubBatchMode = function() {
+    const loaiInput = document.getElementById('loai_tao');
+    const subTuDong = document.getElementById('sub_che_do_tu_dong');
+    const subThuCong = document.getElementById('sub_che_do_thu_cong');
+    const selectedRadio = document.querySelector('input[name="che_do_hang_loat"]:checked');
+
+    if (!loaiInput || loaiInput.value !== 'hang_loat') return;
+
+    const isTuDong = !selectedRadio || selectedRadio.value === 'tu_dong';
+
+    if (subTuDong) {
+        subTuDong.style.setProperty('display', isTuDong ? 'grid' : 'none', 'important');
+    }
+    if (subThuCong) {
+        subThuCong.style.setProperty('display', isTuDong ? 'none' : 'block', 'important');
+    }
+
+    if (typeof updateMonitor === 'function') {
+        updateMonitor();
+    }
+};
+
 window.executeAddCustomTime = function(e) {
     if (e) {
         e.preventDefault();
@@ -479,12 +633,11 @@ window.executeAddCustomTime = function(e) {
 
     const rawVal = customTimeInput.value;
     if (!rawVal) {
-        alert('Vui lòng chọn đầy đủ Giờ, Phút và Buổi (AM/PM) trước khi bấm Chèn!');
+        alert('Vui lòng chọn đầy đủ Giờ và Phút trước khi bấm Chèn!');
         customTimeInput.focus();
         return false;
     }
 
-    // Chuẩn hóa giờ HH:MM
     const parts = rawVal.split(':');
     const formattedVal = parts[0].padStart(2, '0') + ':' + parts[1].substring(0, 2).padStart(2, '0');
 
@@ -504,20 +657,17 @@ window.executeAddCustomTime = function(e) {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    // 🌟 2. CHẶN BẤM ENTER TRÊN FORM ĐỂ KHÔNG BỊ PHÁT DỮ LIỆU SỚM VÂNG LỖI JSON
     const mainForm = document.getElementById('showtimeCreateForm');
     if (mainForm) {
         mainForm.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 const target = e.target;
-                // Nếu đang bấm Enter trong ô nhập giờ custom -> Thực hiện chèn giờ ngay lập tức
                 if (target && target.id === 'custom_time_input') {
                     e.preventDefault();
                     e.stopPropagation();
                     window.executeAddCustomTime(e);
                     return false;
                 }
-                // Nếu đang gõ ở các ô input khác -> Chặn hành động Submit Form bằng phím Enter
                 if (target && target.tagName === 'INPUT' && target.type !== 'submit') {
                     e.preventDefault();
                     return false;
@@ -526,13 +676,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 🌟 3. BẮT SỰ KIỆN CLICK NÚT CHÈN GIỜ KHÁC
-    const btnAddCustomTime = document.getElementById('btn_add_custom_time');
-    if (btnAddCustomTime) {
-        btnAddCustomTime.addEventListener('click', window.executeAddCustomTime);
-    }
-
-    // 🌟 4. DROPDOWN THUẦN
+    // Dropdown Custom
     document.querySelectorAll('.cine-select-wrapper').forEach(function(wrapper) {
         const hiddenInput = wrapper.querySelector('input[type="hidden"]');
         const trigger = wrapper.querySelector('.cine-select-trigger');
@@ -573,7 +717,25 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.cine-select-wrapper').forEach(w => w.classList.remove('open'));
     });
 
-    // 🌟 5. CHUYỂN CHẾ ĐỘ ĐƠN LẺ / HÀNG LOẠT
+    // Ép dọn phòng 15 - 30p
+    const donPhongInput = document.getElementById('thoi_gian_don_phong');
+    if (donPhongInput) {
+        donPhongInput.addEventListener('change', function() {
+            let val = parseInt(this.value) || 15;
+            if (val < 15) val = 15;
+            if (val > 30) val = 30;
+            this.value = val;
+
+            const metricDonPhong = document.getElementById('metric_don_phong');
+            if (metricDonPhong) metricDonPhong.textContent = val + ' phút';
+            const subNote = document.getElementById('sub_tu_dong_note');
+            if (subNote) subNote.textContent = `Hệ thống tự tính thời lượng + ${val}p dọn phòng để tạo suất tiếp theo.`;
+
+            updateMonitor();
+        });
+    }
+
+    // Chuyển đổi giữa Đơn Lẻ & Hàng Loạt
     const loaiInput = document.getElementById('loai_tao');
     const khuDonLe = document.getElementById('khu_don_le');
     const khuHangLoat = document.getElementById('khu_hang_loat');
@@ -582,10 +744,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function switchFormMode() {
         if (!loaiInput) return;
         const isSingle = loaiInput.value === 'don_le';
-        if (khuDonLe) khuDonLe.style.display = isSingle ? 'block' : 'none';
-        if (khuHangLoat) khuHangLoat.style.display = isSingle ? 'none' : 'block';
+        if (khuDonLe) khuDonLe.style.setProperty('display', isSingle ? 'block' : 'none', 'important');
+        if (khuHangLoat) khuHangLoat.style.setProperty('display', isSingle ? 'none' : 'block', 'important');
         if (modePreview) modePreview.textContent = isSingle ? 'Đơn lẻ' : 'Hàng loạt';
-        updateMonitor();
+        window.switchSubBatchMode();
     }
 
     if (loaiInput) {
@@ -593,7 +755,7 @@ document.addEventListener('DOMContentLoaded', function() {
         switchFormMode();
     }
 
-    // 🌟 6. MONITOR XEM TRƯỚC LỊCH
+    // Monitor Phân Tích Lịch
     const phimInput = document.getElementById('phim_id');
     const ngayChieuInput = document.getElementById('ngay_chieu_don_le');
     const gioChieuInput = document.getElementById('gio_chieu_don_le');
@@ -606,6 +768,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedPhimOpt = document.querySelector('#wrap_phim .cine-select-option.selected');
         const tenPhim = selectedPhimOpt ? selectedPhimOpt.textContent.trim() : 'Chưa chọn phim';
         const thoiLuong = selectedPhimOpt ? (parseInt(selectedPhimOpt.dataset.thoiLuong) || 90) : 90;
+        const curDonPhong = parseInt(donPhongInput?.value) || 15;
 
         if (!phimInput.value) {
             previewArea.value = "Vui lòng chọn Phim và Khung giờ để xem phân tích...";
@@ -615,32 +778,46 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loaiInput.value === 'don_le') {
             const ngay = ngayChieuInput.value || 'YYYY-MM-DD';
             const gio = gioChieuInput.value || 'HH:MM';
-            previewArea.value = `[CHIẾM PHÒNG CHIẾU]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+{{ $thoiGianDonPhong }}p dọn phòng)\n- Khởi chiếu: ${gio} ngày ${ngay}`;
+            previewArea.value = `[CHIẾM PHÒNG CHIẾU]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+${curDonPhong}p dọn phòng)\n- Khởi chiếu: ${gio} ngày ${ngay}`;
         } else {
-            const checkedBoxes = document.querySelectorAll('input[name="khung_gio[]"]:checked');
-            const selectedGios = Array.from(checkedBoxes).map(cb => cb.value).join(', ');
-            previewArea.value = `[TẠO SUẤT HÀNG LOẠT]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+{{ $thoiGianDonPhong }}p dọn phòng)\n- Mốc giờ đã chọn: ${selectedGios || 'Chưa chọn mốc giờ nào'}`;
+            const selectedRadio = document.querySelector('input[name="che_do_hang_loat"]:checked');
+            const subMode = selectedRadio ? selectedRadio.value : 'tu_dong';
+
+            if (subMode === 'tu_dong') {
+                const gStart = document.getElementById('gio_bat_dau_tu_dong')?.value || '08:00';
+                const gEnd = document.getElementById('gio_ket_thuc_tu_dong')?.value || '23:30';
+                previewArea.value = `[TỰ ĐỘNG TÍNH SUẤT CHIẾU]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+${curDonPhong}p dọn phòng)\n- Suất đầu: ${gStart}\n- Giờ kết thúc tối đa: ${gEnd}`;
+            } else {
+                const checkedBoxes = document.querySelectorAll('input[name="khung_gio[]"]:checked');
+                const selectedGios = Array.from(checkedBoxes).map(cb => cb.value).join(', ');
+                previewArea.value = `[THỦ CÔNG CÓ VALIDATE TRÙNG]\n- Phim: ${tenPhim}\n- Thời lượng: ${thoiLuong} phút (+${curDonPhong}p dọn phòng)\n- Mốc giờ đã chọn: ${selectedGios || 'Chưa chọn mốc giờ nào'}`;
+            }
         }
     };
 
     if (phimInput) phimInput.addEventListener('change', updateMonitor);
     if (ngayChieuInput) ngayChieuInput.addEventListener('change', updateMonitor);
     if (gioChieuInput) gioChieuInput.addEventListener('change', updateMonitor);
+    document.getElementById('gio_bat_dau_tu_dong')?.addEventListener('change', updateMonitor);
+    document.getElementById('gio_ket_thuc_tu_dong')?.addEventListener('change', updateMonitor);
+
     if (khungGioContainer) {
         khungGioContainer.addEventListener('change', function(e) {
             if (e.target.name === 'khung_gio[]') updateMonitor();
         });
     }
 
-    // 🌟 7. CHẶN SUBMIT NẾU CHƯA CHỌN MỐC GIỜ TRONG CHẾ ĐỘ HÀNG LOẠT
     if (mainForm) {
         mainForm.addEventListener('submit', function(e) {
             if (loaiInput && loaiInput.value === 'hang_loat') {
-                const checkedBoxes = document.querySelectorAll('input[name="khung_gio[]"]:checked');
-                if (checkedBoxes.length === 0) {
-                    e.preventDefault();
-                    alert('Vui lòng chọn hoặc chèn ít nhất MỘT khung giờ chiếu trước khi khởi tạo!');
-                    return false;
+                const selectedRadio = document.querySelector('input[name="che_do_hang_loat"]:checked');
+                if (selectedRadio && selectedRadio.value === 'thu_cong') {
+                    const checkedBoxes = document.querySelectorAll('input[name="khung_gio[]"]:checked');
+                    if (checkedBoxes.length === 0) {
+                        e.preventDefault();
+                        alert('Vui lòng chọn hoặc chèn ít nhất MỘT khung giờ chiếu trước khi khởi tạo!');
+                        return false;
+                    }
                 }
             }
         });

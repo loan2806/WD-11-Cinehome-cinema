@@ -99,34 +99,42 @@ class SuatChieuController extends Controller
 
         $settings = CaiDatHeThong::first();
         $thoiGianDonPhong = $settings ? $settings->thoi_gian_don_phong : 15;
+        $thoiGianDonPhong = max(15, min(30, (int)$thoiGianDonPhong));
 
         return view('admin.suat-chieus.create', compact('phims', 'rapMacDinh', 'phongChieus', 'phongChieuId', 'thoiGianDonPhong'));
     }
 
     public function store(Request $request)
     {
-        // Ép redirect back về Blade View khi có lỗi, loại bỏ màn hình JSON
         $validator = Validator::make($request->all(), [
             'phim_id' => 'required|exists:phims,id',
             'phong_chieu_id' => 'required|exists:phong_chieus,id',
             'loai_tao' => 'required|in:don_le,hang_loat',
+            'che_do_hang_loat' => 'required_if:loai_tao,hang_loat|nullable|in:tu_dong,thu_cong',
+            'thoi_gian_don_phong' => 'nullable|integer|min:15|max:30',
             'ngay_chieu_don_le' => 'required_if:loai_tao,don_le|nullable|date',
             'gio_chieu_don_le' => 'required_if:loai_tao,don_le|nullable|string',
             'ngay_bat_dau' => 'required_if:loai_tao,hang_loat|nullable|date',
             'ngay_ket_thuc' => 'required_if:loai_tao,hang_loat|nullable|date|after_or_equal:ngay_bat_dau',
-            'khung_gio' => 'required_if:loai_tao,hang_loat|nullable|array|min:1',
+            'gio_bat_dau_tu_dong' => 'required_if:che_do_hang_loat,tu_dong|nullable|string',
+            'gio_ket_thuc_tu_dong' => 'required_if:che_do_hang_loat,tu_dong|nullable|string',
+            'khung_gio' => 'required_if:che_do_hang_loat,thu_cong|nullable|array|min:1',
             'khung_gio.*' => 'string',
             'gia_ve_tuy_chinh' => 'nullable|numeric|min:0',
             'gia_ve_ngay_le' => 'nullable|numeric|min:0',
         ], [
             'phim_id.required' => 'Vui lòng chọn phim trình chiếu.',
             'phong_chieu_id.required' => 'Vui lòng chọn phòng chiếu.',
+            'thoi_gian_don_phong.min' => 'Thời gian dọn phòng tối thiểu là 15 phút.',
+            'thoi_gian_don_phong.max' => 'Thời gian dọn phòng tối đa là 30 phút.',
             'ngay_chieu_don_le.required_if' => 'Vui lòng chọn ngày chiếu cho suất đơn lẻ.',
             'gio_chieu_don_le.required_if' => 'Vui lòng chọn giờ chiếu cho suất đơn lẻ.',
             'ngay_bat_dau.required_if' => 'Vui lòng chọn ngày bắt đầu khi tạo hàng loạt.',
             'ngay_ket_thuc.required_if' => 'Vui lòng chọn ngày kết thúc khi tạo hàng loạt.',
             'ngay_ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.',
-            'khung_gio.required_if' => 'Vui lòng chọn hoặc chèn ít nhất một khung giờ chiếu trước khi khởi tạo!',
+            'gio_bat_dau_tu_dong.required_if' => 'Vui lòng nhập giờ bắt đầu cho suất đầu tiên.',
+            'gio_ket_thuc_tu_dong.required_if' => 'Vui lòng nhập giờ kết thúc tối đa cho suất cuối cùng.',
+            'khung_gio.required_if' => 'Vui lòng chọn hoặc chèn ít nhất một khung giờ chiếu!',
             'khung_gio.min' => 'Vui lòng chọn hoặc chèn ít nhất một khung giờ chiếu.',
         ]);
 
@@ -135,14 +143,15 @@ class SuatChieuController extends Controller
         }
 
         $settings = CaiDatHeThong::first();
-        $thoiGianDonPhong = $settings ? $settings->thoi_gian_don_phong : 15;
+        $thoiGianDonPhongInput = $request->input('thoi_gian_don_phong', $settings ? $settings->thoi_gian_don_phong : 15);
+        $thoiGianDonPhong = max(15, min(30, (int)$thoiGianDonPhongInput));
 
         $phim = Phims::findOrFail($request->phim_id);
         $phongChieu = PhongChieu::findOrFail($request->phong_chieu_id);
         $rapChieuId = $phongChieu->rap_chieu_phim_id ?? RapChieuPhim::first()?->id ?? 1;
-        
         $thoiLuongPhim = ((int)$phim->thoi_luong > 0) ? (int)$phim->thoi_luong : 90;
 
+        // TRƯỜNG HỢP 1: TẠO 1 SUẤT CHIẾU ĐƠN LẺ
         if ($request->loai_tao === 'don_le') {
             $thoiGianChieu = Carbon::parse($request->ngay_chieu_don_le . ' ' . $request->gio_chieu_don_le);
             $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
@@ -176,52 +185,139 @@ class SuatChieuController extends Controller
             return redirect()->route('admin.suat-chieus.index')->with('success', 'Tạo suất chiếu đơn lẻ thành công.');
         }
 
+        // TRƯỜNG HỢP 2: TẠO SUẤT CHIẾU HÀNG LOẠT
         $ngayBatDau = Carbon::parse($request->ngay_bat_dau);
         $ngayKetThuc = Carbon::parse($request->ngay_ket_thuc);
-        $danhSachKhungGio = $request->input('khung_gio', []);
-        
-        $tatCaSuatChieuTrungHangLoat = collect();
+        $cheDoHangLoat = $request->input('che_do_hang_loat', 'tu_dong');
+        $boQuaTrung = $request->boolean('bo_qua_trung', false);
+
         $suatChieuCanTao = [];
+        $tatCaSuatChieuTrungDb = collect();
+        $danhSachKhungGioTrungNoiBo = [];
 
-        for ($ngayQuet = $ngayBatDau->copy(); $ngayQuet->lte($ngayKetThuc); $ngayQuet->addDay()) {
-            foreach ($danhSachKhungGio as $gioChieu) {
-                $thoiGianChieu = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioChieu);
-                $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
+        // CHẾ ĐỘ 1: TỰ ĐỘNG TÍNH THEO GIỜ BẮT ĐẦU & KẾT THÚC
+        if ($cheDoHangLoat === 'tu_dong') {
+            $gioBatDauStr = $request->input('gio_bat_dau_tu_dong');
+            $gioKetThucStr = $request->input('gio_ket_thuc_tu_dong');
 
-                $suatChieuTrung = $this->layDanhSachSuatChieuTrung($request->phong_chieu_id, $thoiGianChieu, $thoiGianKetThucChiemDung);
-                
-                if ($suatChieuTrung->isNotEmpty()) {
-                    foreach ($suatChieuTrung as $scTrung) {
-                        $tatCaSuatChieuTrungHangLoat->put($scTrung->id, $scTrung);
+            for ($ngayQuet = $ngayBatDau->copy(); $ngayQuet->lte($ngayKetThuc); $ngayQuet->addDay()) {
+                $curStart = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioBatDauStr);
+                $maxEnd = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioKetThucStr);
+
+                if ($maxEnd->lte($curStart)) {
+                    $maxEnd->addDay();
+                }
+
+                while ($curStart->copy()->addMinutes($thoiLuongPhim)->lte($maxEnd)) {
+                    $curEndChiemDung = $curStart->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
+                    $suatChieuTrung = $this->layDanhSachSuatChieuTrung($request->phong_chieu_id, $curStart, $curEndChiemDung);
+
+                    if ($suatChieuTrung->isNotEmpty()) {
+                        foreach ($suatChieuTrung as $scTrung) {
+                            $tatCaSuatChieuTrungDb->put($scTrung->id, $scTrung);
+                        }
+                    } else {
+                        $giaVeTuDong = ! $request->filled('gia_ve_tuy_chinh');
+                        $giaVeCuoiCung = $giaVeTuDong ? $this->tinhGiaVeTuDong($curStart, $phongChieu, $settings) : $request->gia_ve_tuy_chinh;
+                        if ($this->isNgayLe($curStart) && $request->filled('gia_ve_ngay_le')) {
+                            $giaVeCuoiCung = $request->gia_ve_ngay_le;
+                            $giaVeTuDong = false;
+                        }
+
+                        $suatChieuCanTao[] = [
+                            'phim_id' => $request->phim_id,
+                            'rap_chieu_phim_id' => $rapChieuId,
+                            'phong_chieu_id' => $request->phong_chieu_id,
+                            'thoi_gian_chieu' => $curStart->copy(),
+                            'thoi_luong' => $thoiLuongPhim,
+                            'thoi_gian_ket_thuc' => $curEndChiemDung->copy(),
+                            'gia_ve' => $giaVeCuoiCung,
+                            'gia_ve_tu_dong' => $giaVeTuDong,
+                            'trang_thai' => $this->xacDinhTrangThaiBanDau($curStart, $curEndChiemDung),
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ];
                     }
-                    continue;
-                }
 
-                $giaVeTuDong = ! $request->filled('gia_ve_tuy_chinh');
-                $giaVeCuoiCung = $giaVeTuDong ? $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings) : $request->gia_ve_tuy_chinh;
-                if ($this->isNgayLe($thoiGianChieu) && $request->filled('gia_ve_ngay_le')) {
-                    $giaVeCuoiCung = $request->gia_ve_ngay_le;
-                    $giaVeTuDong = false;
+                    $curStart->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
                 }
+            }
+        } 
+        // CHẾ ĐỘ 2: CHỌN KHUNG GIỜ THỦ CÔNG
+        else {
+            $danhSachKhungGio = $request->input('khung_gio', []);
 
-                $suatChieuCanTao[] = [
-                    'phim_id' => $request->phim_id,
-                    'rap_chieu_phim_id' => $rapChieuId,
-                    'phong_chieu_id' => $request->phong_chieu_id,
-                    'thoi_gian_chieu' => $thoiGianChieu,
-                    'thoi_luong' => $thoiLuongPhim,
-                    'thoi_gian_ket_thuc' => $thoiGianKetThucChiemDung,
-                    'gia_ve' => $giaVeCuoiCung,
-                    'gia_ve_tu_dong' => $giaVeTuDong,
-                    'trang_thai' => $this->xacDinhTrangThaiBanDau($thoiGianChieu, $thoiGianKetThucChiemDung),
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ];
+            usort($danhSachKhungGio, function($a, $b) {
+                return strtotime($a) - strtotime($b);
+            });
+
+            $khungGioHopLeNoiBo = [];
+            $lastEndTime = null;
+
+            foreach ($danhSachKhungGio as $gio) {
+                $timeCarbon = Carbon::parse('2000-01-01 ' . $gio);
+                if ($lastEndTime !== null && $timeCarbon->lt($lastEndTime)) {
+                    $danhSachKhungGioTrungNoiBo[] = $gio;
+                } else {
+                    $khungGioHopLeNoiBo[] = $gio;
+                    $lastEndTime = $timeCarbon->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
+                }
+            }
+
+            $danhSachGioQuet = $boQuaTrung ? $khungGioHopLeNoiBo : $danhSachKhungGio;
+
+            for ($ngayQuet = $ngayBatDau->copy(); $ngayQuet->lte($ngayKetThuc); $ngayQuet->addDay()) {
+                foreach ($danhSachGioQuet as $gioChieu) {
+                    if (!$boQuaTrung && in_array($gioChieu, $danhSachKhungGioTrungNoiBo)) {
+                        continue;
+                    }
+
+                    $thoiGianChieu = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioChieu);
+                    $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
+
+                    $suatChieuTrung = $this->layDanhSachSuatChieuTrung($request->phong_chieu_id, $thoiGianChieu, $thoiGianKetThucChiemDung);
+
+                    if ($suatChieuTrung->isNotEmpty()) {
+                        foreach ($suatChieuTrung as $scTrung) {
+                            $tatCaSuatChieuTrungDb->put($scTrung->id, $scTrung);
+                        }
+                    } else {
+                        $giaVeTuDong = ! $request->filled('gia_ve_tuy_chinh');
+                        $giaVeCuoiCung = $giaVeTuDong ? $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings) : $request->gia_ve_tuy_chinh;
+                        if ($this->isNgayLe($thoiGianChieu) && $request->filled('gia_ve_ngay_le')) {
+                            $giaVeCuoiCung = $request->gia_ve_ngay_le;
+                            $giaVeTuDong = false;
+                        }
+
+                        $suatChieuCanTao[] = [
+                            'phim_id' => $request->phim_id,
+                            'rap_chieu_phim_id' => $rapChieuId,
+                            'phong_chieu_id' => $request->phong_chieu_id,
+                            'thoi_gian_chieu' => $thoiGianChieu,
+                            'thoi_luong' => $thoiLuongPhim,
+                            'thoi_gian_ket_thuc' => $thoiGianKetThucChiemDung,
+                            'gia_ve' => $giaVeCuoiCung,
+                            'gia_ve_tu_dong' => $giaVeTuDong,
+                            'trang_thai' => $this->xacDinhTrangThaiBanDau($thoiGianChieu, $thoiGianKetThucChiemDung),
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ];
+                    }
+                }
             }
         }
 
-        if ($tatCaSuatChieuTrungHangLoat->isNotEmpty()) {
-            return redirect()->back()->withInput()->with('suat_chieu_trung_danh_sach', $tatCaSuatChieuTrungHangLoat);
+        if ((!empty($danhSachKhungGioTrungNoiBo) || $tatCaSuatChieuTrungDb->isNotEmpty()) && !$boQuaTrung) {
+            return redirect()->back()
+                ->withInput()
+                ->with('suat_chieu_trung_danh_sach', $tatCaSuatChieuTrungDb)
+                ->with('khung_gio_trung_noibo', $danhSachKhungGioTrungNoiBo)
+                ->with('thoi_luong_phim_phut', $thoiLuongPhim)
+                ->with('thoi_gian_don_phong_phut', $thoiGianDonPhong);
+        }
+
+        if (empty($suatChieuCanTao)) {
+            return redirect()->back()->withInput()->with('error', 'Tất cả khung giờ tạo ra đều bị trùng lịch. Không có suất chiếu nào được tạo.');
         }
 
         foreach ($suatChieuCanTao as $data) {
@@ -229,7 +325,13 @@ class SuatChieuController extends Controller
         }
 
         $this->ghiNhatKy($request, 'Thêm suất chiếu', 'Quản lý phim & lịch chiếu', "Thêm chuỗi suất chiếu cho phim: {$phim->ten_phim}");
-        return redirect()->route('admin.suat-chieus.index')->with('success', "Đã tạo thành công " . count($suatChieuCanTao) . " suất chiếu.");
+        
+        $thongBao = "Đã tạo thành công " . count($suatChieuCanTao) . " suất chiếu.";
+        if ($boQuaTrung && (!empty($danhSachKhungGioTrungNoiBo) || $tatCaSuatChieuTrungDb->isNotEmpty())) {
+            $thongBao .= " (Hệ thống đã tự động bỏ qua các suất chiếu bị trùng giờ).";
+        }
+
+        return redirect()->route('admin.suat-chieus.index')->with('success', $thongBao);
     }
 
     public function show(SuatChieu $suatChieu): View 
@@ -301,6 +403,7 @@ class SuatChieuController extends Controller
         $phongChieus = PhongChieu::with('rapChieuPhim')->where('trang_thai', 'hoat_dong')->orderBy('ten_phong')->get();
         $settings = CaiDatHeThong::first();
         $thoiGianDonPhong = $settings ? $settings->thoi_gian_don_phong : 15;
+        $thoiGianDonPhong = max(15, min(30, (int)$thoiGianDonPhong));
         return view('admin.suat-chieus.edit', compact('suatChieu', 'phims', 'rapChieuPhims', 'phongChieus', 'thoiGianDonPhong'));
     }
 
@@ -325,7 +428,9 @@ class SuatChieuController extends Controller
         }
 
         $settings = CaiDatHeThong::first(); 
-        $thoiGianDonPhong = $settings ? $settings->thoi_gian_don_phong : 15;
+        $thoiGianDonPhongInput = $request->input('thoi_gian_don_phong', $settings ? $settings->thoi_gian_don_phong : 15);
+        $thoiGianDonPhong = max(15, min(30, (int)$thoiGianDonPhongInput));
+
         $phim = Phims::findOrFail($request->phim_id); 
         $phongChieu = PhongChieu::findOrFail($request->phong_chieu_id); 
         $rapChieuId = $phongChieu->rap_chieu_phim_id ?? 1;
@@ -445,13 +550,6 @@ class SuatChieuController extends Controller
         return 'sap_chieu';
     }
 
-    /**
-     * Chỉ tính GIÁ GỐC theo ngày thường/cuối tuần — KHÔNG cộng phụ thu phòng
-     * ở đây nữa. Phụ thu phòng giờ được cộng SỐNG khi hiển thị/đặt vé (xem
-     * SuatChieu::getGiaVeCuoiCungAttribute), để đổi phụ thu phòng là các suất
-     * chiếu đang ở chế độ tự động cập nhật giá ngay, không cần sửa lại từng
-     * suất đã tạo.
-     */
     private function tinhGiaVeTuDong(Carbon $thoiGianChieu, PhongChieu $phongChieu, $settings): float
     {
         $giaNgayThuong = $settings ? $settings->gia_ngay_thuong : 75000;
