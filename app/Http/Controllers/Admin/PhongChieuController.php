@@ -62,19 +62,20 @@ class PhongChieuController extends Controller
             ->orderBy('ten_rap')
             ->get();
 
-        return view('admin.phong-chieus.create', compact('rapChieuPhims'));
+        $phuThuTheoLoai = collect(PhongChieu::LOAI_PHONG)->keys()
+            ->mapWithKeys(fn ($ma) => [$ma => PhongChieu::phuThuTheoLoai($ma)]);
+
+        return view('admin.phong-chieus.create', compact('rapChieuPhims', 'phuThuTheoLoai'));
     }
 
     public function store(StorePhongChieuRequest $request)
     {
         $data = $request->validated();
 
-        // Nếu không nhập phụ thu, dùng mức gợi ý theo đúng loại phòng đã chọn
-        // (2D/3D/IMAX/4DX) thay vì luôn mặc định 0 — vẫn chỉnh riêng được sau
-        // ở trang "Giá theo phòng chiếu".
-        if (! isset($data['phu_thu']) || $data['phu_thu'] === null || $data['phu_thu'] === '') {
-            $data['phu_thu'] = PhongChieu::PHU_THU_GOI_Y[$data['loai_phong']] ?? 0;
-        }
+        // Phụ thu vé luôn theo LOẠI phòng (quản lý tập trung ở trang "Giá
+        // theo phòng chiếu"), không nhập riêng lúc tạo phòng — phòng mới tự
+        // nhận đúng mức đang cấu hình cho loại đã chọn.
+        $data['phu_thu'] = PhongChieu::phuThuTheoLoai($data['loai_phong']);
 
         PhongChieu::create($data);
 
@@ -130,7 +131,10 @@ class PhongChieuController extends Controller
     {
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
 
-        return view('admin.phong-chieus.edit', compact('phongChieu', 'rapChieuPhims'));
+        $phuThuTheoLoai = collect(PhongChieu::LOAI_PHONG)->keys()
+            ->mapWithKeys(fn ($ma) => [$ma => PhongChieu::phuThuTheoLoai($ma)]);
+
+        return view('admin.phong-chieus.edit', compact('phongChieu', 'rapChieuPhims', 'phuThuTheoLoai'));
     }
 
     public function update(UpdatePhongChieuRequest $request, PhongChieu $phongChieu)
@@ -169,12 +173,10 @@ class PhongChieuController extends Controller
             }
         }
         
-        // Nếu để trống phụ thu khi sửa, giữ nguyên mức phụ thu hiện tại của
-        // phòng thay vì xóa về NULL/0 — phòng đã có giá thật rồi, không cần
-        // gợi ý lại như lúc tạo mới.
-        if (! isset($data['phu_thu']) || $data['phu_thu'] === null || $data['phu_thu'] === '') {
-            $data['phu_thu'] = $phongChieu->phu_thu;
-        }
+        // Phụ thu vé luôn theo LOẠI phòng (quản lý tập trung ở trang "Giá
+        // theo phòng chiếu"): đổi loại phòng ở đây thì phụ thu tự đồng bộ
+        // theo đúng loại mới.
+        $data['phu_thu'] = PhongChieu::phuThuTheoLoai($data['loai_phong']);
 
         $phongChieu->update($data);
 

@@ -41,11 +41,6 @@ class StorePhongChieuRequest extends FormRequest
                 'required',
                 Rule::in(['hoat_dong', 'bao_tri', 'ngung_hoat_dong']),
             ],
-            'phu_thu' => [
-                'nullable',
-                'numeric',
-                'min:0',
-            ],
         ];
     }
 
@@ -58,8 +53,6 @@ class StorePhongChieuRequest extends FormRequest
             'suc_chua.min' => 'Sức chứa phải lớn hơn 0.',
             'loai_phong.required' => 'Loại phòng chiếu không được để trống.',
             'trang_thai.required' => 'Trạng thái không được để trống.',
-            'phu_thu.numeric' => 'Phụ thu vé phải là số.',
-            'phu_thu.min' => 'Phụ thu vé không được âm.',
         ];
     }
 }

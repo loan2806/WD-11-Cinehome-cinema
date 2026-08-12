@@ -6,7 +6,14 @@
 @section('content')
 
 @php
-    $loaiPhongLabels = \App\Models\PhongChieu::LOAI_PHONG;
+    // Cùng bảng màu/icon đang dùng cho badge "Loại phòng" ở trang Quản lý
+    // phòng chiếu, để hai trang nhất quán với nhau.
+    $kieuTheoLoai = [
+        '2d' => ['mau' => 'slate', 'icon' => 'fa-clapperboard', 'hex' => '#94a3b8'],
+        '3d' => ['mau' => 'purple', 'icon' => 'fa-cube', 'hex' => '#c084fc'],
+        'imax' => ['mau' => 'cyan', 'icon' => 'fa-expand', 'hex' => '#22d3ee'],
+        '4dx' => ['mau' => 'pink', 'icon' => 'fa-bolt', 'hex' => '#f472b6'],
+    ];
 @endphp
 
 <div class="admin-panel space-y-6">
@@ -14,10 +21,10 @@
     <div class="panel-header flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/5 pb-6">
         <div>
             <h5 class="text-3xl font-black text-white tracking-wide">
-                Giá vé theo từng phòng chiếu
+                Giá vé theo loại phòng chiếu
             </h5>
             <p class="text-sm text-gray-400 mt-1">
-                Danh sách này luôn khớp với "Quản lý phòng chiếu" — thêm phòng mới ở đó sẽ tự động có dòng để chỉnh giá ở đây.
+                Mỗi loại phòng một mức phụ thu duy nhất — áp dụng cho TẤT CẢ phòng cùng loại. Thêm phòng mới với loại nào sẽ tự nhận đúng mức phụ thu của loại đó.
             </p>
         </div>
 
@@ -29,82 +36,224 @@
 
     <div class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs text-amber-200 flex items-start gap-2.5">
         <i class="fa-solid fa-circle-info mt-0.5"></i>
-        <span>Giá vé cuối cùng = Giá vé ngày thường/cuối tuần (cấu hình ở "Cài đặt hệ thống") + Phụ thu riêng của phòng bên dưới. Áp dụng khi Quản trị viên tạo suất chiếu và để trống ô "Giá vé tùy chỉnh".</span>
+        <span>Giá vé cuối cùng = Giá vé ngày thường/cuối tuần (cấu hình ở "Cài đặt hệ thống") + Phụ thu theo loại phòng bên dưới. Nếu các phòng cùng loại trước đây có phụ thu khác nhau, lưu ở đây sẽ đồng bộ tất cả về cùng một mức.</span>
     </div>
 
-    <form method="POST" action="{{ route('admin.loai-phong-gia.update') }}" class="overflow-hidden rounded-3xl border border-white/10 bg-[#121212] shadow-2xl">
+    <form method="POST" action="{{ route('admin.loai-phong-gia.update') }}" id="formGiaLoaiPhong">
         @csrf
         @method('PUT')
 
-        <div class="overflow-x-auto">
-            <table class="w-full min-w-[700px] text-left border-collapse">
-                <thead class="bg-white/5 text-xs uppercase tracking-wider text-gray-400 border-b border-white/10">
-                    <tr>
-                        <th class="px-6 py-4.5 font-bold">Phòng chiếu</th>
-                        <th class="px-6 py-4.5 font-bold">Rạp</th>
-                        <th class="px-6 py-4.5 font-bold">Loại phòng</th>
-                        <th class="px-6 py-4.5 font-bold">Phụ thu vé (VNĐ)</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-white/5">
-                    @forelse ($danhSach as $phong)
-                        <tr class="transition duration-200 hover:bg-white/5">
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center gap-2 text-white font-extrabold text-base tracking-wide">
-                                    <i class="fa-solid fa-door-open text-red-500"></i>
-                                    {{ $phong->ten_phong }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-gray-300 text-sm">
-                                {{ $phong->rapChieuPhim?->ten_rap ?? 'Không rõ' }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex items-center rounded-lg bg-white/5 border border-white/10 px-3 py-1 text-xs font-bold text-gray-300">
-                                    {{ $loaiPhongLabels[$phong->loai_phong] ?? strtoupper($phong->loai_phong) }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2 max-w-[220px]">
-                                    <span class="text-gray-400 font-bold">+</span>
-                                    <input
-                                        type="number"
-                                        name="phu_thu[{{ $phong->id }}]"
-                                        value="{{ old('phu_thu.' . $phong->id, (int) $phong->phu_thu) }}"
-                                        min="0"
-                                        step="1000"
-                                        required
-                                        class="h-11 w-full rounded-xl border border-white/10 bg-[#151515] px-4 text-sm text-[#f4c56a] font-bold outline-none focus:border-[#d99a32] transition"
-                                    >
-                                    <span class="text-gray-400 font-bold">đ</span>
-                                </div>
-                                @error('phu_thu.' . $phong->id)
-                                    <small class="text-red-500">{{ $message }}</small>
-                                @enderror
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-6 py-16 text-center text-gray-500">
-                                <i class="fa-solid fa-door-open text-4xl text-gray-600 mb-3 block"></i>
-                                Chưa có phòng chiếu nào. Vào "Quản lý phòng chiếu" để thêm phòng trước.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div class="grid gap-5 sm:grid-cols-2">
+            @foreach ($danhSach as $loai)
+                @php $kieu = $kieuTheoLoai[$loai['ma']] ?? ['mau' => 'gray', 'icon' => 'fa-door-open', 'hex' => '#9ca3af']; @endphp
+
+                <div class="loai-phong-gia-card" style="--accent: {{ $kieu['hex'] }}">
+                    <div class="loai-phong-gia-card__head">
+                        <span class="loai-phong-gia-card__icon">
+                            <i class="fa-solid {{ $kieu['icon'] }}"></i>
+                        </span>
+                        <div class="loai-phong-gia-card__title">
+                            <h6>{{ $loai['ten'] }}</h6>
+                            <span class="loai-phong-gia-card__count">
+                                <i class="fa-solid fa-door-open"></i>
+                                {{ $loai['so_phong'] > 0 ? $loai['so_phong'] . ' phòng' : 'Chưa có phòng nào' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <label class="loai-phong-gia-card__label" for="phu_thu_{{ $loai['ma'] }}">Phụ thu vé</label>
+                    <div class="loai-phong-gia-card__input">
+                        <span>+</span>
+                        <input
+                            type="number"
+                            name="phu_thu[{{ $loai['ma'] }}]"
+                            id="phu_thu_{{ $loai['ma'] }}"
+                            data-preview-target="preview_{{ $loai['ma'] }}"
+                            value="{{ old('phu_thu.' . $loai['ma'], (int) $loai['phu_thu']) }}"
+                            min="0"
+                            step="1000"
+                            required
+                        >
+                        <span>đ</span>
+                    </div>
+                    @error('phu_thu.' . $loai['ma'])
+                        <small class="loai-phong-gia-card__error">{{ $message }}</small>
+                    @enderror
+
+                    <div class="loai-phong-gia-card__preview">
+                        <div>
+                            <span>Ngày thường</span>
+                            <strong id="preview_{{ $loai['ma'] }}_thuong">{{ number_format($giaNgayThuong + $loai['phu_thu']) }}đ</strong>
+                        </div>
+                        <div>
+                            <span>Cuối tuần</span>
+                            <strong id="preview_{{ $loai['ma'] }}_cuoituan">{{ number_format($giaCuoiTuan + $loai['phu_thu']) }}đ</strong>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
         </div>
 
-        @if ($danhSach->isNotEmpty())
-            <div class="p-6 border-t border-white/5">
-                <button type="submit"
-                    class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#e50914] to-[#ff3b46] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-500/10 hover:shadow-red-500/20 hover:scale-[1.02] active:scale-[0.98] transition duration-200">
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    Lưu giá theo phòng chiếu
-                </button>
-            </div>
-        @endif
+        <div class="mt-6">
+            <button type="submit"
+                class="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#e50914] to-[#ff3b46] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-500/10 hover:shadow-red-500/20 hover:scale-[1.02] active:scale-[0.98] transition duration-200">
+                <i class="fa-solid fa-floppy-disk"></i>
+                Lưu giá theo loại phòng chiếu
+            </button>
+        </div>
     </form>
 
 </div>
+
+<style>
+.loai-phong-gia-card {
+    position: relative;
+    border-radius: 1.5rem;
+    border: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+    padding: 1.5rem;
+    overflow: hidden;
+}
+.loai-phong-gia-card::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: var(--accent);
+}
+.loai-phong-gia-card__head {
+    display: flex;
+    align-items: center;
+    gap: .9rem;
+    margin-bottom: 1.25rem;
+}
+.loai-phong-gia-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--accent);
+    font-size: 1.1rem;
+}
+.loai-phong-gia-card__title h6 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: .02em;
+}
+.loai-phong-gia-card__count {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    margin-top: .25rem;
+    font-size: .72rem;
+    font-weight: 700;
+    color: #9ca3af;
+}
+.loai-phong-gia-card__label {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #9ca3af;
+    margin-bottom: .5rem;
+}
+.loai-phong-gia-card__input {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,.1);
+    background: #151515;
+    padding: 0 1rem;
+    height: 52px;
+    transition: border-color .15s ease;
+}
+.loai-phong-gia-card__input:focus-within {
+    border-color: var(--accent);
+}
+.loai-phong-gia-card__input > span:first-child {
+    color: #6b7280;
+    font-weight: 800;
+}
+.loai-phong-gia-card__input > span:last-child {
+    color: #6b7280;
+    font-weight: 700;
+    font-size: .85rem;
+}
+.loai-phong-gia-card__input input {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--accent);
+    font-weight: 900;
+    font-size: 1.05rem;
+    -moz-appearance: textfield;
+}
+.loai-phong-gia-card__input input::-webkit-outer-spin-button,
+.loai-phong-gia-card__input input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.loai-phong-gia-card__error {
+    display: block;
+    margin-top: .4rem;
+    color: #f87171;
+    font-size: .75rem;
+}
+.loai-phong-gia-card__preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem;
+    margin-top: 1.1rem;
+    padding-top: 1.1rem;
+    border-top: 1px dashed rgba(255,255,255,.08);
+}
+.loai-phong-gia-card__preview > div {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+}
+.loai-phong-gia-card__preview span {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #6b7280;
+}
+.loai-phong-gia-card__preview strong {
+    font-size: .95rem;
+    font-weight: 900;
+    color: #e5e7eb;
+}
+</style>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const giaNgayThuong = {{ (int) $giaNgayThuong }};
+    const giaCuoiTuan = {{ (int) $giaCuoiTuan }};
+
+    document.querySelectorAll('.loai-phong-gia-card__input input[data-preview-target]').forEach(function (input) {
+        input.addEventListener('input', function () {
+            const phuThu = Number(input.value) || 0;
+            const key = input.dataset.previewTarget;
+            const thuongEl = document.getElementById(key + '_thuong');
+            const cuoiTuanEl = document.getElementById(key + '_cuoituan');
+            if (thuongEl) thuongEl.textContent = (giaNgayThuong + phuThu).toLocaleString('vi-VN') + 'đ';
+            if (cuoiTuanEl) cuoiTuanEl.textContent = (giaCuoiTuan + phuThu).toLocaleString('vi-VN') + 'đ';
+        });
+    });
+});
+</script>
+@endpush
 
 @endsection

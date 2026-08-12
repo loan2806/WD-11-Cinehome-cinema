@@ -48,6 +48,19 @@ class PhongChieu extends Model
         '4dx' => 20000,
     ];
 
+    /**
+     * Phụ thu HIỆN TẠI đang áp dụng cho một LOẠI phòng — lấy từ phòng bất kỳ
+     * đã có của loại đó (tất cả các phòng cùng loại luôn được đồng bộ cùng
+     * một mức phụ thu, quản lý ở trang "Giá theo phòng chiếu"). Nếu loại đó
+     * chưa có phòng nào, dùng mức gợi ý mặc định làm khởi điểm.
+     */
+    public static function phuThuTheoLoai(string $loaiPhong): float
+    {
+        $phuThu = static::where('loai_phong', $loaiPhong)->value('phu_thu');
+
+        return $phuThu !== null ? (float) $phuThu : (float) (self::PHU_THU_GOI_Y[$loaiPhong] ?? 0);
+    }
+
     public const TRANG_THAI = [
         'hoat_dong' => 'Hoạt động',
         'bao_tri' => 'Bảo trì',
