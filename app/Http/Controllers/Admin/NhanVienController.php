@@ -9,6 +9,7 @@ use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\FoodInvoice;
 
 class NhanVienController extends Controller
 {
@@ -221,8 +222,7 @@ class NhanVienController extends Controller
         $daLamViec =
             $nhanvien->hoaDons()->exists()
             || $nhanvien->veXemPhims()->exists()
-            || $nhanvien->chamCongs()->exists()
-            || $nhanvien->bangLuongs()->exists();
+            || FoodInvoice::where('user_id', $nhanvien->id)->exists();
 
         if ($daLamViec) {
             return back()->with(
@@ -254,35 +254,35 @@ class NhanVienController extends Controller
         );
     }
 
-  public function trash(Request $request)
-{
-    $query = NguoiDung::onlyTrashed()
-        ->where('vai_tro', 'nhan_vien');
+    public function trash(Request $request)
+    {
+        $query = NguoiDung::onlyTrashed()
+            ->where('vai_tro', 'nhan_vien');
 
-    if ($request->filled('keyword')) {
-        $keyword = trim($request->keyword);
+        if ($request->filled('keyword')) {
+            $keyword = trim($request->keyword);
 
-        $query->where(function ($q) use ($keyword) {
-            $q->where('ho_ten', 'like', "%{$keyword}%")
-              ->orWhere('email', 'like', "%{$keyword}%");
-        });
+            $query->where(function ($q) use ($keyword) {
+                $q->where('ho_ten', 'like', "%{$keyword}%")
+                    ->orWhere('email', 'like', "%{$keyword}%");
+            });
+        }
+
+        if ($request->filled('deleted_from')) {
+            $query->whereDate('deleted_at', '>=', $request->deleted_from);
+        }
+
+        if ($request->filled('deleted_to')) {
+            $query->whereDate('deleted_at', '<=', $request->deleted_to);
+        }
+
+        $nhanViens = $query
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.nhanviens.trash', compact('nhanViens'));
     }
-
-    if ($request->filled('deleted_from')) {
-        $query->whereDate('deleted_at', '>=', $request->deleted_from);
-    }
-
-    if ($request->filled('deleted_to')) {
-        $query->whereDate('deleted_at', '<=', $request->deleted_to);
-    }
-
-    $nhanViens = $query
-        ->latest('deleted_at')
-        ->paginate(10)
-        ->withQueryString();
-
-    return view('admin.nhanviens.trash', compact('nhanViens'));
-}
 
     public function toggleStatus(Request $request, NguoiDung $nhanvien)
     {

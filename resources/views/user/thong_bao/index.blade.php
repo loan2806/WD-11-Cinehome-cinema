@@ -164,20 +164,6 @@
                             </div>
 
                             <p>{{ $thongBao->noi_dung }}</p>
-
-                            <div class="notification-card-actions">
-                                @if($thongBao->duong_dan)
-                                    <a href="{{ $thongBao->duong_dan }}" class="notification-detail-link">
-                                        Xem chi tiết
-                                        <i class="fa-solid fa-arrow-right"></i>
-                                    </a>
-                                @else
-                                    <span>
-                                        <i class="fa-solid fa-check"></i>
-                                        Đã lưu trong tài khoản
-                                    </span>
-                                @endif
-                            </div>
                         </div>
                     </article>
                 @empty

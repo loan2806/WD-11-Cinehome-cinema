@@ -320,42 +320,93 @@
             @csrf
 
             <input type="hidden" name="loai" value="tang">
-            {{-- CHỌN HẠNG --}}
             <div class="all-point-field">
+                <label>Hạng thành viên được tặng</label>
 
-                <label>
-                    Hạng thành viên được tặng
-                </label>
+                <div class="all-point-rank-dropdown" data-point-dropdown>
 
-                <select name="hang_thanh_vien">
+                    <input
+                        type="hidden"
+                        name="hang_thanh_vien"
+                        value="{{ old('loai') === 'tang' ? old('hang_thanh_vien') : '' }}"
+                        data-point-dropdown-value>
 
-                    <option value="">-- Chọn hạng --</option>
+                    <button
+                        type="button"
+                        class="all-point-rank-trigger"
+                        data-point-dropdown-trigger>
 
-                    <option value="member"
-                        {{ old('loai') === 'tang' && old('hang_thanh_vien') === 'member' ? 'selected' : '' }}>
-                        Member
-                    </option>
+                        <span class="all-point-rank-current">
 
-                    <option value="silver"
-                        {{ old('loai') === 'tang' && old('hang_thanh_vien') === 'silver' ? 'selected' : '' }}>
-                        Silver
-                    </option>
+                            @if(old('loai') === 'tang' && old('hang_thanh_vien') === 'member')
+                            <i class="fa-solid fa-user member-icon"></i>
+                            <span>Member</span>
 
-                    <option value="gold"
-                        {{ old('loai') === 'tang' && old('hang_thanh_vien') === 'gold' ? 'selected' : '' }}>
-                        Gold
-                    </option>
+                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'silver')
+                            <i class="fa-solid fa-medal silver-icon"></i>
+                            <span>Silver</span>
 
-                    <option value="platinum"
-                        {{ old('loai') === 'tang' && old('hang_thanh_vien') === 'platinum' ? 'selected' : '' }}>
-                        Platinum
-                    </option>
+                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'gold')
+                            <i class="fa-solid fa-crown gold-icon"></i>
+                            <span>Gold</span>
 
-                </select>
+                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'platinum')
+                            <i class="fa-solid fa-gem platinum-icon"></i>
+                            <span>Platinum</span>
+
+                            @else
+                            <i class="fa-solid fa-layer-group all-icon"></i>
+                            <span>-- Chọn hạng --</span>
+                            @endif
+
+                        </span>
+
+                        <i class="fa-solid fa-chevron-down all-point-rank-arrow"></i>
+                    </button>
+
+                    <div class="all-point-rank-menu" data-point-dropdown-menu>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ !old('hang_thanh_vien') ? 'is-selected' : '' }}"
+                            data-value="">
+                            <i class="fa-solid fa-layer-group all-icon"></i>
+                            <span>-- Chọn hạng --</span>
+                        </button>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'member' ? 'is-selected' : '' }}"
+                            data-value="member">
+                            <i class="fa-solid fa-user member-icon"></i>
+                            <span>Member</span>
+                        </button>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'silver' ? 'is-selected' : '' }}"
+                            data-value="silver">
+                            <i class="fa-solid fa-medal silver-icon"></i>
+                            <span>Silver</span>
+                        </button>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'gold' ? 'is-selected' : '' }}"
+                            data-value="gold">
+                            <i class="fa-solid fa-crown gold-icon"></i>
+                            <span>Gold</span>
+                        </button>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'platinum' ? 'is-selected' : '' }}"
+                            data-value="platinum">
+                            <i class="fa-solid fa-gem platinum-icon"></i>
+                            <span>Platinum</span>
+                        </button>
+
+                    </div>
+                </div>
+
                 <div class="all-point-help">
                     Chỉ thành viên thuộc hạng được chọn mới nhận điểm và thông báo.
                 </div>
-
             </div>
 
             {{-- SỐ ĐIỂM --}}
@@ -381,32 +432,84 @@
             </div>
 
 
-            {{-- TÍNH HẠNG --}}
             <div class="all-point-field">
+                <label>Tính vào hạng thành viên</label>
 
-                <label>
-                    Tính vào hạng thành viên
-                </label>
+                <div class="all-point-rank-dropdown" data-point-dropdown>
 
-                <select name="tinh_vao_hang" required>
+                    <input
+                        type="hidden"
+                        name="tinh_vao_hang"
+                        value="{{ old('loai') === 'tang' ? old('tinh_vao_hang', '1') : '1' }}"
+                        data-point-dropdown-value>
 
-                    <option value="1">
-                        Có - Tính vào hạng
-                    </option>
+                    <button
+                        type="button"
+                        class="all-point-rank-trigger"
+                        data-point-dropdown-trigger>
 
-                    <option value="0">
-                        Không - Không tính vào hạng
-                    </option>
+                        <span class="all-point-rank-current">
 
-                </select>
+                            @if(old('loai') === 'tang' && old('tinh_vao_hang') === '0')
 
-                <div class="all-point-help">
+                            <i class="fa-solid fa-ban point-no-icon"></i>
+                            <span class="point-no-text">
+                                Không - Không tính vào hạng
+                            </span>
 
-                    Nếu chọn "Có", điểm sẽ được cộng vào
-                    tổng tích lũy và có thể làm thay đổi hạng.
+                            @else
 
+                            <i class="fa-solid fa-ranking-star point-yes-icon"></i>
+                            <span class="point-yes-text">
+                                Có - Tính vào hạng
+                            </span>
+
+                            @endif
+
+                        </span>
+
+                        <i class="fa-solid fa-chevron-down all-point-rank-arrow"></i>
+                    </button>
+
+
+                    <div class="all-point-rank-menu" data-point-dropdown-menu>
+
+                        {{-- CÓ --}}
+                        <button
+                            type="button"
+                            class="all-point-rank-option {{ old('tinh_vao_hang', '1') === '1' ? 'is-selected' : '' }}"
+                            data-value="1">
+
+                            <i class="fa-solid fa-ranking-star point-yes-icon"></i>
+
+                            <span class="point-yes-text">
+                                Có - Tính vào hạng
+                            </span>
+
+                        </button>
+
+
+                        {{-- KHÔNG --}}
+                        <button
+                            type="button"
+                            class="all-point-rank-option {{ old('tinh_vao_hang') === '0' ? 'is-selected' : '' }}"
+                            data-value="0">
+
+                            <i class="fa-solid fa-ban point-no-icon"></i>
+
+                            <span class="point-no-text">
+                                Không - Không tính vào hạng
+                            </span>
+
+                        </button>
+
+                    </div>
                 </div>
 
+                <div class="all-point-help">
+                    Nếu chọn "Có", điểm sẽ được cộng vào tổng tích lũy
+                    và có thể làm thay đổi hạng.
+                </div>
             </div>
 
 
@@ -491,45 +594,93 @@
 
             <input type="hidden" name="loai" value="thu_hoi">
 
-            {{-- CHỌN HẠNG --}}
             <div class="all-point-field">
+                <label>Hạng thành viên được thu hồi</label>
 
-                <label>
-                    Hạng thành viên được tặng
-                </label>
+                <div class="all-point-rank-dropdown" data-point-dropdown>
 
-                <select name="hang_thanh_vien">
+                    <input
+                        type="hidden"
+                        name="hang_thanh_vien"
+                        value="{{ old('loai') === 'tang' ? old('hang_thanh_vien') : '' }}"
+                        data-point-dropdown-value>
 
-                    <option value="">
-                        -- Chọn hạng --
-                    </option>
+                    <button
+                        type="button"
+                        class="all-point-rank-trigger"
+                        data-point-dropdown-trigger>
 
-                    <option value="member"
-                        {{ old('loai') === 'thu_hoi' && old('hang_thanh_vien') === 'member' ? 'selected' : '' }}>
-                        Member
-                    </option>
+                        <span class="all-point-rank-current">
 
-                    <option value="silver"
-                        {{ old('loai') === 'thu_hoi' && old('hang_thanh_vien') === 'silver' ? 'selected' : '' }}>
-                        Silver
-                    </option>
+                            @if(old('loai') === 'tang' && old('hang_thanh_vien') === 'member')
+                            <i class="fa-solid fa-user member-icon"></i>
+                            <span>Member</span>
 
-                    <option value="gold"
-                        {{ old('loai') === 'thu_hoi' && old('hang_thanh_vien') === 'gold' ? 'selected' : '' }}>
-                        Gold
-                    </option>
+                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'silver')
+                            <i class="fa-solid fa-medal silver-icon"></i>
+                            <span>Silver</span>
 
-                    <option value="platinum"
-                        {{ old('loai') === 'thu_hoi' && old('hang_thanh_vien') === 'platinum' ? 'selected' : '' }}>
-                        Platinum
-                    </option>
+                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'gold')
+                            <i class="fa-solid fa-crown gold-icon"></i>
+                            <span>Gold</span>
 
-                </select>
+                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'platinum')
+                            <i class="fa-solid fa-gem platinum-icon"></i>
+                            <span>Platinum</span>
 
-                <div class="all-point-help">
-                    Hạng thành viên thu hồi
+                            @else
+                            <i class="fa-solid fa-layer-group all-icon"></i>
+                            <span>-- Chọn hạng --</span>
+                            @endif
+
+                        </span>
+
+                        <i class="fa-solid fa-chevron-down all-point-rank-arrow"></i>
+                    </button>
+
+                    <div class="all-point-rank-menu" data-point-dropdown-menu>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ !old('hang_thanh_vien') ? 'is-selected' : '' }}"
+                            data-value="">
+                            <i class="fa-solid fa-layer-group all-icon"></i>
+                            <span>-- Chọn hạng --</span>
+                        </button>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'member' ? 'is-selected' : '' }}"
+                            data-value="member">
+                            <i class="fa-solid fa-user member-icon"></i>
+                            <span>Member</span>
+                        </button>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'silver' ? 'is-selected' : '' }}"
+                            data-value="silver">
+                            <i class="fa-solid fa-medal silver-icon"></i>
+                            <span>Silver</span>
+                        </button>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'gold' ? 'is-selected' : '' }}"
+                            data-value="gold">
+                            <i class="fa-solid fa-crown gold-icon"></i>
+                            <span>Gold</span>
+                        </button>
+
+                        <button type="button"
+                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'platinum' ? 'is-selected' : '' }}"
+                            data-value="platinum">
+                            <i class="fa-solid fa-gem platinum-icon"></i>
+                            <span>Platinum</span>
+                        </button>
+
+                    </div>
                 </div>
 
+                <div class="all-point-help">
+                    Chỉ thành viên thuộc hạng được chọn mới nhận điểm và thông báo.
+                </div>
             </div>
 
             {{-- SỐ ĐIỂM --}}
@@ -590,3 +741,107 @@
 </div>
 
 @endsection
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        document.querySelectorAll('[data-point-dropdown]').forEach(function(dropdown) {
+
+            const trigger = dropdown.querySelector('[data-point-dropdown-trigger]');
+            const menu = dropdown.querySelector('[data-point-dropdown-menu]');
+            const hiddenInput = dropdown.querySelector('[data-point-dropdown-value]');
+
+            if (!trigger || !menu || !hiddenInput) return;
+
+
+            function openDropdown() {
+
+                document
+                    .querySelectorAll('[data-point-dropdown].is-open')
+                    .forEach(function(other) {
+
+                        if (other !== dropdown) {
+                            other.classList.remove('is-open');
+                        }
+
+                    });
+
+                dropdown.classList.add('is-open');
+            }
+
+
+            function closeDropdown() {
+                dropdown.classList.remove('is-open');
+            }
+
+
+            trigger.addEventListener('click', function(e) {
+
+                e.stopPropagation();
+
+                if (dropdown.classList.contains('is-open')) {
+                    closeDropdown();
+                } else {
+                    openDropdown();
+                }
+
+            });
+
+
+            menu.querySelectorAll('[data-value]').forEach(function(option) {
+
+                option.addEventListener('click', function(e) {
+
+                    e.stopPropagation();
+
+                    const value = this.dataset.value;
+
+                    const icon = this.querySelector('i') ?
+                        this.querySelector('i').outerHTML :
+                        '';
+
+                    const text = this.querySelector('span') ?
+                        this.querySelector('span').textContent.trim() :
+                        '';
+
+                    hiddenInput.value = value;
+
+
+                    dropdown.querySelector(
+                            '.all-point-rank-current'
+                        ).innerHTML =
+                        icon +
+                        '<span>' +
+                        text +
+                        '</span>';
+
+
+                    menu.querySelectorAll(
+                        '.all-point-rank-option'
+                    ).forEach(function(item) {
+
+                        item.classList.remove('is-selected');
+
+                    });
+
+
+                    this.classList.add('is-selected');
+
+                    closeDropdown();
+
+                });
+
+            });
+
+
+            document.addEventListener('click', function(e) {
+
+                if (!dropdown.contains(e.target)) {
+                    closeDropdown();
+                }
+
+            });
+
+        });
+
+    });
+</script>

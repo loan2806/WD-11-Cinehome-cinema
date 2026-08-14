@@ -125,6 +125,8 @@ Route::get('/khuyen-mai', [\App\Http\Controllers\User\TinTucController::class, '
 
 Route::get('/lien-he', [LienHeController::class, 'index'])->name('user.lien-he.index');
 Route::post('/lien-he', [LienHeController::class, 'store'])->name('user.lien-he.store');
+Route::get('/lien-he/luu-tru', [LienHeController::class, 'luuTru'])
+    ->name('user.lien-he.luu-tru');
 
 Route::get('/cinemas', [RapChieuPhimController::class, 'index'])->name('user.cinemas.index');
 Route::get('/cinemas/map', BandoRapController::class)->name('user.cinemas.map');
@@ -468,13 +470,103 @@ Route::middleware(['auth'])
         });
 
         Route::middleware(['quyen:khach_hang.xem'])->group(function () {
-            Route::get('/khach-hang/tao-moi', [AdminKhachHangController::class, 'create'])->name('khach-hang.create');
-            Route::post('/khach-hang', [AdminKhachHangController::class, 'store'])->name('khach-hang.store');
-            Route::get('/khach-hang', [AdminKhachHangController::class, 'index'])->name('khach-hang.index');
-            Route::get('/khach-hang/{khachHang}', [AdminKhachHangController::class, 'show'])->name('khach-hang.show');
-            Route::patch('/khach-hang/{khachHang}/trang-thai', [AdminKhachHangController::class, 'toggleStatus'])->name('khach-hang.toggle-status');
-            Route::get('/khach-hang/{khachHang}/edit', [AdminKhachHangController::class, 'edit'])->name('khach-hang.edit');
-            Route::patch('/khach-hang/{khachHang}', [AdminKhachHangController::class, 'update'])->name('khach-hang.update');
+
+            // =====================================================
+            // THÙNG RÁC - PHẢI ĐẶT TRƯỚC /khach-hang/{khachHang}
+            // =====================================================
+
+            // Danh sách khách hàng đã xóa mềm
+            Route::get(
+                '/khach-hang/thung-rac',
+                [AdminKhachHangController::class, 'trash']
+            )->name('khach-hang.trash');
+
+            // Khôi phục
+            Route::patch(
+                '/khach-hang/{khachHang}/restore',
+                [AdminKhachHangController::class, 'restore']
+            )->name('khach-hang.restore');
+
+            // Xóa vĩnh viễn
+            Route::delete(
+                '/khach-hang/{khachHang}/force-delete',
+                [AdminKhachHangController::class, 'forceDelete']
+            )->name('khach-hang.force-delete');
+
+
+            // =====================================================
+            // DANH SÁCH KHÁCH HÀNG
+            // =====================================================
+
+            Route::get(
+                '/khach-hang',
+                [AdminKhachHangController::class, 'index']
+            )->name('khach-hang.index');
+
+
+            // =====================================================
+            // TẠO KHÁCH HÀNG
+            // =====================================================
+
+            Route::get(
+                '/khach-hang/tao-moi',
+                [AdminKhachHangController::class, 'create']
+            )->name('khach-hang.create');
+
+            Route::post(
+                '/khach-hang',
+                [AdminKhachHangController::class, 'store']
+            )->name('khach-hang.store');
+
+
+            // =====================================================
+            // CHI TIẾT
+            // =====================================================
+
+            Route::get(
+                '/khach-hang/{khachHang}',
+                [AdminKhachHangController::class, 'show']
+            )->name('khach-hang.show');
+
+
+            // =====================================================
+            // CHỈNH SỬA
+            // =====================================================
+
+            Route::get(
+                '/khach-hang/{khachHang}/edit',
+                [AdminKhachHangController::class, 'edit']
+            )->name('khach-hang.edit');
+
+
+            // =====================================================
+            // CẬP NHẬT
+            // =====================================================
+
+            Route::patch(
+                '/khach-hang/{khachHang}',
+                [AdminKhachHangController::class, 'update']
+            )->name('khach-hang.update');
+
+
+            // =====================================================
+            // XÓA MỀM
+            // =====================================================
+
+            Route::delete(
+                '/khach-hang/{khachHang}',
+                [AdminKhachHangController::class, 'destroy']
+            )->name('khach-hang.destroy');
+
+
+            // =====================================================
+            // KHÓA / MỞ KHÓA
+            // =====================================================
+
+            Route::patch(
+                '/khach-hang/{khachHang}/trang-thai',
+                [AdminKhachHangController::class, 'toggleStatus']
+            )->name('khach-hang.toggle-status');
         });
 
         // ================================
@@ -529,21 +621,162 @@ Route::middleware(['auth'])
 
         // 7. CÀI ĐẶT THAM SỐ GỐC
         Route::middleware(['quyen:thong_bao.gui'])->group(function () {
-            Route::resource('notifications', AdminNotificationController::class)->only(['index', 'create', 'store', 'destroy']);
-            Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
-            Route::resource('thong-bao-push', \App\Http\Controllers\Admin\ThongBaoPushController::class)->names('thong-bao-push');
-            Route::get('/thong-bao-push/users-by-role', [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'getUsersByRole'])->name('thong-bao-push.users-by-role');
-            Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])->name('movie-reviews.index');
-            Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
-            Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
-            Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
 
-            Route::get('/lien-he', [AdminLienHeController::class, 'index'])->name('lien-he.index');
-            Route::get('/lien-he/{lienHe}', [AdminLienHeController::class, 'show'])->name('lien-he.show');
-            Route::patch('/lien-he/{lienHe}', [AdminLienHeController::class, 'update'])->name('lien-he.update');
-            Route::post('/lien-he/{lienHe}/tang-voucher', [AdminLienHeController::class, 'tangVoucher'])->name('lien-he.tang-voucher');
-            Route::delete('/lien-he/{lienHe}', [AdminLienHeController::class, 'destroy'])->name('lien-he.destroy');
+            // =========================================================
+            // ADMIN NOTIFICATIONS
+            // =========================================================
+
+            Route::resource(
+                'notifications',
+                AdminNotificationController::class
+            )->only([
+                'index',
+                'create',
+                'store',
+                'destroy'
+            ]);
+
+            Route::post(
+                '/notifications/mark-all-read',
+                [AdminNotificationController::class, 'markAllRead']
+            )->name('notifications.markAllRead');
+
+
+            // =========================================================
+            // THÔNG BÁO PUSH - AJAX
+            // Phải đặt trước Route::resource()
+            // =========================================================
+
+            Route::get(
+                '/thong-bao-push/users-by-role',
+                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'getUsersByRole']
+            )->name('thong-bao-push.users-by-role');
+
+            Route::get(
+                '/thong-bao-push/tim-nguoi-dung',
+                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'timNguoiDung']
+            )->name('thong-bao-push.tim-nguoi-dung');
+
+
+            // =========================================================
+            // GỬI THÔNG BÁO PUSH TỪ BẢN NHÁP
+            // =========================================================
+
+            Route::post(
+                '/thong-bao-push/{thongBao}/send',
+                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'send']
+            )->name('thong-bao-push.send');
+
+
+            // =========================================================
+            // THÙNG RÁC THÔNG BÁO PUSH
+            // Phải đặt trước Route::resource()
+            // =========================================================
+
+            Route::get(
+                '/thong-bao-push/thung-rac',
+                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'trash']
+            )->name('thong-bao-push.trash');
+
+
+            // =========================================================
+            // KHÔI PHỤC THÔNG BÁO PUSH
+            // =========================================================
+
+            Route::patch(
+                '/thong-bao-push/{thongBao}/restore',
+                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'restore']
+            )->withTrashed()
+                ->name('thong-bao-push.restore');
+
+
+            // =========================================================
+            // XÓA VĨNH VIỄN THÔNG BÁO PUSH
+            // =========================================================
+
+            Route::delete(
+                '/thong-bao-push/{thongBao}/force-delete',
+                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'forceDelete']
+            )->name('thong-bao-push.force-delete');
+
+
+            // =========================================================
+            // THÔNG BÁO PUSH RESOURCE
+            // =========================================================
+            //
+            // parameters:
+            // thong-bao-push/{thongBao}
+            //
+            // Để khớp với:
+            // ThongBaoPush $thongBao
+            //
+            // =========================================================
+
+            Route::resource(
+                'thong-bao-push',
+                \App\Http\Controllers\Admin\ThongBaoPushController::class
+            )
+                ->parameters([
+                    'thong-bao-push' => 'thongBao',
+                ])
+                ->names('thong-bao-push');
+
+
+            // =========================================================
+            // ĐÁNH GIÁ PHIM
+            // =========================================================
+
+            Route::get(
+                '/movie-reviews',
+                [AdminDanhGiaPhimController::class, 'index']
+            )->name('movie-reviews.index');
+
+            Route::post(
+                '/movie-reviews',
+                [AdminDanhGiaPhimController::class, 'store']
+            )->name('movie-reviews.store');
+
+            Route::patch(
+                '/movie-reviews/{danhGiaPhim}',
+                [AdminDanhGiaPhimController::class, 'update']
+            )->name('movie-reviews.update');
+
+            Route::delete(
+                '/movie-reviews/{danhGiaPhim}',
+                [AdminDanhGiaPhimController::class, 'destroy']
+            )->name('movie-reviews.destroy');
+
+
+            // =========================================================
+            // LIÊN HỆ
+            // =========================================================
+
+            Route::get(
+                '/lien-he',
+                [AdminLienHeController::class, 'index']
+            )->name('lien-he.index');
+
+            Route::get(
+                '/lien-he/{lienHe}',
+                [AdminLienHeController::class, 'show']
+            )->name('lien-he.show');
+
+            Route::patch(
+                '/lien-he/{lienHe}',
+                [AdminLienHeController::class, 'update']
+            )->name('lien-he.update');
+
+            Route::post(
+                '/lien-he/{lienHe}/tang-voucher',
+                [AdminLienHeController::class, 'tangVoucher']
+            )->name('lien-he.tang-voucher');
+
+            Route::delete(
+                '/lien-he/{lienHe}',
+                [AdminLienHeController::class, 'destroy']
+            )->name('lien-he.destroy');
         });
+
 
         Route::middleware(['quyen:cai_dat.he_thong'])->group(function () {
             Route::get('/cai-dat-thanh-toan', [AdminCaiDatThanhToanController::class, 'edit'])->name('cai-dat-thanh-toan.edit');
@@ -639,5 +872,6 @@ Route::get('/test-php', function () {
         'openssl' => ini_get('openssl.cafile'),
     ];
 });
+
 
 require __DIR__ . '/auth.php';

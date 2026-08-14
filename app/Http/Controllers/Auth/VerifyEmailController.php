@@ -3,25 +3,46 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Auth\Events\Verified;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Models\NguoiDung;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Auth\Events\Verified;
 
 class VerifyEmailController extends Controller
 {
     /**
-     * Mark the authenticated user's email address as verified.
+     * Xác thực email cho tài khoản chưa đăng nhập.
      */
-    public function __invoke(EmailVerificationRequest $request): RedirectResponse
+    public function __invoke(Request $request, $id, $hash): RedirectResponse
     {
-        if ($request->user()->hasVerifiedEmail()) {
-            return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        // Tìm tài khoản
+        $user = NguoiDung::findOrFail($id);
+
+        // Kiểm tra hash email có đúng không
+        if (! hash_equals(
+            sha1($user->getEmailForVerification()),
+            $hash
+        )) {
+            abort(403, 'Liên kết xác thực email không hợp lệ.');
         }
 
-        if ($request->user()->markEmailAsVerified()) {
-            event(new Verified($request->user()));
+        // Nếu đã xác thực rồi
+        if ($user->hasVerifiedEmail()) {
+            return redirect()
+                ->route('login')
+                ->with('success', 'Email đã được xác thực trước đó. Bạn có thể đăng nhập.');
         }
 
-        return redirect()->intended(route('dashboard', absolute: false).'?verified=1');
+        // Đánh dấu email đã xác thực
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+
+        return redirect()
+            ->route('login')
+            ->with(
+                'success',
+                'Xác thực email thành công! Bạn có thể đăng nhập ngay bây giờ.'
+            );
     }
 }

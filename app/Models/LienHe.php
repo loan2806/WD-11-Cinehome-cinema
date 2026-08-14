@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Voucher;
 
 class LienHe extends Model
 {
@@ -20,19 +21,38 @@ class LienHe extends Model
         'phan_hoi',
         'nguoi_xu_ly_id',
         'thoi_gian_xu_ly',
+
+        // Thông tin voucher bồi thường
+        'voucher_id',
+        'thoi_gian_tang_voucher',
     ];
 
     protected $casts = [
         'thoi_gian_xu_ly' => 'datetime',
+        'thoi_gian_tang_voucher' => 'datetime',
     ];
 
     public function nguoiDung(): BelongsTo
     {
-        return $this->belongsTo(NguoiDung::class, 'nguoi_dung_id');
+        return $this->belongsTo(
+            NguoiDung::class,
+            'nguoi_dung_id'
+        );
     }
 
     public function nguoiXuLy(): BelongsTo
     {
-        return $this->belongsTo(NguoiDung::class, 'nguoi_xu_ly_id');
+        return $this->belongsTo(
+            NguoiDung::class,
+            'nguoi_xu_ly_id'
+        );
+    }
+
+    public function voucher(): BelongsTo
+    {
+        return $this->belongsTo(
+            Voucher::class,
+            'voucher_id'
+        );
     }
 }
