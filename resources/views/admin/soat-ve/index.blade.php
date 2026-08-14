@@ -635,21 +635,10 @@ $typeLabel = [
                 seatList = ['Chưa xếp'];
             }
 
-            const foods = ticket.foods || ticket.foods_list || [];
-            let foodsHtml = '';
-            if (Array.isArray(foods) && foods.length > 0) {
-                foodsHtml = `
-                    <div style="border-top: 1px dashed #000; margin-top: 8px; padding-top: 8px;">
-                        <strong>ĐỒ ĂN & COMBO KÈM THEO:</strong><br>
-                        ${foods.map(f => `• ${f.ten_mon || f.name || 'Đồ ăn'} x${f.so_luong || f.quantity || 1}`).join('<br>')}
-                    </div>
-                `;
-            }
-
+            // 1. TẠO TRANG VÉ XEM PHIM DÀNH CHO TỪNG GHẾ (KHÔNG KÈM ĐỒ ĂN)
             const ageNotice = getAgeRatingNotice(ticket.gioi_han_tuoi);
 
-            const pagesHtml = seatList.map((seat, index) => {
-                const currentFoodsHtml = (index === 0) ? foodsHtml : '';
+            const seatPagesHtml = seatList.map((seat, index) => {
                 const ticketIndexLabel = seatList.length > 1 ? ` (${index + 1}/${seatList.length})` : '';
                 const seatTypeStr = getSeatTypeName(seat, ticket);
 
@@ -673,7 +662,6 @@ $typeLabel = [
                         </div>
                         <div class="info-row"><span>Giá vé:</span> <strong>${ticket.tong_tien || '0đ'}</strong></div>
                         <div class="info-row"><span>Loại vé:</span> <span>${ticket.loai_ve_label || 'TRỰC TUYẾN'}</span></div>
-                        ${currentFoodsHtml}
                         <div class="divider"></div>
                         <div class="notice">
                             Cảm ơn quý khách. Chúc quý khách xem phim vui vẻ!<br>
@@ -682,6 +670,46 @@ $typeLabel = [
                     </div>
                 `;
             }).join('');
+
+            // 2. TẠO PHIẾU ĐỒ ĂN RIÊNG Ở CUỐI (NẾU CÓ ĐỒ ĂN / COMBO)
+            const foods = ticket.foods || ticket.foods_list || [];
+            let foodPageHtml = '';
+
+            if (Array.isArray(foods) && foods.length > 0) {
+                foodPageHtml = `
+                    <div class="ticket-page">
+                        <div class="text-center">
+                            <div class="title">CINEHOME CINEMA</div>
+                            <div class="sub-title">PHIẾU ĐỒ ĂN & BẮP NƯỚC / FOOD VOUCHER</div>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="text-center"><strong>MÃ VÉ KÈM THEO:</strong> ${ticket.ma_ve}</div>
+                        <div class="movie-title-center">${ticket.ten_phim}</div>
+                        <div class="info-row"><span>Rạp:</span> <strong>${ticket.ten_rap || 'CineHome Cinema'}</strong></div>
+                        <div class="info-row"><span>Suất chiếu:</span> <strong>${ticket.thoi_gian_chieu || 'N/A'}</strong></div>
+                        <div class="divider"></div>
+                        <div style="font-weight: bold; font-size: 14px; text-align: center; margin: 6px 0 8px 0; text-transform: uppercase;">
+                            DANH SÁCH MÓN ĐÃ ĐẶT
+                        </div>
+                        <div style="border: 1px dashed #000; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                            ${foods.map(f => `
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px;">
+                                    <span>• ${f.ten_mon || f.name || 'Đồ ăn'}</span>
+                                    <strong>x${f.so_luong || f.quantity || f.qty || 1}</strong>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="divider"></div>
+                        <div class="notice">
+                            Vui lòng mang phiếu này đến quầy Bắp Nước để nhận món.<br>
+                            * Vé/Phiếu đã cấp vui lòng kiểm tra kỹ trước khi ra khỏi quầy *
+                        </div>
+                    </div>
+                `;
+            }
+
+            // GỘP CÁC TRANG VÉ XEM PHIM VÀ TRANG PHIẾU ĐỒ ĂN RIÊNG Ở CUỐI
+            const pagesHtml = seatPagesHtml + foodPageHtml;
 
             const html = `
                 <!DOCTYPE html>
