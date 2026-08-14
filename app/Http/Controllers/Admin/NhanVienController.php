@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\FoodInvoice;
+use App\Models\VeXemPhim;
 
 class NhanVienController extends Controller
 {
@@ -217,14 +218,23 @@ class NhanVienController extends Controller
     public function forceDelete(Request $request, $id)
     {
         $nhanvien = NguoiDung::onlyTrashed()
+            ->where('vai_tro', 'nhan_vien')
             ->findOrFail($id);
 
-        $daLamViec =
-            $nhanvien->hoaDons()->exists()
-            || $nhanvien->veXemPhims()->exists()
-            || FoodInvoice::where('user_id', $nhanvien->id)->exists();
+        // Kiểm tra dữ liệu vé do nhân viên bán tại quầy
+        $daBanVe = VeXemPhim::where(
+            'nhan_vien_id',
+            $nhanvien->id
+        )->exists();
 
-        if ($daLamViec) {
+        // Kiểm tra hóa đơn đồ ăn do nhân viên tạo
+        $daTaoHoaDon = FoodInvoice::where(
+            'user_id',
+            $nhanvien->id
+        )->exists();
+
+        // Đã phát sinh dữ liệu => KHÔNG được xóa vĩnh viễn
+        if ($daBanVe || $daTaoHoaDon) {
             return back()->with(
                 'error',
                 'Không thể xóa vĩnh viễn vì nhân viên đã phát sinh dữ liệu.'
@@ -233,6 +243,7 @@ class NhanVienController extends Controller
 
         $ten = $nhanvien->ho_ten;
 
+        // Chưa phát sinh dữ liệu => cho phép xóa vĩnh viễn
         $nhanvien->forceDelete();
 
         AdminNotificationService::push(
