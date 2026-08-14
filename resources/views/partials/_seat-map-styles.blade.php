@@ -1,11 +1,7 @@
 {{--
-    CSS sơ đồ ghế cho trang "Bán vé tại quầy" — sao chép & scope lại (tiền tố
-    .booking-seat-page) từ đúng bộ CSS trang "Đặt vé online"
-    (public/assets/css/user-home.css, các khối .booking-seat-*/.seat-*) để 2
-    trang có giao diện và hành vi ghế giống hệt nhau. Các biến màu
-    (--cinema-gold, --cinema-red, --cinema-muted, --cinema-shadow...) đã có
-    sẵn trong public/assets/css/admin.css nên không cần khai báo lại.
+    CSS sơ đồ ghế chung cho cả "Đặt vé Online" và "Bán vé tại quầy"
 --}}
+<style>
 .dat-ve-page.booking-seat-page {
     min-height: calc(100vh - 120px);
     padding: 4px 4px 40px;
@@ -26,6 +22,7 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     backdrop-filter: blur(12px);
 }
+
 .booking-seat-page .booking-eyebrow {
     margin-bottom: 18px;
     padding: 8px 14px;
@@ -33,10 +30,12 @@
     font-weight: 900;
     text-transform: uppercase;
 }
+
 .booking-seat-page .booking-stepper {
     display: grid;
     gap: 12px;
 }
+
 .booking-seat-page .booking-step {
     display: grid;
     grid-template-columns: 42px minmax(0, 1fr);
@@ -48,6 +47,7 @@
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(14px);
 }
+
 .booking-seat-page .booking-step span {
     display: inline-flex;
     align-items: center;
@@ -60,18 +60,32 @@
     font-size: 14px;
     font-weight: 950;
 }
+
 .booking-seat-page .booking-step strong {
     color: #ffffff;
     font-size: 14px;
 }
+
 .booking-seat-page .booking-step.is-active {
     border-color: rgba(229, 9, 20, 0.52);
     background: rgba(229, 9, 20, 0.2);
     box-shadow: 0 16px 34px rgba(229, 9, 20, 0.18);
 }
+
 .booking-seat-page .booking-step.is-active span {
     background: var(--cinema-red);
 }
+
+.booking-seat-page .booking-step.is-done {
+    border-color: rgba(52, 211, 153, 0.36);
+    background: rgba(52, 211, 153, 0.12);
+}
+
+.booking-seat-page .booking-step.is-done span {
+    background: rgba(52, 211, 153, 0.95);
+    color: #06110c;
+}
+
 .booking-seat-page .booking-seat-hero {
     position: relative;
     display: grid;
@@ -91,6 +105,7 @@
         url("https://images.unsplash.com/photo-1513106580091-1d82408b8cd6?q=80&w=1700&auto=format&fit=crop") center/cover;
     box-shadow: var(--cinema-shadow);
 }
+
 .booking-seat-page .booking-seat-hero::after {
     content: "";
     position: absolute;
@@ -99,24 +114,19 @@
     background: linear-gradient(180deg, transparent, rgba(8, 10, 15, 0.96));
     pointer-events: none;
 }
+
 .booking-seat-page .booking-seat-hero > * {
     position: relative;
     z-index: 1;
 }
-.booking-seat-page .booking-step.is-done {
-    border-color: rgba(52, 211, 153, 0.36);
-    background: rgba(52, 211, 153, 0.12);
-}
-.booking-seat-page .booking-step.is-done span {
-    background: rgba(52, 211, 153, 0.95);
-    color: #06110c;
-}
+
 .booking-seat-page .booking-seat-mini-stats {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
     margin-top: 20px;
 }
+
 .booking-seat-page .booking-seat-mini-stats div {
     display: grid;
     min-width: 122px;
@@ -127,17 +137,20 @@
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(12px);
 }
+
 .booking-seat-page .booking-seat-mini-stats strong {
     color: #ffffff;
     font-size: 20px;
     font-weight: 950;
     line-height: 1.1;
 }
+
 .booking-seat-page .booking-seat-mini-stats span {
     color: var(--cinema-muted);
     font-size: 12px;
     font-weight: 850;
 }
+
 .booking-seat-page .booking-seat-layout {
     display: grid;
     grid-template-columns: minmax(250px, 300px) minmax(560px, 1fr) minmax(310px, 360px);
@@ -146,6 +159,7 @@
     width: 100%;
     margin: 0 auto;
 }
+
 .booking-seat-page .booking-seat-movie-card,
 .booking-seat-page .booking-seat-map-panel,
 .booking-seat-page .booking-seat-order-card {
@@ -156,28 +170,33 @@
         rgba(16, 20, 29, 0.94) !important;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.36);
 }
+
 .booking-seat-page .booking-seat-movie-card,
 .booking-seat-page .booking-seat-order-card {
     position: sticky;
     top: 16px;
 }
+
 .booking-seat-page .booking-seat-movie-card {
     display: grid;
     gap: 16px;
     padding: 18px;
 }
+
 .booking-seat-page .booking-seat-poster-wrap {
     position: relative;
     overflow: hidden;
     border-radius: 22px;
     background: #080a0f;
 }
+
 .booking-seat-page .booking-seat-poster-wrap img {
     display: block;
     width: 100%;
     aspect-ratio: 2 / 3;
     object-fit: cover;
 }
+
 .booking-seat-page .booking-seat-poster-overlay {
     position: absolute;
     inset: auto 0 0;
@@ -186,19 +205,22 @@
     padding: 46px 16px 16px;
     background: linear-gradient(180deg, transparent, rgba(4, 6, 10, 0.96));
 }
+
 .booking-seat-page .booking-seat-poster-overlay span {
-    color: var(--cinema-red-soft);
+    color: var(--cinema-red-soft, #f87171);
     font-size: 11px;
     font-weight: 950;
     letter-spacing: 0.16em;
     text-transform: uppercase;
 }
+
 .booking-seat-page .booking-seat-poster-overlay strong {
     color: #ffffff;
     font-size: 20px;
     font-weight: 950;
     line-height: 1.12;
 }
+
 .booking-seat-page .booking-seat-info-card {
     display: grid;
     gap: 14px;
@@ -207,6 +229,7 @@
     border-radius: 20px;
     background: rgba(0, 0, 0, 0.2);
 }
+
 .booking-seat-page .booking-seat-info-card h2,
 .booking-seat-page .booking-seat-order-card h2,
 .booking-seat-page .booking-seat-toolbar h2 {
@@ -216,15 +239,18 @@
     font-weight: 950;
     line-height: 1.2;
 }
+
 .booking-seat-page .booking-seat-info-card dl {
     display: grid;
     gap: 12px;
     margin: 0;
 }
+
 .booking-seat-page .booking-seat-info-card dl > div {
     display: grid;
     gap: 3px;
 }
+
 .booking-seat-page .booking-seat-info-card dt {
     display: inline-flex;
     align-items: center;
@@ -233,15 +259,18 @@
     font-size: 12px;
     font-weight: 850;
 }
+
 .booking-seat-page .booking-seat-info-card dt i {
     color: var(--cinema-gold);
 }
+
 .booking-seat-page .booking-seat-info-card dd {
     margin: 0;
     color: #ffffff;
     font-size: 14px;
     font-weight: 850;
 }
+
 .booking-seat-page .booking-seat-back-link,
 .booking-seat-page .booking-seat-secondary-link {
     display: inline-flex;
@@ -257,17 +286,20 @@
     font-weight: 900;
     text-decoration: none !important;
 }
+
 .booking-seat-page .booking-seat-back-link:hover,
 .booking-seat-page .booking-seat-secondary-link:hover {
     border-color: rgba(247, 184, 75, 0.5);
     background: rgba(247, 184, 75, 0.11);
     color: #ffffff !important;
 }
+
 .booking-seat-page .booking-seat-map-panel {
     min-width: 0;
     overflow: hidden;
     padding: 22px;
 }
+
 .booking-seat-page .booking-seat-toolbar {
     display: flex;
     align-items: center;
@@ -279,12 +311,14 @@
     border-radius: 22px;
     background: rgba(0, 0, 0, 0.2);
 }
+
 .booking-seat-page .booking-seat-toolbar p,
 .booking-seat-page .booking-seat-map-panel p {
     margin: 8px 0 0;
     color: var(--cinema-muted);
     font-size: 14px;
 }
+
 .booking-seat-page .booking-seat-timer {
     display: grid;
     min-width: 190px;
@@ -295,6 +329,7 @@
     background: rgba(8, 10, 15, 0.58);
     text-align: right;
 }
+
 .booking-seat-page .booking-seat-timer span {
     display: inline-flex;
     align-items: center;
@@ -306,6 +341,7 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
+
 .booking-seat-page .booking-seat-map-panel #countdown {
     display: inline-flex;
     align-items: center;
@@ -316,19 +352,29 @@
     font-weight: 950;
     letter-spacing: 0.12em;
 }
+
+/* THÔNG BÁO LỖI VỊ TRÍ CHỌN GHẾ */
 .booking-seat-page .booking-seat-alert {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 18px;
-    padding: 12px 14px;
-    border: 1px solid rgba(255, 82, 82, 0.34);
+    padding: 14px 18px;
+    border: 1px solid #ef4444 !important;
     border-radius: 16px;
-    background: rgba(229, 9, 20, 0.12);
-    color: #ffb4b4;
-    font-size: 13px;
-    font-weight: 800;
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #f87171 !important;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+    animation: fadeInAlert 0.25s ease-in-out;
 }
+
+@keyframes fadeInAlert {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .booking-seat-page .booking-theater {
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -337,12 +383,14 @@
         linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
         rgba(7, 9, 14, 0.56);
 }
+
 .booking-seat-page .booking-screen-wrap {
     display: grid;
     gap: 9px;
     padding: 24px 28px 10px;
     text-align: center;
 }
+
 .booking-seat-page .booking-screen-wrap .screen-line {
     width: min(84%, 720px);
     height: 38px;
@@ -351,6 +399,7 @@
     background: linear-gradient(180deg, rgba(255, 226, 155, 0.96), rgba(247, 184, 75, 0.18));
     box-shadow: 0 18px 44px rgba(247, 184, 75, 0.24);
 }
+
 .booking-seat-page .booking-screen-wrap span {
     color: var(--cinema-gold);
     font-size: 12px;
@@ -358,16 +407,19 @@
     letter-spacing: 0.2em;
     text-transform: uppercase;
 }
+
 .booking-seat-page .booking-seat-scroll {
     overflow-x: auto;
     padding: 18px 20px 20px;
 }
+
 .booking-seat-page .booking-seat-grid {
     display: grid;
     gap: 10px;
     min-width: max-content;
     margin: 0 auto;
 }
+
 .booking-seat-page .seat-row {
     display: flex;
     align-items: center;
@@ -375,6 +427,7 @@
     flex-wrap: nowrap;
     gap: 8px;
 }
+
 .booking-seat-page .row-label {
     display: inline-flex;
     align-items: center;
@@ -386,10 +439,12 @@
     font-size: 13px;
     font-weight: 950;
 }
+
 .booking-seat-page .seat-wrapper {
     position: relative;
     flex: 0 0 auto;
 }
+
 .booking-seat-page .seat-button {
     position: relative;
     display: inline-flex;
@@ -406,7 +461,9 @@
     font-weight: 950;
     line-height: 1;
     box-shadow: inset 0 -8px 14px rgba(0, 0, 0, 0.18);
+    transition: all 0.15s ease-in-out;
 }
+
 .booking-seat-page .seat-button:hover:not(:disabled) {
     border-color: rgba(247, 184, 75, 0.72);
     box-shadow:
@@ -414,15 +471,24 @@
         0 10px 24px rgba(247, 184, 75, 0.2);
     transform: translateY(-3px);
 }
-.booking-seat-page .seat-button.selected {
-    border-color: rgba(255, 226, 155, 0.96);
-    background: linear-gradient(135deg, #ffe29b, var(--cinema-gold));
-    color: #211102;
-    box-shadow:
-        0 0 0 3px rgba(247, 184, 75, 0.18),
-        0 14px 28px rgba(247, 184, 75, 0.32);
+
+/* ĐỔI MÀU GHẾ ĐANG CHỌN THÀNH MÀU TRẮNG NỔI BẬT */
+.booking-seat-page .seat-button.selected,
+.booking-seat-page button.seat-button.selected {
+    border-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 0 18px rgba(255, 255, 255, 0.95) !important;
     transform: translateY(-3px);
 }
+
+.booking-seat-page .seat-button.selected span,
+.booking-seat-page .seat-button.selected .seat-couple-label,
+.booking-seat-page .seat-button.selected * {
+    color: #000000 !important;
+    font-weight: 900 !important;
+}
+
 .booking-seat-page .seat-button.booked,
 .booking-seat-page .seat-button.maintenance,
 .booking-seat-page .seat-button.locked {
@@ -432,6 +498,7 @@
     color: #697386;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
+
 .booking-seat-page .seat-button.booked::after,
 .booking-seat-page .seat-button.maintenance::after,
 .booking-seat-page .seat-button.locked::after {
@@ -444,15 +511,18 @@
     font-size: 19px;
     font-weight: 950;
 }
+
 .booking-seat-page .seat-button.booked span,
 .booking-seat-page .seat-button.maintenance span,
 .booking-seat-page .seat-button.locked span {
     opacity: 0;
 }
+
 .booking-seat-page .seat-button--couple {
     width: 100px !important;
     flex-basis: 100px !important;
 }
+
 .booking-seat-page .seat-couple-label {
     display: flex;
     align-items: center;
@@ -460,6 +530,7 @@
     gap: 8px;
     width: 100%;
 }
+
 .booking-seat-page .seat-tooltip {
     pointer-events: none;
     position: absolute;
@@ -477,20 +548,25 @@
     opacity: 0;
     text-align: left;
     transform: translateX(-50%) translateY(7px);
+    transition: all 0.2s ease;
 }
+
 .booking-seat-page .seat-tooltip strong {
     color: #ffffff;
     font-size: 14px;
 }
+
 .booking-seat-page .seat-tooltip span,
 .booking-seat-page .seat-tooltip small {
     color: var(--cinema-muted);
     font-size: 12px;
 }
+
 .booking-seat-page .seat-wrapper:hover .seat-tooltip {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
 }
+
 .booking-seat-page .booking-seat-legend {
     display: flex;
     flex-wrap: wrap;
@@ -502,12 +578,14 @@
     font-size: 13px;
     font-weight: 800;
 }
+
 .booking-seat-page .booking-seat-legend span,
 .booking-seat-page .booking-seat-price-list span {
     display: inline-flex;
     align-items: center;
     gap: 8px;
 }
+
 .booking-seat-page .seat-swatch {
     display: inline-flex;
     flex: 0 0 auto;
@@ -516,26 +594,38 @@
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 5px;
 }
+
 .booking-seat-page .seat-swatch.is-empty {
     background: #4b5563;
 }
-.booking-seat-page .seat-swatch.is-vip,
-.booking-seat-page .seat-swatch.is-selected {
+
+.booking-seat-page .seat-swatch.is-vip {
     background: linear-gradient(135deg, #ffe29b, var(--cinema-gold));
 }
+
+/* CHÚ THÍCH MÀU GHẾ ĐANG CHỌN MÀU TRẮNG */
+.booking-seat-page .seat-swatch.is-selected {
+    background: #ffffff !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.8) !important;
+}
+
 .booking-seat-page .seat-swatch.is-couple {
     width: 28px;
     background: linear-gradient(135deg, #f59e0b, #ef4444);
 }
+
 .booking-seat-page .seat-swatch.is-locked {
     background: #151923;
 }
+
 .booking-seat-page .booking-seat-order-card {
     display: grid;
     gap: 16px;
     padding: 20px;
     color: #cbd4e4;
 }
+
 .booking-seat-page .booking-order-card-head span,
 .booking-seat-page .booking-order-section h3,
 .booking-seat-page .booking-seat-total-card span {
@@ -547,16 +637,19 @@
     letter-spacing: 0.16em;
     text-transform: uppercase;
 }
+
 .booking-seat-page .booking-order-section {
     display: grid;
     gap: 12px;
     padding: 16px 0;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .booking-seat-page .booking-seat-price-list {
     display: grid;
     gap: 10px;
 }
+
 .booking-seat-page .booking-seat-price-list > div,
 .booking-seat-page .booking-order-line {
     display: flex;
@@ -566,16 +659,19 @@
     color: #d6deeb;
     font-size: 14px;
 }
+
 .booking-seat-page .booking-seat-price-list strong,
 .booking-seat-page .booking-order-line strong {
     color: #ffffff;
     font-weight: 950;
     text-align: right;
 }
+
 .booking-seat-page #seatLabels {
     max-width: 190px;
     overflow-wrap: anywhere;
 }
+
 .booking-seat-page .booking-selected-list,
 .booking-seat-page #selected-list {
     display: flex;
@@ -585,12 +681,14 @@
     color: var(--cinema-muted);
     font-size: 13px;
 }
+
 .booking-seat-page .booking-seat-empty-selection {
     display: inline-flex;
     align-items: center;
     min-height: 34px;
     color: var(--cinema-muted);
 }
+
 .booking-seat-page .booking-seat-chip {
     display: inline-flex;
     align-items: center;
@@ -605,11 +703,13 @@
     font-size: 12px;
     font-weight: 950;
 }
+
 .booking-seat-page .booking-seat-chip:hover {
     border-color: rgba(255, 255, 255, 0.28);
     background: rgba(229, 9, 20, 0.18);
     color: #ffffff;
 }
+
 .booking-seat-page .booking-seat-total-card {
     display: grid;
     gap: 5px;
@@ -619,20 +719,29 @@
     background: rgba(247, 184, 75, 0.1);
     text-align: center;
 }
+
 .booking-seat-page #totalPrice {
     color: var(--cinema-gold) !important;
 }
+
 .booking-seat-page .booking-seat-total-card strong {
     font-size: 34px;
     font-weight: 950;
     line-height: 1;
 }
+
 .booking-seat-page .booking-seat-total-card small {
     color: var(--cinema-muted);
     font-size: 12px;
 }
+
+/* -------------------------------------------------------------
+   UX NÚT CHÍNH (BÌNH THƯỜNG / KHI BỊ KHÓA DO LỖI VỊ TRÍ CHỌN)
+------------------------------------------------------------- */
 .booking-seat-page #btnFood,
-.booking-seat-page .booking-seat-primary-cta {
+.booking-seat-page .booking-seat-primary-cta,
+#btnFood,
+.booking-seat-primary-cta {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -641,30 +750,53 @@
     width: 100%;
     border: 0;
     border-radius: 17px;
-    background: linear-gradient(135deg, var(--cinema-red), #ff563a) !important;
+    background: linear-gradient(135deg, var(--cinema-red, #e50914), #ff563a) !important;
     color: #ffffff !important;
     cursor: pointer;
     font-weight: 950;
     letter-spacing: 0.04em;
     text-decoration: none;
     box-shadow: 0 18px 36px rgba(229, 9, 20, 0.24);
+    transition: all 0.2s ease-in-out;
 }
+
+/* UX: Ghi đè triệt để màu sắc khi nút bị KHÓA (disabled / có lỗi / chưa chọn ghế) */
 .booking-seat-page #btnFood:disabled,
-.booking-seat-page .booking-seat-primary-cta:disabled {
-    cursor: not-allowed;
-    opacity: 0.38;
-    box-shadow: none;
+.booking-seat-page #btnFood[disabled],
+.booking-seat-page #btnFood.is-disabled,
+.booking-seat-page .booking-seat-primary-cta:disabled,
+.booking-seat-page .booking-seat-primary-cta[disabled],
+.booking-seat-page .booking-seat-primary-cta.is-disabled,
+#btnFood:disabled,
+#btnFood[disabled],
+#btnFood.is-disabled,
+.booking-seat-primary-cta:disabled,
+.booking-seat-primary-cta[disabled],
+.booking-seat-primary-cta.is-disabled {
+    background: #334155 !important;
+    color: #94a3b8 !important;
+    border: 1px solid #475569 !important;
+    cursor: not-allowed !important;
+    opacity: 0.55 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    pointer-events: none !important;
 }
-.booking-seat-page #btnFood:not(:disabled):hover,
-.booking-seat-page .booking-seat-primary-cta:not(:disabled):hover {
+
+/* Chỉ bật hiệu ứng Hover khi Nút KHÔNG bị khóa */
+.booking-seat-page #btnFood:not(:disabled):not([disabled]):not(.is-disabled):hover,
+.booking-seat-page .booking-seat-primary-cta:not(:disabled):not([disabled]):not(.is-disabled):hover,
+#btnFood:not(:disabled):not([disabled]):not(.is-disabled):hover,
+.booking-seat-primary-cta:not(:disabled):not([disabled]):not(.is-disabled):hover {
     transform: translateY(-2px);
     box-shadow: 0 24px 44px rgba(229, 9, 20, 0.34);
 }
+
 .booking-seat-page .booking-seat-secondary-link {
     width: 100%;
 }
 
-/* Responsive — thu gọn 3 cột về 1 cột trên màn hình quầy hẹp hơn */
+/* Responsive */
 @media (max-width: 1400px) {
     .booking-seat-page .booking-seat-layout {
         grid-template-columns: minmax(230px, 270px) minmax(0, 1fr) minmax(300px, 340px);
@@ -675,15 +807,19 @@
     .booking-seat-page .booking-seat-hero {
         grid-template-columns: 1fr;
     }
+
     .booking-seat-page .booking-stepper {
         grid-template-columns: repeat(4, 1fr);
     }
+
     .booking-seat-page .booking-step strong {
         display: none;
     }
+
     .booking-seat-page .booking-seat-layout {
         grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
     }
+
     .booking-seat-page .booking-seat-movie-card {
         display: none;
     }
@@ -693,27 +829,34 @@
     .booking-seat-page .booking-seat-layout {
         grid-template-columns: 1fr;
     }
+
     .booking-seat-page .booking-seat-order-card {
         position: static;
     }
+
     .booking-seat-page .booking-seat-toolbar {
         flex-direction: column;
         align-items: flex-start;
     }
+
     .booking-seat-page .booking-seat-timer {
         width: 100%;
         text-align: left;
     }
+
     .booking-seat-page .booking-seat-timer span,
     .booking-seat-page .booking-seat-map-panel #countdown {
         justify-content: flex-start;
     }
+
     .booking-seat-page .seat-button {
         width: 40px;
         height: 38px;
     }
+
     .booking-seat-page .seat-button--couple {
         width: 84px !important;
         flex-basis: 84px !important;
     }
 }
+</style>

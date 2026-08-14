@@ -264,7 +264,10 @@ Route::middleware(['auth'])
         Route::get('/ban-ve', [BanVeController::class, 'index'])->name('ban-ve.index');
         Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
         Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->whereNumber('suatChieu')->name('ban-ve.show');
-        Route::post('/ban-ve/{suatChieu}/food', [BanVeController::class, 'food'])->whereNumber('suatChieu')->name('ban-ve.food');
+        
+        // SỬA LỖI 405: Đổi sang match ['get', 'post']
+        Route::match(['get', 'post'], '/ban-ve/{suatChieu}/food', [BanVeController::class, 'food'])->whereNumber('suatChieu')->name('ban-ve.food');
+        
         Route::get('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'showCheckout'])->whereNumber('suatChieu')->name('ban-ve.checkout.show');
         Route::post('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'checkout'])->whereNumber('suatChieu')->name('ban-ve.checkout');
         Route::post('/ban-ve/{suatChieu}/store', [BanVeController::class, 'store'])->whereNumber('suatChieu')->name('ban-ve.store');

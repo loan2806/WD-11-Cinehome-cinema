@@ -8,7 +8,6 @@ use App\Models\DoAn;
 use App\Models\FoodInvoice;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
-use App\Services\DatVeXemPhimService;
 use App\Services\FoodInventoryService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +23,6 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\VeXemPhimDaDatMail;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Session;
 use PayOS\PayOS;
 
 class DatVeController extends Controller
@@ -88,7 +86,6 @@ class DatVeController extends Controller
             ];
         });
 
-        // EAGER LOADING Thêm phongChieu.gheNgois
         $danhSachSuatChieu = SuatChieu::with(['phim.genres', 'rapChieuPhim', 'phongChieu.gheNgois', 'veXemPhims'])
             ->where('rap_chieu_phim_id', $rap->id)
             ->whereDate('thoi_gian_chieu', $selectedDate)
@@ -101,10 +98,8 @@ class DatVeController extends Controller
 
         foreach ($suatChieuTheoPhim as $suatChieus) {
             foreach ($suatChieus as $suat) {
-                // 1. Tổng số ghế đang HOẠT ĐỘNG trong phòng chiếu
                 $tongGhe = $suat->phongChieu?->gheNgois?->where('trang_thai', 'hoat_dong')->count() ?? 0;
 
-                // 2. Lọc các vé hợp lệ đang chiếm giữ ghế (bao gồm đơn chờ thanh toán chưa hết hạn)
                 $validTickets = $suat->veXemPhims->filter(function ($ve) {
                     if (in_array($ve->trang_thai, ['da_dat', 'da_thanh_toan', 'da_su_dung'])) {
                         return true;
@@ -115,7 +110,6 @@ class DatVeController extends Controller
                     return false;
                 });
 
-                // 3. Tách các mã ghế trong từng vé (ví dụ "A1, A2") để đếm tổng số ghế đã giữ/đặt
                 $bookedSeats = collect();
                 foreach ($validTickets as $ve) {
                     if (!empty($ve->ma_ghe)) {
@@ -139,287 +133,282 @@ class DatVeController extends Controller
         return view('user.dat_ve.chon_phim', compact('rap', 'suatChieuTheoPhim', 'dateOptions', 'selectedDate'));
     }
 
-public function chonGhe($id)
-{
-    $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu.gheNgois.loaiGhe', 'veXemPhims'])->find($id);
+    public function chonGhe($id)
+    {
+        $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu.gheNgois.loaiGhe', 'veXemPhims'])->find($id);
 
-    if (!$suatChieu) {
-        $phim = Phims::where('id', $id)->orWhere('slug', $id)->first();
-        if ($phim) {
-            $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu.gheNgois.loaiGhe', 'veXemPhims'])
-                ->where('phim_id', $phim->id)
-                ->where('thoi_gian_chieu', '>=', now())
-                ->orderBy('thoi_gian_chieu')
+        if (!$suatChieu) {
+            $phim = Phims::where('id', $id)->orWhere('slug', $id)->first();
+            if ($phim) {
+                $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu.gheNgois.loaiGhe', 'veXemPhims'])
+                    ->where('phim_id', $phim->id)
+                    ->where('thoi_gian_chieu', '>=', now())
+                    ->orderBy('thoi_gian_chieu')
+                    ->first();
+            }
+        }
+
+        if (!$suatChieu) {
+            return redirect()->route('dat_ve.chon_phim')->with('error', 'Không tìm thấy suất chiếu phù hợp.');
+        }
+
+        if (request()->boolean('reset') && Auth::check()) {
+            $oldTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
+                ->where('suat_chieu_id', $suatChieu->id)
+                ->where('trang_thai', 'cho_thanh_toan')
                 ->first();
+
+            if ($oldTicket) {
+                $seats = explode(',', (string) $oldTicket->ma_ghe);
+                foreach ($seats as $seat) {
+                    $seatCode = strtoupper(trim($seat));
+                    if ($seatCode) {
+                        Cache::forget("seat_lock:suat:{$oldTicket->suat_chieu_id}:seat:{$seatCode}");
+                    }
+                }
+                $oldTicket->delete();
+            }
+            return redirect()->route('dat_ve.chon_ghe', ['movie' => $suatChieu->id]);
         }
+
+        $pendingTicket = null;
+        if (Auth::check()) {
+            $pendingTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
+                ->where('suat_chieu_id', $suatChieu->id)
+                ->where('trang_thai', 'cho_thanh_toan')
+                ->first();
+
+            if ($pendingTicket && $pendingTicket->isExpired()) {
+                $seats = explode(',', (string) $pendingTicket->ma_ghe);
+                foreach ($seats as $seat) {
+                    $seatCode = strtoupper(trim($seat));
+                    if ($seatCode) {
+                        Cache::forget("seat_lock:suat:{$pendingTicket->suat_chieu_id}:seat:{$seatCode}");
+                    }
+                }
+                $pendingTicket->delete();
+                $pendingTicket = null;
+            }
+        }
+
+        $pendingTicketId = $pendingTicket?->id;
+        $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
+
+        $bookedTickets = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
+            ->when($pendingTicketId, fn($q) => $q->where('id', '!=', $pendingTicketId))
+            ->where(function ($q) {
+                $q->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat', 'da_in'])
+                    ->orWhere(function ($sub) {
+                        $sub->where('trang_thai', 'cho_thanh_toan')->where('thoi_gian_het_han', '>', now());
+                    });
+            })
+            ->pluck('ma_ghe');
+
+        $bookedSeats = [];
+        foreach ($bookedTickets as $maGheStr) {
+            foreach (explode(',', (string)$maGheStr) as $code) {
+                $seatCode = strtoupper(trim($code));
+                if ($seatCode) $bookedSeats[$seatCode] = true;
+            }
+        }
+
+        $gheNgois = $suatChieu->phongChieu->gheNgois ?? collect();
+        $gheTheoHang = [];
+        foreach ($gheNgois as $ghe) {
+            $hang = $ghe->hang_ghe ?? preg_replace('/[0-9]/', '', $ghe->ma_ghe);
+            if (!$hang) $hang = 'A';
+
+            $daDat = isset($bookedSeats[strtoupper(trim($ghe->ma_ghe))]);
+            $baoTri = $ghe->trang_thai !== 'hoat_dong';
+            $chonDuoc = !$daDat && !$baoTri;
+
+            $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai ?? 'Thường');
+            $laCouple = (bool)($ghe->loaiGhe->la_couple ?? false) ||
+                        str_contains($loaiGheNorm, 'couple') ||
+                        str_contains($loaiGheNorm, 'đôi') ||
+                        str_contains($loaiGheNorm, 'doi') ||
+                        str_contains($loaiGheNorm, 'double');
+
+            $phuThu = (float)($ghe->loaiGhe->phu_thu ?? 0);
+            $giaVe = (float)$suatChieu->gia_ve_cuoi_cung + $phuThu;
+
+            if ($laCouple) {
+                $giaVe = ((float)$suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
+            }
+
+            $gheTheoHang[$hang][] = [
+                'id' => $ghe->id,
+                'ma_ghe' => $ghe->ma_ghe,
+                'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
+                'la_couple' => $laCouple,
+                'gia' => $giaVe,
+                'phu_thu' => $phuThu,
+                'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#3b82f6',
+                'da_dat' => $daDat,
+                'bao_tri' => $baoTri,
+                'chon_duoc' => $chonDuoc,
+            ];
+        }
+
+        $selectedSeats = collect();
+        if ($pendingTicket) {
+            $selectedSeats = collect(explode(',', (string)$pendingTicket->ma_ghe))->map(fn($s) => strtoupper(trim($s)))->filter()->unique()->values();
+        } elseif (request()->filled('ghe')) {
+            $selectedSeats = collect(explode(',', request('ghe')))->map(fn($s) => strtoupper(trim($s)))->filter()->unique()->values();
+        }
+
+        $viewName = view()->exists('user.dat_ve.chon_ghe') ? 'user.dat_ve.chon_ghe' : 'dat_ve.chon_ghe';
+
+        return view($viewName, compact('suatChieu', 'gheTheoHang', 'selectedSeats', 'pendingTicket', 'pendingTicketId', 'pendingDeadline'));
     }
 
-    if (!$suatChieu) {
-        return redirect()->route('dat_ve.chon_phim')->with('error', 'Không tìm thấy suất chiếu phù hợp.');
-    }
+    public function chonDoAn($suat_chieu_id)
+    {
+        $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])->findOrFail($suat_chieu_id);
+        $identifier = Auth::id() ?? session()->getId();
 
-    // Xử lý nút Hủy & Chọn lại
-    if (request()->boolean('reset') && Auth::check()) {
-        $oldTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
-            ->where('suat_chieu_id', $suatChieu->id)
-            ->where('trang_thai', 'cho_thanh_toan')
-            ->first();
+        if (Auth::check()) {
+            $existingPendingTickets = VeXemPhim::where('nguoi_dung_id', Auth::id())
+                ->where('trang_thai', 'cho_thanh_toan')
+                ->get();
 
-        if ($oldTicket) {
-            $seats = explode(',', (string) $oldTicket->ma_ghe);
-            foreach ($seats as $seat) {
-                $seatCode = strtoupper(trim($seat));
-                if ($seatCode) {
-                    Cache::forget("seat_lock:suat:{$oldTicket->suat_chieu_id}:seat:{$seatCode}");
+            foreach ($existingPendingTickets as $ticket) {
+                if ($ticket->suat_chieu_id != $suatChieu->id || $ticket->isExpired()) {
+                    $this->giaiPhongVePending($ticket);
                 }
             }
-            $oldTicket->delete();
         }
-        return redirect()->route('dat_ve.chon_ghe', ['movie' => $suatChieu->id]);
-    }
 
-    // Lấy vé đang chờ thanh toán
-    $pendingTicket = null;
-    if (Auth::check()) {
-        $pendingTicket = VeXemPhim::where('nguoi_dung_id', Auth::id())
-            ->where('suat_chieu_id', $suatChieu->id)
-            ->where('trang_thai', 'cho_thanh_toan')
-            ->first();
+        $selectedSeats = collect(explode(',', request('ghe')))->map(fn($seat) => strtoupper(trim($seat)))->filter()->unique()->values();
 
-        if ($pendingTicket && $pendingTicket->isExpired()) {
-            $seats = explode(',', (string) $pendingTicket->ma_ghe);
-            foreach ($seats as $seat) {
-                $seatCode = strtoupper(trim($seat));
-                if ($seatCode) {
-                    Cache::forget("seat_lock:suat:{$pendingTicket->suat_chieu_id}:seat:{$seatCode}");
+        $pendingTicket = Auth::check()
+            ? VeXemPhim::where('nguoi_dung_id', Auth::id())->where('suat_chieu_id', $suatChieu->id)->where('trang_thai', 'cho_thanh_toan')->first()
+            : null;
+
+        if ($selectedSeats->isEmpty() && $pendingTicket) {
+            $selectedSeats = collect(explode(',', $pendingTicket->ma_ghe))->map(fn($seat) => strtoupper(trim($seat)))->filter()->unique()->values();
+        }
+
+        if ($selectedSeats->isEmpty()) {
+            return redirect()->route('dat_ve.chon_ghe', ['movie' => $suatChieu->id])->with('error', 'Vui lòng chọn ít nhất một ghế!');
+        }
+
+        $setKey = "seat_lock_set:suat:{$suat_chieu_id}";
+        $seatIds = Cache::get($setKey, []);
+
+        foreach ($selectedSeats as $seat) {
+            $lockKey = "seat_lock:suat:{$suat_chieu_id}:seat:{$seat}";
+            $lock = Cache::get($lockKey);
+            $isOwner = $pendingTicket && str_contains(strtoupper($pendingTicket->ma_ghe), $seat);
+
+            if (!$lock || $isOwner) {
+                Cache::put($lockKey, [
+                    'identifier' => $identifier,
+                    'user_id' => Auth::id(),
+                    'reserved_at' => now()->timestamp,
+                    'expires_at' => now()->addMinutes(7)->timestamp,
+                ], now()->addMinutes(7));
+
+                if (!in_array($seat, $seatIds)) {
+                    $seatIds[] = $seat;
                 }
             }
-            $pendingTicket->delete();
-            $pendingTicket = null;
         }
-    }
+        Cache::put($setKey, array_unique($seatIds), now()->addMinutes(30));
 
-    $pendingTicketId = $pendingTicket?->id;
-    $pendingDeadline = $pendingTicket?->thoi_gian_het_han?->valueOf();
+        $seatModels = GheNgoi::with('loaiGhe')->where('phong_chieu_id', $suatChieu->phong_chieu_id)->whereIn('ma_ghe', $selectedSeats)->get();
 
-    $bookedTickets = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
-        ->when($pendingTicketId, fn($q) => $q->where('id', '!=', $pendingTicketId))
-        ->where(function ($q) {
-            $q->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat'])
-                ->orWhere(function ($sub) {
-                    $sub->where('trang_thai', 'cho_thanh_toan')->where('thoi_gian_het_han', '>', now());
-                });
-        })
-        ->pluck('ma_ghe');
+        $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
+            $price = $suatChieu->gia_ve_cuoi_cung + ($seat->loaiGhe->phu_thu ?? 0);
+            if ($seat->loaiGhe?->la_couple) $price = ($suatChieu->gia_ve_cuoi_cung * 2) + ($seat->loaiGhe->phu_thu ?? 0);
+            return $price;
+        });
 
-    $bookedSeats = [];
-    foreach ($bookedTickets as $maGheStr) {
-        foreach (explode(',', (string)$maGheStr) as $code) {
-            $seatCode = strtoupper(trim($code));
-            if ($seatCode) $bookedSeats[$seatCode] = true;
-        }
-    }
-
-    $gheNgois = $suatChieu->phongChieu->gheNgois ?? collect();
-    $gheTheoHang = [];
-    foreach ($gheNgois as $ghe) {
-        $hang = $ghe->hang_ghe ?? preg_replace('/[0-9]/', '', $ghe->ma_ghe);
-        if (!$hang) $hang = 'A';
-
-        $daDat = isset($bookedSeats[strtoupper(trim($ghe->ma_ghe))]);
-        $baoTri = $ghe->trang_thai !== 'hoat_dong';
-        $chonDuoc = !$daDat && !$baoTri;
-
-        $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai ?? 'Thường');
-        $laCouple = (bool)($ghe->loaiGhe->la_couple ?? false) ||
-                    str_contains($loaiGheNorm, 'couple') ||
-                    str_contains($loaiGheNorm, 'đôi') ||
-                    str_contains($loaiGheNorm, 'doi') ||
-                    str_contains($loaiGheNorm, 'double');
-
-        $phuThu = (float)($ghe->loaiGhe->phu_thu ?? 0);
-        $giaVe = (float)$suatChieu->gia_ve_cuoi_cung + $phuThu;
-
-        if ($laCouple) {
-            $giaVe = ((float)$suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
+        $foodItems = collect(json_decode(request()->query('food_cart', '[]'), true));
+        if ($foodItems->isEmpty() && $pendingTicket) {
+            $foodItems = collect($pendingTicket->food_items ?? []);
         }
 
-        $gheTheoHang[$hang][] = [
-            'id' => $ghe->id,
-            'ma_ghe' => $ghe->ma_ghe,
-            'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
-            'la_couple' => $laCouple,
-            'gia' => $giaVe,
-            'phu_thu' => $phuThu,
-            'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#3b82f6',
-            'da_dat' => $daDat,
-            'bao_tri' => $baoTri,
-            'chon_duoc' => $chonDuoc,
-        ];
-    }
+        $foodTotal = $foodItems->sum(fn($item) => ($item['price'] ?? 0) * ($item['qty'] ?? 0));
 
-    $selectedSeats = collect();
-    if ($pendingTicket) {
-        $selectedSeats = collect(explode(',', (string)$pendingTicket->ma_ghe))->map(fn($s) => strtoupper(trim($s)))->filter()->unique()->values();
-    } elseif (request()->filled('ghe')) {
-        $selectedSeats = collect(explode(',', request('ghe')))->map(fn($s) => strtoupper(trim($s)))->filter()->unique()->values();
-    }
-
-    $viewName = view()->exists('user.dat_ve.chon_ghe') ? 'user.dat_ve.chon_ghe' : 'dat_ve.chon_ghe';
-
-    return view($viewName, compact('suatChieu', 'gheTheoHang', 'selectedSeats', 'pendingTicket', 'pendingTicketId', 'pendingDeadline'));
-}
-
-   public function chonDoAn($suat_chieu_id)
-{
-    $suatChieu = SuatChieu::with(['phim', 'rapChieuPhim', 'phongChieu'])->findOrFail($suat_chieu_id);
-    $identifier = Auth::id() ?? session()->getId();
-
-    // 1. DỌN DẸP TRIỆT ĐỂ: Đảm bảo 1 tài khoản chỉ có duy nhất 1 đơn chờ thanh toán tại một thời điểm
-    if (Auth::check()) {
-        $existingPendingTickets = VeXemPhim::where('nguoi_dung_id', Auth::id())
-            ->where('trang_thai', 'cho_thanh_toan')
-            ->get();
-
-        foreach ($existingPendingTickets as $ticket) {
-            // Nếu vé pending thuộc suất chiếu khác HOẶC đã hết hạn -> Giải phóng ghế & xóa vé cũ ngay
-            if ($ticket->suat_chieu_id != $suatChieu->id || $ticket->isExpired()) {
-                $this->giaiPhongVePending($ticket);
-            }
+        if ($pendingTicket) {
+            $pendingTicket->update([
+                'ma_ghe' => $selectedSeats->join(', '),
+                'tong_tien' => $seatTotalPrice + $foodTotal,
+                'seat_total' => $seatTotalPrice,
+                'food_items' => $foodItems->toArray(),
+                'food_total' => $foodTotal,
+            ]);
+        } else {
+            $pendingTicket = VeXemPhim::create([
+                'nguoi_dung_id' => Auth::id(),
+                'suat_chieu_id' => $suatChieu->id,
+                'ma_ve' => $this->taoMaVeLocal(),
+                'ten_phim' => $suatChieu->phim->ten_phim,
+                'ten_rap' => $suatChieu->rapChieuPhim->ten_rap,
+                'ten_phong' => $suatChieu->phongChieu->ten_phong ?? 'Phòng 1',
+                'ma_ghe' => $selectedSeats->join(', '),
+                'thoi_gian_chieu' => $suatChieu->thoi_gian_chieu,
+                'tong_tien' => $seatTotalPrice + $foodTotal,
+                'tien_hoan' => 0,
+                'loai_ve' => 'truc_tuyen',
+                'trang_thai' => 'cho_thanh_toan',
+                'thoi_gian_het_han' => now()->addMinutes(7),
+                'food_items' => $foodItems->toArray(),
+                'seat_total' => $seatTotalPrice,
+                'food_total' => $foodTotal,
+            ]);
         }
-    }
 
-    $selectedSeats = collect(explode(',', request('ghe')))->map(fn($seat) => strtoupper(trim($seat)))->filter()->unique()->values();
+        $foods = DoAn::active()->with(['category', 'variants', 'comboItems.variant.doAn'])->whereHas('category')->orderBy('sort_order')->orderBy('name')->get();
 
-    $pendingTicket = Auth::check()
-        ? VeXemPhim::where('nguoi_dung_id', Auth::id())->where('suat_chieu_id', $suatChieu->id)->where('trang_thai', 'cho_thanh_toan')->first()
-        : null;
+        $menu = $foods->groupBy(fn($f) => $f->category?->is_combo ? 'Combo' : trim($f->category?->name ?? 'Khác'))
+            ->map(function ($items, $category) {
+                return [
+                    'category' => $category,
+                    'foods' => $items->values()->map(function (DoAn $food) {
+                        $isCombo = $food->category?->is_combo ?? false;
+                        if ($isCombo) {
+                            $comboItems = $food->comboItems->map(fn($ci) => [
+                                'variant_id' => $ci->food_variant_id,
+                                'name' => $ci->variant?->doAn->name ?? $ci->variant?->value,
+                                'variant' => $ci->variant?->value,
+                                'price' => (float)($ci->variant?->price ?? 0),
+                                'quantity' => (int)($ci->quantity ?? 1),
+                                'stock' => (int)($ci->variant?->stock_quantity ?? 0),
+                            ]);
+                            $price = $comboItems->sum(fn($item) => $item['price'] * $item['quantity']);
+                            $available = $comboItems->map(fn($item) => $item['quantity'] > 0 ? intdiv($item['stock'], $item['quantity']) : 0)->min() ?? 0;
 
-    if ($selectedSeats->isEmpty() && $pendingTicket) {
-        $selectedSeats = collect(explode(',', $pendingTicket->ma_ghe))->map(fn($seat) => strtoupper(trim($seat)))->filter()->unique()->values();
-    }
-
-    if ($selectedSeats->isEmpty()) {
-        return redirect()->route('dat_ve.chon_ghe', ['movie' => $suatChieu->id])->with('error', 'Vui lòng chọn ít nhất một ghế!');
-    }
-
-    // 2. Đồng bộ Lock Cache & Set Key
-    $setKey = "seat_lock_set:suat:{$suat_chieu_id}";
-    $seatIds = Cache::get($setKey, []);
-
-    foreach ($selectedSeats as $seat) {
-        $lockKey = "seat_lock:suat:{$suat_chieu_id}:seat:{$seat}";
-        $lock = Cache::get($lockKey);
-        $isOwner = $pendingTicket && str_contains(strtoupper($pendingTicket->ma_ghe), $seat);
-
-        if (!$lock || $isOwner) {
-            Cache::put($lockKey, [
-                'identifier' => $identifier,
-                'user_id' => Auth::id(),
-                'reserved_at' => now()->timestamp,
-                'expires_at' => now()->addMinutes(7)->timestamp,
-            ], now()->addMinutes(7));
-
-            if (!in_array($seat, $seatIds)) {
-                $seatIds[] = $seat;
-            }
-        }
-    }
-    Cache::put($setKey, array_unique($seatIds), now()->addMinutes(30));
-
-    $seatModels = GheNgoi::with('loaiGhe')->where('phong_chieu_id', $suatChieu->phong_chieu_id)->whereIn('ma_ghe', $selectedSeats)->get();
-
-    $seatTotalPrice = $seatModels->sum(function ($seat) use ($suatChieu) {
-        $price = $suatChieu->gia_ve_cuoi_cung + ($seat->loaiGhe->phu_thu ?? 0);
-        if ($seat->loaiGhe?->la_couple) $price = ($suatChieu->gia_ve_cuoi_cung * 2) + ($seat->loaiGhe->phu_thu ?? 0);
-        return $price;
-    });
-
-    $foodItems = collect(json_decode(request()->query('food_cart', '[]'), true));
-    if ($foodItems->isEmpty() && $pendingTicket) {
-        $foodItems = collect($pendingTicket->food_items ?? []);
-    }
-
-    $foodTotal = $foodItems->sum(fn($item) => ($item['price'] ?? 0) * ($item['qty'] ?? 0));
-
-    if ($pendingTicket) {
-        $pendingTicket->update([
-            'ma_ghe' => $selectedSeats->join(', '),
-            'tong_tien' => $seatTotalPrice + $foodTotal,
-            'seat_total' => $seatTotalPrice,
-            'food_items' => $foodItems->toArray(),
-            'food_total' => $foodTotal,
-        ]);
-    } else {
-        $pendingTicket = VeXemPhim::create([
-            'nguoi_dung_id' => Auth::id(),
-            'suat_chieu_id' => $suatChieu->id,
-            'ma_ve' => $this->taoMaVeLocal(),
-            'ten_phim' => $suatChieu->phim->ten_phim,
-            'ten_rap' => $suatChieu->rapChieuPhim->ten_rap,
-            'ten_phong' => $suatChieu->phongChieu->ten_phong ?? 'Phòng 1',
-            'ma_ghe' => $selectedSeats->join(', '),
-            'thoi_gian_chieu' => $suatChieu->thoi_gian_chieu,
-            'tong_tien' => $seatTotalPrice + $foodTotal,
-            'tien_hoan' => 0,
-            'loai_ve' => 'truc_tuyen',
-            'trang_thai' => 'cho_thanh_toan',
-            'thoi_gian_het_han' => now()->addMinutes(7),
-            'food_items' => $foodItems->toArray(),
-            'seat_total' => $seatTotalPrice,
-            'food_total' => $foodTotal,
-        ]);
-    }
-
-    $foods = DoAn::active()->with(['category', 'variants', 'comboItems.variant.doAn'])->whereHas('category')->orderBy('sort_order')->orderBy('name')->get();
-
-    $menu = $foods->groupBy(fn($f) => $f->category?->is_combo ? 'Combo' : trim($f->category?->name ?? 'Khác'))
-        ->map(function ($items, $category) {
-            return [
-                'category' => $category,
-                'foods' => $items->values()->map(function (DoAn $food) {
-                    $isCombo = $food->category?->is_combo ?? false;
-                    if ($isCombo) {
-                        $comboItems = $food->comboItems->map(fn($ci) => [
-                            'variant_id' => $ci->food_variant_id,
-                            'name' => $ci->variant?->doAn->name ?? $ci->variant?->value,
-                            'variant' => $ci->variant?->value,
-                            'price' => (float)($ci->variant?->price ?? 0),
-                            'quantity' => (int)($ci->quantity ?? 1),
-                            'stock' => (int)($ci->variant?->stock_quantity ?? 0),
-                        ]);
-                        $price = $comboItems->sum(fn($item) => $item['price'] * $item['quantity']);
-                        $available = $comboItems->map(fn($item) => $item['quantity'] > 0 ? intdiv($item['stock'], $item['quantity']) : 0)->min() ?? 0;
+                            return [
+                                'id' => $food->id, 'name' => $food->name, 'description' => $food->description,
+                                'image' => $food->image, 'is_combo' => true, 'price' => (float)($food->price ?? $price),
+                                'available' => $available, 'combo_items' => $comboItems->toArray(),
+                            ];
+                        }
 
                         return [
                             'id' => $food->id, 'name' => $food->name, 'description' => $food->description,
-                            'image' => $food->image, 'is_combo' => true, 'price' => (float)($food->price ?? $price),
-                            'available' => $available, 'combo_items' => $comboItems->toArray(),
+                            'image' => $food->image, 'is_combo' => false,
+                            'variants' => $food->variants->map(fn($v) => [
+                                'id' => $v->id, 'food_id' => $v->food_id, 'food_name' => $food->name,
+                                'value' => $v->value, 'price' => (float)$v->price, 'stock' => (int)$v->stock_quantity,
+                            ]),
                         ];
-                    }
+                    })->values(),
+                ];
+            })->values();
 
-                    return [
-                        'id' => $food->id, 'name' => $food->name, 'description' => $food->description,
-                        'image' => $food->image, 'is_combo' => false,
-                        'variants' => $food->variants->map(fn($v) => [
-                            'id' => $v->id, 'food_id' => $v->food_id, 'food_name' => $food->name,
-                            'value' => $v->value, 'price' => (float)$v->price, 'stock' => (int)$v->stock_quantity,
-                        ]),
-                    ];
-                })->values(),
-            ];
-        })->values();
-
-    return view('user.dat_ve.chon_do_an', [
-        'suatChieu' => $suatChieu,
-        'selectedSeats' => $selectedSeats,
-        'menu' => $menu,
-        'seatTotalPrice' => $seatTotalPrice,
-        'pendingTicketId' => $pendingTicket->id,
-        'pendingDeadline' => $pendingTicket->thoi_gian_het_han?->valueOf(),
-        'initialFoodCart' => $foodItems->values()->all(),
-    ]);
-}
+        return view('user.dat_ve.chon_do_an', [
+            'suatChieu' => $suatChieu,
+            'selectedSeats' => $selectedSeats,
+            'menu' => $menu,
+            'seatTotalPrice' => $seatTotalPrice,
+            'pendingTicketId' => $pendingTicket->id,
+            'pendingDeadline' => $pendingTicket->thoi_gian_het_han?->valueOf(),
+            'initialFoodCart' => $foodItems->values()->all(),
+        ]);
+    }
 
     public function checkout(Request $request, $suat_chieu_id)
     {
@@ -480,12 +469,30 @@ public function chonGhe($id)
             $pendingDeadline = null;
         }
 
+        // --- BƯỚC 1: KIỂM TRA VA CHẠM GHẾ VỚI DB (Tránh nhân viên bán tại quầy) ---
+        $conflictSeats = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
+            ->when($pendingTicketId, fn($q) => $q->where('id', '!=', $pendingTicketId))
+            ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat', 'da_in'])
+            ->pluck('ma_ghe')
+            ->flatMap(fn($codes) => explode(',', (string)$codes))
+            ->map(fn($c) => strtoupper(trim($c)))
+            ->filter()
+            ->intersect($selectedSeats);
+
+        if ($conflictSeats->isNotEmpty()) {
+            if ($pendingTicket) {
+                $this->giaiPhongVePending($pendingTicket);
+            }
+            return redirect()->route('dat_ve.chon_ghe', ['movie' => $suatChieu->id])
+                ->with('error', 'Rất tiếc! Ghế (' . $conflictSeats->implode(', ') . ') đã được bán tại quầy. Vui lòng chọn ghế khác.');
+        }
+
         if (!$this->validateSeatsAdjacent($selectedSeats->toArray(), $suat_chieu_id)) {
             foreach ($selectedSeats as $seat) {
                 Cache::forget("seat_lock:suat:{$suat_chieu_id}:seat:{$seat}");
             }
 
-            $message = 'Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!';
+            $message = 'Các ghế bạn chọn phải cạnh nhau và không được để trống 1 ghế lẻ ở bên cạnh!';
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $message], 422);
@@ -531,6 +538,27 @@ public function chonGhe($id)
             }
         }
 
+        // --- LẤY TẤT CẢ VOUCHER KHẢ DỤNG CỦA TÀI KHOẢN ĐANG ĐĂNG NHẬP ---
+        $vouchersKhaDung = collect();
+        if (Auth::check()) {
+            $vouchersKhaDung = NguoiDungVoucher::query()
+                ->with('voucher')
+                ->where('nguoi_dung_id', Auth::id())
+                ->where('da_su_dung', false)
+                ->where(function ($query) {
+                    $query->whereNull('ngay_het_han')
+                        ->orWhere('ngay_het_han', '>=', now());
+                })
+                ->whereHas('voucher', function ($query) {
+                    $query->where('trang_thai', true)
+                        ->where(function ($voucherQuery) {
+                            $voucherQuery->whereNull('ngay_het_han')
+                                ->orWhereDate('ngay_het_han', '>=', today());
+                        });
+                })
+                ->get();
+        }
+
         return view('user.dat_ve.checkout', compact(
             'suatChieu',
             'selectedSeats',
@@ -540,7 +568,8 @@ public function chonGhe($id)
             'foodTotal',
             'grandTotal',
             'pendingTicketId',
-            'pendingDeadline'
+            'pendingDeadline',
+            'vouchersKhaDung'
         ));
     }
 
@@ -637,12 +666,30 @@ public function chonGhe($id)
             return back()->withInput()->with('error', 'Vui lòng chọn ít nhất một ghế.');
         }
 
+        // --- BƯỚC KIỂM TRA VA CHẠM GHẾ VỚI DB TRƯỚC KHI CHUYỂN CỔNG THANH TOÁN ---
+        $conflictSeats = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
+            ->when($pendingTicketId, fn($q) => $q->where('id', '!=', $pendingTicketId))
+            ->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat', 'da_in'])
+            ->pluck('ma_ghe')
+            ->flatMap(fn($codes) => explode(',', (string)$codes))
+            ->map(fn($c) => strtoupper(trim($c)))
+            ->filter()
+            ->intersect($selectedSeats);
+
+        if ($conflictSeats->isNotEmpty()) {
+            if ($pendingTicket) {
+                $this->giaiPhongVePending($pendingTicket);
+            }
+            return redirect()->route('dat_ve.chon_ghe', ['movie' => $suatChieu->id])
+                ->with('error', 'Rất tiếc! Ghế (' . $conflictSeats->implode(', ') . ') vừa được nhân viên bán tại quầy. Vui lòng chọn lại ghế.');
+        }
+
         if (!$this->validateSeatsAdjacent($selectedSeats->toArray(), $suatChieu->id)) {
             foreach ($selectedSeats as $seat) {
                 Cache::forget("seat_lock:suat:{$suatChieu->id}:seat:{$seat}");
             }
 
-            return back()->withInput()->with('error', 'Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!');
+            return back()->withInput()->with('error', 'Các ghế bạn chọn phải cạnh nhau và không được để trống 1 ghế lẻ ở bên cạnh!');
         }
 
         foreach ($selectedSeats as $seat) {
@@ -993,7 +1040,6 @@ public function chonGhe($id)
         Cache::forget("pending_ve:{$maVe}");
     }
 
-
     private function xacNhanVietQR($ma_ve)
     {
         $bookingData = Cache::get("pending_ve:{$ma_ve}");
@@ -1223,7 +1269,7 @@ public function chonGhe($id)
                 ->where('suat_chieu_id', $bookingData['suat_chieu_id'])
                 ->when($pendingTicketId, fn($q) => $q->where('id', '!=', $pendingTicketId))
                 ->where(function ($q) {
-                    $q->whereIn('trang_thai', ['dang_giu', 'da_dat', 'da_thanh_toan', 'da_su_dung'])
+                    $q->whereIn('trang_thai', ['dang_giu', 'da_dat', 'da_thanh_toan', 'da_su_dung', 'da_in'])
                         ->orWhere(function ($sub) {
                             $sub->where('trang_thai', 'cho_thanh_toan')
                                 ->where('thoi_gian_het_han', '>', now());
@@ -1239,7 +1285,7 @@ public function chonGhe($id)
                 ->intersect($selectedSeats);
 
             if ($blockedSeats->isNotEmpty()) {
-                throw new \RuntimeException('Ghế đang trong quá trình thanh toán bởi người khác: ' . $blockedSeats->implode(', '));
+                throw new \RuntimeException('Ghế đang trong quá trình thanh toán bởi người khác hoặc đã bán: ' . $blockedSeats->implode(', '));
             }
 
             $this->truKhoDoAn($bookingData['food_items'] ?? []);
@@ -1272,11 +1318,6 @@ public function chonGhe($id)
         });
     }
 
-    /**
-     * Giỏ đồ ăn (food_cart) không có field "id" — mỗi dòng có "key" dạng
-     * "variant-{food_variant_id}" (món lẻ, đã chọn size cụ thể) hoặc
-     * "combo-{food_id}" (combo). Hàm này giải mã key về food_id/variant_id thật.
-     */
     private function phanTichCartItem(array $item): ?array
     {
         $quantity = (int) ($item['qty'] ?? 0);
@@ -1302,9 +1343,6 @@ public function chonGhe($id)
         return null;
     }
 
-    /**
-     * Trừ kho (biến thể + combo) theo giỏ đồ ăn của đơn đặt vé online.
-     */
     private function truKhoDoAn(array $foodItems): void
     {
         if (empty($foodItems)) {
@@ -1322,10 +1360,6 @@ public function chonGhe($id)
         (new FoodInventoryService())->deduct($items);
     }
 
-    /**
-     * Ghi lại hóa đơn đồ ăn cho đơn đặt vé online để hiển thị trong
-     * trang quản trị "Hóa đơn đồ ăn & Combo" (liên kết qua ticket_id).
-     */
     private function taoHoaDonDoAnChoVe(VeXemPhim $ve, array $foodItems): void
     {
         if (empty($foodItems) || FoodInvoice::where('ticket_id', $ve->id)->exists()) {
@@ -1454,187 +1488,176 @@ public function chonGhe($id)
     }
 
     private function validateSeatsAdjacent(array $seats, $suatChieuId): bool
-    {
-        if (count($seats) <= 1) {
-            return true;
-        }
-
-        $parsedSeats = [];
-        foreach ($seats as $seat) {
-            $seat = strtoupper(trim($seat));
-
-            if (preg_match('/^([A-Z]+)([0-9]+)$/', $seat, $matches)) {
-                $parsedSeats[] = ['row' => $matches[1], 'num' => (int) $matches[2]];
-            } else {
-                if (str_contains($seat, '-')) {
-                    $subSeats = explode('-', $seat);
-                    foreach ($subSeats as $sub) {
-                        if (preg_match('/^([A-Z]+)([0-9]+)$/', $sub, $matches)) {
-                            $parsedSeats[] = ['row' => $matches[1], 'num' => (int) $matches[2]];
-                        }
-                    }
-                } elseif (str_contains($seat, '|')) {
-                    $subSeats = explode('|', $seat);
-                    foreach ($subSeats as $sub) {
-                        if (preg_match('/^([A-Z]+)([0-9]+)$/', $sub, $matches)) {
-                            $parsedSeats[] = ['row' => $matches[1], 'num' => (int) $matches[2]];
-                        }
-                    }
-                }
-            }
-        }
-
-        if (empty($parsedSeats)) {
-            return true;
-        }
-
-        $suatChieu = SuatChieu::findOrFail($suatChieuId);
-
-        $bookedTickets = VeXemPhim::where('suat_chieu_id', $suatChieuId)
-            ->where(function ($q) {
-                $q->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat'])
-                    ->orWhere(function ($sub) {
-                        $sub->where('trang_thai', 'cho_thanh_toan')
-                            ->where('thoi_gian_het_han', '>', now());
-                    });
-            })
-            ->pluck('ma_ghe');
-
-        $unavailableSeats = [];
-        foreach ($bookedTickets as $maGheString) {
-            foreach (explode(',', $maGheString) as $code) {
-                $unavailableSeats[strtoupper(trim($code))] = true;
-            }
-        }
-
-        $inactiveSeats = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
-            ->where('trang_thai', '!=', 'hoat_dong')
-            ->pluck('ma_ghe');
-        foreach ($inactiveSeats as $code) {
-            $unavailableSeats[strtoupper(trim($code))] = true;
-        }
-
-        $groupedByRow = collect($parsedSeats)->groupBy('row');
-
-        foreach ($groupedByRow as $row => $seatsInRow) {
-            $nums = $seatsInRow->pluck('num')->unique()->sort()->values();
-
-            for ($i = 0; $i < $nums->count() - 1; $i++) {
-                $start = $nums[$i];
-                $end = $nums[$i + 1];
-
-                if ($end - $start > 1) {
-                    for ($middleNum = $start + 1; $middleNum < $end; $middleNum++) {
-                        $middleSeatCode = $row . $middleNum;
-
-                        $isBookedOrInactive = isset($unavailableSeats[$middleSeatCode]);
-                        $isLockedInCache = Cache::has("seat_lock:suat:{$suatChieuId}:seat:{$middleSeatCode}");
-
-                        if (!$isBookedOrInactive && !$isLockedInCache && !in_array($middleSeatCode, $seats)) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-
+{
+    if (empty($seats)) {
         return true;
     }
 
-    // 1. AJAX Polling: Lấy danh sách các ghế đang bị giữ tạm thời trong Cache
-public function getLockedSeats($suat_chieu_id)
-{
-    $identifier = Auth::id() ?? session()->getId();
-    
-    // Lấy tất cả cache key bắt đầu bằng seat_lock:suat:{id}
-    // Chú ý: Nếu dùng Redis hoặc Cache Driver mặc định (file/array)
-    $locked = [];
-    $prefix = "seat_lock:suat:{$suat_chieu_id}:seat:";
-    
-    // Quét đơn giản danh sách ghế từ Cache (hoặc qua helper nếu bạn lưu theo array)
-    // Trường hợp dùng Cache file mặc định của Laravel:
-    $seatCodes = GheNgoi::pluck('ma_ghe');
-    foreach ($seatCodes as $code) {
-        $key = $prefix . strtoupper(trim($code));
-        $lockData = Cache::get($key);
-        if ($lockData) {
-            // Không trả về ghế do chính user này đang giữ
-            if (($lockData['identifier'] ?? null) !== $identifier) {
-                $locked[strtoupper(trim($code))] = true;
+    $selectedSeats = collect($seats)
+        ->map(fn($s) => strtoupper(trim($s)))
+        ->filter()
+        ->unique();
+
+    $suatChieu = SuatChieu::find($suatChieuId);
+    if (!$suatChieu) {
+        return false;
+    }
+
+    // Lấy danh sách ghế đã được đặt hoặc đang bị khóa bởi người khác
+    $bookedTickets = VeXemPhim::where('suat_chieu_id', $suatChieuId)
+        ->where(function ($q) {
+            $q->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat', 'da_in'])
+                ->orWhere(function ($sub) {
+                    $sub->where('trang_thai', 'cho_thanh_toan')
+                        ->where('thoi_gian_het_han', '>', now());
+                });
+        })
+        ->pluck('ma_ghe');
+
+    $unavailableSeats = [];
+    foreach ($bookedTickets as $maGheString) {
+        foreach (explode(',', (string)$maGheString) as $code) {
+            $seatCode = strtoupper(trim($code));
+            if ($seatCode !== '') {
+                $unavailableSeats[$seatCode] = true;
             }
         }
     }
 
-    return response()->json(['locked' => $locked]);
-}
-
-// 2. Lock 1 ghế khi click chọn
-public function lockSeat(Request $request, $suat_chieu_id, $seat_code)
-{
-    $seat = strtoupper(trim($seat_code));
-    $identifier = Auth::id() ?? session()->getId();
-    $key = "seat_lock:suat:{$suat_chieu_id}:seat:{$seat}";
-
-    $existingLock = Cache::get($key);
-    if ($existingLock && ($existingLock['identifier'] ?? null) !== $identifier) {
-        return response()->json(['message' => 'Ghế đã bị người khác chọn.'], 409);
+    $inactiveSeats = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
+        ->where('trang_thai', '!=', 'hoat_dong')
+        ->pluck('ma_ghe');
+    foreach ($inactiveSeats as $code) {
+        $seatCode = strtoupper(trim($code));
+        if ($seatCode !== '') {
+            $unavailableSeats[$seatCode] = true;
+        }
     }
 
-    // Giữ ghế trong Cache 7 phút
-    Cache::put($key, [
-        'identifier' => $identifier,
-        'user_id' => Auth::id(),
-        'expires_at' => now()->addMinutes(7)->timestamp,
-    ], now()->addMinutes(7));
+    // Lấy toàn bộ ghế phòng chiếu và phân loại theo hàng
+    $allRoomSeats = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)->get();
+    $roomSeatsByRow = [];
+    foreach ($allRoomSeats as $g) {
+        $code = strtoupper(trim($g->ma_ghe));
+        if (preg_match('/^([A-Z]+)([0-9]+)$/', $code, $m)) {
+            $r = $m[1];
+            $n = (int)$m[2];
+            $roomSeatsByRow[$r][] = [
+                'code' => $code,
+                'num' => $n,
+                'isOccupied' => isset($unavailableSeats[$code]) || $selectedSeats->contains($code)
+            ];
+        }
+    }
 
-    return response()->json(['message' => 'Giữ ghế thành công.']);
-}
+    // Kiểm tra từng hàng xem có tạo ra đoạn ghế trống bằng 1 hay không
+    foreach ($roomSeatsByRow as $row => $physicalSeats) {
+        usort($physicalSeats, fn($a, $b) => $a['num'] <=> $b['num']);
 
-// 3. Unlock 1 ghế khi bỏ chọn
-public function unlockSeat(Request $request, $suat_chieu_id, $seat_code)
-{
-    $seat = strtoupper(trim($seat_code));
-    $key = "seat_lock:suat:{$suat_chieu_id}:seat:{$seat}";
-    
-    Cache::forget($key);
-    
-    return response()->json(['message' => 'Hủy giữ ghế thành công.']);
-}
-
-// 4. Hủy tất cả ghế đang giữ (Dành cho sendBeacon khi tắt trang hoặc đi nơi khác)
-public function releaseAllSeats(Request $request, $suat_chieu_id)
-{
-    $identifier = Auth::id() ?? session()->getId();
-    $seatCodes = GheNgoi::pluck('ma_ghe');
-    
-    foreach ($seatCodes as $code) {
-        $seat = strtoupper(trim($code));
-        $key = "seat_lock:suat:{$suat_chieu_id}:seat:{$seat}";
-        $lock = Cache::get($key);
+        $emptyBlockLength = 0;
+        foreach ($physicalSeats as $seat) {
+            if ($seat['isOccupied']) {
+                if ($emptyBlockLength === 1) {
+                    return false; // Bỏ lại đúng 1 ghế trống lẻ
+                }
+                $emptyBlockLength = 0;
+            } else {
+                $emptyBlockLength++;
+            }
+        }
         
-        if ($lock && ($lock['identifier'] ?? null) === $identifier) {
-            Cache::forget($key);
+        if ($emptyBlockLength === 1) {
+            return false;
         }
     }
 
-    return response()->json(['message' => 'Đã giải phóng tất cả ghế.']);
+    return true;
 }
 
-private function giaiPhongVePending(VeXemPhim $ve): void
-{
-    $seats = explode(',', (string) $ve->ma_ghe);
-    $setKey = "seat_lock_set:suat:{$ve->suat_chieu_id}";
-    $seatIds = Cache::get($setKey, []);
-
-    foreach ($seats as $seat) {
-        $seatCode = strtoupper(trim($seat));
-        if ($seatCode) {
-            Cache::forget("seat_lock:suat:{$ve->suat_chieu_id}:seat:{$seatCode}");
-            $seatIds = array_diff($seatIds, [$seatCode]);
+    public function getLockedSeats($suat_chieu_id)
+    {
+        $identifier = Auth::id() ?? session()->getId();
+        
+        $locked = [];
+        $prefix = "seat_lock:suat:{$suat_chieu_id}:seat:";
+        
+        $seatCodes = GheNgoi::pluck('ma_ghe');
+        foreach ($seatCodes as $code) {
+            $key = $prefix . strtoupper(trim($code));
+            $lockData = Cache::get($key);
+            if ($lockData) {
+                if (($lockData['identifier'] ?? null) !== $identifier) {
+                    $locked[strtoupper(trim($code))] = true;
+                }
+            }
         }
+
+        return response()->json(['locked' => $locked]);
     }
 
-    Cache::put($setKey, array_values(array_unique($seatIds)), now()->addMinutes(30));
-    $ve->delete();
-}
+    public function lockSeat(Request $request, $suat_chieu_id, $seat_code)
+    {
+        $seat = strtoupper(trim($seat_code));
+        $identifier = Auth::id() ?? session()->getId();
+        $key = "seat_lock:suat:{$suat_chieu_id}:seat:{$seat}";
+
+        $existingLock = Cache::get($key);
+        if ($existingLock && ($existingLock['identifier'] ?? null) !== $identifier) {
+            return response()->json(['message' => 'Ghế đã bị người khác chọn.'], 409);
+        }
+
+        Cache::put($key, [
+            'identifier' => $identifier,
+            'user_id' => Auth::id(),
+            'expires_at' => now()->addMinutes(7)->timestamp,
+        ], now()->addMinutes(7));
+
+        return response()->json(['message' => 'Giữ ghế thành công.']);
+    }
+
+    public function unlockSeat(Request $request, $suat_chieu_id, $seat_code)
+    {
+        $seat = strtoupper(trim($seat_code));
+        $key = "seat_lock:suat:{$suat_chieu_id}:seat:{$seat}";
+        
+        Cache::forget($key);
+        
+        return response()->json(['message' => 'Hủy giữ ghế thành công.']);
+    }
+
+    public function releaseAllSeats(Request $request, $suat_chieu_id)
+    {
+        $identifier = Auth::id() ?? session()->getId();
+        $seatCodes = GheNgoi::pluck('ma_ghe');
+        
+        foreach ($seatCodes as $code) {
+            $seat = strtoupper(trim($code));
+            $key = "seat_lock:suat:{$suat_chieu_id}:seat:{$seat}";
+            $lock = Cache::get($key);
+            
+            if ($lock && ($lock['identifier'] ?? null) === $identifier) {
+                Cache::forget($key);
+            }
+        }
+
+        return response()->json(['message' => 'Đã giải phóng tất cả ghế.']);
+    }
+
+    private function giaiPhongVePending(VeXemPhim $ve): void
+    {
+        $seats = explode(',', (string) $ve->ma_ghe);
+        $setKey = "seat_lock_set:suat:{$ve->suat_chieu_id}";
+        $seatIds = Cache::get($setKey, []);
+
+        foreach ($seats as $seat) {
+            $seatCode = strtoupper(trim($seat));
+            if ($seatCode) {
+                Cache::forget("seat_lock:suat:{$ve->suat_chieu_id}:seat:{$seatCode}");
+                $seatIds = array_diff($seatIds, [$seatCode]);
+            }
+        }
+
+        Cache::put($setKey, array_values(array_unique($seatIds)), now()->addMinutes(30));
+        $ve->delete();
+    }
 }
