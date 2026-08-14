@@ -53,6 +53,8 @@ class BanVeController extends Controller
             'phongChieu'
         ]);
 
+        // Giữ nguyên bộ trạng thái "đã chiếm chỗ" rộng hơn của quầy (bao gồm cả
+        // dang_giu/da_in) — đây là logic ĐÚNG hơn bản online, không hạ cấp xuống.
         $blockedSeatCodes = VeXemPhim::where(
             'suat_chieu_id',
             $suatChieu->id
@@ -76,39 +78,65 @@ class BanVeController extends Controller
                     ->map(fn($code) => strtoupper(trim($code)))
                     ->filter();
             })
+            ->unique()
             ->values();
 
-        $maintenanceSeatCodes = GheNgoi::where(
-            'phong_chieu_id',
-            $suatChieu->phong_chieu_id
-        )
-            ->get(['ma_ghe', 'trang_thai'])
-            ->filter(fn($seat) => $seat->isEffectivelyUnderMaintenance())
-            ->pluck('ma_ghe')
-            ->map(fn($code) => strtoupper(trim($code)))
-            ->values()
-            ->all();
+        $bookedSeats = $blockedSeatCodes->flip();
 
-        $seatsByRow = GheNgoi::with([
-            'hangGhe',
-            'loaiGhe'
-        ])
-            ->where(
-                'phong_chieu_id',
-                $suatChieu->phong_chieu_id
-            )
-            ->orderBy('hang_ghe_id')
-            ->orderBy('cot')
-            ->get()
-            ->groupBy(
-                fn($seat) => $seat->hangGhe->ten_hang ?? 'Khác'
-            );
+        // QUAN TRỌNG: KHÔNG orderBy('cot') ở đây — DatVeController::chonGhe() lấy
+        // ghế theo đúng thứ tự tự nhiên của bảng (không orderBy gì cả) rồi mới gom
+        // theo hàng, nên thứ tự HÀNG A,B,C... phụ thuộc thứ tự này. Nếu orderBy
+        // theo cột, tất cả ghế cột 1 của mọi hàng đứng lẫn lộn trước, làm xáo trộn
+        // thứ tự hàng khi gom nhóm — đúng như lỗi đã gặp (A,H,E,B,F,G,D,C).
+        $gheNgois = GheNgoi::with('loaiGhe')
+            ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
+            ->orderBy('id')
+            ->get();
+
+        // Xây $gheTheoHang ĐÚNG CÙNG CẤU TRÚC với DatVeController::chonGhe()
+        // (tên hàng lấy từ chữ cái đầu mã ghế, y hệt luồng online) để giao diện
+        // và JS phía Blade có thể dùng chung logic/markup với trang đặt vé online.
+        $gheTheoHang = [];
+        foreach ($gheNgois as $ghe) {
+            $hang = preg_replace('/[0-9]/', '', $ghe->ma_ghe) ?: 'A';
+
+            $daDat = $bookedSeats->has(strtoupper(trim($ghe->ma_ghe)));
+            // Giữ nguyên logic bảo trì đầy đủ của quầy (có kiểm tra lịch bảo trì
+            // đang hiệu lực), không hạ cấp xuống chỉ check trang_thai như online.
+            $baoTri = $ghe->isEffectivelyUnderMaintenance();
+            $chonDuoc = !$daDat && !$baoTri;
+
+            $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai ?? 'Thường');
+            $laCouple = (bool) ($ghe->loaiGhe->la_couple ?? false) ||
+                str_contains($loaiGheNorm, 'couple') ||
+                str_contains($loaiGheNorm, 'đôi') ||
+                str_contains($loaiGheNorm, 'doi') ||
+                str_contains($loaiGheNorm, 'double');
+
+            $phuThu = (float) ($ghe->loaiGhe->phu_thu ?? 0);
+            $giaVe = (float) $suatChieu->gia_ve_cuoi_cung + $phuThu;
+
+            if ($laCouple) {
+                $giaVe = ((float) $suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
+            }
+
+            $gheTheoHang[$hang][] = [
+                'id' => $ghe->id,
+                'ma_ghe' => $ghe->ma_ghe,
+                'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
+                'la_couple' => $laCouple,
+                'gia' => $giaVe,
+                'phu_thu' => $phuThu,
+                'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#3b82f6',
+                'da_dat' => $daDat,
+                'bao_tri' => $baoTri,
+                'chon_duoc' => $chonDuoc,
+            ];
+        }
 
         return view('staff.ban-ve.show', [
             'suatChieu' => $suatChieu,
-            'soldSeatCodes' => $blockedSeatCodes,
-            'maintenanceSeatCodes' => $maintenanceSeatCodes,
-            'seatsByRow' => $seatsByRow
+            'gheTheoHang' => $gheTheoHang,
         ]);
     }
 
@@ -132,7 +160,7 @@ class BanVeController extends Controller
             ->get();
 
         $seatTotal = $gheList->sum(function ($ghe) use ($suatChieu) {
-            $giaVe = (float) ($suatChieu->gia_ve ?? 0);
+            $giaVe = (float) ($suatChieu->gia_ve_cuoi_cung ?? 0);
             $phuThu = (float) ($ghe->loaiGhe?->phu_thu ?? 0);
 
             if ($ghe->loaiGhe?->la_couple) {
@@ -350,7 +378,7 @@ $menu = $foods
             ->get();
 
         $seatTotal = $gheList->sum(function ($ghe) use ($suatChieu) {
-            $giaVe = (float) ($suatChieu->gia_ve ?? 0);
+            $giaVe = (float) ($suatChieu->gia_ve_cuoi_cung ?? 0);
             $phuThu = (float) ($ghe->loaiGhe?->phu_thu ?? 0);
 
             if ($ghe->loaiGhe?->la_couple) {
@@ -611,7 +639,7 @@ $menu = $foods
                 $seatTotal = $gheList->sum(
                     function ($ghe) use ($suatChieu) {
                         $giaVe = (float) (
-                            $suatChieu->gia_ve ?? 0
+                            $suatChieu->gia_ve_cuoi_cung ?? 0
                         );
 
                         $phuThu = (float) (

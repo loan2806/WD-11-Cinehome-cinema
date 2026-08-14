@@ -107,7 +107,9 @@
                 notifyBox.classList.toggle('hidden');
 
                 if (wasHidden) {
-                    fetch('/admin/notifications/mark-all-read', {
+                    fetch("{{ (Auth::user()->vai_tro ?? null) === 'nhan_vien'
+                        ? route('staff.notifications.mark-all-read')
+                        : route('admin.notifications.markAllRead') }}", {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
@@ -247,7 +249,7 @@
                 {{-- 3. CƠ SỞ VẬT CHẤT PHÒNG --}}
                 @if(coBatKyQuyenNao(['phong_chieu.xem', 'loai_ghe.xem']))
                     @php
-                        $isPhongGheActive = request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*');
+                        $isPhongGheActive = request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*') || request()->routeIs('admin.loai-phong-gia.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isPhongGheActive ? 'open' : '' }}">
                         <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
@@ -261,6 +263,9 @@
                             @if(coQuyen('phong_chieu.xem'))
                             <a href="{{ route('admin.phong-chieus.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phong-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
                                 Quản lý phòng chiếu
+                            </a>
+                            <a href="{{ route('admin.loai-phong-gia.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.loai-phong-gia.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Giá theo phòng chiếu
                             </a>
                             @endif
 
@@ -482,14 +487,29 @@
                     {{-- ADMIN USER --}}
                     <div class="flex items-center gap-3">
                         @php
-                            $notificationCount = $notificationCount ?? 0;
                             $userRole = Auth::user()->vai_tro ?? Auth::user()->role;
+                            $isStaff = $userRole === 'nhan_vien';
+
                             $adminRoleLabel = match ($userRole) {
                                 'super_admin', 'admin', 'quan_ly_he_thong' => 'Quản trị viên (Super-admin)',
                                 'quan_ly' => 'Quản lý rạp',
                                 'nhan_vien' => 'Nhân viên quầy',
                                 default => 'Người dùng',
                             };
+
+                            if ($isStaff) {
+                                $notificationCount = \App\Models\ThongBaoCaNhan::where('nguoi_dung_id', Auth::id())
+                                    ->where('da_doc', false)
+                                    ->count();
+
+                                $layoutNotifications = \App\Models\ThongBaoCaNhan::where('nguoi_dung_id', Auth::id())
+                                    ->latest()
+                                    ->take(10)
+                                    ->get();
+                            } else {
+                                $notificationCount = $notificationCount ?? 0;
+                                $layoutNotifications = $adminNotifications ?? collect();
+                            }
                         @endphp
 
                         @php
@@ -512,13 +532,13 @@
                                 <div class="admin-notify-head">
                                     <span style="font-size:16px;">{!! $bellSvg !!}</span>
                                     <div>
-                                        <h3>Thông báo hệ thống</h3>
+                                        <h3>{{ $isStaff ? 'Thông báo nhân viên' : 'Thông báo hệ thống' }}</h3>
                                         <small>{{ $notificationCount }} thông báo chưa đọc</small>
                                     </div>
                                 </div>
 
                                 <div class="admin-notify-list">
-                                    @forelse($adminNotifications ?? [] as $item)
+                                    @forelse($layoutNotifications as $item)
                                     <article class="admin-notify-item {{ $item->da_doc ? '' : 'is-unread' }}">
                                         <span class="admin-notify-icon">
                                             {!! $bellSvg !!}
@@ -539,7 +559,7 @@
                                 </div>
 
                                 <div class="admin-notify-footer">
-                                    <a href="{{ route('admin.notifications.index') }}">
+                                    <a href="{{ $isStaff ? route('staff.notifications.index') : route('admin.notifications.index') }}">
                                         Xem tất cả {!! $arrowSvg !!}
                                     </a>
                                 </div>

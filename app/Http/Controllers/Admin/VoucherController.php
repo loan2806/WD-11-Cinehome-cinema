@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\VoucherDuocTangMail;
 use App\Models\NguoiDung;
 use App\Models\NguoiDungVoucher;
+use App\Models\ThongBaoCaNhan;
 use App\Models\Voucher;
 use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -182,6 +186,12 @@ class VoucherController extends Controller
         );
     }
 
+    /**
+     * Admin cấp voucher trực tiếp cho khách:
+     * - Tạo voucher cá nhân
+     * - Tạo thông báo trên chuông User
+     * - Gửi Gmail thông báo cho khách
+     */
     public function issue(Request $request)
     {
         $data = $request->validate([
@@ -193,8 +203,11 @@ class VoucherController extends Controller
                     ->where('trang_thai_hoat_dong', true)),
             ],
             'quantity' => ['required', 'integer', 'min:1', 'max:20'],
-            'loai_cap_phat' => ['required', 'in:admin_tang,khach_hang_than_thiet'],
+            'loai_cap_phat' => ['required', 'in:admin_tang,khach_hang_than_thiet,khac'],
+            'ly_do_khac' => ['nullable', 'required_if:loai_cap_phat,khac', 'string', 'max:255'],
             'ngay_het_han' => ['nullable', 'date', 'after_or_equal:today'],
+        ], [
+            'ly_do_khac.required_if' => 'Vui lòng nhập lý do cấp.',
         ]);
 
         $voucher = Voucher::findOrFail($data['voucher_id']);
@@ -205,7 +218,10 @@ class VoucherController extends Controller
             ]);
         }
 
-        $customer = NguoiDung::where('vai_tro', 'khach_hang')->findOrFail($data['nguoi_dung_id']);
+        $customer = NguoiDung::where('vai_tro', 'khach_hang')
+            ->where('trang_thai_hoat_dong', true)
+            ->findOrFail($data['nguoi_dung_id']);
+
         $expiresAt = filled($data['ngay_het_han'] ?? null)
             ? Carbon::parse($data['ngay_het_han'])->endOfDay()
             : $voucher->ngay_het_han->copy()->endOfDay();
@@ -216,29 +232,81 @@ class VoucherController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($voucher, $customer, $data, $expiresAt) {
+        $issuedVouchers = DB::transaction(function () use ($voucher, $customer, $data, $expiresAt) {
+            $issued = collect();
+
             for ($i = 0; $i < (int) $data['quantity']; $i++) {
-                NguoiDungVoucher::create([
-                    'nguoi_dung_id' => $customer->id,
-                    'voucher_id' => $voucher->id,
-                    'ma_voucher_ca_nhan' => $this->personalCode($voucher),
-                    'loai_cap_phat' => $data['loai_cap_phat'],
-                    'nam_ap_dung' => now()->year,
-                    'da_su_dung' => false,
-                    'ngay_nhan' => now(),
-                    'ngay_het_han' => $expiresAt,
-                ]);
+                $issued->push(
+                    NguoiDungVoucher::create([
+                        'nguoi_dung_id' => $customer->id,
+                        'voucher_id' => $voucher->id,
+                        'ma_voucher_ca_nhan' => $this->personalCode($voucher),
+                        'loai_cap_phat' => $data['loai_cap_phat'],
+                        'ly_do_khac' => $data['loai_cap_phat'] === 'khac'
+                            ? ($data['ly_do_khac'] ?? null)
+                            : null,
+                        'nam_ap_dung' => now()->year,
+                        'da_su_dung' => false,
+                        'ngay_nhan' => now(),
+                        'ngay_het_han' => $expiresAt,
+                    ])
+                );
             }
+
+            ThongBaoCaNhan::create([
+                'nguoi_dung_id' => $customer->id,
+                'tieu_de' => 'Bạn vừa nhận được voucher ưu đãi',
+                'noi_dung' => sprintf(
+                    'CineHome vừa tặng bạn %d voucher "%s" trị giá giảm %sđ. Hạn dùng đến %s.',
+                    $issued->count(),
+                    $voucher->ten_voucher,
+                    number_format((float) $voucher->gia_tri_giam, 0, ',', '.'),
+                    $expiresAt->format('d/m/Y')
+                ),
+                'loai_thong_bao' => 'voucher',
+                'duong_dan' => route('user.voucher.my'),
+                'da_doc' => false,
+                'doc_luc' => null,
+            ]);
+
+            return $issued;
         });
+
+        $lyDoText = $data['loai_cap_phat'] === 'khac'
+            ? " — Lý do: {$data['ly_do_khac']}"
+            : '';
 
         $this->ghiNhatKy(
             $request,
             'Cấp voucher cho khách',
             'Khuyến mãi & Voucher',
-            "Cấp {$data['quantity']} voucher {$voucher->ma_voucher} cho {$customer->ho_ten}"
+            "Cấp {$data['quantity']} voucher {$voucher->ma_voucher} cho {$customer->ho_ten}{$lyDoText}"
         );
 
-        return back()->with('success', 'Đã cấp voucher cho khách hàng.');
+        try {
+            Mail::to($customer->email)
+                ->send(new VoucherDuocTangMail(
+                    $customer,
+                    $voucher,
+                    $issuedVouchers
+                ));
+        } catch (\Throwable $e) {
+            Log::error('Gửi email tặng voucher thất bại', [
+                'nguoi_dung_id' => $customer->id,
+                'email' => $customer->email,
+                'voucher_id' => $voucher->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->with('success', 'Đã cấp voucher và tạo thông báo cho khách hàng.')
+                ->with('warning', 'Voucher đã được cấp nhưng email thông báo gửi thất bại. Kiểm tra cấu hình Gmail/log hệ thống.');
+        }
+
+        return back()->with(
+            'success',
+            "Đã cấp {$issuedVouchers->count()} voucher cho {$customer->ho_ten}, tạo thông báo và gửi Gmail thành công."
+        );
     }
 
     public function destroyIssued(Request $request, NguoiDungVoucher $nguoiDungVoucher)

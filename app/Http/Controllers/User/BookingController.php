@@ -157,7 +157,7 @@ class BookingController extends Controller
                 'ten_phong' => 'Phong 1',
                 'ma_ghe' => $gheDuocChon->join(', '),
                 'thoi_gian_chieu' => $showtime->thoi_gian_chieu,
-                'tong_tien' => max(($gheDuocChon->count() * (float) $showtime->gia_ve) - $giamGia, 0),
+                'tong_tien' => max(($gheDuocChon->count() * (float) $showtime->gia_ve_cuoi_cung) - $giamGia, 0),
                 'loai_ve' => 'truc_tuyen',
                 'trang_thai' => 'da_thanh_toan',
                 'voucher_id' => $voucherCaNhan?->id,

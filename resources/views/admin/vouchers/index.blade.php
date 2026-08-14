@@ -183,10 +183,22 @@
                     </label>
                     <label class="voucher-field is-wide">
                         <span>Lý do cấp</span>
-                        <select name="loai_cap_phat" class="admin-input" required>
-                            <option value="admin_tang" @selected(old('loai_cap_phat', 'admin_tang') === 'admin_tang')>Admin tặng</option>
-                            <option value="khach_hang_than_thiet" @selected(old('loai_cap_phat') === 'khach_hang_than_thiet')>Khách hàng thân thiết</option>
-                        </select>
+                        <div class="voucher-select">
+                            <button type="button" class="voucher-select__trigger" id="lyDoCapTrigger">
+                                <span class="voucher-select__value">Admin tặng</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <select name="loai_cap_phat" id="lyDoCapSelect" class="hidden" required>
+                                <option value="admin_tang" @selected(old('loai_cap_phat', 'admin_tang') === 'admin_tang')>Admin tặng</option>
+                                <option value="khach_hang_than_thiet" @selected(old('loai_cap_phat') === 'khach_hang_than_thiet')>Khách hàng thân thiết</option>
+                                <option value="khac" @selected(old('loai_cap_phat') === 'khac')>Khác</option>
+                            </select>
+                        </div>
+                    </label>
+
+                    <label class="voucher-field is-wide {{ old('loai_cap_phat') === 'khac' ? '' : 'hidden' }}" id="lyDoKhacField">
+                        <span>Nhập lý do khác</span>
+                        <input type="text" name="ly_do_khac" value="{{ old('ly_do_khac') }}" class="admin-input" placeholder="VD: Bồi thường sự cố đặt vé">
                     </label>
                 </div>
 
@@ -807,6 +819,24 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('click', closeAllMenus);
     window.addEventListener('scroll', closeAllMenus, true);
     window.addEventListener('resize', closeAllMenus);
+
+    // 🌟 CHỌN "KHÁC" Ở LÝ DO CẤP -> HIỆN Ô NHẬP LÝ DO TỰ DO
+    const lyDoCapSelect = document.getElementById('lyDoCapSelect');
+    const lyDoKhacField = document.getElementById('lyDoKhacField');
+    const lyDoKhacInput = lyDoKhacField ? lyDoKhacField.querySelector('input[name="ly_do_khac"]') : null;
+
+    function applyLyDoCap() {
+        if (!lyDoCapSelect || !lyDoKhacField) return;
+        const isKhac = lyDoCapSelect.value === 'khac';
+        lyDoKhacField.classList.toggle('hidden', !isKhac);
+        if (lyDoKhacInput) lyDoKhacInput.required = isKhac;
+        if (!isKhac && lyDoKhacInput) lyDoKhacInput.value = '';
+    }
+
+    if (lyDoCapSelect) {
+        lyDoCapSelect.addEventListener('change', applyLyDoCap);
+        applyLyDoCap();
+    }
 });
 </script>
 @endpush

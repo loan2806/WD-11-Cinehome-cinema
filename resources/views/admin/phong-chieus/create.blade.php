@@ -127,6 +127,21 @@
 
             </div>
 
+            {{-- PHU THU VE THEO LOAI PHONG (chi doc, quan ly theo LOAI) --}}
+            <div>
+
+                <label class="mb-2 block text-sm font-medium text-gray-300">
+                    Phụ Thu Vé (VNĐ)
+                </label>
+
+                <div class="flex h-[50px] w-full items-center rounded-2xl border border-white/10 bg-[#151515]/60 px-4 text-[#f4c56a] font-bold">
+                    <span id="phuThuHienThi">{{ number_format($phuThuTheoLoai[old('loai_phong', '2d')] ?? 0) }}đ</span>
+                </div>
+
+                <small class="mt-1 block text-xs text-gray-500">Theo đúng mức đang cấu hình cho loại phòng đã chọn ở trên. Muốn đổi, vào "Giá theo phòng chiếu" — áp dụng cho mọi phòng cùng loại.</small>
+
+            </div>
+
             {{-- TRANG THAI --}}
             <div class="lg:col-span-2">
 
@@ -181,5 +196,23 @@
     </form>
 
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const loaiPhongSelect = document.getElementById('loai_phong');
+    const phuThuHienThi = document.getElementById('phuThuHienThi');
+    if (!loaiPhongSelect || !phuThuHienThi) return;
+
+    // Phụ thu HIỆN TẠI đang cấu hình cho từng loại phòng (trang "Giá theo phòng chiếu")
+    const phuThuTheoLoai = @json($phuThuTheoLoai);
+
+    loaiPhongSelect.addEventListener('change', function () {
+        const gia = phuThuTheoLoai[loaiPhongSelect.value];
+        phuThuHienThi.textContent = (gia !== undefined ? Number(gia) : 0).toLocaleString('vi-VN') + 'đ';
+    });
+});
+</script>
+@endpush
 
 @endsection

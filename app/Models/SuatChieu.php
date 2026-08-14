@@ -20,6 +20,7 @@ class SuatChieu extends Model
         'thoi_luong',
         'thoi_gian_ket_thuc',
         'gia_ve',
+        'gia_ve_tu_dong',
         'trang_thai',
     ];
 
@@ -28,6 +29,7 @@ class SuatChieu extends Model
         'thoi_gian_ket_thuc' => 'datetime',
         'thoi_luong' => 'integer',
         'gia_ve' => 'decimal:2',
+        'gia_ve_tu_dong' => 'boolean',
         'trang_thai' => 'string',
     ];
 
@@ -59,6 +61,23 @@ class SuatChieu extends Model
     public function phongChieu(): BelongsTo
     {
         return $this->belongsTo(PhongChieu::class, 'phong_chieu_id');
+    }
+
+    /**
+     * Giá vé CUỐI CÙNG dùng để đặt vé/hiển thị: nếu suất đang ở chế độ tự
+     * động, cộng SỐNG phụ thu hiện tại của phòng vào "gia_ve" (giá gốc ngày
+     * thường/cuối tuần) — nhờ vậy phòng đổi phụ thu là mọi suất chiếu (kể cả
+     * đã tạo trước đó) đều cập nhật giá ngay, không cần sửa lại từng suất.
+     * Nếu suất đã bị ghi đè giá tùy chỉnh, dùng đúng giá đã lưu, không cộng
+     * thêm phụ thu phòng.
+     */
+    public function getGiaVeCuoiCungAttribute(): float
+    {
+        if (! $this->gia_ve_tu_dong) {
+            return (float) $this->gia_ve;
+        }
+
+        return (float) $this->gia_ve + (float) ($this->phongChieu->phu_thu ?? 0);
     }
     public function veXemPhims(): HasMany
 {

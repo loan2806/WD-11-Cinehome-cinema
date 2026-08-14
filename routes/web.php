@@ -37,6 +37,7 @@ use App\Http\Controllers\DongBoDuLieuController;
 use App\Http\Controllers\HoSoController;
 use App\Http\Controllers\Staff\BanVeController;
 use App\Http\Controllers\Staff\LichSuVeController;
+use App\Http\Controllers\Staff\NotificationController as StaffNotificationController;
 use App\Http\Controllers\Staff\SoatVeController;
 use App\Http\Controllers\Staff\StaffDashboardController;
 use App\Http\Controllers\System\CaiDatThanhToanController;
@@ -233,6 +234,12 @@ Route::middleware(['auth'])
     ->group(function () {
         Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
 
+        // Thông báo cá nhân của nhân viên
+        Route::get('/notifications', [StaffNotificationController::class, 'index'])
+            ->name('notifications.index');
+        Route::post('/notifications/mark-all-read', [StaffNotificationController::class, 'markAllRead'])
+            ->name('notifications.mark-all-read');
+
         Route::get('/cham-congs', [\App\Http\Controllers\Staff\ChamCongController::class, 'index'])->name('cham-congs.index');
         Route::post('/cham-congs/check-in', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkIn'])->name('cham-congs.check-in');
         Route::post('/cham-congs/check-out', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkOut'])->name('cham-congs.check-out');
@@ -315,6 +322,9 @@ Route::middleware(['auth'])
             Route::post('phong-chieus/{phong_chieu}/create-seat', [AdminPhongChieuController::class, 'createSeat'])->name('phong-chieus.create-seat');
             Route::post('phong-chieus/{phong_chieu}/create-row', [AdminPhongChieuController::class, 'createRow'])->name('phong-chieus.create-row');
             Route::post('phong-chieus/{phongChieu}/schedule-row-maintenance', [AdminPhongChieuController::class, 'scheduleRowMaintenance'])->name('admin.phong-chieus.schedule-row-maintenance');
+
+            Route::get('loai-phong-gia', [\App\Http\Controllers\Admin\LoaiPhongGiaController::class, 'index'])->name('loai-phong-gia.index');
+            Route::put('loai-phong-gia', [\App\Http\Controllers\Admin\LoaiPhongGiaController::class, 'update'])->name('loai-phong-gia.update');
         });
 
         Route::middleware(['quyen:loai_ghe.xem'])->group(function () {
@@ -350,6 +360,10 @@ Route::middleware(['auth'])
         Route::middleware(['quyen:do_an.hoa_don'])->group(function () {
             Route::get('/food-invoices', [FoodInvoiceController::class, 'index'])->name('food-invoices.index');
             Route::post('/food-invoices', [FoodInvoiceController::class, 'store'])->name('food-invoices.store');
+            Route::get('/food-invoices/{foodInvoice}/print', [FoodInvoiceController::class, 'print'])->name('food-invoices.print');
+            Route::get('/food-invoices/{foodInvoice}/vietqr-waiting', [FoodInvoiceController::class, 'vietQrWaiting'])->name('food-invoices.vietqr-waiting');
+            Route::get('/food-invoices/{foodInvoice}/vietqr-status', [FoodInvoiceController::class, 'vietQrStatus'])->name('food-invoices.vietqr-status');
+            Route::post('/food-invoices/{foodInvoice}/vietqr-cancel', [FoodInvoiceController::class, 'cancelPendingVietQr'])->name('food-invoices.vietqr-cancel');
             Route::patch('/food-invoices/{foodInvoice}/status', [FoodInvoiceController::class, 'updateStatus'])->name('food-invoices.update-status');
             Route::delete('/food-invoices/{foodInvoice}', [FoodInvoiceController::class, 'destroy'])->name('food-invoices.destroy');
         });
