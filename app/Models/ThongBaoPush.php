@@ -6,10 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-
+use Illuminate\Database\Eloquent\SoftDeletes;
 class ThongBaoPush extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'thong_bao_pushs';
 
@@ -18,9 +18,11 @@ class ThongBaoPush extends Model
         'noi_dung',
         'loai',
         'doi_tuong_nhan',
+        'hang_thanh_vien',
         'nguoi_tao_id',
         'trang_thai',
         'thoi_gian_gui',
+
     ];
 
     protected $casts = [
@@ -41,5 +43,14 @@ class ThongBaoPush extends Model
     public function nguoiDungs(): HasMany
     {
         return $this->hasMany(ThongBaoPushNguoiDung::class, 'thong_bao_push_id');
+    }
+    public function nguoiNhans()
+    {
+        return $this->belongsToMany(
+            NguoiDung::class,
+            'thong_bao_push_nguoi_dungs',
+            'thong_bao_push_id',
+            'nguoi_dung_id'
+        );
     }
 }

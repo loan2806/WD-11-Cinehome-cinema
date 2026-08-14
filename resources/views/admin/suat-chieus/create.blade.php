@@ -211,18 +211,6 @@
 <div class="showtime-create-page">
     @include('admin.partials.flash')
 
-    @if ($errors->any())
-        <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; padding: 16px; margin-bottom: 20px; color: #f87171;">
-            <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; margin-bottom: 8px;">
-                <i class="fa-solid fa-circle-exclamation"></i> Vui lòng kiểm tra lại thông tin nhập liệu:
-            </div>
-            <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
 
     <section class="showtime-hero-panel">
         <div>

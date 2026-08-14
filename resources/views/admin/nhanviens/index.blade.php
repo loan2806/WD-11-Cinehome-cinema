@@ -103,11 +103,59 @@ request('status'),
                     placeholder="Tìm theo tên hoặc email...">
             </label>
 
-            <select name="status" class="admin-input">
-                <option value="">Tất cả trạng thái</option>
-                <option value="active" @selected(request('status')==='active' )>Đang hoạt động</option>
-                <option value="locked" @selected(request('status')==='locked' )>Đã khóa</option>
-            </select>
+            <div class="staff-status-dropdown" data-dropdown>
+                <input
+                    type="hidden"
+                    name="status"
+                    value="{{ request('status') }}"
+                    data-dropdown-value>
+
+                <button
+                    type="button"
+                    class="staff-dropdown-trigger"
+                    data-dropdown-trigger>
+                    <span class="staff-dropdown-current">
+                        @if(request('status') === 'active')
+                        <i class="fa-solid fa-circle-check status-active-icon"></i>
+                        <span>Đang hoạt động</span>
+                        @elseif(request('status') === 'locked')
+                        <i class="fa-solid fa-lock status-locked-icon"></i>
+                        <span>Đã khóa</span>
+                        @else
+                        <i class="fa-solid fa-filter status-all-icon"></i>
+                        <span>Tất cả trạng thái</span>
+                        @endif
+                    </span>
+
+                    <i class="fa-solid fa-chevron-down staff-dropdown-arrow"></i>
+                </button>
+
+                <div class="staff-dropdown-menu" data-dropdown-menu>
+                    <button
+                        type="button"
+                        class="staff-dropdown-option {{ !request('status') ? 'is-selected' : '' }}"
+                        data-value="">
+                        <i class="fa-solid fa-filter status-all-icon"></i>
+                        <span>Tất cả trạng thái</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="staff-dropdown-option {{ request('status') === 'active' ? 'is-selected' : '' }}"
+                        data-value="active">
+                        <i class="fa-solid fa-circle-check status-active-icon"></i>
+                        <span>Đang hoạt động</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="staff-dropdown-option {{ request('status') === 'locked' ? 'is-selected' : '' }}"
+                        data-value="locked">
+                        <i class="fa-solid fa-lock status-locked-icon"></i>
+                        <span>Đã khóa</span>
+                    </button>
+                </div>
+            </div>
 
             <button class="staff-list-filter-btn" type="submit">
                 <i class="fa-solid fa-filter"></i>
@@ -265,3 +313,137 @@ request('status'),
     </section>
 </div>
 @endsection
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('[data-dropdown]').forEach(function (dropdown) {
+
+        const trigger = dropdown.querySelector('[data-dropdown-trigger]');
+        const menu = dropdown.querySelector('[data-dropdown-menu]');
+        const hiddenInput = dropdown.querySelector('[data-dropdown-value]');
+
+        if (!trigger || !menu) return;
+
+        function calculateDirection() {
+
+            dropdown.classList.remove('dropdown-up', 'dropdown-down');
+
+            const triggerRect = trigger.getBoundingClientRect();
+
+            const menuHeight = menu.scrollHeight || 160;
+
+            const spaceBelow =
+                window.innerHeight - triggerRect.bottom;
+
+            const spaceAbove =
+                triggerRect.top;
+
+            /*
+             * Nếu phía dưới không đủ:
+             * -> xổ lên
+             *
+             * Nếu phía dưới đủ:
+             * -> xổ xuống
+             */
+            if (
+                spaceBelow < menuHeight + 15 &&
+                spaceAbove > spaceBelow
+            ) {
+                dropdown.classList.add('dropdown-up');
+            } else {
+                dropdown.classList.add('dropdown-down');
+            }
+        }
+
+        function openDropdown() {
+
+            calculateDirection();
+
+            dropdown.classList.add('is-open');
+
+            // Tính lại sau khi menu hiện
+            requestAnimationFrame(function () {
+                calculateDirection();
+            });
+        }
+
+        function closeDropdown() {
+            dropdown.classList.remove('is-open');
+        }
+
+        trigger.addEventListener('click', function (e) {
+
+            e.stopPropagation();
+
+            if (dropdown.classList.contains('is-open')) {
+                closeDropdown();
+            } else {
+                // Đóng dropdown khác
+                document.querySelectorAll('[data-dropdown].is-open')
+                    .forEach(function (other) {
+                        if (other !== dropdown) {
+                            other.classList.remove('is-open');
+                        }
+                    });
+
+                openDropdown();
+            }
+        });
+
+        menu.querySelectorAll('[data-value]').forEach(function (option) {
+
+            option.addEventListener('click', function (e) {
+
+                e.stopPropagation();
+
+                const value = this.dataset.value;
+
+                const icon = this.querySelector('i')?.outerHTML || '';
+                const text = this.querySelector('span')?.textContent.trim() || '';
+
+                hiddenInput.value = value;
+
+                dropdown.querySelector('.staff-dropdown-current').innerHTML =
+                    icon + '<span>' + text + '</span>';
+
+                menu.querySelectorAll('.staff-dropdown-option')
+                    .forEach(function (item) {
+                        item.classList.remove('is-selected');
+                    });
+
+                this.classList.add('is-selected');
+
+                closeDropdown();
+            });
+        });
+
+        // Click ra ngoài
+        document.addEventListener('click', function (e) {
+
+            if (!dropdown.contains(e.target)) {
+                closeDropdown();
+            }
+
+        });
+
+        // Scroll / resize thì tính lại vị trí
+        window.addEventListener('resize', function () {
+
+            if (dropdown.classList.contains('is-open')) {
+                calculateDirection();
+            }
+
+        });
+
+        window.addEventListener('scroll', function () {
+
+            if (dropdown.classList.contains('is-open')) {
+                calculateDirection();
+            }
+
+        }, true);
+
+    });
+
+});
+</script>

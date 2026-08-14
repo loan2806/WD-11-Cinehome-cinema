@@ -9,6 +9,8 @@ use App\Traits\Loggable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Models\FoodInvoice;
+use App\Models\VeXemPhim;
 
 class NhanVienController extends Controller
 {
@@ -216,15 +218,23 @@ class NhanVienController extends Controller
     public function forceDelete(Request $request, $id)
     {
         $nhanvien = NguoiDung::onlyTrashed()
+            ->where('vai_tro', 'nhan_vien')
             ->findOrFail($id);
 
-        $daLamViec =
-            $nhanvien->hoaDons()->exists()
-            || $nhanvien->veXemPhims()->exists()
-            || $nhanvien->chamCongs()->exists()
-            || $nhanvien->bangLuongs()->exists();
+        // Kiểm tra dữ liệu vé do nhân viên bán tại quầy
+        $daBanVe = VeXemPhim::where(
+            'nhan_vien_id',
+            $nhanvien->id
+        )->exists();
 
-        if ($daLamViec) {
+        // Kiểm tra hóa đơn đồ ăn do nhân viên tạo
+        $daTaoHoaDon = FoodInvoice::where(
+            'user_id',
+            $nhanvien->id
+        )->exists();
+
+        // Đã phát sinh dữ liệu => KHÔNG được xóa vĩnh viễn
+        if ($daBanVe || $daTaoHoaDon) {
             return back()->with(
                 'error',
                 'Không thể xóa vĩnh viễn vì nhân viên đã phát sinh dữ liệu.'
@@ -233,6 +243,7 @@ class NhanVienController extends Controller
 
         $ten = $nhanvien->ho_ten;
 
+        // Chưa phát sinh dữ liệu => cho phép xóa vĩnh viễn
         $nhanvien->forceDelete();
 
         AdminNotificationService::push(
@@ -254,35 +265,35 @@ class NhanVienController extends Controller
         );
     }
 
-  public function trash(Request $request)
-{
-    $query = NguoiDung::onlyTrashed()
-        ->where('vai_tro', 'nhan_vien');
+    public function trash(Request $request)
+    {
+        $query = NguoiDung::onlyTrashed()
+            ->where('vai_tro', 'nhan_vien');
 
-    if ($request->filled('keyword')) {
-        $keyword = trim($request->keyword);
+        if ($request->filled('keyword')) {
+            $keyword = trim($request->keyword);
 
-        $query->where(function ($q) use ($keyword) {
-            $q->where('ho_ten', 'like', "%{$keyword}%")
-              ->orWhere('email', 'like', "%{$keyword}%");
-        });
+            $query->where(function ($q) use ($keyword) {
+                $q->where('ho_ten', 'like', "%{$keyword}%")
+                    ->orWhere('email', 'like', "%{$keyword}%");
+            });
+        }
+
+        if ($request->filled('deleted_from')) {
+            $query->whereDate('deleted_at', '>=', $request->deleted_from);
+        }
+
+        if ($request->filled('deleted_to')) {
+            $query->whereDate('deleted_at', '<=', $request->deleted_to);
+        }
+
+        $nhanViens = $query
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.nhanviens.trash', compact('nhanViens'));
     }
-
-    if ($request->filled('deleted_from')) {
-        $query->whereDate('deleted_at', '>=', $request->deleted_from);
-    }
-
-    if ($request->filled('deleted_to')) {
-        $query->whereDate('deleted_at', '<=', $request->deleted_to);
-    }
-
-    $nhanViens = $query
-        ->latest('deleted_at')
-        ->paginate(10)
-        ->withQueryString();
-
-    return view('admin.nhanviens.trash', compact('nhanViens'));
-}
 
     public function toggleStatus(Request $request, NguoiDung $nhanvien)
     {

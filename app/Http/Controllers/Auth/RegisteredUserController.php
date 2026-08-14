@@ -75,6 +75,11 @@ class RegisteredUserController extends Controller
 
             'trang_thai_hoat_dong' => true,
 
+            'bat_buoc_xac_thuc_email' => false,
+
+            // Vẫn chưa xác thực email
+            'email_verified_at' => null,
+
         ]);
 
 

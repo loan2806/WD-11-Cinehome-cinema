@@ -11,7 +11,9 @@ use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\HoaDon;
 
-class NguoiDung extends Authenticatable
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+class NguoiDung extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable, HasRoles , SoftDeletes;
 
@@ -20,6 +22,8 @@ class NguoiDung extends Authenticatable
     protected $fillable = [
         'ho_ten',
         'email',
+        'email_verified_at',
+        'bat_buoc_xac_thuc_email',
         'ngay_sinh',
         'mat_khau',
         'vai_tro',
@@ -39,6 +43,7 @@ class NguoiDung extends Authenticatable
         'ngay_sinh' => 'date',
         'mat_khau' => 'hashed',
         'trang_thai_hoat_dong' => 'boolean',
+        'bat_buoc_xac_thuc_email' => 'boolean',
     ];
 
     /**
@@ -138,4 +143,5 @@ public function hoaDons()
 {
     $this->notify(new ResetPasswordNotification($token));
 }
+
 }

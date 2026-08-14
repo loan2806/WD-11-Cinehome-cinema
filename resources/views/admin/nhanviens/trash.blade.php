@@ -147,7 +147,7 @@
                     <td>
                         <span class="staff-status is-locked">
                             <i class="fa-solid fa-trash"></i>
-                            Xóa mềm 
+                            Xóa mềm
                         </span>
                     </td>
 
@@ -161,18 +161,7 @@
                     <td>
                         <div class="staff-actions">
 
-                            {{-- Khôi phục --}}
-                            <form method="POST"
-                                action="{{ route('admin.nhanviens.restore', $nhanVien->id) }}">
-                                @csrf
-
-                                <button
-                                    type="submit"
-                                    class="staff-action-btn is-unlock"
-                                    title="Khôi phục">
-                                    <i class="fa-solid fa-rotate-left"></i>
-                                </button>
-                            </form>
+                            <form method="POST" action="{{ route('admin.nhanviens.restore', $nhanVien->id) }}" onsubmit="return confirm('Bạn có chắc muốn khôi phục nhân viên {{ addslashes($nhanVien->ho_ten) }}?')"> @csrf <button type="submit" class="staff-action-btn is-unlock" title="Khôi phục"> <i class="fa-solid fa-rotate-left"></i> </button> </form>
 
                             {{-- Xóa vĩnh viễn --}}
                             <form method="POST"
