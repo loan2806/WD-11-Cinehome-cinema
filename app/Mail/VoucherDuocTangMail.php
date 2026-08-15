@@ -18,15 +18,18 @@ class VoucherDuocTangMail extends Mailable
     public NguoiDung $customer;
     public Voucher $voucher;
     public Collection $issuedVouchers;
+    public string $lyDoNhan;
 
     public function __construct(
         NguoiDung $customer,
         Voucher $voucher,
-        Collection $issuedVouchers
+        Collection $issuedVouchers,
+        string $lyDoNhan
     ) {
         $this->customer = $customer;
         $this->voucher = $voucher;
         $this->issuedVouchers = $issuedVouchers;
+        $this->lyDoNhan = $lyDoNhan;
     }
 
     public function envelope(): Envelope

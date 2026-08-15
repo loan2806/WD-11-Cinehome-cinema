@@ -10,7 +10,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-
 /*
 |--------------------------------------------------------------------------
 | Xóa nhật ký hoạt động cũ
@@ -18,21 +17,14 @@ Artisan::command('inspire', function () {
 */
 
 Artisan::command('nhatky:clear', function () {
-
     $deleted = NhatKyHoatDongHeThong::where(
         'created_at',
         '<',
         now()->subDays(30)
     )->delete();
 
-    $this->info(
-        "Đã xóa {$deleted} bản ghi nhật ký cũ."
-    );
-
-})->purpose(
-    'Xóa các bản ghi nhật ký hoạt động cũ hơn 30 ngày'
-);
-
+    $this->info("Đã xóa {$deleted} bản ghi nhật ký cũ.");
+})->purpose('Xóa các bản ghi nhật ký hoạt động cũ hơn 30 ngày');
 
 /*
 |--------------------------------------------------------------------------
@@ -41,23 +33,17 @@ Artisan::command('nhatky:clear', function () {
 */
 
 Artisan::command('diem:het-han', function () {
-
     $cacKhoanDiem = LichSuDiem::with('thanhVien')
         ->where('loai_giao_dich', 'cong_diem')
         ->where('diem_con_lai', '>', 0)
         ->whereNotNull('ngay_het_han')
-        ->where(
-            'ngay_het_han',
-            '<=',
-            now()
-        )
+        ->where('ngay_het_han', '<=', now())
         ->get();
 
     $tongDiemHetHan = 0;
     $soKhoanDiem = 0;
 
     foreach ($cacKhoanDiem as $lichSuDiem) {
-
         $thanhVien = $lichSuDiem->thanhVien;
 
         if (!$thanhVien) {
@@ -70,45 +56,21 @@ Artisan::command('diem:het-han', function () {
             continue;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Trừ điểm hiện tại
-        |--------------------------------------------------------------------------
-        */
-
         $soDiemTru = min(
             $soDiemHetHan,
-            $thanhVien->diem_hien_tai
+            (int) $thanhVien->diem_hien_tai
         );
 
         if ($soDiemTru > 0) {
-
-            $thanhVien->decrement(
-                'diem_hien_tai',
-                $soDiemTru
-            );
-
+            $thanhVien->decrement('diem_hien_tai', $soDiemTru);
             $tongDiemHetHan += $soDiemTru;
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Đánh dấu khoản điểm đã hết hạn
-        |--------------------------------------------------------------------------
-        */
 
         $lichSuDiem->update([
             'diem_con_lai' => 0,
         ]);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Cập nhật lại hạng
-        |--------------------------------------------------------------------------
-        */
-
         $thanhVien->refresh();
-
         $thanhVien->capNhatHangThanhVien();
 
         $soKhoanDiem++;
@@ -117,11 +79,7 @@ Artisan::command('diem:het-han', function () {
     $this->info(
         "Đã xử lý {$soKhoanDiem} khoản điểm hết hạn, tổng cộng {$tongDiemHetHan} điểm."
     );
-
-})->purpose(
-    'Tự động xử lý các khoản điểm thành viên đã hết hạn'
-);
-
+})->purpose('Tự động xử lý các khoản điểm thành viên đã hết hạn');
 
 /*
 |--------------------------------------------------------------------------
@@ -132,10 +90,19 @@ Artisan::command('diem:het-han', function () {
 Schedule::command('voucher:tang-sinh-nhat')
     ->dailyAt('00:01');
 
+Schedule::command('diem:het-han')
+    ->dailyAt('00:05');
 
 Schedule::command('nhatky:clear')
     ->dailyAt('02:00');
 
-
-Schedule::command('diem:het-han')
-    ->dailyAt('00:05');
+/*
+|--------------------------------------------------------------------------
+| Tự động hết hạn VietQR tại quầy
+|--------------------------------------------------------------------------
+| Command này đã có trong App\Console\Commands\HetHanVietQrStaff:
+| staff:vietqr-het-han
+*/
+Schedule::command('staff:vietqr-het-han')
+    ->everyMinute()
+    ->withoutOverlapping();

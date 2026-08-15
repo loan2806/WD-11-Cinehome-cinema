@@ -272,6 +272,13 @@ class VoucherController extends Controller
             return $issued;
         });
 
+        $lyDoNhan = match ($data['loai_cap_phat']) {
+            'admin_tang' => 'Admin tặng voucher ưu đãi.',
+            'khach_hang_than_thiet' => 'Ưu đãi dành cho khách hàng thân thiết.',
+            'khac' => trim((string) ($data['ly_do_khac'] ?? '')),
+            default => 'Voucher ưu đãi từ CineHome.',
+        };
+
         $lyDoText = $data['loai_cap_phat'] === 'khac'
             ? " — Lý do: {$data['ly_do_khac']}"
             : '';
@@ -288,7 +295,8 @@ class VoucherController extends Controller
                 ->send(new VoucherDuocTangMail(
                     $customer,
                     $voucher,
-                    $issuedVouchers
+                    $issuedVouchers,
+                    $lyDoNhan
                 ));
         } catch (\Throwable $e) {
             Log::error('Gửi email tặng voucher thất bại', [

@@ -28,7 +28,6 @@ class LienHeController extends Controller
 
     public function index(Request $request)
     {
-        // 🌟 Kiểm tra quyền xem danh sách liên hệ
         if (! \coQuyen('lien_he.xem')) {
             return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền xem Danh sách liên hệ!');
         }
@@ -336,7 +335,6 @@ class LienHeController extends Controller
 
     public function destroy(Request $request, LienHe $lienHe)
     {
-        // 🌟 Kiểm tra quyền xóa liên hệ
         if (! \coQuyen('lien_he.xoa')) {
             return back()->with('error', 'Tài khoản của bạn không có quyền xóa liên hệ!');
         }
@@ -344,8 +342,15 @@ class LienHeController extends Controller
         $id = $lienHe->id;
         $lienHe->delete();
 
-        $this->ghiNhatKy($request, 'Xóa liên hệ khách hàng', 'Quản lý liên hệ', "Xóa liên hệ #{$id}");
+        $this->ghiNhatKy(
+            $request,
+            'Xóa liên hệ khách hàng',
+            'Quản lý liên hệ',
+            "Xóa liên hệ #{$id}"
+        );
 
-        return redirect()->route('admin.lien-he.index')->with('success', 'Đã xóa liên hệ.');
+        return redirect()
+            ->route('admin.lien-he.index')
+            ->with('success', 'Đã xóa liên hệ.');
     }
 }

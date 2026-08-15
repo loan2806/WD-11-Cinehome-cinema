@@ -478,7 +478,7 @@
 
             {{-- LỊCH SỬ --}}
             <a
-                href="{{ route('staff.lich-su-ve.index') }}"
+                href="{{ route('admin.ve-xem-phims.index') }}"
                 class="flex items-center justify-center
                        gap-2 rounded-2xl border
                        border-white/15 bg-white/5

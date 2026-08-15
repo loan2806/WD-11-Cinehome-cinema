@@ -129,6 +129,18 @@
 
             notifyBox.addEventListener('click', function(event) {
                 event.stopPropagation();
+
+                const notificationItem = event.target.closest('[data-notification-url]');
+
+                if (!notificationItem) {
+                    return;
+                }
+
+                const url = notificationItem.dataset.notificationUrl;
+
+                if (url) {
+                    window.location.href = url;
+                }
             });
         }
 
@@ -145,6 +157,119 @@
         });
     });
 </script>
+
+
+{{-- STAFF NOTIFICATION REALTIME POLLING --}}
+@if(($isStaff ?? false))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const bellBtn = document.getElementById('bellBtn');
+        const notifyBox = document.getElementById('notifyBox');
+
+        if (!bellBtn || !notifyBox) {
+            return;
+        }
+
+        const latestUrl = @json(route('staff.notifications.latest'));
+        const allNotificationsUrl = @json(route('staff.notifications.index'));
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value ?? '';
+            return div.innerHTML;
+        }
+
+        function refreshStaffNotifications() {
+            fetch(latestUrl, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Không tải được thông báo nhân viên.');
+                }
+
+                return response.json();
+            })
+            .then(function(data) {
+                const unread = Number(data.unread || 0);
+                let badge = document.getElementById('notifyBadge');
+
+                if (unread > 0) {
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.id = 'notifyBadge';
+                        badge.className = 'absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold';
+                        bellBtn.appendChild(badge);
+                    }
+
+                    badge.textContent = unread > 99 ? '99+' : unread;
+                } else if (badge) {
+                    badge.remove();
+                }
+
+                const unreadText = notifyBox.querySelector('.admin-notify-head small');
+
+                if (unreadText) {
+                    unreadText.textContent = unread + ' thông báo chưa đọc';
+                }
+
+                const list = notifyBox.querySelector('.admin-notify-list');
+
+                if (!list) {
+                    return;
+                }
+
+                if (!Array.isArray(data.items) || data.items.length === 0) {
+                    list.innerHTML = `
+                        <div class="admin-notify-empty">
+                            <span style="font-size:24px; color: var(--cinema-gold);">
+                                <i class="fa-regular fa-bell"></i>
+                            </span>
+                            <strong>Không có thông báo</strong>
+                            <span>Hệ thống đang yên ổn.</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = data.items.map(function(item) {
+                    const url = item.duong_dan || allNotificationsUrl;
+                    const unreadClass = item.da_doc ? '' : 'is-unread';
+
+                    return `
+                        <article
+                            class="admin-notify-item ${unreadClass}"
+                            data-notification-url="${escapeHtml(url)}"
+                            style="cursor:pointer;"
+                        >
+                            <span class="admin-notify-icon">
+                                <i class="fa-solid fa-bell"></i>
+                            </span>
+
+                            <div class="admin-notify-content">
+                                <strong>${escapeHtml(item.tieu_de)}</strong>
+                                <p>${escapeHtml(item.noi_dung)}</p>
+                                <time>${escapeHtml(item.created_human)}</time>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            })
+            .catch(function(error) {
+                console.log('Staff notification polling error:', error);
+            });
+        }
+
+        refreshStaffNotifications();
+        window.setInterval(refreshStaffNotifications, 15000);
+    });
+</script>
+@endif
 
 <body class="overflow-x-hidden bg-[#080808] text-white">
     @include('components.preloader')
@@ -539,7 +664,13 @@
 
                                 <div class="admin-notify-list">
                                     @forelse($layoutNotifications as $item)
-                                    <article class="admin-notify-item {{ $item->da_doc ? '' : 'is-unread' }}">
+                                    <article
+                                        class="admin-notify-item {{ $item->da_doc ? '' : 'is-unread' }}"
+                                        @if($isStaff && !empty($item->duong_dan))
+                                            data-notification-url="{{ $item->duong_dan }}"
+                                            style="cursor: pointer;"
+                                        @endif
+                                    >
                                         <span class="admin-notify-icon">
                                             {!! $bellSvg !!}
                                         </span>

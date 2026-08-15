@@ -16,6 +16,7 @@ use PayOS\PayOS;
 use App\Models\BienTheDoAn;
 use App\Models\VeXemPhimGhe;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Models\ThongBaoCaNhan;
 
 class BanVeController extends Controller
 {
@@ -44,8 +45,8 @@ class BanVeController extends Controller
     }
 
     public function show(SuatChieu $suatChieu)
-{
-    $this->expirePendingTickets($suatChieu->id);
+    {
+        $this->expirePendingTickets($suatChieu->id);
 
     $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu']);
 
@@ -117,11 +118,11 @@ class BanVeController extends Controller
         ];
     }
 
-    return view('staff.ban-ve.show', [
-        'suatChieu' => $suatChieu,
-        'gheTheoHang' => $gheTheoHang,
-    ]);
-}
+        return view('staff.ban-ve.show', [
+            'suatChieu' => $suatChieu,
+            'gheTheoHang' => $gheTheoHang,
+        ]);
+    }
 
     public function food(Request $request, SuatChieu $suatChieu)
     {
@@ -1144,6 +1145,18 @@ class BanVeController extends Controller
             $ve = $result['ve'];
             $changeAmount = $result['change_amount'];
 
+            $this->taoThongBaoStaff(
+                'Bán vé thành công',
+                'Đã bán vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế: ' . $ve->ma_ghe
+                    . ' - Tổng tiền: '
+                    . number_format($ve->tong_tien, 0, ',', '.')
+                    . 'đ.',
+                've',
+                route('staff.ban-ve.success', ['id' => $ve->id])
+            );
+
             session()->flash(
                 'clear_food_cart_key',
                 $request->input(
@@ -1248,6 +1261,17 @@ class BanVeController extends Controller
                     'thoi_gian_het_han' => null,
                 ]);
                 $this->cancelPayosLinkSilently($ve, 'Het thoi gian giu ghe');
+
+                $this->taoThongBaoVeMotLan(
+                    $ve,
+                    'Giao dịch VietQR hết hạn',
+                    'Giao dịch VietQR của vé ' . $ve->ma_ve
+                        . ' - Phim: ' . $ve->ten_phim
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã hết thời gian thanh toán. Ghế đã được giải phóng.',
+                    've',
+                    route('staff.ban-ve.show', $ve->suat_chieu_id)
+                );
             }
 
             return response()->json([
@@ -1263,6 +1287,18 @@ class BanVeController extends Controller
             if ($payosStatus === 'PAID') {
                 $ve = $this->finalizePaidVietQr($ve);
 
+                $this->taoThongBaoVeMotLan(
+                    $ve,
+                    'Thanh toán VietQR thành công',
+                    'Vé ' . $ve->ma_ve
+                        . ' - Phim: ' . $ve->ten_phim
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã thanh toán VietQR thành công - Tổng tiền: '
+                        . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
+                    've',
+                    route('staff.ban-ve.success', ['id' => $ve->id])
+                );
+
                 return response()->json([
                     'success' => true,
                     'status' => 'PAID',
@@ -1275,6 +1311,16 @@ class BanVeController extends Controller
                     'trang_thai' => 'da_huy',
                     'thoi_gian_het_han' => null,
                 ]);
+
+                $this->taoThongBaoVeMotLan(
+                    $ve,
+                    'Giao dịch VietQR đã hủy',
+                    'Giao dịch VietQR của vé ' . $ve->ma_ve
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã bị hủy. Ghế đã được giải phóng.',
+                    've',
+                    route('staff.ban-ve.show', $ve->suat_chieu_id)
+                );
 
                 return response()->json([
                     'success' => true,
@@ -1325,6 +1371,16 @@ class BanVeController extends Controller
                 'trang_thai' => 'da_huy',
                 'thoi_gian_het_han' => null,
             ]);
+
+            $this->taoThongBaoVeMotLan(
+                $ve,
+                'Đã hủy giao dịch VietQR',
+                'Nhân viên đã hủy giao dịch VietQR của vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế: ' . $ve->ma_ghe . '. Ghế đã được giải phóng.',
+                've',
+                route('staff.ban-ve.show', $ve->suat_chieu_id)
+            );
         }
 
         return redirect()
@@ -1338,10 +1394,10 @@ class BanVeController extends Controller
 
         $ve = $orderCode > 0
             ? VeXemPhim::query()
-                ->where('loai_ve', 'tai_quay')
-                ->where('payment_method', 'vietqr')
-                ->where('payos_order_code', $orderCode)
-                ->first()
+            ->where('loai_ve', 'tai_quay')
+            ->where('payment_method', 'vietqr')
+            ->where('payos_order_code', $orderCode)
+            ->first()
             : null;
 
         if (!$ve) {
@@ -1356,6 +1412,18 @@ class BanVeController extends Controller
             if ($status === 'PAID') {
                 $ve = $this->finalizePaidVietQr($ve);
 
+                $this->taoThongBaoVeMotLan(
+                    $ve,
+                    'Thanh toán VietQR thành công',
+                    'Vé ' . $ve->ma_ve
+                        . ' - Phim: ' . $ve->ten_phim
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã thanh toán VietQR thành công - Tổng tiền: '
+                        . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
+                    've',
+                    route('staff.ban-ve.success', ['id' => $ve->id])
+                );
+
                 return redirect()
                     ->route('staff.ban-ve.success', ['id' => $ve->id])
                     ->with('success', 'Thanh toán VietQR thành công. Mã vé: ' . $ve->ma_ve);
@@ -1366,6 +1434,16 @@ class BanVeController extends Controller
                     'trang_thai' => 'da_huy',
                     'thoi_gian_het_han' => null,
                 ]);
+
+                $this->taoThongBaoVeMotLan(
+                    $ve,
+                    'Giao dịch VietQR đã hủy',
+                    'Giao dịch VietQR của vé ' . $ve->ma_ve
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã bị hủy. Ghế đã được giải phóng.',
+                    've',
+                    route('staff.ban-ve.show', $ve->suat_chieu_id)
+                );
 
                 return redirect()
                     ->route('staff.ban-ve.show', $ve->suat_chieu_id)
@@ -1384,10 +1462,10 @@ class BanVeController extends Controller
 
         $ve = $orderCode > 0
             ? VeXemPhim::query()
-                ->where('loai_ve', 'tai_quay')
-                ->where('payment_method', 'vietqr')
-                ->where('payos_order_code', $orderCode)
-                ->first()
+            ->where('loai_ve', 'tai_quay')
+            ->where('payment_method', 'vietqr')
+            ->where('payos_order_code', $orderCode)
+            ->first()
             : null;
 
         if (!$ve) {
@@ -1399,6 +1477,18 @@ class BanVeController extends Controller
         try {
             if ($this->getPayosStatus($ve) === 'PAID') {
                 $ve = $this->finalizePaidVietQr($ve);
+
+                $this->taoThongBaoVeMotLan(
+                    $ve,
+                    'Thanh toán VietQR thành công',
+                    'Vé ' . $ve->ma_ve
+                        . ' - Phim: ' . $ve->ten_phim
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã thanh toán VietQR thành công - Tổng tiền: '
+                        . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
+                    've',
+                    route('staff.ban-ve.success', ['id' => $ve->id])
+                );
 
                 return redirect()
                     ->route('staff.ban-ve.success', ['id' => $ve->id])
@@ -1413,6 +1503,16 @@ class BanVeController extends Controller
                 'trang_thai' => 'da_huy',
                 'thoi_gian_het_han' => null,
             ]);
+
+            $this->taoThongBaoVeMotLan(
+                $ve,
+                'Giao dịch VietQR đã hủy',
+                'Giao dịch VietQR của vé ' . $ve->ma_ve
+                    . ' - Ghế: ' . $ve->ma_ghe
+                    . ' đã được hủy. Ghế đã được giải phóng.',
+                've',
+                route('staff.ban-ve.show', $ve->suat_chieu_id)
+            );
         }
 
         return redirect()
@@ -1460,6 +1560,17 @@ class BanVeController extends Controller
             $ve->update([
                 'trang_thai' => 'da_in',
             ]);
+
+            $this->taoThongBaoVeMotLan(
+                $ve,
+                'In vé thành công',
+                'Vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế: ' . $ve->ma_ghe
+                    . ' đã được in/phát hành.',
+                've',
+                route('staff.ban-ve.success', ['id' => $ve->id])
+            );
         }
 
         return response()->json([
@@ -1551,7 +1662,7 @@ class BanVeController extends Controller
             ])
             ->get(
                 'https://api-merchant.payos.vn/v2/payment-requests/'
-                . $ve->payos_order_code
+                    . $ve->payos_order_code
             );
 
         if (!$response->successful()) {
@@ -1578,8 +1689,8 @@ class BanVeController extends Controller
                 ])
                 ->post(
                     'https://api-merchant.payos.vn/v2/payment-requests/'
-                    . $ve->payos_order_code
-                    . '/cancel',
+                        . $ve->payos_order_code
+                        . '/cancel',
                     ['cancellationReason' => $reason]
                 );
         } catch (\Throwable $e) {
@@ -1604,7 +1715,7 @@ class BanVeController extends Controller
             }
 
             $seatCodes = collect(explode(',', (string) $ve->ma_ghe))
-                ->map(fn ($seat) => strtoupper(trim($seat)))
+                ->map(fn($seat) => strtoupper(trim($seat)))
                 ->filter()
                 ->unique()
                 ->values();
@@ -1614,7 +1725,11 @@ class BanVeController extends Controller
                 ->where('id', '!=', $ve->id)
                 ->where(function ($query) {
                     $query->whereIn('trang_thai', [
-                        'dang_giu', 'da_dat', 'da_thanh_toan', 'da_in', 'da_su_dung',
+                        'dang_giu',
+                        'da_dat',
+                        'da_thanh_toan',
+                        'da_in',
+                        'da_su_dung',
                     ])->orWhere(function ($pendingQuery) {
                         $pendingQuery
                             ->where('trang_thai', 'cho_thanh_toan')
@@ -1623,8 +1738,8 @@ class BanVeController extends Controller
                 })
                 ->lockForUpdate()
                 ->pluck('ma_ghe')
-                ->flatMap(fn ($codes) => collect(explode(',', (string) $codes)))
-                ->map(fn ($code) => strtoupper(trim($code)))
+                ->flatMap(fn($codes) => collect(explode(',', (string) $codes)))
+                ->map(fn($code) => strtoupper(trim($code)))
                 ->filter()
                 ->unique();
 
@@ -1671,9 +1786,35 @@ class BanVeController extends Controller
             $query->where('suat_chieu_id', $showtimeId);
         }
 
-        $query->update([
-            'trang_thai' => 'het_han',
-        ]);
+        /*
+         * Không update hàng loạt ở đây.
+         * Cần xử lý từng vé để vừa đổi trạng thái vừa tạo thông báo
+         * cho đúng nhân viên đã tạo giao dịch.
+         */
+        $expiredTickets = $query->get();
+
+        foreach ($expiredTickets as $ve) {
+            $ve->update([
+                'trang_thai' => 'het_han',
+                'thoi_gian_het_han' => null,
+            ]);
+
+            $this->cancelPayosLinkSilently(
+                $ve,
+                'Het thoi gian giu ghe'
+            );
+
+            $this->taoThongBaoVeMotLan(
+                $ve,
+                'Giao dịch VietQR hết hạn',
+                'Giao dịch VietQR của vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế: ' . $ve->ma_ghe
+                    . ' đã hết thời gian thanh toán. Ghế đã được giải phóng.',
+                've',
+                route('staff.ban-ve.show', $ve->suat_chieu_id)
+            );
+        }
     }
 
     private function deductFoodStock(array $foodItems): void
@@ -1785,5 +1926,62 @@ class BanVeController extends Controller
                 ]
             );
         }
+    }
+
+    private function taoThongBaoStaff(
+        string $tieuDe,
+        string $noiDung,
+        string $loai = 've',
+        ?string $duongDan = null
+    ): void {
+        $staffId = auth()->id();
+
+        if (!$staffId) {
+            return;
+        }
+
+        ThongBaoCaNhan::create([
+            'nguoi_dung_id' => $staffId,
+            'tieu_de' => $tieuDe,
+            'noi_dung' => $noiDung,
+            'loai_thong_bao' => $loai,
+            'duong_dan' => $duongDan,
+            'da_doc' => false,
+            'doc_luc' => null,
+        ]);
+    }
+
+
+    private function taoThongBaoVeMotLan(
+        VeXemPhim $ve,
+        string $tieuDe,
+        string $noiDung,
+        string $loai = 've',
+        ?string $duongDan = null
+    ): void {
+        $staffId = $ve->nhan_vien_id ?: auth()->id();
+
+        if (!$staffId) {
+            return;
+        }
+
+        $daTonTai = ThongBaoCaNhan::where('nguoi_dung_id', $staffId)
+            ->where('tieu_de', $tieuDe)
+            ->where('noi_dung', $noiDung)
+            ->exists();
+
+        if ($daTonTai) {
+            return;
+        }
+
+        ThongBaoCaNhan::create([
+            'nguoi_dung_id' => $staffId,
+            'tieu_de' => $tieuDe,
+            'noi_dung' => $noiDung,
+            'loai_thong_bao' => $loai,
+            'duong_dan' => $duongDan,
+            'da_doc' => false,
+            'doc_luc' => null,
+        ]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Models\VeXemPhimGhe;
+use App\Models\ThongBaoCaNhan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -155,6 +156,26 @@ class SoatVeController extends Controller
             $seatTicket = $result['seat_ticket'];
             $ve = $result['ticket'];
 
+            $tieuDe = $result['remaining'] === 0
+                ? 'Hoàn tất soát vé'
+                : 'Soát vé thành công';
+
+            $noiDung = $result['remaining'] === 0
+                ? 'Đã hoàn tất soát toàn bộ vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế cuối: ' . $seatTicket->ma_ghe . '.'
+                : 'Đã soát vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế: ' . $seatTicket->ma_ghe
+                    . '. Còn ' . $result['remaining'] . ' ghế chưa vào.';
+
+            $this->taoThongBaoStaff(
+                $tieuDe,
+                $noiDung,
+                've',
+                route('staff.soat-ve.index')
+            );
+
             return back()->with(
                 'success',
                 'Soát vé thành công: '
@@ -173,5 +194,29 @@ class SoatVeController extends Controller
                 $e->getMessage()
             );
         }
+    }
+
+
+    private function taoThongBaoStaff(
+        string $tieuDe,
+        string $noiDung,
+        string $loai = 've',
+        ?string $duongDan = null
+    ): void {
+        $staffId = auth()->id();
+
+        if (!$staffId) {
+            return;
+        }
+
+        ThongBaoCaNhan::create([
+            'nguoi_dung_id' => $staffId,
+            'tieu_de' => $tieuDe,
+            'noi_dung' => $noiDung,
+            'loai_thong_bao' => $loai,
+            'duong_dan' => $duongDan,
+            'da_doc' => false,
+            'doc_luc' => null,
+        ]);
     }
 }

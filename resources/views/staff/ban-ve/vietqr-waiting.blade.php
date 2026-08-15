@@ -104,7 +104,7 @@
                     </button>
                 </form>
 
-                <a href="{{ route('staff.lich-su-ve.index', ['trang_thai' => 'cho_thanh_toan']) }}"
+                <a href="{{ route('admin.ve-xem-phims.index', ['trang_thai' => 'cho_thanh_toan']) }}"
                    class="mt-3 flex w-full items-center justify-center rounded-2xl border border-white/10 px-4 py-3 font-semibold text-gray-300 no-underline hover:bg-white/5">
                     Xem giao dịch chờ thanh toán
                 </a>
