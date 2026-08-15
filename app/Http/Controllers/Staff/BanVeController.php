@@ -48,92 +48,75 @@ class BanVeController extends Controller
     {
         $this->expirePendingTickets($suatChieu->id);
 
-        $suatChieu->load([
-            'phim',
-            'rapChieuPhim',
-            'phongChieu'
-        ]);
+    $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu']);
 
-        // Giữ nguyên bộ trạng thái "đã chiếm chỗ" rộng hơn của quầy (bao gồm cả
-        // dang_giu/da_in) — đây là logic ĐÚNG hơn bản online, không hạ cấp xuống.
-        $blockedSeatCodes = VeXemPhim::where(
-            'suat_chieu_id',
-            $suatChieu->id
-        )
-            ->where(function ($query) {
-                $query->whereIn('trang_thai', [
-                    'dang_giu',
-                    'da_dat',
-                    'da_thanh_toan',
-                    'da_in',
-                    'da_su_dung',
-                ])->orWhere(function ($pendingQuery) {
-                    $pendingQuery
-                        ->where('trang_thai', 'cho_thanh_toan')
-                        ->where('thoi_gian_het_han', '>', now());
-                });
-            })
-            ->pluck('ma_ghe')
-            ->flatMap(function ($codes) {
-                return collect(explode(',', $codes))
-                    ->map(fn($code) => strtoupper(trim($code)))
-                    ->filter();
-            })
-            ->unique()
-            ->values();
+    // 1. Lấy tất cả ghế bị khóa từ bảng VeXemPhim (Bao gồm cả đơn online đang chờ thanh toán)
+    $blockedFromTickets = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
+        ->where(function ($query) {
+            $query->whereIn('trang_thai', [
+                'dang_giu', 'da_dat', 'da_thanh_toan', 'da_in', 'da_su_dung', 'cho_thanh_toan'
+            ]);
+        })
+        ->where(function ($query) {
+            // Nút thắt: Cho phép lấy cả vé cho_thanh_toan còn hạn hoặc chưa gán thời gian hết hạn
+            $query->whereNull('thoi_gian_het_han')
+                  ->orWhere('thoi_gian_het_han', '>', now());
+        })
+        ->pluck('ma_ghe')
+        ->flatMap(function ($codes) {
+            return collect(explode(',', (string)$codes))
+                ->map(fn($code) => strtoupper(trim($code)))
+                ->filter();
+        });
 
-        $bookedSeats = $blockedSeatCodes->flip();
+    // 2. Lấy ghế đang giữ tạm từ Cache/Redis (Nếu SeatLockController có sử dụng Cache)
+    $lockedFromCache = collect(Cache::get("seat_locks_{$suatChieu->id}", []))
+        ->keys()
+        ->map(fn($code) => strtoupper(trim($code)));
 
-        // QUAN TRỌNG: KHÔNG orderBy('cot') ở đây — DatVeController::chonGhe() lấy
-        // ghế theo đúng thứ tự tự nhiên của bảng (không orderBy gì cả) rồi mới gom
-        // theo hàng, nên thứ tự HÀNG A,B,C... phụ thuộc thứ tự này. Nếu orderBy
-        // theo cột, tất cả ghế cột 1 của mọi hàng đứng lẫn lộn trước, làm xáo trộn
-        // thứ tự hàng khi gom nhóm — đúng như lỗi đã gặp (A,H,E,B,F,G,D,C).
-        $gheNgois = GheNgoi::with('loaiGhe')
-            ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
-            ->orderBy('id')
-            ->get();
+    // Hợp nhất toàn bộ ghế bị khóa
+    $blockedSeatCodes = $blockedFromTickets->concat($lockedFromCache)->unique()->values();
+    $bookedSeats = $blockedSeatCodes->flip();
 
-        // Xây $gheTheoHang ĐÚNG CÙNG CẤU TRÚC với DatVeController::chonGhe()
-        // (tên hàng lấy từ chữ cái đầu mã ghế, y hệt luồng online) để giao diện
-        // và JS phía Blade có thể dùng chung logic/markup với trang đặt vé online.
-        $gheTheoHang = [];
-        foreach ($gheNgois as $ghe) {
-            $hang = preg_replace('/[0-9]/', '', $ghe->ma_ghe) ?: 'A';
+    $gheNgois = GheNgoi::with('loaiGhe')
+        ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
+        ->orderBy('id')
+        ->get();
 
-            $daDat = $bookedSeats->has(strtoupper(trim($ghe->ma_ghe)));
-            // Giữ nguyên logic bảo trì đầy đủ của quầy (có kiểm tra lịch bảo trì
-            // đang hiệu lực), không hạ cấp xuống chỉ check trang_thai như online.
-            $baoTri = $ghe->isEffectivelyUnderMaintenance();
-            $chonDuoc = !$daDat && !$baoTri;
+    $gheTheoHang = [];
+    foreach ($gheNgois as $ghe) {
+        $hang = preg_replace('/[0-9]/', '', $ghe->ma_ghe) ?: 'A';
+        $daDat = $bookedSeats->has(strtoupper(trim($ghe->ma_ghe)));
+        $baoTri = $ghe->isEffectivelyUnderMaintenance();
+        $chonDuoc = !$daDat && !$baoTri;
 
-            $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai ?? 'Thường');
-            $laCouple = (bool) ($ghe->loaiGhe->la_couple ?? false) ||
-                str_contains($loaiGheNorm, 'couple') ||
-                str_contains($loaiGheNorm, 'đôi') ||
-                str_contains($loaiGheNorm, 'doi') ||
-                str_contains($loaiGheNorm, 'double');
+        $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai ?? 'Thường');
+        $laCouple = (bool) ($ghe->loaiGhe->la_couple ?? false) ||
+            str_contains($loaiGheNorm, 'couple') ||
+            str_contains($loaiGheNorm, 'đôi') ||
+            str_contains($loaiGheNorm, 'doi') ||
+            str_contains($loaiGheNorm, 'double');
 
-            $phuThu = (float) ($ghe->loaiGhe->phu_thu ?? 0);
-            $giaVe = (float) $suatChieu->gia_ve_cuoi_cung + $phuThu;
+        $phuThu = (float) ($ghe->loaiGhe->phu_thu ?? 0);
+        $giaVe = (float) $suatChieu->gia_ve_cuoi_cung + $phuThu;
 
-            if ($laCouple) {
-                $giaVe = ((float) $suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
-            }
-
-            $gheTheoHang[$hang][] = [
-                'id' => $ghe->id,
-                'ma_ghe' => $ghe->ma_ghe,
-                'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
-                'la_couple' => $laCouple,
-                'gia' => $giaVe,
-                'phu_thu' => $phuThu,
-                'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#3b82f6',
-                'da_dat' => $daDat,
-                'bao_tri' => $baoTri,
-                'chon_duoc' => $chonDuoc,
-            ];
+        if ($laCouple) {
+            $giaVe = ((float) $suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
         }
+
+        $gheTheoHang[$hang][] = [
+            'id' => $ghe->id,
+            'ma_ghe' => $ghe->ma_ghe,
+            'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
+            'la_couple' => $laCouple,
+            'gia' => $giaVe,
+            'phu_thu' => $phuThu,
+            'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#3b82f6',
+            'da_dat' => $daDat,
+            'bao_tri' => $baoTri,
+            'chon_duoc' => $chonDuoc,
+        ];
+    }
 
         return view('staff.ban-ve.show', [
             'suatChieu' => $suatChieu,
@@ -143,13 +126,21 @@ class BanVeController extends Controller
 
     public function food(Request $request, SuatChieu $suatChieu)
     {
-        if (!$request->filled('seats')) {
+        // 1. Nếu là POST request từ trang chọn ghế, lưu ghế vào Session
+        if ($request->isMethod('post') && $request->filled('seats')) {
+            session(['staff_seats_' . $suatChieu->id => $request->seats]);
+        }
+
+        // 2. Lấy ghế từ Form input (POST) hoặc Session (GET khi F5 / tải lại trang)
+        $seatsInput = $request->input('seats') ?? session('staff_seats_' . $suatChieu->id);
+
+        if (!$seatsInput) {
             return redirect()
                 ->route('staff.ban-ve.show', $suatChieu->id)
                 ->with('error', 'Vui lòng chọn ghế trước khi chọn đồ ăn.');
         }
 
-        $selectedSeats = collect(explode(',', $request->seats))
+        $selectedSeats = collect(explode(',', $seatsInput))
             ->map(fn($seat) => strtoupper(trim($seat)))
             ->filter()
             ->unique()
@@ -197,10 +188,10 @@ class BanVeController extends Controller
                 $menuItems = $foods
                     ->flatMap(function (DoAn $food) {
                         /*
-                |--------------------------------------------------------------------------
-                | Combo
-                |--------------------------------------------------------------------------
-                */
+                        |--------------------------------------------------------------------------
+                        | Combo
+                        |--------------------------------------------------------------------------
+                        */
                         if ($food->isCombo()) {
                             $comboItems = $food->comboItems
                                 ->map(function ($comboItem) {
@@ -208,15 +199,15 @@ class BanVeController extends Controller
 
                                     return [
                                         'variant_id' =>
-                                        $comboItem->food_variant_id
+                                            $comboItem->food_variant_id
                                             ?? $variant?->id,
 
                                         'name' =>
-                                        $variant?->doAn?->name
+                                            $variant?->doAn?->name
                                             ?? 'Thành phần',
 
                                         'variant' =>
-                                        $variant?->value,
+                                            $variant?->value,
 
                                         'price' => (float) (
                                             $variant?->price ?? 0
@@ -275,10 +266,10 @@ class BanVeController extends Controller
                         }
 
                         /*
-                |--------------------------------------------------------------------------
-                | Món thường: mỗi biến thể là một lựa chọn riêng
-                |--------------------------------------------------------------------------
-                */
+                        |--------------------------------------------------------------------------
+                        | Món thường: mỗi biến thể là một lựa chọn riêng
+                        |--------------------------------------------------------------------------
+                        */
                         return $food->variants
                             ->map(function ($variant) use ($food) {
                                 $variantName = trim(
@@ -287,13 +278,10 @@ class BanVeController extends Controller
 
                                 return [
                                     'cart_key' =>
-                                    'variant-' . $variant->id,
+                                        'variant-' . $variant->id,
 
                                     'type' => 'variant',
 
-                                    /*
-                             * id dùng để nhận diện biến thể.
-                             */
                                     'id' => $variant->id,
                                     'food_id' => $food->id,
                                     'variant_id' => $variant->id,
@@ -306,7 +294,7 @@ class BanVeController extends Controller
                                         ),
 
                                     'description' =>
-                                    $food->description,
+                                        $food->description,
 
                                     'image' => $food->image,
 
@@ -340,6 +328,7 @@ class BanVeController extends Controller
             'seatTotal' => $seatTotal
         ]);
     }
+
     public function checkout(Request $request, SuatChieu $suatChieu)
     {
         if (!$request->filled('seats')) {
@@ -366,7 +355,6 @@ class BanVeController extends Controller
         $foodItems = collect($foodCart)
             ->filter(fn($item) => is_array($item));
 
-
         $gheList = GheNgoi::with('loaiGhe')
             ->where(
                 'phong_chieu_id',
@@ -389,22 +377,18 @@ class BanVeController extends Controller
             return $giaVe + $phuThu;
         });
 
-
         $foodTotal = $foodItems->sum(function ($item) {
             return ($item['price'] ?? 0)
                 * ($item['qty'] ?? 0);
         });
 
-
         $total = $seatTotal + $foodTotal;
-
 
         $suatChieu->load([
             'phim',
             'rapChieuPhim',
             'phongChieu'
         ]);
-
 
         return view('staff.ban-ve.checkout', [
             'suatChieu' => $suatChieu,
@@ -417,10 +401,8 @@ class BanVeController extends Controller
         ]);
     }
 
-
     public function store(Request $request, SuatChieu $suatChieu)
     {
-        // dd('ĐÃ VÀO STORE');
         $validated = $request->validate([
             'seats' => [
                 'required',
@@ -444,7 +426,6 @@ class BanVeController extends Controller
                 'min:0',
             ],
 
-
         ], [
             'seats.required' =>
             'Không tìm thấy ghế đã chọn.',
@@ -459,7 +440,6 @@ class BanVeController extends Controller
             'Số tiền khách đưa không hợp lệ.',
         ]);
 
-
         try {
             $result = DB::transaction(function () use (
                 $request,
@@ -467,12 +447,11 @@ class BanVeController extends Controller
                 $suatChieu
             ) {
 
-                // dd('ĐÃ VÀO TRANSACTION');
                 /*
-            |--------------------------------------------------------------------------
-            | Nạp thông tin suất chiếu
-            |--------------------------------------------------------------------------
-            */
+                |--------------------------------------------------------------------------
+                | Nạp thông tin suất chiếu
+                |--------------------------------------------------------------------------
+                */
 
                 $suatChieu->load([
                     'phim',
@@ -481,10 +460,10 @@ class BanVeController extends Controller
                 ]);
 
                 /*
-            |--------------------------------------------------------------------------
-            | Chuẩn hóa danh sách ghế
-            |--------------------------------------------------------------------------
-            */
+                |--------------------------------------------------------------------------
+                | Chuẩn hóa danh sách ghế
+                |--------------------------------------------------------------------------
+                */
 
                 $selectedSeats = collect(
                     explode(',', $validated['seats'])
@@ -509,10 +488,10 @@ class BanVeController extends Controller
                 }
 
                 /*
-            |--------------------------------------------------------------------------
-            | Lấy ghế thật trong database
-            |--------------------------------------------------------------------------
-            */
+                |--------------------------------------------------------------------------
+                | Lấy ghế thật trong database
+                |--------------------------------------------------------------------------
+                */
 
                 $gheList = GheNgoi::with('loaiGhe')
                     ->where(
@@ -547,10 +526,10 @@ class BanVeController extends Controller
                 }
 
                 /*
-            |--------------------------------------------------------------------------
-            | Kiểm tra ghế bảo trì
-            |--------------------------------------------------------------------------
-            */
+                |--------------------------------------------------------------------------
+                | Kiểm tra ghế bảo trì
+                |--------------------------------------------------------------------------
+                */
 
                 $inactiveSeats = $gheList
                     ->filter(function ($seat) {
@@ -581,10 +560,10 @@ class BanVeController extends Controller
                 }
 
                 /*
-            |--------------------------------------------------------------------------
-            | Kiểm tra ghế đã được bán
-            |--------------------------------------------------------------------------
-            */
+                |--------------------------------------------------------------------------
+                | Kiểm tra ghế đã được bán
+                |--------------------------------------------------------------------------
+                */
 
                 $bookedSeatCodes = VeXemPhim::where(
                     'suat_chieu_id',
@@ -632,10 +611,10 @@ class BanVeController extends Controller
                 }
 
                 /*
-            |--------------------------------------------------------------------------
-            | Backend tự tính tiền ghế
-            |--------------------------------------------------------------------------
-            */
+                |--------------------------------------------------------------------------
+                | Backend tự tính tiền ghế
+                |--------------------------------------------------------------------------
+                */
 
                 $seatTotal = $gheList->sum(
                     function ($ghe) use ($suatChieu) {
@@ -660,10 +639,10 @@ class BanVeController extends Controller
                 );
 
                 /*
-            |--------------------------------------------------------------------------
-            | Đọc giỏ đồ ăn
-            |--------------------------------------------------------------------------
-            */
+                |--------------------------------------------------------------------------
+                | Đọc giỏ đồ ăn
+                |--------------------------------------------------------------------------
+                */
 
                 $foodCart = json_decode(
                     $request->input(
@@ -704,10 +683,10 @@ class BanVeController extends Controller
                     }
 
                     /*
-    |--------------------------------------------------------------------------
-    | Combo
-    |--------------------------------------------------------------------------
-    */
+                    |--------------------------------------------------------------------------
+                    | Combo
+                    |--------------------------------------------------------------------------
+                    */
                     if ($type === 'combo') {
                         $foodId = (int) (
                             $foodData['food_id']
@@ -799,10 +778,10 @@ class BanVeController extends Controller
                     }
 
                     /*
-    |--------------------------------------------------------------------------
-    | Biến thể món ăn
-    |--------------------------------------------------------------------------
-    */
+                    |--------------------------------------------------------------------------
+                    | Biến thể món ăn
+                    |--------------------------------------------------------------------------
+                    */
                     $variantId = (int) (
                         $foodData['variant_id']
                         ?? $foodData['id']
@@ -876,24 +855,14 @@ class BanVeController extends Controller
                 );
 
                 /*
-            |--------------------------------------------------------------------------
-            | Xử lý thanh toán tiền mặt
-            |--------------------------------------------------------------------------
-            */
+                |--------------------------------------------------------------------------
+                | Xử lý thanh toán
+                |--------------------------------------------------------------------------
+                */
 
                 $paymentMethod = $validated['payment_method'];
 
                 if ($paymentMethod === 'vietqr') {
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Tạo mã vé tạm và mã giao dịch PayOS
-                    |--------------------------------------------------------------------------
-                    |
-                    | Vé tạm được lưu ngay vào database với trạng thái
-                    | "cho_thanh_toan". Trong 7 phút, các ghế của vé này
-                    | được xem là đang bị khóa đối với các giao dịch khác.
-                    |
-                    */
                     do {
                         $maVe =
                             'OFF-'
@@ -943,10 +912,6 @@ class BanVeController extends Controller
                         'food_total' => (int) round($foodTotal),
                     ]);
 
-                    /*
-                    | Cache chỉ giữ dữ liệu phụ cho giao diện/giỏ hàng.
-                    | Trạng thái giữ ghế thật nằm trong database.
-                    */
                     Cache::put(
                         "staff_payos_mapping:{$orderCode}",
                         $maVe,
@@ -981,7 +946,6 @@ class BanVeController extends Controller
                         'cancelUrl' => route(
                             'staff.ban-ve.payos-cancel'
                         ),
-                        // PayOS cũng hết hạn cùng thời điểm giữ ghế.
                         'expiredAt' => $expiresAt->timestamp,
                     ];
 
@@ -989,7 +953,6 @@ class BanVeController extends Controller
                         $paymentData
                     );
 
-                    // SDK có thể trả object hoặc array, data_get đọc được cả hai.
                     $checkoutUrl = data_get($response, 'checkoutUrl');
                     $qrCode = data_get($response, 'qrCode');
 
@@ -999,7 +962,6 @@ class BanVeController extends Controller
                         );
                     }
 
-                    // Lưu xuống DB để refresh trang vẫn còn QR và đường dẫn PayOS.
                     $vePending->update([
                         'payos_checkout_url' => $checkoutUrl,
                         'payos_qr_code' => $qrCode,
@@ -1012,10 +974,10 @@ class BanVeController extends Controller
                 }
 
                 /*
-|--------------------------------------------------------------------------
-| Thanh toán tiền mặt
-|--------------------------------------------------------------------------
-*/
+                |--------------------------------------------------------------------------
+                | Thanh toán tiền mặt
+                |--------------------------------------------------------------------------
+                */
                 $receivedAmount = (int) (
                     $validated['received_amount'] ?? 0
                 );
@@ -1032,28 +994,6 @@ class BanVeController extends Controller
                             . 'đ.'
                     );
                 }
-                if (
-                    $receivedAmount
-                    < $tongTien
-                ) {
-                    throw new \RuntimeException(
-                        'Khách còn thiếu '
-                            . number_format(
-                                $tongTien
-                                    - $receivedAmount,
-                                0,
-                                ',',
-                                '.'
-                            )
-                            . 'đ.'
-                    );
-                }
-
-                /*
-            |--------------------------------------------------------------------------
-            | Tạo mã vé không trùng
-            |--------------------------------------------------------------------------
-            */
 
                 do {
                     $maVe =
@@ -1072,46 +1012,22 @@ class BanVeController extends Controller
                     )->exists()
                 );
 
-                /*
-            |--------------------------------------------------------------------------
-            | Lưu vé
-            |--------------------------------------------------------------------------
-            */
-
                 $ve = new VeXemPhim();
 
                 $ve->nguoi_dung_id = null;
                 $ve->nhan_vien_id = auth()->id();
-                $ve->suat_chieu_id =
-                    $suatChieu->id;
-
+                $ve->suat_chieu_id = $suatChieu->id;
                 $ve->ma_ve = $maVe;
-
-                $ve->ten_phim =
-                    $suatChieu->phim->ten_phim;
-
-                $ve->ten_rap =
-                    $suatChieu
-                    ->rapChieuPhim
-                    ->ten_rap;
-
-                $ve->ten_phong =
-                    $suatChieu
-                    ->phongChieu
-                    ->ten_phong;
-
-                $ve->ma_ghe =
-                    $selectedSeats->implode(',');
-
-                $ve->thoi_gian_chieu =
-                    $suatChieu->thoi_gian_chieu;
-
+                $ve->ten_phim = $suatChieu->phim->ten_phim;
+                $ve->ten_rap = $suatChieu->rapChieuPhim->ten_rap;
+                $ve->ten_phong = $suatChieu->phongChieu->ten_phong;
+                $ve->ma_ghe = $selectedSeats->implode(',');
+                $ve->thoi_gian_chieu = $suatChieu->thoi_gian_chieu;
                 $ve->tong_tien = $tongTien;
                 $ve->tien_hoan = 0;
                 $ve->loai_ve = 'tai_quay';
                 $ve->trang_thai = 'da_thanh_toan';
 
-                // Lưu dữ liệu hóa đơn để có thể in lại về sau.
                 $ve->payment_method = 'cash';
                 $ve->received_amount = $receivedAmount;
                 $ve->change_amount = $receivedAmount - $tongTien;
@@ -1120,12 +1036,6 @@ class BanVeController extends Controller
                 $ve->food_items = $verifiedFoodItems->values()->all();
 
                 $ve->save();
-
-                /*
-            |--------------------------------------------------------------------------
-            | Bảo đảm vé thật sự đã được lưu
-            |--------------------------------------------------------------------------
-            */
 
                 if (!$ve->exists || !$ve->id) {
                     throw new \RuntimeException(
@@ -1139,240 +1049,77 @@ class BanVeController extends Controller
                 );
 
                 /*
-            |--------------------------------------------------------------------------
-            | Trừ kho sau khi vé đã lưu
-            |--------------------------------------------------------------------------
-            */
-
-                /*
-|--------------------------------------------------------------------------
-| Trừ kho sau khi vé đã lưu
-|--------------------------------------------------------------------------
-*/
-
+                |--------------------------------------------------------------------------
+                | Trừ kho sau khi vé đã lưu
+                |--------------------------------------------------------------------------
+                */
                 foreach ($verifiedFoodItems as $foodItem) {
-                    /*
-     * Số lượng khách mua.
-     */
-                    $quantity = (int) (
-                        $foodItem['qty'] ?? 0
-                    );
-
-                    /*
-     * Nếu số lượng không hợp lệ thì bỏ qua.
-     */
+                    $quantity = (int) ($foodItem['qty'] ?? 0);
                     if ($quantity <= 0) {
                         continue;
                     }
 
-                    /*
-    |--------------------------------------------------------------------------
-    | Trường hợp 1: Sản phẩm là combo
-    |--------------------------------------------------------------------------
-    |
-    | Combo không có kho riêng.
-    | Khi bán combo, hệ thống phải trừ tồn kho của từng biến thể
-    | nằm bên trong combo.
-    |
-    | Ví dụ:
-    | Combo A gồm:
-    | - 1 bắp size L
-    | - 2 nước size M
-    |
-    | Khách mua 3 combo thì phải trừ:
-    | - 3 bắp size L
-    | - 6 nước size M
-    |
-    */
-
-                    if (
-                        ($foodItem['type'] ?? null)
-                        === 'combo'
-                    ) {
-                        /*
-         * Lấy lại combo từ database.
-         */
-                        $food = DoAn::with([
-                            'comboItems.variant',
-                        ])
+                    if (($foodItem['type'] ?? null) === 'combo') {
+                        $food = DoAn::with(['comboItems.variant'])
                             ->lockForUpdate()
                             ->find($foodItem['food_id']);
 
-                        /*
-         * Kiểm tra combo tồn tại.
-         */
                         if (!$food || !$food->isCombo()) {
                             throw new \RuntimeException(
-                                'Không tìm thấy combo '
-                                    . ($foodItem['name'] ?? '')
-                                    . '.'
+                                'Không tìm thấy combo ' . ($foodItem['name'] ?? '') . '.'
                             );
                         }
 
-                        /*
-         * Kiểm tra combo có thành phần hay không.
-         */
                         if ($food->comboItems->isEmpty()) {
                             throw new \RuntimeException(
-                                'Combo '
-                                    . $food->name
-                                    . ' chưa có thành phần.'
+                                'Combo ' . $food->name . ' chưa có thành phần.'
                             );
                         }
 
-                        /*
-         * Lặp qua từng thành phần trong combo.
-         */
                         foreach ($food->comboItems as $comboItem) {
-                            /*
-             * Lấy ID biến thể của thành phần.
-             *
-             * Tùy cấu trúc bảng của bạn có thể là:
-             * - food_variant_id
-             * - variant_id
-             */
-                            $variantId =
-                                $comboItem->food_variant_id
+                            $variantId = $comboItem->food_variant_id
                                 ?? $comboItem->variant_id
                                 ?? $comboItem->variant?->id;
 
-                            /*
-             * Kiểm tra có ID biến thể hợp lệ không.
-             */
                             if (!$variantId) {
                                 throw new \RuntimeException(
-                                    'Một thành phần của combo '
-                                        . $food->name
-                                        . ' không có biến thể hợp lệ.'
+                                    'Một thành phần của combo ' . $food->name . ' không có biến thể hợp lệ.'
                                 );
                             }
 
-                            /*
-             * Số lượng biến thể cần cho 1 combo.
-             *
-             * Ví dụ:
-             * combo có 2 nước thì quantityPerCombo = 2.
-             */
-                            $quantityPerCombo = max(
-                                (int) (
-                                    $comboItem->quantity ?? 1
-                                ),
-                                1
-                            );
+                            $quantityPerCombo = max((int) ($comboItem->quantity ?? 1), 1);
+                            $quantityToDeduct = $quantityPerCombo * $quantity;
 
-                            /*
-             * Tổng số lượng cần trừ kho.
-             *
-             * Ví dụ:
-             * 2 nước/combo x 3 combo = trừ 6 nước.
-             */
-                            $quantityToDeduct =
-                                $quantityPerCombo * $quantity;
+                            $updatedRows = BienTheDoAn::where('id', $variantId)
+                                ->where('stock_quantity', '>=', $quantityToDeduct)
+                                ->decrement('stock_quantity', $quantityToDeduct);
 
-                            /*
-             * Trừ kho có điều kiện.
-             *
-             * Chỉ trừ khi tồn kho vẫn đủ.
-             */
-                            $updatedRows = BienTheDoAn::where(
-                                'id',
-                                $variantId
-                            )
-                                ->where(
-                                    'stock_quantity',
-                                    '>=',
-                                    $quantityToDeduct
-                                )
-                                ->decrement(
-                                    'stock_quantity',
-                                    $quantityToDeduct
-                                );
-
-                            /*
-             * Nếu không có dòng nào được cập nhật,
-             * nghĩa là kho không đủ hoặc biến thể không tồn tại.
-             */
                             if ($updatedRows === 0) {
                                 throw new \RuntimeException(
-                                    'Không đủ tồn kho thành phần của combo '
-                                        . $food->name
-                                        . '.'
+                                    'Không đủ tồn kho thành phần của combo ' . $food->name . '.'
                                 );
                             }
                         }
-
-                        /*
-         * Combo đã xử lý xong.
-         * Bỏ qua phần trừ kho biến thể món đơn bên dưới.
-         */
                         continue;
                     }
 
-                    /*
-    |--------------------------------------------------------------------------
-    | Trường hợp 2: Sản phẩm là biến thể món đơn
-    |--------------------------------------------------------------------------
-    |
-    | Ví dụ:
-    | - Coca size M
-    | - Coca size L
-    | - Bắp phô mai size L
-    |
-    | Phải trừ đúng biến thể được chọn,
-    | không trừ chung theo food_id.
-    */
-
-                    $variantId = (int) (
-                        $foodItem['variant_id']
-                        ?? $foodItem['id']
-                        ?? 0
-                    );
-
-                    /*
-     * Không có ID biến thể thì báo lỗi.
-     */
+                    $variantId = (int) ($foodItem['variant_id'] ?? $foodItem['id'] ?? 0);
                     if ($variantId <= 0) {
                         throw new \RuntimeException(
-                            'Không xác định được biến thể của món '
-                                . ($foodItem['name'] ?? '')
-                                . '.'
+                            'Không xác định được biến thể của món ' . ($foodItem['name'] ?? '') . '.'
                         );
                     }
 
-                    /*
-     * Trừ đúng tồn kho của biến thể.
-     */
-                    $updatedRows = BienTheDoAn::where(
-                        'id',
-                        $variantId
-                    )
-                        ->where(
-                            'stock_quantity',
-                            '>=',
-                            $quantity
-                        )
-                        ->decrement(
-                            'stock_quantity',
-                            $quantity
-                        );
+                    $updatedRows = BienTheDoAn::where('id', $variantId)
+                        ->where('stock_quantity', '>=', $quantity)
+                        ->decrement('stock_quantity', $quantity);
 
-                    /*
-     * Nếu không trừ được thì báo lỗi.
-     */
                     if ($updatedRows === 0) {
                         throw new \RuntimeException(
-                            'Món '
-                                . ($foodItem['name'] ?? '')
-                                . ' không còn đủ tồn kho.'
+                            'Món ' . ($foodItem['name'] ?? '') . ' không còn đủ tồn kho.'
                         );
                     }
                 }
-
-                /*
-            |--------------------------------------------------------------------------
-            | Lưu thông tin đồ ăn để hiển thị cùng vé
-            |--------------------------------------------------------------------------
-            */
 
                 if ($verifiedFoodItems->isNotEmpty()) {
                     Cache::put(
@@ -1388,10 +1135,7 @@ class BanVeController extends Controller
                 ];
             });
 
-            if (
-                ($result['payment_method'] ?? null)
-                === 'vietqr'
-            ) {
+            if (($result['payment_method'] ?? null) === 'vietqr') {
                 return redirect()->route(
                     'staff.ban-ve.vietqr-waiting',
                     ['id' => $result['pending_ticket_id']]
@@ -1399,8 +1143,7 @@ class BanVeController extends Controller
             }
 
             $ve = $result['ve'];
-            $changeAmount =
-                $result['change_amount'];
+            $changeAmount = $result['change_amount'];
 
             $this->taoThongBaoStaff(
                 'Bán vé thành công',
@@ -1418,10 +1161,7 @@ class BanVeController extends Controller
                 'clear_food_cart_key',
                 $request->input(
                     'clear_cart_key',
-                    'staff_food_cart_v2_'
-                        . auth()->id()
-                        . '_'
-                        . $suatChieu->id
+                    'staff_food_cart_v2_' . auth()->id() . '_' . $suatChieu->id
                 )
             );
 
@@ -1448,8 +1188,6 @@ class BanVeController extends Controller
         }
     }
 
-
-
     public function showCheckout(SuatChieu $suatChieu)
     {
         return redirect()
@@ -1459,10 +1197,6 @@ class BanVeController extends Controller
             );
     }
 
-    /**
-     * Trang chờ thanh toán tại quầy.
-     * Vé đã tồn tại trong DB ở trạng thái cho_thanh_toan nên ghế được khóa thật.
-     */
     public function vietQrWaiting(int $id)
     {
         $this->expirePendingTickets();
@@ -1497,10 +1231,6 @@ class BanVeController extends Controller
         return view('staff.ban-ve.vietqr-waiting', compact('ve', 'qrSvg'));
     }
 
-    /**
-     * Frontend gọi định kỳ để đồng bộ trạng thái trực tiếp với PayOS.
-     * Cách này hoạt động cả khi chạy localhost và chưa cấu hình webhook public.
-     */
     public function vietQrStatus(int $id)
     {
         $ve = VeXemPhim::query()
@@ -1607,7 +1337,6 @@ class BanVeController extends Controller
         } catch (\Throwable $e) {
             report($e);
 
-            // Không giải phóng ghế chỉ vì API PayOS tạm thời không phản hồi.
             return response()->json([
                 'success' => false,
                 'status' => 'PENDING',
@@ -1616,7 +1345,6 @@ class BanVeController extends Controller
         }
     }
 
-    /** Hủy thủ công giao dịch đang chờ và giải phóng ghế. */
     public function cancelPendingVietQr(int $id)
     {
         $ve = VeXemPhim::query()
@@ -1625,7 +1353,6 @@ class BanVeController extends Controller
             ->findOrFail($id);
 
         if ($ve->trang_thai === 'cho_thanh_toan') {
-            // Kiểm tra lần cuối để tránh hủy một giao dịch vừa thanh toán xong.
             try {
                 if ($this->getPayosStatus($ve) === 'PAID') {
                     $paidTicket = $this->finalizePaidVietQr($ve);
@@ -1747,7 +1474,6 @@ class BanVeController extends Controller
                 ->with('error', 'Không tìm thấy giao dịch VietQR cần hủy.');
         }
 
-        // PayOS đưa trình duyệt về cancelUrl; trước khi hủy DB vẫn kiểm tra API lần cuối.
         try {
             if ($this->getPayosStatus($ve) === 'PAID') {
                 $ve = $this->finalizePaidVietQr($ve);
@@ -1794,9 +1520,6 @@ class BanVeController extends Controller
             ->with('error', 'Giao dịch VietQR đã được hủy. Các ghế đã được giải phóng.');
     }
 
-    /**
-     * Trang kết quả sau khi thanh toán thành công.
-     */
     public function success(int $id)
     {
         $ve = $this->findPrintableTicket($id);
@@ -1804,13 +1527,6 @@ class BanVeController extends Controller
         return view('staff.ban-ve.success', compact('ve'));
     }
 
-    /**
-     * Đánh dấu vé đã được phát hành/in.
-     *
-     * Với trình duyệt, không thể xác định chắc chắn người dùng đã bấm
-     * Print hay Cancel trong hộp thoại hệ thống. Vì vậy nghiệp vụ coi
-     * thao tác bấm nút "In vé" là thời điểm phát hành vé.
-     */
     public function markAsPrinted(int $id)
     {
         $ve = VeXemPhim::query()
@@ -1864,9 +1580,6 @@ class BanVeController extends Controller
         ]);
     }
 
-    /**
-     * Mẫu vé khổ 80 mm.
-     */
     public function printTicket(int $id)
     {
         $ve = $this->findPrintableTicket($id);
@@ -1895,9 +1608,6 @@ class BanVeController extends Controller
         );
     }
 
-    /**
-     * Mẫu hóa đơn khổ 80 mm.
-     */
     public function printInvoice(int $id)
     {
         $ve = $this->findPrintableTicket($id);
@@ -1905,9 +1615,6 @@ class BanVeController extends Controller
         return view('staff.ban-ve.print-invoice', compact('ve'));
     }
 
-    /**
-     * Chỉ cho phép nhân viên có quyền bán vé xem/in vé tại quầy.
-     */
     private function findPrintableTicket(int $id): VeXemPhim
     {
         $ve = VeXemPhim::query()
@@ -1929,9 +1636,6 @@ class BanVeController extends Controller
             abort(422, 'Vé chưa thanh toán thành công nên chưa thể xem hoặc in.');
         }
 
-        /*
-         * Tương thích với vé cũ được tạo trước khi có bảng vé ghế.
-         */
         if ($ve->gheVes->isEmpty()) {
             $this->createSeatTickets(
                 $ve,
@@ -1944,7 +1648,6 @@ class BanVeController extends Controller
         return $ve;
     }
 
-    /** Lấy trạng thái chính thức của payment link từ API PayOS. */
     private function getPayosStatus(VeXemPhim $ve): string
     {
         if (!$ve->payos_order_code) {
@@ -1971,7 +1674,6 @@ class BanVeController extends Controller
         return strtoupper((string) data_get($response->json(), 'data.status', 'PENDING'));
     }
 
-    /** Hủy payment link PayOS nhưng không làm hỏng luồng nếu API đang lỗi. */
     private function cancelPayosLinkSilently(VeXemPhim $ve, string $reason): void
     {
         if (!$ve->payos_order_code) {
@@ -1996,10 +1698,6 @@ class BanVeController extends Controller
         }
     }
 
-    /**
-     * Hoàn tất đúng một lần giao dịch VietQR đã PAID.
-     * Tạo vé ghế và trừ kho nằm cùng transaction để tránh trạng thái nửa vời.
-     */
     private function finalizePaidVietQr(VeXemPhim $pendingTicket): VeXemPhim
     {
         return DB::transaction(function () use ($pendingTicket) {
@@ -2220,9 +1918,6 @@ class BanVeController extends Controller
                     'ma_ghe' => $seatCode,
                 ],
                 [
-                    /*
-                 * Mỗi ghế có token QR riêng.
-                 */
                     'ma_qr' => 'CH-'
                         . Str::upper(Str::random(48)),
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\NguoiDung;
 use Illuminate\Http\Request;
+use Illuminate\Auth\Events\Registered;
 
 class KhachHangController extends Controller
 {
@@ -197,17 +198,172 @@ class KhachHangController extends Controller
             'ngay_sinh.date_format' => 'Ngày sinh không đúng định dạng.',
             'ngay_sinh.after_or_equal' => 'Năm sinh không hợp lệ.',
             'ngay_sinh.before' => 'Ngày sinh phải trước ngày hôm nay.',
-
-
         ]);
 
         $data['vai_tro'] = 'khach_hang';
         $data['trang_thai_hoat_dong'] = true;
 
-        NguoiDung::create($data);
+        // Tài khoản do Admin tạo bắt buộc phải xác thực email
+        $data['bat_buoc_xac_thuc_email'] = true;
+        $data['email_verified_at'] = null;
+
+        $nguoiDung = NguoiDung::create($data);
+
+        // Gửi email xác thực
+        event(new Registered($nguoiDung));
+
+        // Tạo thẻ thành viên
+        $nguoiDung->thanhVien()->create([
+            'ma_thanh_vien' => 'TV' . str_pad($nguoiDung->id, 6, '0', STR_PAD_LEFT),
+            'hang_thanh_vien' => 'member',
+            'diem_hien_tai' => 0,
+            'tong_diem_tich_luy' => 0,
+            'ngay_tham_gia' => now(),
+            'da_nhan_thuong' => false,
+        ]);
 
         return redirect()
             ->route('admin.khach-hang.index')
-            ->with('success', 'Thêm khách hàng thành công.');
+            ->with(
+                'success',
+                'Thêm khách hàng thành công. Email xác thực đã được gửi đến khách hàng.'
+            );
+    }
+    /**
+     * Xóa mềm khách hàng
+     */
+    public function destroy(NguoiDung $khachHang)
+    {
+        abort_if($khachHang->vai_tro !== 'khach_hang', 404);
+
+        $khachHang->delete();
+
+        return redirect()
+            ->route('admin.khach-hang.index')
+            ->with('success', 'Đã chuyển khách hàng vào thùng rác.');
+    }
+    /**
+     * Thùng rác khách hàng
+     */
+    public function trash(Request $request)
+    {
+        $query = NguoiDung::onlyTrashed()
+            ->where('vai_tro', 'khach_hang');
+
+        // Tìm theo tên, email, số điện thoại
+        if ($request->filled('keyword')) {
+            $keyword = trim($request->keyword);
+
+            $query->where(function ($q) use ($keyword) {
+                $q->where('ho_ten', 'like', "%{$keyword}%")
+                    ->orWhere('email', 'like', "%{$keyword}%")
+                    ->orWhere('so_dien_thoai', 'like', "%{$keyword}%");
+            });
+        }
+
+        // Lọc từ ngày xóa
+        if ($request->filled('deleted_from')) {
+            $query->whereDate(
+                'deleted_at',
+                '>=',
+                $request->deleted_from
+            );
+        }
+
+        // Lọc đến ngày xóa
+        if ($request->filled('deleted_to')) {
+            $query->whereDate(
+                'deleted_at',
+                '<=',
+                $request->deleted_to
+            );
+        }
+
+        $khachHangs = $query
+            ->latest('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.khach_hang.trash', compact(
+            'khachHangs'
+        ));
+    }
+
+    /**
+     * Khôi phục khách hàng
+     */
+    public function restore($id)
+    {
+        $khachHang = NguoiDung::onlyTrashed()
+            ->where('vai_tro', 'khach_hang')
+            ->findOrFail($id);
+
+        $khachHang->restore();
+
+        return redirect()
+            ->route('admin.khach-hang.trash')
+            ->with(
+                'success',
+                'Đã khôi phục khách hàng thành công.'
+            );
+    }
+
+
+    /**
+     * Xóa vĩnh viễn khách hàng
+     */
+    /**
+     * Xóa vĩnh viễn khách hàng
+     *
+     * Chỉ cho phép xóa cứng khi khách hàng không còn
+     * dữ liệu liên quan.
+     */
+    public function forceDelete($id)
+    {
+        $khachHang = NguoiDung::onlyTrashed()
+            ->where('vai_tro', 'khach_hang')
+            ->findOrFail($id);
+
+        /*
+    |--------------------------------------------------------------------------
+    | KIỂM TRA DỮ LIỆU LIÊN QUAN
+    |--------------------------------------------------------------------------
+    */
+
+        $coVe = $khachHang->veXemPhims()->exists();
+
+
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | NẾU CÒN DỮ LIỆU -> KHÔNG CHO XÓA CỨNG
+    |--------------------------------------------------------------------------
+    */
+
+        if (
+            $coVe
+        ) {
+            return back()->with(
+                'error',
+                'Không thể xóa vĩnh viễn khách hàng này vì vẫn còn dữ liệu liên quan.'
+            );
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | KHÔNG CÒN DỮ LIỆU -> XÓA CỨNG
+    |--------------------------------------------------------------------------
+    */
+
+        $khachHang->forceDelete();
+
+        return redirect()
+            ->route('admin.khach-hang.trash')
+            ->with(
+                'success',
+                'Đã xóa vĩnh viễn khách hàng.'
+            );
     }
 }

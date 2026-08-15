@@ -37,20 +37,101 @@
 
             <div class="profile-nav-actions">
                 @php
+                $userId = Auth::id();
+
+                /*
+                |--------------------------------------------------------------------------
+                | Thông báo cá nhân
+                |--------------------------------------------------------------------------
+                */
                 $userNotifications = \App\Models\ThongBaoCaNhan::where(
                 'nguoi_dung_id',
-                Auth::id()
+                $userId
                 )
                 ->latest()
-                ->take(5)
                 ->get();
 
-                $soThongBaoChuaDoc = \App\Models\ThongBaoCaNhan::where(
+                /*
+                |--------------------------------------------------------------------------
+                | Thông báo Push từ Admin
+                |--------------------------------------------------------------------------
+                */
+                $pushNotifications = \App\Models\ThongBaoPushNguoiDung::with('thongBaoPush')
+                ->where('nguoi_dung_id', $userId)
+                ->latest()
+                ->get();
+
+                /*
+                |--------------------------------------------------------------------------
+                | Gộp 2 loại thông báo
+                |--------------------------------------------------------------------------
+                */
+                $allNotifications = collect();
+
+                /*
+                |--------------------------------------------------------------------------
+                | Thông báo cá nhân
+                |--------------------------------------------------------------------------
+                */
+                foreach ($userNotifications as $notification) {
+                $notification->notification_type = 'personal';
+                $notification->notification_time = $notification->created_at;
+
+                $allNotifications->push($notification);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Thông báo Push
+                |--------------------------------------------------------------------------
+                */
+                foreach ($pushNotifications as $notification) {
+
+                if (!$notification->thongBaoPush) {
+                continue;
+                }
+
+                $notification->notification_type = 'push';
+
+                $notification->notification_time =
+                $notification->thongBaoPush->thoi_gian_gui
+                ?? $notification->created_at;
+
+                $allNotifications->push($notification);
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Sắp xếp mới nhất và chỉ lấy 5
+                |--------------------------------------------------------------------------
+                */
+                $allNotifications = $allNotifications
+                ->sortByDesc('notification_time')
+                ->take(5)
+                ->values();
+
+                /*
+                |--------------------------------------------------------------------------
+                | Đếm chưa đọc
+                |--------------------------------------------------------------------------
+                */
+                $soThongBaoCaNhanChuaDoc = \App\Models\ThongBaoCaNhan::where(
                 'nguoi_dung_id',
-                Auth::id()
+                $userId
                 )
                 ->where('da_doc', 0)
                 ->count();
+
+                $soThongBaoPushChuaDoc = \App\Models\ThongBaoPushNguoiDung::where(
+                'nguoi_dung_id',
+                $userId
+                )
+                ->where('da_doc', 0)
+                ->count();
+
+                $soThongBaoChuaDoc =
+                $soThongBaoCaNhanChuaDoc +
+                $soThongBaoPushChuaDoc;
                 @endphp
 
                 <div class="profile-notification-wrapper">
@@ -94,30 +175,46 @@
 
                         <div class="booking-notification-list">
 
-                            @forelse ($userNotifications as $notification)
+                            @forelse ($allNotifications as $notification)
+
+                            @if ($notification->notification_type === 'personal')
+
+                            {{-- ================================
+             THÔNG BÁO CÁ NHÂN
+        ================================= --}}
 
                             <a
                                 href="{{ $notification->duong_dan ?: route('user.notifications.index') }}"
                                 class="booking-notification-item {{ !$notification->da_doc ? 'is-unread' : '' }}">
 
                                 <span class="booking-notification-item-icon">
+
                                     @if ($notification->loai_thong_bao === 'diem')
                                     <i class="fa-solid fa-star"></i>
+
                                     @elseif ($notification->loai_thong_bao === 've')
                                     <i class="fa-solid fa-ticket"></i>
+
                                     @elseif ($notification->loai_thong_bao === 'voucher')
                                     <i class="fa-solid fa-gift"></i>
+
                                     @elseif ($notification->loai_thong_bao === 'hang_thanh_vien')
                                     <i class="fa-solid fa-ranking-star"></i>
+
                                     @elseif ($notification->loai_thong_bao === 'tai_khoan')
                                     <i class="fa-solid fa-user-gear"></i>
+
                                     @else
                                     <i class="fa-solid fa-bell"></i>
                                     @endif
+
                                 </span>
 
                                 <div class="booking-notification-item-content">
-                                    <strong>{{ $notification->tieu_de }}</strong>
+
+                                    <strong>
+                                        {{ $notification->tieu_de }}
+                                    </strong>
 
                                     <p>
                                         {{ \Illuminate\Support\Str::limit($notification->noi_dung, 70) }}
@@ -126,16 +223,86 @@
                                     <time>
                                         {{ $notification->created_at->diffForHumans() }}
                                     </time>
+
                                 </div>
 
                             </a>
 
+                            @elseif ($notification->notification_type === 'push')
+
+                            {{-- ================================
+             THÔNG BÁO PUSH TỪ ADMIN
+        ================================= --}}
+
+                            @php
+                            $push = $notification->thongBaoPush;
+                            @endphp
+
+                            @if ($push)
+
+                            <a
+                                href="{{ route('user.notifications.index') }}"
+                                class="booking-notification-item {{ !$notification->da_doc ? 'is-unread' : '' }}">
+
+                                <span class="booking-notification-item-icon">
+
+                                    @if ($push->loai === 'promo')
+                                    <i class="fa-solid fa-gift"></i>
+
+                                    @elseif ($push->loai === 'success')
+                                    <i class="fa-solid fa-circle-check"></i>
+
+                                    @elseif ($push->loai === 'warning')
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+
+                                    @elseif ($push->loai === 'system')
+                                    <i class="fa-solid fa-gear"></i>
+
+                                    @else
+                                    <i class="fa-solid fa-bell"></i>
+                                    @endif
+
+                                </span>
+
+                                <div class="booking-notification-item-content">
+
+                                    <strong>
+                                        {{ $push->tieu_de }}
+                                    </strong>
+
+                                    <p>
+                                        {{ \Illuminate\Support\Str::limit($push->noi_dung, 70) }}
+                                    </p>
+
+                                    <time>
+                                        {{
+                            ($push->thoi_gian_gui ?? $push->created_at)
+                                ->diffForHumans()
+                        }}
+                                    </time>
+
+                                </div>
+
+                            </a>
+
+                            @endif
+
+                            @endif
+
                             @empty
 
                             <div class="booking-notification-empty">
+
                                 <i class="fa-regular fa-bell-slash"></i>
-                                <strong>Không có thông báo</strong>
-                                <span>Bạn hiện không có thông báo mới.</span>
+
+                                <strong>
+                                    Không có thông báo
+                                </strong>
+
+                                <span>
+                                    Bạn hiện không có thông báo mới.
+                                </span>
+
                             </div>
 
                             @endforelse

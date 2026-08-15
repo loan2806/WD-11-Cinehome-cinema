@@ -7,6 +7,8 @@ use App\Models\ThanhVien;
 use App\Models\ThongBaoCaNhan;
 use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
+use App\Mail\DiemThanhVienMail;
+use Illuminate\Support\Facades\Mail;
 
 class ThanhVienController extends Controller
 {
@@ -60,6 +62,9 @@ class ThanhVienController extends Controller
             ->orderByDesc('tong_diem_tich_luy')
             ->paginate(10)
             ->withQueryString();
+        foreach ($thanhViens as $thanhVien) {
+            $thanhVien->xuLyDiemHetHan();
+        }
 
         // Thống kê số lượng thành viên theo từng hạng
         $tongThanhVien = ThanhVien::count();
@@ -103,6 +108,8 @@ class ThanhVienController extends Controller
      */
     public function show(ThanhVien $thanhVien)
     {
+        $thanhVien->xuLyDiemHetHan();
+        
         $thanhVien->load([
             'nguoiDung.veXemPhims',
             'nguoiDung.vouchersCaNhan.voucher',
@@ -153,9 +160,10 @@ class ThanhVienController extends Controller
         ThanhVien $thanhVien
     ) {
         $data = $request->validate([
-            'loai' => [
+
+            'form' => [
                 'required',
-                'in:tang,thu_hoi'
+                'in:tang'
             ],
 
             'so_diem' => [
@@ -180,7 +188,9 @@ class ThanhVienController extends Controller
                 'nullable',
                 'in:member,silver,gold,platinum'
             ],
+
         ], [
+
             'so_diem.required' =>
             'Vui lòng nhập số điểm.',
 
@@ -203,85 +213,192 @@ class ThanhVienController extends Controller
             'Hạng thành viên không hợp lệ.',
         ]);
 
+
         /*
-        |--------------------------------------------------------------------------
-        | TẶNG ĐIỂM CÓ XÉT HẠNG
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | LẤY NGƯỜI DÙNG
+    |--------------------------------------------------------------------------
+    */
+
+        $nguoiDung = $thanhVien->nguoiDung;
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | KIỂM TRA NGƯỜI DÙNG
+    |--------------------------------------------------------------------------
+    */
+
+        if (!$nguoiDung) {
+
+            return back()->with(
+                'error',
+                'Không tìm thấy tài khoản người dùng của thành viên.'
+            );
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | KIỂM TRA EMAIL ĐÃ XÁC THỰC
+    |--------------------------------------------------------------------------
+    |
+    | Tài khoản chưa xác thực email:
+    | - Không được cộng điểm
+    | - Không gửi email
+    | - Không tạo thông báo điểm
+    |
+    | Sau này xác thực cũng không được nhận lại điểm
+    | của lần Admin tặng trước đó.
+    |--------------------------------------------------------------------------
+    */
+
+        if (is_null($nguoiDung->email_verified_at)) {
+
+            return back()->with(
+                'error',
+                'Tài khoản này chưa xác thực email nên không thể tặng điểm.'
+            );
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | TẶNG ĐIỂM
+    |--------------------------------------------------------------------------
+    */
 
         if ((int) ($data['tinh_vao_hang'] ?? 0) === 1) {
+
             $thanhVien->congDiem(
-                $data['so_diem'],
+                (int) $data['so_diem'],
                 null,
                 'Admin tặng điểm có xét hạng: '
                     . $data['noi_dung']
             );
         } else {
-            /*
-            |--------------------------------------------------------------------------
-            | TẶNG ĐIỂM KHÔNG XÉT HẠNG
-            |--------------------------------------------------------------------------
-            */
 
             $thanhVien->congDiemKhongXetHang(
-                $data['so_diem'],
+                (int) $data['so_diem'],
                 'Admin tặng điểm không xét hạng: '
                     . $data['noi_dung']
             );
         }
 
+
         /*
-        |--------------------------------------------------------------------------
-        | THÔNG BÁO CHO USER
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | REFRESH ĐIỂM
+    |--------------------------------------------------------------------------
+    */
 
-        if ($thanhVien->nguoiDung) {
-            ThongBaoCaNhan::create([
-                'nguoi_dung_id' => $thanhVien->nguoiDung->id,
+        $thanhVien->refresh();
 
-                'tieu_de' => '🎁 Bạn được tặng điểm',
 
-                'noi_dung' =>
-                'Bạn vừa được Admin tặng '
-                    . number_format($data['so_diem'])
-                    . ' điểm. '
-                    . $data['noi_dung'],
+        /*
+    |--------------------------------------------------------------------------
+    | GỬI EMAIL
+    |--------------------------------------------------------------------------
+    |
+    | Đến đây chắc chắn tài khoản đã xác thực email.
+    |--------------------------------------------------------------------------
+    */
 
-                'loai_thong_bao' => 'diem',
+        if (!empty($nguoiDung->email)) {
 
-                'duong_dan' => route(
-                    'user.thanh-vien.index'
-                ),
+            try {
 
-                'da_doc' => false,
+                Mail::to($nguoiDung->email)->send(
+                    new DiemThanhVienMail(
+                        'tang',
+                        (int) $data['so_diem'],
+                        $data['noi_dung'],
+                        (int) $thanhVien->diem_hien_tai,
+                        $nguoiDung->ho_ten ?? 'Quý khách'
+                    )
+                );
+            } catch (\Throwable $e) {
 
-                'doc_luc' => null,
-            ]);
+                \Log::error(
+                    'Không thể gửi email tặng điểm.',
+                    [
+                        'thanh_vien_id' => $thanhVien->id,
+                        'nguoi_dung_id' => $nguoiDung->id,
+                        'email' => $nguoiDung->email,
+                        'so_diem' => $data['so_diem'],
+                        'error' => $e->getMessage(),
+                    ]
+                );
+            }
         }
 
+
         /*
-        |--------------------------------------------------------------------------
-        | THÔNG BÁO CHO ADMIN
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | THÔNG BÁO CHO USER
+    |--------------------------------------------------------------------------
+    */
+
+        ThongBaoCaNhan::create([
+
+            'nguoi_dung_id' =>
+            $nguoiDung->id,
+
+            'tieu_de' =>
+            '🎁 Bạn được tặng điểm',
+
+            'noi_dung' =>
+            'Bạn vừa được Admin tặng '
+                . number_format($data['so_diem'])
+                . ' điểm. '
+                . $data['noi_dung'],
+
+            'loai_thong_bao' =>
+            'diem',
+
+            'duong_dan' =>
+            route('user.thanh-vien.index'),
+
+            'da_doc' =>
+            false,
+
+            'doc_luc' =>
+            null,
+        ]);
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | THÔNG BÁO CHO ADMIN
+    |--------------------------------------------------------------------------
+    */
 
         AdminNotificationService::push(
+
             '🎁 Admin đã tặng điểm',
 
             'Admin vừa tặng '
                 . number_format($data['so_diem'])
                 . ' điểm cho thành viên '
-                . ($thanhVien->nguoiDung->ho_ten ?? 'không xác định')
+                . ($nguoiDung->ho_ten ?? 'không xác định')
                 . '. Nội dung: '
                 . $data['noi_dung'],
 
             'Success'
         );
 
+
+        /*
+    |--------------------------------------------------------------------------
+    | KẾT QUẢ
+    |--------------------------------------------------------------------------
+    */
+
         return back()->with(
             'success',
-            'Đã tặng điểm cho thành viên thành công.'
+            'Đã tặng '
+                . number_format($data['so_diem'])
+                . ' điểm cho thành viên thành công.'
         );
     }
 
@@ -294,6 +411,12 @@ class ThanhVienController extends Controller
         ThanhVien $thanhVien
     ) {
         $data = $request->validate([
+
+            'form' => [
+                'required',
+                'in:thu_hoi'
+            ],
+
             'so_diem' => [
                 'required',
                 'integer',
@@ -306,7 +429,9 @@ class ThanhVienController extends Controller
                 'string',
                 'max:255'
             ],
+
         ], [
+
             'so_diem.required' =>
             'Vui lòng nhập số điểm.',
 
@@ -326,23 +451,32 @@ class ThanhVienController extends Controller
             'Nội dung không được vượt quá 255 ký tự.',
         ]);
 
+
         /*
         |--------------------------------------------------------------------------
         | KHÔNG CHO THU HỒI QUÁ SỐ ĐIỂM HIỆN TẠI
         |--------------------------------------------------------------------------
         */
 
-        $soDiemThuHoi = min(
-            $data['so_diem'],
-            (int) $thanhVien->diem_hien_tai
-        );
+        if ($data['so_diem'] > $thanhVien->diem_hien_tai) {
+
+            return back()->with(
+                'error',
+                'Số điểm thu hồi không được lớn hơn số điểm hiện tại của thành viên.'
+            );
+        }
+
+
+        $soDiemThuHoi = $data['so_diem'];
 
         if ($soDiemThuHoi <= 0) {
+
             return back()->with(
                 'error',
                 'Thành viên hiện không có điểm để thu hồi.'
             );
         }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -356,15 +490,46 @@ class ThanhVienController extends Controller
                 . $data['noi_dung']
         );
 
+
+        $nguoiDung = $thanhVien->nguoiDung;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | GỬI EMAIL - CHỈ TÀI KHOẢN ĐÃ XÁC THỰC
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            $nguoiDung &&
+            !empty($nguoiDung->email) &&
+            !is_null($nguoiDung->email_verified_at)
+        ) {
+
+            Mail::to($nguoiDung->email)
+                ->send(
+                    new DiemThanhVienMail(
+                        'thu_hoi',
+                        $soDiemThuHoi,
+                        $data['noi_dung'],
+                        $thanhVien->diem_hien_tai
+                    )
+                );
+        }
+
+
         /*
         |--------------------------------------------------------------------------
         | THÔNG BÁO CHO USER
         |--------------------------------------------------------------------------
         */
 
-        if ($thanhVien->nguoiDung) {
+        if ($nguoiDung) {
+
             ThongBaoCaNhan::create([
-                'nguoi_dung_id' => $thanhVien->nguoiDung->id,
+
+                'nguoi_dung_id' =>
+                $nguoiDung->id,
 
                 'tieu_de' =>
                 '🔄 Điểm thành viên được cập nhật',
@@ -372,20 +537,22 @@ class ThanhVienController extends Controller
                 'noi_dung' =>
                 'Admin đã thu hồi '
                     . number_format($soDiemThuHoi)
-                    . ' điểm từ tài khoản của bạn. '
-                    . $data['noi_dung'],
+                    . ' điểm từ tài khoản của bạn. ',
 
-                'loai_thong_bao' => 'diem',
+                'loai_thong_bao' =>
+                'diem',
 
-                'duong_dan' => route(
-                    'user.thanh-vien.index'
-                ),
+                'duong_dan' =>
+                route('user.thanh-vien.index'),
 
-                'da_doc' => false,
+                'da_doc' =>
+                false,
 
-                'doc_luc' => null,
+                'doc_luc' =>
+                null,
             ]);
         }
+
 
         /*
         |--------------------------------------------------------------------------
@@ -394,12 +561,13 @@ class ThanhVienController extends Controller
         */
 
         AdminNotificationService::push(
+
             '🔄 Admin đã thu hồi điểm',
 
             'Admin vừa thu hồi '
                 . number_format($soDiemThuHoi)
                 . ' điểm của thành viên '
-                . ($thanhVien->nguoiDung->ho_ten ?? 'không xác định')
+                . ($nguoiDung->ho_ten ?? 'không xác định')
                 . '. Nội dung: '
                 . $data['noi_dung'],
 
@@ -433,39 +601,51 @@ class ThanhVienController extends Controller
      */
     public function xuLyDiemHangLoat(Request $request)
     {
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE
+        |--------------------------------------------------------------------------
+        */
+
         $rules = [
+
             'loai' => [
                 'required',
-                'in:tang,thu_hoi'
+                'in:tang,thu_hoi',
             ],
+
             'hang_thanh_vien' => [
                 'nullable',
-                'in:member,silver,gold,platinum'
+                'in:member,silver,gold,platinum',
             ],
 
             'so_diem' => [
                 'required',
                 'integer',
                 'min:1',
-                'max:10000'
+                'max:10000',
             ],
 
             'noi_dung' => [
                 'required',
                 'string',
-                'max:255'
+                'max:255',
             ],
         ];
 
-        // Chỉ form TẶNG mới cần trường này
+
+        // Chỉ tặng điểm mới cần tinh_vao_hang
         if ($request->input('loai') === 'tang') {
+
             $rules['tinh_vao_hang'] = [
                 'required',
-                'boolean'
+                'boolean',
             ];
         }
 
+
         $data = $request->validate($rules, [
+
             'so_diem.required' =>
             'Vui lòng nhập số điểm.',
 
@@ -491,7 +671,13 @@ class ThanhVienController extends Controller
             'Vui lòng chọn cách tính hạng.',
         ]);
 
-        // Kiểm tra hạng được chọn có thành viên hay không
+
+        /*
+        |--------------------------------------------------------------------------
+        | KIỂM TRA HẠNG
+        |--------------------------------------------------------------------------
+        */
+
         if (!empty($data['hang_thanh_vien'])) {
 
             $soThanhVienTheoHang = ThanhVien::where(
@@ -502,11 +688,21 @@ class ThanhVienController extends Controller
             if ($soThanhVienTheoHang === 0) {
 
                 $tenHang = match ($data['hang_thanh_vien']) {
-                    'member' => 'Thành viên',
-                    'silver' => 'Bạc',
-                    'gold' => 'Vàng',
-                    'platinum' => 'Bạch kim',
-                    default => $data['hang_thanh_vien'],
+
+                    'member' =>
+                    'Thành viên',
+
+                    'silver' =>
+                    'Bạc',
+
+                    'gold' =>
+                    'Vàng',
+
+                    'platinum' =>
+                    'Bạch kim',
+
+                    default =>
+                    $data['hang_thanh_vien'],
                 };
 
                 return back()
@@ -518,17 +714,17 @@ class ThanhVienController extends Controller
             }
         }
 
+
         /*
-    |--------------------------------------------------------------------------
-    | LẤY THÀNH VIÊN
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | LẤY DANH SÁCH THÀNH VIÊN
+        |--------------------------------------------------------------------------
+        */
 
         $query = ThanhVien::with('nguoiDung');
 
-        // Nếu có chọn hạng thì chỉ xử lý hạng đó.
-        // Không chọn hạng = xử lý tất cả.
         if (!empty($data['hang_thanh_vien'])) {
+
             $query->where(
                 'hang_thanh_vien',
                 $data['hang_thanh_vien']
@@ -537,155 +733,515 @@ class ThanhVienController extends Controller
 
         $thanhViens = $query->get();
 
-        $soLuong = 0;
 
         /*
-    |--------------------------------------------------------------------------
-    | XỬ LÝ TỪNG THÀNH VIÊN
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | BIẾN THỐNG KÊ
+        |--------------------------------------------------------------------------
+        */
+
+        $soLuong = 0;
+        $soEmailThanhCong = 0;
+        $soEmailLoi = 0;
+        $soLuongBoQua = 0;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TÊN HẠNG
+        |--------------------------------------------------------------------------
+        */
+
+        $hangText = match ($data['hang_thanh_vien'] ?? null) {
+
+            'member' =>
+            'Thành viên',
+
+            'silver' =>
+            'Bạc',
+
+            'gold' =>
+            'Vàng',
+
+            'platinum' =>
+            'Bạch kim',
+
+            default =>
+            'tất cả hạng',
+        };
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | XỬ LÝ TỪNG THÀNH VIÊN
+        |--------------------------------------------------------------------------
+        */
 
         foreach ($thanhViens as $thanhVien) {
 
             /*
-        |--------------------------------------------------------------------------
-        | TẶNG ĐIỂM
-        |--------------------------------------------------------------------------
-        */
+            |--------------------------------------------------------------------------
+            | PHẢI CÓ NGƯỜI DÙNG
+            |--------------------------------------------------------------------------
+            */
+
+            $nguoiDung = $thanhVien->nguoiDung;
+
+            if (!$nguoiDung) {
+
+                \Log::warning(
+                    'Bỏ qua thành viên vì không có người dùng liên kết.',
+                    [
+                        'thanh_vien_id' =>
+                        $thanhVien->id,
+                    ]
+                );
+
+                $soLuongBoQua++;
+
+                continue;
+            }
+            // Chỉ tặng/thu hồi điểm cho tài khoản đã xác thực email
+            if (is_null($nguoiDung->email_verified_at)) {
+                $soLuongBoQua++;
+
+                \Log::info(
+                    'Bỏ qua thành viên chưa xác thực email khi tặng/thu hồi điểm hàng loạt.',
+                    [
+                        'thanh_vien_id' => $thanhVien->id,
+                        'nguoi_dung_id' => $nguoiDung->id,
+                        'email' => $nguoiDung->email,
+                    ]
+                );
+
+                continue;
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | LẤY EMAIL CỦA NGƯỜI NÀY
+            |--------------------------------------------------------------------------
+            */
+
+            $email = trim(
+                (string) $nguoiDung->email
+            );
+
+            $hoTen = $nguoiDung->ho_ten
+                ?: 'Quý khách';
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | KIỂM TRA EMAIL ĐÃ XÁC THỰC
+            |--------------------------------------------------------------------------
+            */
+
+            $emailDaXacThuc =
+                !is_null(
+                    $nguoiDung->email_verified_at
+                );
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | TẶNG ĐIỂM
+            |--------------------------------------------------------------------------
+            */
 
             if ($data['loai'] === 'tang') {
 
-                if ((int) ($data['tinh_vao_hang'] ?? 0) === 1) {
+                /*
+                |------------------------------------------------------------------
+                | TẶNG CÓ XÉT HẠNG
+                |------------------------------------------------------------------
+                */
+
+                if (
+                    (int) ($data['tinh_vao_hang'] ?? 0) === 1
+                ) {
 
                     $thanhVien->congDiem(
-                        $data['so_diem'],
+
+                        (int) $data['so_diem'],
+
                         null,
-                        'Admin tặng điểm cho bạn : '
+
+                        'Admin tặng điểm cho bạn: '
                             . $data['noi_dung']
                     );
                 } else {
 
+                    /*
+                    |------------------------------------------------------------------
+                    | TẶNG KHÔNG XÉT HẠNG
+                    |------------------------------------------------------------------
+                    */
+
                     $thanhVien->congDiemKhongXetHang(
-                        $data['so_diem'],
-                        'Admin tặng điểm  không xét hạng: '
+
+                        (int) $data['so_diem'],
+
+                        'Admin tặng điểm không xét hạng: '
                             . $data['noi_dung']
                     );
                 }
+
 
                 /*
-            |--------------------------------------------------------------------------
-            | THÔNG BÁO CHO USER
-            |--------------------------------------------------------------------------
-            */
-
-                if ($thanhVien->nguoiDung) {
-
-                    $hangText = !empty($data['hang_thanh_vien'])
-                        ? ucfirst($data['hang_thanh_vien'])
-                        : 'tất cả hạng';
-
-                    ThongBaoCaNhan::create([
-                        'nguoi_dung_id' =>
-                        $thanhVien->nguoiDung->id,
-
-                        'tieu_de' =>
-                        '🎁 Bạn được tặng điểm',
-
-                        'noi_dung' =>
-                        'Bạn vừa được Admin tặng '
-                            . number_format($data['so_diem'])
-                            . ' điểm dành cho '
-                            . $hangText
-                            . '. '
-                            . $data['noi_dung'],
-
-                        'loai_thong_bao' =>
-                        'diem',
-
-                        'duong_dan' =>
-                        route('user.thanh-vien.index'),
-
-                        'da_doc' => false,
-
-                        'doc_luc' => null,
-                    ]);
-                }
-            }
-
-            /*
-        |--------------------------------------------------------------------------
-        | THU HỒI ĐIỂM
-        |--------------------------------------------------------------------------
-        */ else {
-
-                // Không cho thu hồi quá số điểm hiện tại
-                $soDiemThuHoi = min(
-                    $data['so_diem'],
-                    (int) $thanhVien->diem_hien_tai
-                );
-
-                if ($soDiemThuHoi > 0) {
-
-                    $thanhVien->thuHoiDiem(
-                        $soDiemThuHoi,
-                        'Admin thu hồi điểm của bạn : '
-                            . $data['noi_dung']
-                    );
-
-                    /*
                 |--------------------------------------------------------------------------
-                | THÔNG BÁO CHO USER
+                | REFRESH ĐIỂM
                 |--------------------------------------------------------------------------
                 */
 
-                    if ($thanhVien->nguoiDung) {
+                $thanhVien->refresh();
 
-                        ThongBaoCaNhan::create([
-                            'nguoi_dung_id' =>
-                            $thanhVien->nguoiDung->id,
 
-                            'tieu_de' =>
-                            '🔄 Điểm thành viên được cập nhật',
+                /*
+                |--------------------------------------------------------------------------
+                | THÔNG BÁO WEBSITE
+                |--------------------------------------------------------------------------
+                */
 
-                            'noi_dung' =>
-                            'Admin đã thu hồi '
-                                . number_format($soDiemThuHoi)
-                                . ' điểm từ tài khoản của bạn. '
-                                . $data['noi_dung'],
+                ThongBaoCaNhan::create([
 
-                            'loai_thong_bao' =>
-                            'diem',
+                    'nguoi_dung_id' =>
+                    $nguoiDung->id,
 
-                            'duong_dan' =>
-                            route('user.thanh-vien.index'),
+                    'tieu_de' =>
+                    '🎁 Bạn được tặng điểm',
 
-                            'da_doc' => false,
+                    'noi_dung' =>
+                    'Bạn vừa được Admin tặng '
+                        . number_format($data['so_diem'])
+                        . ' điểm dành cho '
+                        . $hangText
+                        . '. '
+                        . $data['noi_dung'],
 
-                            'doc_luc' => null,
-                        ]);
+                    'loai_thong_bao' =>
+                    'diem',
+
+                    'duong_dan' =>
+                    route('user.thanh-vien.index'),
+
+                    'da_doc' =>
+                    false,
+
+                    'doc_luc' =>
+                    null,
+                ]);
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | GỬI EMAIL
+                |
+                | CHỈ GỬI KHI:
+                | 1. Có email
+                | 2. Email đã xác thực
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $email !== '' &&
+                    $emailDaXacThuc
+                ) {
+
+                    try {
+
+                        Mail::to($email)->send(
+
+                            new DiemThanhVienMail(
+
+                                'tang',
+
+                                (int) $data['so_diem'],
+
+                                $data['noi_dung'],
+
+                                (int) $thanhVien->diem_hien_tai,
+
+                                $hoTen
+                            )
+                        );
+
+
+                        $soEmailThanhCong++;
+
+
+                        \Log::info(
+
+                            'Đã gửi email tặng điểm cho tài khoản đã xác thực.',
+
+                            [
+                                'thanh_vien_id' =>
+                                $thanhVien->id,
+
+                                'nguoi_dung_id' =>
+                                $nguoiDung->id,
+
+                                'email' =>
+                                $email,
+
+                                'so_diem' =>
+                                $data['so_diem'],
+                            ]
+                        );
+                    } catch (\Throwable $e) {
+
+                        $soEmailLoi++;
+
+
+                        \Log::error(
+
+                            'Không thể gửi email tặng điểm.',
+
+                            [
+                                'thanh_vien_id' =>
+                                $thanhVien->id,
+
+                                'nguoi_dung_id' =>
+                                $nguoiDung->id,
+
+                                'email' =>
+                                $email,
+
+                                'error' =>
+                                $e->getMessage(),
+                            ]
+                        );
                     }
                 }
+
+
+                $soLuong++;
             }
 
-            $soLuong++;
+
+            /*
+            |--------------------------------------------------------------------------
+            | THU HỒI ĐIỂM
+            |--------------------------------------------------------------------------
+            */ else {
+
+                /*
+                |------------------------------------------------------------------
+                | KHÔNG CHO THU HỒI QUÁ SỐ ĐIỂM HIỆN TẠI
+                |------------------------------------------------------------------
+                */
+
+                if (
+                    (int) $data['so_diem']
+                    >
+                    (int) $thanhVien->diem_hien_tai
+                ) {
+
+                    $soLuongBoQua++;
+
+
+                    \Log::warning(
+
+                        'Bỏ qua thành viên vì không đủ điểm để thu hồi.',
+
+                        [
+                            'thanh_vien_id' =>
+                            $thanhVien->id,
+
+                            'email' =>
+                            $email,
+
+                            'diem_hien_tai' =>
+                            $thanhVien->diem_hien_tai,
+
+                            'so_diem_thu_hoi' =>
+                            $data['so_diem'],
+                        ]
+                    );
+
+                    continue;
+                }
+
+
+                $soDiemThuHoi =
+                    (int) $data['so_diem'];
+
+
+                if ($soDiemThuHoi <= 0) {
+
+                    $soLuongBoQua++;
+
+                    continue;
+                }
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | THU HỒI ĐIỂM
+                |--------------------------------------------------------------------------
+                */
+
+                $thanhVien->thuHoiDiem(
+
+                    $soDiemThuHoi,
+
+                    'Admin thu hồi điểm của bạn: '
+                        . $data['noi_dung']
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | REFRESH
+                |--------------------------------------------------------------------------
+                */
+
+                $thanhVien->refresh();
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | THÔNG BÁO WEBSITE
+                |--------------------------------------------------------------------------
+                */
+
+                ThongBaoCaNhan::create([
+
+                    'nguoi_dung_id' =>
+                    $nguoiDung->id,
+
+                    'tieu_de' =>
+                    '🔄 Điểm thành viên được cập nhật',
+
+                    'noi_dung' =>
+                    'Admin đã thu hồi '
+                        . number_format($soDiemThuHoi)
+                        . ' điểm từ tài khoản của bạn. '
+                        . $data['noi_dung'],
+
+                    'loai_thong_bao' =>
+                    'diem',
+
+                    'duong_dan' =>
+                    route('user.thanh-vien.index'),
+
+                    'da_doc' =>
+                    false,
+
+                    'doc_luc' =>
+                    null,
+                ]);
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | GỬI EMAIL
+                |
+                | CHỈ GỬI KHI:
+                | 1. Có email
+                | 2. Email đã xác thực
+                |--------------------------------------------------------------------------
+                */
+
+                if (
+                    $email !== '' &&
+                    $emailDaXacThuc
+                ) {
+
+                    try {
+
+                        Mail::to($email)->send(
+
+                            new DiemThanhVienMail(
+
+                                'thu_hoi',
+
+                                $soDiemThuHoi,
+
+                                $data['noi_dung'],
+
+                                (int) $thanhVien->diem_hien_tai,
+
+                                $hoTen
+                            )
+                        );
+
+
+                        $soEmailThanhCong++;
+
+
+                        \Log::info(
+
+                            'Đã gửi email thu hồi điểm cho tài khoản đã xác thực.',
+
+                            [
+                                'thanh_vien_id' =>
+                                $thanhVien->id,
+
+                                'nguoi_dung_id' =>
+                                $nguoiDung->id,
+
+                                'email' =>
+                                $email,
+
+                                'so_diem' =>
+                                $soDiemThuHoi,
+                            ]
+                        );
+                    } catch (\Throwable $e) {
+
+                        $soEmailLoi++;
+
+
+                        \Log::error(
+
+                            'Không thể gửi email thu hồi điểm.',
+
+                            [
+                                'thanh_vien_id' =>
+                                $thanhVien->id,
+
+                                'nguoi_dung_id' =>
+                                $nguoiDung->id,
+
+                                'email' =>
+                                $email,
+
+                                'error' =>
+                                $e->getMessage(),
+                            ]
+                        );
+                    }
+                }
+
+
+                $soLuong++;
+            }
         }
 
+
         /*
-    |--------------------------------------------------------------------------
-    | THÔNG BÁO CHO ADMIN
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | THÔNG BÁO CHO ADMIN
+        |--------------------------------------------------------------------------
+        */
 
         if ($data['loai'] === 'tang') {
 
             AdminNotificationService::push(
+
                 '🎁 Admin đã tặng điểm hàng loạt',
 
                 'Admin vừa tặng '
                     . number_format($data['so_diem'])
                     . ' điểm cho '
                     . $soLuong
-                    . ' thành viên. Nội dung: '
+                    . ' thành viên. '
+                    . 'Email thành công: '
+                    . $soEmailThanhCong
+                    . '. Email lỗi: '
+                    . $soEmailLoi
+                    . '. Nội dung: '
                     . $data['noi_dung'],
 
                 'Success'
@@ -693,31 +1249,64 @@ class ThanhVienController extends Controller
         } else {
 
             AdminNotificationService::push(
+
                 '🔄 Admin đã thu hồi điểm hàng loạt',
 
                 'Admin vừa thu hồi điểm của '
                     . $soLuong
-                    . ' thành viên. Nội dung: '
+                    . ' thành viên. '
+                    . 'Email thành công: '
+                    . $soEmailThanhCong
+                    . '. Email lỗi: '
+                    . $soEmailLoi
+                    . '. Nội dung: '
                     . $data['noi_dung'],
 
                 'Warning'
             );
         }
 
+
         /*
-    |--------------------------------------------------------------------------
-    | THÔNG BÁO THÀNH CÔNG
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | THÔNG BÁO KẾT QUẢ
+        |--------------------------------------------------------------------------
+        */
 
-        $message = $data['loai'] === 'tang'
+        if ($data['loai'] === 'tang') {
 
-            ? "Đã tặng {$data['so_diem']} điểm cho {$soLuong} thành viên."
+            $message =
+                "Đã tặng "
+                . number_format($data['so_diem'])
+                . " điểm cho "
+                . $soLuong
+                . " thành viên. "
+                . "Đã gửi "
+                . $soEmailThanhCong
+                . " email.";
+        } else {
 
-            : "Đã thu hồi điểm của {$soLuong} thành viên.";
+            $message =
+                "Đã thu hồi điểm của "
+                . $soLuong
+                . " thành viên. "
+                . "Đã gửi "
+                . $soEmailThanhCong
+                . " email.";
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REDIRECT
+        |--------------------------------------------------------------------------
+        */
 
         return redirect()
             ->route('admin.thanh-vien.diem-tat-ca')
-            ->with('success', $message);
+            ->with(
+                'success',
+                $message
+            );
     }
 }

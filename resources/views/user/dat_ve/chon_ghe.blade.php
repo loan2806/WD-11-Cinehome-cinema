@@ -3,6 +3,77 @@
 @section('title', 'Chọn ghế - ' . $suatChieu->phim->ten_phim)
 
 @section('content')
+    {{-- CSS Ghi đè màu ghế đang chọn & Tối ưu UX --}}
+    <style>
+        .seat-button.selected,
+        button.seat-button.selected {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            border-color: #ffffff !important;
+            box-shadow: 0 0 18px rgba(255, 255, 255, 0.95) !important;
+        }
+
+        .seat-button.selected span,
+        .seat-button.selected .seat-couple-label,
+        .seat-button.selected * {
+            color: #000000 !important;
+            font-weight: 900 !important;
+        }
+
+        .seat-swatch.is-selected {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            border: 1px solid #ffffff !important;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .animate-pulse {
+            animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* UX: Khóa nút bấm khi chọn ghế không hợp lệ */
+        .booking-seat-primary-cta:disabled,
+        .booking-seat-primary-cta[disabled] {
+            background: #334155 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed !important;
+            opacity: 0.55 !important;
+            box-shadow: none !important;
+            transform: none !important;
+            border: 1px solid #475569 !important;
+        }
+
+        /* UX: Hiệu ứng thông báo lỗi mượt mà */
+        .booking-seat-alert {
+            background: rgba(239, 68, 68, 0.15) !important;
+            border: 1px solid #ef4444 !important;
+            color: #f87171 !important;
+            padding: 14px 18px !important;
+            border-radius: 12px !important;
+            margin: 15px 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 12px !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            position: relative !important;
+            z-index: 99 !important;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15) !important;
+            animation: fadeInAlert 0.25s ease-in-out;
+        }
+
+        @keyframes fadeInAlert {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+
     @php
         $poster = $suatChieu->phim->poster ?? null;
         $posterUrl = $poster
@@ -29,9 +100,9 @@
         $hasVip = !is_null($vipSeat);
         $hasDouble = !is_null($doubleSeat);
 
-        $normalPrice = $normalSeat['gia'] ?? ($suatChieu->gia_ve_cuoi_cung ?? 0);
-        $vipPrice = $vipSeat['gia'] ?? $normalPrice;
-        $doublePrice = $doubleSeat['gia'] ?? (($suatChieu->gia_ve_cuoi_cung ?? 0) * 2);
+        $normalPrice = (int) round($normalSeat['gia'] ?? ($suatChieu->gia_ve_cuoi_cung ?? 0));
+        $vipPrice = (int) round($vipSeat['gia'] ?? $normalPrice);
+        $doublePrice = (int) round($doubleSeat['gia'] ?? (($suatChieu->gia_ve_cuoi_cung ?? 0) * 2));
 
         $totalSeats = $flatSeats->count();
         $availableSeats = $flatSeats->where('chon_duoc', true)->count();
@@ -64,7 +135,7 @@
                         <span>Đã đặt / giữ</span>
                     </div>
                     <div>
-                        <strong>{{ number_format($suatChieu->gia_ve_cuoi_cung, 0, ',', '.') }}đ</strong>
+                        <strong>{{ number_format((int)round($suatChieu->gia_ve_cuoi_cung), 0, ',', '.') }}đ</strong>
                         <span>Giá từ</span>
                     </div>
                 </div>
@@ -129,7 +200,6 @@
             </aside>
 
             <section class="booking-seat-map-panel" aria-label="Sơ đồ chọn ghế">
-                
                 @if (isset($pendingTicket) && $pendingTicket && !$pendingTicket->isExpired())
                     <div class="booking-pending-alert" style="background: rgba(234, 179, 8, 0.12) !important; border: 1px solid #eab308 !important; color: #fef08a !important; padding: 16px 20px !important; border-radius: 16px !important; margin-bottom: 20px !important; display: flex !important; justify-content: space-between !important; align-items: center !important; gap: 15px !important; flex-wrap: wrap !important; z-index: 99 !important; box-shadow: 0 10px 25px -5px rgba(234, 179, 8, 0.2);">
                         <div style="display: flex; align-items: center; gap: 14px;">
@@ -166,7 +236,7 @@
                 </div>
 
                 @if (session('error'))
-                    <div class="booking-seat-alert" style="background: rgba(239, 68, 68, 0.15) !important; border: 1px solid #ef4444 !important; color: #f87171 !important; padding: 16px !important; border-radius: 12px !important; margin: 15px 0 !important; display: flex !important; align-items: center !important; gap: 12px !important; font-weight: 600 !important; font-size: 14px !important; position: relative !important; z-index: 99 !important;">
+                    <div class="booking-seat-alert">
                         <i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important;"></i>
                         <span>{{ session('error') }}</span>
                     </div>
@@ -185,7 +255,6 @@
                                     <span class="row-label">{{ $hang }}</span>
 
                                     @php
-                                        // Sắp xếp tự nhiên mã ghế (ví dụ: H1, H2, H3... H10)
                                         usort($cacGhe, function ($a, $b) {
                                             return strnatcmp($a['ma_ghe'], $b['ma_ghe']);
                                         });
@@ -222,7 +291,7 @@
                                                         'ma_ghe' => $ghe['ma_ghe'] . ' | ' . $ghe2['ma_ghe'],
                                                         'seat_codes' => $ghe['ma_ghe'] . ',' . $ghe2['ma_ghe'],
                                                         'loai_ghe' => $ghe['loai_ghe'],
-                                                        'gia' => $ghe['gia'],
+                                                        'gia' => (int) round($ghe['gia']),
                                                         'mau_sac' => $ghe['mau_sac'],
                                                         'da_dat' => ($ghe['da_dat'] ?? false) || ($ghe2['da_dat'] ?? false),
                                                         'bao_tri' => ($ghe['bao_tri'] ?? false) || ($ghe2['bao_tri'] ?? false),
@@ -238,7 +307,7 @@
                                                 'ma_ghe' => $ghe['ma_ghe'],
                                                 'seat_codes' => $ghe['ma_ghe'],
                                                 'loai_ghe' => $ghe['loai_ghe'],
-                                                'gia' => $ghe['gia'],
+                                                'gia' => (int) round($ghe['gia']),
                                                 'mau_sac' => $ghe['mau_sac'],
                                                 'da_dat' => $ghe['da_dat'] ?? false,
                                                 'bao_tri' => $ghe['bao_tri'] ?? false,
@@ -258,6 +327,7 @@
                                             $isCouple = $ghe['is_couple'];
                                             $codes = explode(',', $seatCodes);
                                             $typeText = $ghe['loai_ghe'] ?? 'Ghế';
+                                            $giaVeGhe = (int) round($ghe['gia']);
                                         @endphp
 
                                         <div class="seat-wrapper {{ $isCouple ? 'seat-wrapper--couple' : '' }}">
@@ -271,10 +341,10 @@
                                                 style="--seat-color: {{ $ghe['mau_sac'] }}; @if($isCouple) width: 84px; max-width: 84px; @endif"
                                                 data-seat="{{ $seatLabel }}"
                                                 data-seat-codes="{{ $seatCodes }}"
-                                                data-price="{{ $ghe['gia'] }}"
+                                                data-price="{{ $giaVeGhe }}"
                                                 data-type="{{ $typeText }}"
                                                 data-static-disabled="{{ $disabled ? '1' : '0' }}"
-                                                aria-label="Ghế {{ $seatLabel }} - {{ $typeText }} - {{ number_format($ghe['gia'], 0, ',', '.') }}đ"
+                                                aria-label="Ghế {{ $seatLabel }} - {{ $typeText }} - {{ number_format($giaVeGhe, 0, ',', '.') }}đ"
                                                 aria-pressed="false"
                                                 @disabled($disabled)
                                             >
@@ -288,7 +358,7 @@
                                             <div class="seat-tooltip">
                                                 <strong>{{ $seatLabel }}</strong>
                                                 <span>{{ $typeText }}</span>
-                                                <small>{{ number_format($ghe['gia'], 0, ',', '.') }}đ</small>
+                                                <small>{{ number_format($giaVeGhe, 0, ',', '.') }}đ</small>
                                             </div>
                                         </div>
                                     @endforeach
@@ -417,7 +487,7 @@
             }
 
             function money(value) {
-                return Number(value || 0).toLocaleString("vi-VN") + "đ";
+                return Math.round(Number(value || 0)).toLocaleString("vi-VN") + "đ";
             }
 
             function getSeatsFromButton(btn) {
@@ -583,55 +653,101 @@
                 }
             }
 
+            // -------------------------------------------------------------
+            // LOGIC TỰ ĐỘNG PHÂN BIỆT ẢNH 1 VÀ ẢNH 2:
+            // - Ảnh 1 (Hàng có ghế người khác đã đặt): Cho phép chọn bất kỳ ghế trống nào ở 2 bên.
+            // - Ảnh 2 (Hàng hoàn toàn trống chưa ai mua): Chặn trường hợp bỏ lại đúng 1 ghế trống lẻ ở sát tường.
+            // -------------------------------------------------------------
             function validateSeatsAdjacentJS(seats) {
-                if (seats.length <= 1) return true;
+                if (!seats || seats.length === 0) return true;
 
-                const parsedSeats = [];
                 const seatRegex = /^([A-Z]+)([0-9]+)$/;
+                const parsedSeats = seats.map(s => String(s || "").toUpperCase().trim()).filter(Boolean);
+                const selectedCodes = new Set(parsedSeats);
 
-                for (const seat of seats) {
-                    const upperSeat = String(seat || "").toUpperCase().trim();
-                    const match = upperSeat.match(seatRegex);
-                    if (match) {
-                        parsedSeats.push({
-                            row: match[1],
-                            num: parseInt(match[2], 10)
+                if (selectedCodes.size === 0) return true;
+
+                // Lấy các hàng mà người dùng đang có chọn ghế
+                const selectedRows = new Set();
+                parsedSeats.forEach(code => {
+                    const m = code.match(seatRegex);
+                    if (m) selectedRows.add(m[1]);
+                });
+
+                for (const row of selectedRows) {
+                    const rowButtons = seatButtons.filter(btn => {
+                        const btnCodes = getSeatsFromButton(btn);
+                        return btnCodes.some(c => c.startsWith(row));
+                    });
+
+                    const physicalSeats = [];
+                    let hasBookedOrLockedInRow = false;
+
+                    rowButtons.forEach(btn => {
+                        const codes = getSeatsFromButton(btn);
+                        const isUnavailable = btn.classList.contains('booked') ||
+                                              btn.classList.contains('locked') ||
+                                              btn.classList.contains('maintenance') ||
+                                              btn.dataset.staticDisabled === "1";
+
+                        if (isUnavailable) {
+                            hasBookedOrLockedInRow = true; // Phát hiện hàng đã có người khác đặt vé
+                        }
+
+                        codes.forEach(c => {
+                            const m = c.match(seatRegex);
+                            if (m) {
+                                physicalSeats.push({
+                                    code: c,
+                                    num: parseInt(m[2], 10),
+                                    isUnavailable: isUnavailable,
+                                    isSelected: selectedCodes.has(c),
+                                    isOccupied: isUnavailable || selectedCodes.has(c)
+                                });
+                            }
                         });
-                    }
-                }
+                    });
 
-                if (parsedSeats.length === 0) return true;
+                    physicalSeats.sort((a, b) => a.num - b.num);
 
-                const grouped = {};
-                for (const s of parsedSeats) {
-                    if (!grouped[s.row]) grouped[s.row] = [];
-                    grouped[s.row].push(s.num);
-                }
+                    // TH 1 (Ảnh 1): HÀNG ĐÃ CÓ GHẾ NGƯỜI KHÁC ĐẶT
+                    // Chỉ kiểm tra không được bỏ trống ghế ở giữa CÁC GHẾ NGƯỜI DÙNG ĐANG CHỌN.
+                    if (hasBookedOrLockedInRow) {
+                        const selectedIndices = [];
+                        physicalSeats.forEach((seat, idx) => {
+                            if (seat.isSelected) selectedIndices.push(idx);
+                        });
 
-                for (const row in grouped) {
-                    const nums = [...new Set(grouped[row])].sort((a, b) => a - b);
-                    for (let i = 0; i < nums.length - 1; i++) {
-                        const start = nums[i];
-                        const end = nums[i + 1];
-                        if (end - start > 1) {
-                            for (let middleNum = start + 1; middleNum < end; middleNum++) {
-                                const middleSeatCode = `${row}${middleNum}`;
-                                const middleBtn = seatButtons.find(btn => getSeatsFromButton(btn).includes(middleSeatCode));
-                                if (middleBtn) {
-                                    const isBooked = middleBtn.classList.contains('booked');
-                                    const isLocked = middleBtn.classList.contains('locked');
-                                    const isMaintenance = middleBtn.classList.contains('maintenance');
-                                    const isStaticDisabled = middleBtn.dataset.staticDisabled === "1";
-                                    const isSelectedByMe = selectedSeats.includes(middleSeatCode);
-
-                                    if (!isBooked && !isLocked && !isMaintenance && !isStaticDisabled && !isSelectedByMe) {
-                                        return false;
-                                    }
+                        if (selectedIndices.length > 1) {
+                            const minIdx = Math.min(...selectedIndices);
+                            const maxIdx = Math.max(...selectedIndices);
+                            for (let i = minIdx + 1; i < maxIdx; i++) {
+                                if (!physicalSeats[i].isOccupied) {
+                                    return false; // Chọn ghế đứt đoạn ở giữa
                                 }
                             }
                         }
+                    } 
+                    // TH 2 (Ảnh 2): HÀNG HOÀN TOÀN TRỐNG (CHƯA AI ĐẶT VÉ NÀO)
+                    // Áp dụng quy tắc không được bỏ lại duy nhất 1 ghế trống đơn lẻ ở đầu hàng
+                    else {
+                        let emptyBlockLength = 0;
+                        for (let i = 0; i < physicalSeats.length; i++) {
+                            if (physicalSeats[i].isOccupied) {
+                                if (emptyBlockLength === 1) {
+                                    return false; // Bị để lại 1 ghế trống lẻ sát tường/mép
+                                }
+                                emptyBlockLength = 0;
+                            } else {
+                                emptyBlockLength++;
+                            }
+                        }
+                        if (emptyBlockLength === 1) {
+                            return false;
+                        }
                     }
                 }
+
                 return true;
             }
 
@@ -640,11 +756,10 @@
                 if (!alertEl) {
                     alertEl = document.createElement("div");
                     alertEl.className = "booking-seat-alert";
-                    alertEl.style.cssText = "background: rgba(239, 68, 68, 0.15) !important; border: 1px solid #ef4444 !important; color: #f87171 !important; padding: 16px !important; border-radius: 12px !important; margin: 15px 0 !important; display: flex !important; align-items: center !important; gap: 12px !important; font-weight: 600 !important; font-size: 14px !important; position: relative !important; z-index: 99 !important;";
                     const toolbar = document.querySelector(".booking-seat-toolbar");
                     if (toolbar) toolbar.parentNode.insertBefore(alertEl, toolbar.nextSibling);
                 }
-                alertEl.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important; margin-right: 8px;"></i><span>${message}</span>`;
+                alertEl.innerHTML = `<i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important;"></i><span>${message}</span>`;
             }
 
             function clearSeatErrorJS() {
@@ -656,7 +771,17 @@
                 selectedSeats = Array.from(new Set(selectedSeats.map(normalizeSeat).filter(Boolean)));
                 syncButtonStates();
 
-                if (validateSeatsAdjacentJS(selectedSeats)) clearSeatErrorJS();
+                const hasSeat = selectedSeats.length > 0;
+                const isValid = hasSeat && validateSeatsAdjacentJS(selectedSeats);
+
+                // UX: Hiển thị/ẩn thông báo mượt mà & Khóa nút bấm
+                if (!hasSeat) {
+                    clearSeatErrorJS();
+                } else if (!isValid) {
+                    showSeatErrorJS("Vị trí chọn không hợp lệ: Hàng ghế chưa có người đặt không được để lại 1 ghế trống đơn lẻ ở đầu hàng!");
+                } else {
+                    clearSeatErrorJS();
+                }
 
                 if (seatCountEl) seatCountEl.innerText = selectedSeats.length + " ghế";
                 if (seatLabels) seatLabels.innerText = selectedSeats.length ? selectedSeats.join(", ") : "—";
@@ -676,20 +801,20 @@
 
                 let total = 0;
                 seatButtons.forEach(btn => {
-                    if (buttonIsSelected(btn)) total += Number(btn.dataset.price || 0);
+                    if (buttonIsSelected(btn)) total += Math.round(Number(btn.dataset.price || 0));
                 });
 
                 if (totalPriceEl) totalPriceEl.innerText = money(total);
 
+                // UX: Khóa nút Tiếp tục chọn đồ ăn khi không hợp lệ
                 if (btnFood) {
-                    const hasSeat = selectedSeats.length > 0;
-                    btnFood.disabled = !hasSeat;
-                    btnFood.classList.toggle("is-enabled", hasSeat);
+                    btnFood.disabled = !isValid;
+                    btnFood.classList.toggle("is-enabled", isValid);
+                }
 
-                    if (btnResetSeats) {
-                        btnResetSeats.disabled = !hasSeat;
-                        btnResetSeats.classList.toggle("is-disabled", !hasSeat);
-                    }
+                if (btnResetSeats) {
+                    btnResetSeats.disabled = !hasSeat;
+                    btnResetSeats.classList.toggle("is-disabled", !hasSeat);
                 }
 
                 checkTimerState();
@@ -708,8 +833,7 @@
                         updateUI();
                         await releaseSeats(codes);
                     } else {
-                        const newCodes = codes.filter(code => !selectedSeats.includes(code));
-                        if (selectedSeats.length + newCodes.length > maxSeatCount) {
+                        if (selectedSeats.length + codes.length > maxSeatCount) {
                             alert("Bạn chỉ có thể chọn tối đa " + maxSeatCount + " ghế trong một lần đặt.");
                             return;
                         }
@@ -765,7 +889,7 @@
                     if (selectedSeats.length === 0) return;
 
                     if (!validateSeatsAdjacentJS(selectedSeats)) {
-                        showSeatErrorJS("Các ghế bạn chọn phải cạnh nhau trong cùng một hàng!");
+                        showSeatErrorJS("Vị trí chọn không hợp lệ: Hàng ghế chưa có người đặt không được để lại 1 ghế trống đơn lẻ ở đầu hàng!");
                         return;
                     }
 

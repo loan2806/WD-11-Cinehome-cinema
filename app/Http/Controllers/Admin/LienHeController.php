@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Models\ThongBaoCaNhan;
 
 class LienHeController extends Controller
 {
@@ -62,56 +63,258 @@ class LienHeController extends Controller
 
     public function show(LienHe $lienHe)
     {
-        if (! \coQuyen('lien_he.xem')) {
-            return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền xem Chi tiết liên hệ!');
+        // 🌟 Kiểm tra quyền xem chi tiết liên hệ
+        if (!\coQuyen('lien_he.xem')) {
+            return redirect()
+                ->route('admin.dashboard')
+                ->with('error', 'Tài khoản của bạn không có quyền xem Chi tiết liên hệ!');
         }
 
-        $lienHe->load(['nguoiDung', 'nguoiXuLy']);
+        // Nếu đang chờ xử lý thì tự động chuyển sang đang xử lý
+        if ($lienHe->trang_thai === 'cho_xu_ly') {
+            $lienHe->update([
+                'trang_thai' => 'dang_xu_ly',
+            ]);
+        }
+
+        $lienHe->load([
+            'nguoiDung',
+            'nguoiXuLy',
+            'voucher',
+        ]);
 
         $activeVouchers = Voucher::where('trang_thai', true)
             ->whereDate('ngay_het_han', '>=', today())
             ->orderBy('ten_voucher')
             ->get();
 
-        $duocTangVoucher = in_array($lienHe->chu_de, self::CHU_DE_DUOC_TANG_VOUCHER, true);
+        $duocTangVoucher = in_array(
+            $lienHe->chu_de,
+            self::CHU_DE_DUOC_TANG_VOUCHER,
+            true
+        );
 
-        return view('admin.lien-he.show', compact('lienHe', 'activeVouchers', 'duocTangVoucher'));
+        return view(
+            'admin.lien-he.show',
+            compact('lienHe', 'activeVouchers', 'duocTangVoucher')
+        );
     }
-
     public function update(Request $request, LienHe $lienHe)
     {
-        if (! \coQuyen('lien_he.cap_nhat')) {
-            return back()->with('error', 'Tài khoản của bạn không có quyền cập nhật trạng thái liên hệ!');
+        if (!\coQuyen('lien_he.cap_nhat')) {
+            return back()->with(
+                'error',
+                'Tài khoản của bạn không có quyền cập nhật liên hệ!'
+            );
+        }
+
+        // Đã xử lý thì không cho cập nhật lại
+        if ($lienHe->trang_thai === 'da_xu_ly') {
+            return back()->with(
+                'error',
+                'Liên hệ này đã được xử lý, không thể cập nhật lại.'
+            );
         }
 
         $data = $request->validate([
-            'trang_thai' => ['required', 'in:cho_xu_ly,dang_xu_ly,da_xu_ly'],
             'phan_hoi' => ['nullable', 'string', 'max:2000'],
+            'voucher_id' => ['nullable', 'exists:vouchers,id'],
         ]);
-
-        $data['nguoi_xu_ly_id'] = auth()->id();
-
-        if ($data['trang_thai'] === 'da_xu_ly') {
-            $data['thoi_gian_xu_ly'] = now();
-        }
 
         $phanHoiCu = $lienHe->phan_hoi;
 
-        $lienHe->update($data);
+        /*
+    |--------------------------------------------------------------------------
+    | Tự động xác định trạng thái
+    |--------------------------------------------------------------------------
+    */
+
+        if (!empty($data['phan_hoi'])) {
+            $data['trang_thai'] = 'da_xu_ly';
+            $data['thoi_gian_xu_ly'] = now();
+        } else {
+            $data['trang_thai'] = 'dang_xu_ly';
+            $data['thoi_gian_xu_ly'] = null;
+        }
+
+        $data['nguoi_xu_ly_id'] = auth()->id();
+
+        /*
+    |--------------------------------------------------------------------------
+    | Voucher
+    |--------------------------------------------------------------------------
+    */
+
+        $voucher = null;
+        $nguoiDungVoucher = null;
+
+        if (!empty($data['voucher_id'])) {
+
+            // Không cho tặng nếu liên hệ không đủ điều kiện
+            if (!in_array(
+                $lienHe->chu_de,
+                self::CHU_DE_DUOC_TANG_VOUCHER,
+                true
+            )) {
+                return back()
+                    ->withInput()
+                    ->with(
+                        'error',
+                        'Chủ đề liên hệ này không được phép tặng voucher.'
+                    );
+            }
+
+            // Phải có tài khoản
+            if (!$lienHe->nguoi_dung_id) {
+                return back()
+                    ->withInput()
+                    ->with(
+                        'error',
+                        'Khách hàng chưa đăng nhập tài khoản nên không thể tặng voucher.'
+                    );
+            }
+
+            // Không cho tặng lần 2
+            if ($lienHe->voucher_id) {
+                return back()
+                    ->withInput()
+                    ->with(
+                        'error',
+                        'Liên hệ này đã được tặng voucher trước đó.'
+                    );
+            }
+
+            $voucher = Voucher::findOrFail($data['voucher_id']);
+
+            if (
+                !$voucher->trang_thai ||
+                $voucher->ngay_het_han->lt(today())
+            ) {
+                return back()
+                    ->withInput()
+                    ->with(
+                        'error',
+                        'Voucher này đang tắt hoặc đã hết hạn.'
+                    );
+            }
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Lưu liên hệ + tặng voucher trong cùng transaction
+    |--------------------------------------------------------------------------
+    */
+
+        DB::transaction(function () use (
+            $lienHe,
+            $data,
+            $voucher,
+            &$nguoiDungVoucher
+        ) {
+
+            // Không lưu voucher_id vào update nếu chưa thực sự tặng
+            unset($data['voucher_id']);
+
+            $lienHe->update($data);
+
+            if ($voucher) {
+
+                $nguoiDungVoucher = NguoiDungVoucher::create([
+                    'nguoi_dung_id' => $lienHe->nguoi_dung_id,
+                    'voucher_id' => $voucher->id,
+                    'ma_voucher_ca_nhan' => $this->maVoucherCaNhan($voucher),
+                    'loai_cap_phat' => 'admin_tang',
+                    'nam_ap_dung' => now()->year,
+                    'da_su_dung' => false,
+                    'ngay_nhan' => now(),
+                    'ngay_het_han' => $voucher->ngay_het_han->copy()->endOfDay(),
+                ]);
+
+                $lienHe->update([
+                    'voucher_id' => $voucher->id,
+                    'thoi_gian_tang_voucher' => now(),
+                ]);
+            }
+        });
+
+        /*
+    |--------------------------------------------------------------------------
+    | Gửi email phản hồi
+    |--------------------------------------------------------------------------
+    */
 
         $daGuiEmail = false;
 
-        if (!empty($data['phan_hoi']) && $data['phan_hoi'] !== $phanHoiCu) {
-            Mail::to($lienHe->email)->send(new LienHePhanHoiMail($lienHe));
+        if (
+            !empty($data['phan_hoi']) &&
+            $data['phan_hoi'] !== $phanHoiCu
+        ) {
+            Mail::to($lienHe->email)
+                ->send(new LienHePhanHoiMail($lienHe));
+
             $daGuiEmail = true;
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Nếu có voucher → thông báo + email voucher
+    |--------------------------------------------------------------------------
+    */
+
+        if ($voucher && $nguoiDungVoucher) {
+
+            ThongBaoCaNhan::create([
+                'nguoi_dung_id' => $lienHe->nguoi_dung_id,
+                'tieu_de' => 'Bạn được tặng voucher',
+                'noi_dung' => "Hệ thống đã tặng bạn voucher "
+                    . "\"{$voucher->ten_voucher}\". "
+                    . "Mã voucher: {$nguoiDungVoucher->ma_voucher_ca_nhan}. "
+                    . "Hạn sử dụng đến "
+                    . $nguoiDungVoucher->ngay_het_han->format('d/m/Y') . ".",
+                'loai' => 'voucher',
+            ]);
+
+            Mail::to($lienHe->email)
+                ->send(
+                    new VoucherUuDaiMail(
+                        $lienHe,
+                        $nguoiDungVoucher
+                    )
+                );
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Ghi nhật ký
+    |--------------------------------------------------------------------------
+    */
+
+        $moTa = "Cập nhật liên hệ #{$lienHe->id} sang {$data['trang_thai']}";
+
+        if ($voucher && $nguoiDungVoucher) {
+            $moTa .= " và tặng voucher {$nguoiDungVoucher->ma_voucher_ca_nhan}";
         }
 
         $this->ghiNhatKy(
             $request,
             'Cập nhật liên hệ khách hàng',
             'Quản lý liên hệ',
-            "Cập nhật liên hệ #{$lienHe->id} sang {$data['trang_thai']}"
+            $moTa
         );
+
+        /*
+    |--------------------------------------------------------------------------
+    | Thông báo kết quả
+    |--------------------------------------------------------------------------
+    */
+
+        if ($voucher && $nguoiDungVoucher) {
+
+            return back()->with(
+                'success',
+                "Đã cập nhật liên hệ, tặng voucher {$nguoiDungVoucher->ma_voucher_ca_nhan} và gửi thông báo cho khách hàng."
+            );
+        }
 
         return back()->with(
             'success',
@@ -119,78 +322,6 @@ class LienHeController extends Controller
                 ? 'Đã cập nhật liên hệ và gửi email phản hồi tới khách hàng.'
                 : 'Đã cập nhật liên hệ.'
         );
-    }
-
-    public function tangVoucher(Request $request, LienHe $lienHe)
-    {
-        if (! \coQuyen('lien_he.cap_nhat')) {
-            return back()->with('error', 'Tài khoản của bạn không có quyền tặng voucher!');
-        }
-
-        if (!$lienHe->nguoi_dung_id) {
-            return back()->with('error', 'Khách hàng này chưa đăng nhập tài khoản nên không thể tặng voucher trực tiếp.');
-        }
-
-        if (!in_array($lienHe->chu_de, self::CHU_DE_DUOC_TANG_VOUCHER, true)) {
-            return back()->with('error', 'Chỉ có thể tặng voucher cho liên hệ thuộc nhóm lỗi (đặt vé, thanh toán, tài khoản, khác). "Góp ý" không được tặng voucher.');
-        }
-
-        $data = $request->validate([
-            'voucher_id' => ['required', 'exists:vouchers,id'],
-        ]);
-
-        $voucher = Voucher::findOrFail($data['voucher_id']);
-
-        if (!$voucher->trang_thai || $voucher->ngay_het_han->lt(today())) {
-            throw ValidationException::withMessages([
-                'voucher_id' => 'Voucher này đang tắt hoặc đã hết hạn, không thể tặng cho khách.',
-            ]);
-        }
-
-        $nguoiDungVoucher = DB::transaction(function () use ($voucher, $lienHe) {
-            return NguoiDungVoucher::create([
-                'nguoi_dung_id' => $lienHe->nguoi_dung_id,
-                'voucher_id' => $voucher->id,
-                'ma_voucher_ca_nhan' => $this->maVoucherCaNhan($voucher),
-                'loai_cap_phat' => 'admin_tang',
-                'nam_ap_dung' => now()->year,
-                'da_su_dung' => false,
-                'ngay_nhan' => now(),
-                'ngay_het_han' => $voucher->ngay_het_han->copy()->endOfDay(),
-            ]);
-        });
-
-        $lyDoNhan = $this->lyDoTangVoucher($lienHe);
-
-        Mail::to($lienHe->email)->send(
-            new VoucherUuDaiMail($lienHe, $nguoiDungVoucher, $lyDoNhan)
-        );
-
-        $this->ghiNhatKy(
-            $request,
-            'Tặng voucher từ liên hệ khách hàng',
-            'Quản lý liên hệ',
-            "Tặng voucher {$voucher->ma_voucher} cho {$lienHe->ho_ten} (liên hệ #{$lienHe->id}) - Lý do: {$lyDoNhan}"
-        );
-
-        return back()->with(
-            'success',
-            "Đã tặng voucher {$nguoiDungVoucher->ma_voucher_ca_nhan} cho khách hàng và gửi email thông báo."
-        );
-    }
-
-    /**
-     * Tạo nội dung lý do nhận voucher dựa theo chủ đề liên hệ.
-     */
-    private function lyDoTangVoucher(LienHe $lienHe): string
-    {
-        return match ($lienHe->chu_de) {
-            'Lỗi đặt vé' => 'CineHome gửi tặng voucher để hỗ trợ và xin lỗi bạn về sự cố trong quá trình đặt vé.',
-            'Lỗi thanh toán' => 'CineHome gửi tặng voucher để hỗ trợ và xin lỗi bạn về sự cố trong quá trình thanh toán.',
-            'Lỗi tài khoản' => 'CineHome gửi tặng voucher để hỗ trợ và xin lỗi bạn về sự cố liên quan đến tài khoản.',
-            'Khác' => 'CineHome gửi tặng voucher để hỗ trợ và cảm ơn bạn đã phản hồi về vấn đề gặp phải trong quá trình sử dụng dịch vụ.',
-            default => 'CineHome gửi tặng voucher để cảm ơn bạn đã phản hồi và giúp chúng tôi cải thiện chất lượng dịch vụ.',
-        };
     }
 
     private function maVoucherCaNhan(Voucher $voucher): string
