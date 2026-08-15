@@ -17,7 +17,9 @@ class ThanhVienController extends Controller
         $nguoiDung = Auth::user();
 
         $thanhVien = $nguoiDung->thanhVien;
-
+        if ($thanhVien) {
+            $thanhVien->xuLyDiemHetHan();
+        }
         /*
          * Nếu tài khoản cũ chưa có thẻ thành viên thì tự động tạo.
          */

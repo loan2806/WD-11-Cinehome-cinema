@@ -62,6 +62,9 @@ class ThanhVienController extends Controller
             ->orderByDesc('tong_diem_tich_luy')
             ->paginate(10)
             ->withQueryString();
+        foreach ($thanhViens as $thanhVien) {
+            $thanhVien->xuLyDiemHetHan();
+        }
 
         // Thống kê số lượng thành viên theo từng hạng
         $tongThanhVien = ThanhVien::count();
@@ -105,6 +108,8 @@ class ThanhVienController extends Controller
      */
     public function show(ThanhVien $thanhVien)
     {
+        $thanhVien->xuLyDiemHetHan();
+        
         $thanhVien->load([
             'nguoiDung.veXemPhims',
             'nguoiDung.vouchersCaNhan.voucher',
