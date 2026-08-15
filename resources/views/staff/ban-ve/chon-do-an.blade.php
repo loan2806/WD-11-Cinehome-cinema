@@ -315,7 +315,7 @@ $baseSeatPrice = (float) $seatTotal;
             quantity = Math.max(quantity, 1);
 
             const currentQuantity =
-                Number(cart[cartItemKey] ? .qty) || 0;
+                Number(cart[cartItemKey]?.qty) || 0;
 
             if (currentQuantity + quantity > available) {
                 alert(

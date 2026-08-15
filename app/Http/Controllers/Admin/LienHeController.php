@@ -27,7 +27,6 @@ class LienHeController extends Controller
 
     public function index(Request $request)
     {
-        // 🌟 Kiểm tra quyền xem danh sách liên hệ
         if (! \coQuyen('lien_he.xem')) {
             return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền xem Danh sách liên hệ!');
         }
@@ -63,7 +62,6 @@ class LienHeController extends Controller
 
     public function show(LienHe $lienHe)
     {
-        // 🌟 Kiểm tra quyền xem chi tiết liên hệ
         if (! \coQuyen('lien_he.xem')) {
             return redirect()->route('admin.dashboard')->with('error', 'Tài khoản của bạn không có quyền xem Chi tiết liên hệ!');
         }
@@ -82,7 +80,6 @@ class LienHeController extends Controller
 
     public function update(Request $request, LienHe $lienHe)
     {
-        // 🌟 Kiểm tra quyền cập nhật liên hệ
         if (! \coQuyen('lien_he.cap_nhat')) {
             return back()->with('error', 'Tài khoản của bạn không có quyền cập nhật trạng thái liên hệ!');
         }
@@ -93,6 +90,7 @@ class LienHeController extends Controller
         ]);
 
         $data['nguoi_xu_ly_id'] = auth()->id();
+
         if ($data['trang_thai'] === 'da_xu_ly') {
             $data['thoi_gian_xu_ly'] = now();
         }
@@ -102,21 +100,29 @@ class LienHeController extends Controller
         $lienHe->update($data);
 
         $daGuiEmail = false;
+
         if (!empty($data['phan_hoi']) && $data['phan_hoi'] !== $phanHoiCu) {
             Mail::to($lienHe->email)->send(new LienHePhanHoiMail($lienHe));
             $daGuiEmail = true;
         }
 
-        $this->ghiNhatKy($request, 'Cập nhật liên hệ khách hàng', 'Quản lý liên hệ', "Cập nhật liên hệ #{$lienHe->id} sang {$data['trang_thai']}");
+        $this->ghiNhatKy(
+            $request,
+            'Cập nhật liên hệ khách hàng',
+            'Quản lý liên hệ',
+            "Cập nhật liên hệ #{$lienHe->id} sang {$data['trang_thai']}"
+        );
 
-        return back()->with('success', $daGuiEmail
-            ? 'Đã cập nhật liên hệ và gửi email phản hồi tới khách hàng.'
-            : 'Đã cập nhật liên hệ.');
+        return back()->with(
+            'success',
+            $daGuiEmail
+                ? 'Đã cập nhật liên hệ và gửi email phản hồi tới khách hàng.'
+                : 'Đã cập nhật liên hệ.'
+        );
     }
 
     public function tangVoucher(Request $request, LienHe $lienHe)
     {
-        // 🌟 Kiểm tra quyền cập nhật/tặng voucher
         if (! \coQuyen('lien_he.cap_nhat')) {
             return back()->with('error', 'Tài khoản của bạn không có quyền tặng voucher!');
         }
@@ -154,16 +160,37 @@ class LienHeController extends Controller
             ]);
         });
 
-        Mail::to($lienHe->email)->send(new VoucherUuDaiMail($lienHe, $nguoiDungVoucher));
+        $lyDoNhan = $this->lyDoTangVoucher($lienHe);
+
+        Mail::to($lienHe->email)->send(
+            new VoucherUuDaiMail($lienHe, $nguoiDungVoucher, $lyDoNhan)
+        );
 
         $this->ghiNhatKy(
             $request,
             'Tặng voucher từ liên hệ khách hàng',
             'Quản lý liên hệ',
-            "Tặng voucher {$voucher->ma_voucher} cho {$lienHe->ho_ten} (liên hệ #{$lienHe->id})"
+            "Tặng voucher {$voucher->ma_voucher} cho {$lienHe->ho_ten} (liên hệ #{$lienHe->id}) - Lý do: {$lyDoNhan}"
         );
 
-        return back()->with('success', "Đã tặng voucher {$nguoiDungVoucher->ma_voucher_ca_nhan} cho khách hàng và gửi email thông báo.");
+        return back()->with(
+            'success',
+            "Đã tặng voucher {$nguoiDungVoucher->ma_voucher_ca_nhan} cho khách hàng và gửi email thông báo."
+        );
+    }
+
+    /**
+     * Tạo nội dung lý do nhận voucher dựa theo chủ đề liên hệ.
+     */
+    private function lyDoTangVoucher(LienHe $lienHe): string
+    {
+        return match ($lienHe->chu_de) {
+            'Lỗi đặt vé' => 'CineHome gửi tặng voucher để hỗ trợ và xin lỗi bạn về sự cố trong quá trình đặt vé.',
+            'Lỗi thanh toán' => 'CineHome gửi tặng voucher để hỗ trợ và xin lỗi bạn về sự cố trong quá trình thanh toán.',
+            'Lỗi tài khoản' => 'CineHome gửi tặng voucher để hỗ trợ và xin lỗi bạn về sự cố liên quan đến tài khoản.',
+            'Khác' => 'CineHome gửi tặng voucher để hỗ trợ và cảm ơn bạn đã phản hồi về vấn đề gặp phải trong quá trình sử dụng dịch vụ.',
+            default => 'CineHome gửi tặng voucher để cảm ơn bạn đã phản hồi và giúp chúng tôi cải thiện chất lượng dịch vụ.',
+        };
     }
 
     private function maVoucherCaNhan(Voucher $voucher): string
@@ -177,7 +204,6 @@ class LienHeController extends Controller
 
     public function destroy(Request $request, LienHe $lienHe)
     {
-        // 🌟 Kiểm tra quyền xóa liên hệ
         if (! \coQuyen('lien_he.xoa')) {
             return back()->with('error', 'Tài khoản của bạn không có quyền xóa liên hệ!');
         }
@@ -185,8 +211,15 @@ class LienHeController extends Controller
         $id = $lienHe->id;
         $lienHe->delete();
 
-        $this->ghiNhatKy($request, 'Xóa liên hệ khách hàng', 'Quản lý liên hệ', "Xóa liên hệ #{$id}");
+        $this->ghiNhatKy(
+            $request,
+            'Xóa liên hệ khách hàng',
+            'Quản lý liên hệ',
+            "Xóa liên hệ #{$id}"
+        );
 
-        return redirect()->route('admin.lien-he.index')->with('success', 'Đã xóa liên hệ.');
+        return redirect()
+            ->route('admin.lien-he.index')
+            ->with('success', 'Đã xóa liên hệ.');
     }
 }

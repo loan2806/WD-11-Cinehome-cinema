@@ -237,6 +237,7 @@ Route::middleware(['auth'])
             ->name('notifications.index');
         Route::post('/notifications/mark-all-read', [StaffNotificationController::class, 'markAllRead'])
             ->name('notifications.mark-all-read');
+        Route::get('/notifications/latest', [StaffNotificationController::class, 'latest'])->name('notifications.latest');
 
         Route::get('/cham-congs', [\App\Http\Controllers\Staff\ChamCongController::class, 'index'])->name('cham-congs.index');
         Route::post('/cham-congs/check-in', [\App\Http\Controllers\Staff\ChamCongController::class, 'checkIn'])->name('cham-congs.check-in');

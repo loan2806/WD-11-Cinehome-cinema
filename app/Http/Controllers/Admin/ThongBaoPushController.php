@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
+use App\Models\ThongBaoCaNhan;
 
 class ThongBaoPushController extends Controller
 {
@@ -349,12 +350,27 @@ class ThongBaoPushController extends Controller
      */
     private function guiDenNhanVien(ThongBaoPush $thongBao): void
     {
-        $nhanViens = NguoiDung::where('vai_tro', 'nhan_vien')->select('id')->get();
+        $nhanViens = NguoiDung::where('vai_tro', 'nhan_vien')
+            ->select('id')
+            ->get();
 
         foreach ($nhanViens as $nhanVien) {
+
+            // Lưu người nhận của thông báo đẩy
             ThongBaoPushNguoiDung::create([
                 'thong_bao_push_id' => $thongBao->id,
                 'nguoi_dung_id' => $nhanVien->id,
+            ]);
+
+            // Đưa thông báo vào chuông của Staff
+            ThongBaoCaNhan::create([
+                'nguoi_dung_id' => $nhanVien->id,
+                'tieu_de' => $thongBao->tieu_de,
+                'noi_dung' => $thongBao->noi_dung,
+                'loai_thong_bao' => 'he_thong',
+                'duong_dan' => null,
+                'da_doc' => false,
+                'doc_luc' => null,
             ]);
         }
     }

@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Artisan;
 use App\Models\NhatKyHoatDongHeThong;
 use Illuminate\Support\Facades\Schedule;
 
-
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
@@ -20,3 +19,13 @@ Schedule::command('voucher:tang-sinh-nhat')
 
 Schedule::command('nhat-ky:xoa-cu')
     ->dailyAt('02:00');
+
+/*
+|--------------------------------------------------------------------------
+| Tự động hết hạn VietQR tại quầy
+|--------------------------------------------------------------------------
+| Chạy mỗi phút, không phụ thuộc nhân viên còn đứng ở trang QR hay không.
+*/
+Schedule::command('staff:vietqr-het-han')
+    ->everyMinute()
+    ->withoutOverlapping();

@@ -28,6 +28,16 @@
                 Voucher đã được lưu trực tiếp vào tài khoản của bạn và có thể sử dụng khi đặt vé phù hợp.
             </p>
 
+            <div style="background:#262626;border:1px solid #3b3b3b;border-radius:12px;padding:16px 18px;margin:18px 0 0;">
+                <p style="margin:0 0 7px;color:#9ca3af;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">
+                    Lý do nhận voucher
+                </p>
+
+                <p style="margin:0;color:#ffffff;font-size:14px;line-height:1.65;">
+                    {{ $lyDoNhan }}
+                </p>
+            </div>
+
             <div style="background:#2a2a2a;border-radius:14px;padding:20px;margin:22px 0;border-left:4px solid #d99a32;">
                 <div style="text-align:center;margin-bottom:16px;">
                     <p style="margin:0 0 6px;color:#9ca3af;font-size:12px;text-transform:uppercase;letter-spacing:.5px;">
