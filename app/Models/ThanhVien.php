@@ -30,6 +30,7 @@ class ThanhVien extends Model
         'tong_diem_tich_luy' => 'integer',
         'da_nhan_thuong' => 'boolean',
     ];
+    
 
     /**
      * Một thẻ thành viên thuộc về một người dùng.
@@ -267,12 +268,6 @@ class ThanhVien extends Model
             );
         }
 
-        // Không cho thu hồi vượt quá tổng điểm tích lũy
-        if ($soDiem > $this->tong_diem_tich_luy) {
-            throw new \InvalidArgumentException(
-                'Số điểm thu hồi không được lớn hơn tổng điểm tích lũy.'
-            );
-        }
 
         $soDiemConCanThuHoi = $soDiem;
 
@@ -327,22 +322,6 @@ class ThanhVien extends Model
             $soDiem
         );
 
-        /*
-    |--------------------------------------------------------------------------
-    | Cập nhật tổng điểm tích lũy
-    |--------------------------------------------------------------------------
-    */
-
-        $this->decrement(
-            'tong_diem_tich_luy',
-            $soDiem
-        );
-
-        /*
-    |--------------------------------------------------------------------------
-    | Ghi lịch sử thu hồi điểm
-    |--------------------------------------------------------------------------
-    */
 
         $this->lichSuDiems()->create([
             've_xem_phim_id' => null,
@@ -362,6 +341,49 @@ class ThanhVien extends Model
         $this->refresh();
 
         $this->capNhatHangThanhVien();
+    }
+    public function xuLyDiemHetHan(): void
+    {
+        $cacKhoanDiemHetHan = $this->lichSuDiems()
+            ->where('loai_giao_dich', 'cong_diem')
+            ->where('diem_con_lai', '>', 0)
+            ->whereNotNull('ngay_het_han')
+            ->where('ngay_het_han', '<=', now())
+            ->orderBy('ngay_het_han')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($cacKhoanDiemHetHan as $khoanDiem) {
+
+            $soDiemHetHan = (int) $khoanDiem->diem_con_lai;
+
+            if ($soDiemHetHan <= 0) {
+                continue;
+            }
+
+            /*
+         * Chỉ trừ điểm hiện tại.
+         *
+         * Không được trừ tong_diem_tich_luy.
+         */
+            $soDiemTru = min(
+                $soDiemHetHan,
+                (int) $this->diem_hien_tai
+            );
+
+            if ($soDiemTru > 0) {
+                $this->decrement('diem_hien_tai', $soDiemTru);
+            }
+
+            /*
+         * Đánh dấu khoản điểm này đã hết hạn.
+         */
+            $khoanDiem->update([
+                'diem_con_lai' => 0,
+            ]);
+        }
+
+        $this->refresh();
     }
 
     /**
