@@ -268,7 +268,7 @@
 
                 <article class="hero-slide booking-hero-slide {{ $loop->first ? 'active' : '' }}"
                     data-slide-index="{{ $loop->index }}"
-                    style="background-image: url('{{ asset('storage/movies/' . $movie->poster) }}');">
+                    style="--hero-poster: url('{{ asset('storage/movies/' . $movie->poster) }}');">
                     <div class="container-fluid px-5 booking-hero-content hero-content">
                         <div class="booking-hero-copy hero-info">
                             <div class="booking-eyebrow">
@@ -340,7 +340,7 @@
                 </article>
             @empty
                 <article class="hero-slide booking-hero-slide active empty-hero"
-                    style="background-image: url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=80');">
+                    style="--hero-poster: url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=80');">
                     <div class="container-fluid px-5 booking-hero-content hero-content">
                         <div class="booking-hero-copy hero-info">
                             <div class="booking-eyebrow">
