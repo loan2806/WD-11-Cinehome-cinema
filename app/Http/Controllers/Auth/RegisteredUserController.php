@@ -126,29 +126,11 @@ class RegisteredUserController extends Controller
 
             'hang_thanh_vien' => 'member',
 
-            'diem_hien_tai' => 50,
+            'diem_hien_tai' => 0,
 
             'tong_diem_tich_luy' => 0,
 
             'ngay_tham_gia' => now(),
-
-        ]);
-
-
-
-        /**
-         * Người mới đăng ký nhận điểm chào mừng
-         */
-        $thanhVien->lichSuDiems()->create([
-
-            've_xem_phim_id' => null,
-
-            'loai_giao_dich' => 'cong_diem',
-
-            'so_diem' => 50,
-
-            'noi_dung' =>
-            'Điểm chào mừng thành viên mới',
 
         ]);
 

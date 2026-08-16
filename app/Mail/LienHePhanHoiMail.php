@@ -23,7 +23,7 @@ class LienHePhanHoiMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'CineHome - Phản hồi yêu cầu hỗ trợ của bạn #' . $this->lienHe->id,
+            subject: 'CineHome - Phản hồi yêu cầu hỗ trợ của bạn '
         );
     }
 
