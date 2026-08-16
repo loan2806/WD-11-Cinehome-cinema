@@ -12,27 +12,32 @@ $typeMeta = [
         'icon' => 'fa-circle-info',
         'class' => 'is-info',
     ],
+
     'success' => [
         'label' => 'Thành công',
         'icon' => 'fa-circle-check',
         'class' => 'is-success',
     ],
+
     'warning' => [
         'label' => 'Cảnh báo',
         'icon' => 'fa-triangle-exclamation',
         'class' => 'is-warning',
     ],
+
     'promo' => [
         'label' => 'Khuyến mãi',
         'icon' => 'fa-gift',
         'class' => 'is-promo',
     ],
+
     'system' => [
         'label' => 'Hệ thống',
         'icon' => 'fa-gear',
         'class' => 'is-system',
     ],
 ];
+
 
 $audienceMeta = [
 
@@ -73,11 +78,48 @@ $audienceMeta = [
     ],
 ];
 
-$status = [
-    'label' => 'Đã gửi',
-    'icon' => 'fa-paper-plane',
-    'class' => 'is-sent',
+
+// =========================================================
+// TRẠNG THÁI THÔNG BÁO
+// =========================================================
+
+$statusMeta = [
+
+    'chua_gui' => [
+        'label' => 'Lưu nháp',
+        'icon' => 'fa-file',
+        'class' => 'is-draft',
+    ],
+
+    'da_gui' => [
+        'label' => 'Đã gửi',
+        'icon' => 'fa-paper-plane',
+        'class' => 'is-sent',
+    ],
+
+    'dang_gui' => [
+        'label' => 'Đang gửi',
+        'icon' => 'fa-spinner fa-spin',
+        'class' => 'is-sending',
+    ],
+
+    'that_bai' => [
+        'label' => 'Gửi thất bại',
+        'icon' => 'fa-circle-xmark',
+        'class' => 'is-failed',
+    ],
 ];
+
+$status = $statusMeta[$thongBaoPush->trang_thai] ?? [
+    'label' => 'Không xác định',
+    'icon' => 'fa-circle-question',
+    'class' => 'is-unknown',
+];
+
+
+// =========================================================
+// LOẠI THÔNG BÁO
+// =========================================================
 
 $type = $typeMeta[$thongBaoPush->loai] ?? [
     'label' => ucfirst($thongBaoPush->loai),
@@ -85,21 +127,30 @@ $type = $typeMeta[$thongBaoPush->loai] ?? [
     'class' => 'is-system',
 ];
 
+
+// =========================================================
+// ĐỐI TƯỢNG NHẬN
+// =========================================================
+
 $audience = $audienceMeta[$thongBaoPush->doi_tuong_nhan] ?? [
     'label' => $thongBaoPush->doi_tuong_nhan,
     'icon' => 'fa-users',
     'class' => 'is-all',
 ];
 
-$status = [
-    'label' => 'Đã gửi',
-    'icon' => 'fa-paper-plane',
-    'class' => 'is-sent',
-];
+
+// =========================================================
+// DANH SÁCH NGƯỜI NHẬN
+// =========================================================
 
 $recipientCollection = collect($nguoiNhanList ?? []);
 
 $recipientTotal = $recipientCount ?? $recipientCollection->count();
+
+
+// =========================================================
+// HẠNG THÀNH VIÊN
+// =========================================================
 
 $rankLabels = [
     'member' => 'Member',
@@ -108,11 +159,10 @@ $rankLabels = [
     'platinum' => 'Platinum',
 ];
 
-$rankLabel = $rankLabels[$thongBaoPush->hang_thanh_vien] 
+$rankLabel = $rankLabels[$thongBaoPush->hang_thanh_vien]
     ?? $thongBaoPush->hang_thanh_vien;
 
 @endphp
-
 
 {{-- =========================================================
     HEADER
