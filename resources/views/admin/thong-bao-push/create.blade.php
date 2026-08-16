@@ -355,6 +355,7 @@ $selectedHangThanhVien = old('hang_thanh_vien');
                     Hủy
                 </a>
 
+                {{-- LƯU NHÁP --}}
                 <button
                     type="submit"
                     name="action"
@@ -365,12 +366,18 @@ $selectedHangThanhVien = old('hang_thanh_vien');
                     Lưu nháp
 
                 </button>
+
+                {{-- GỬI THÔNG BÁO --}}
                 <button
                     type="submit"
+                    name="action"
+                    value="send"
                     class="push-primary-btn"
                     id="submitPush">
+
                     <i class="fa-solid fa-paper-plane"></i>
                     Gửi thông báo
+
                 </button>
 
             </div>

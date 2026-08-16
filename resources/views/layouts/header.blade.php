@@ -95,6 +95,9 @@
                 */
                 $pushNotifications = \App\Models\ThongBaoPushNguoiDung::with('thongBaoPush')
                 ->where('nguoi_dung_id', $userId)
+                ->whereHas('thongBaoPush', function ($query) {
+                $query->where('trang_thai', 'da_gui');
+                })
                 ->latest()
                 ->get();
 
@@ -166,6 +169,9 @@
                 $userId
                 )
                 ->where('da_doc', 0)
+                ->whereHas('thongBaoPush', function ($query) {
+                $query->where('trang_thai', 'da_gui');
+                })
                 ->count();
 
                 $soThongBaoChuaDoc =
