@@ -15,7 +15,7 @@
         <div style="padding: 24px;">
             <p style="font-size: 16px; margin-top: 0;">Xin chào <strong>{{ $lienHe->ho_ten }}</strong>,</p>
             <p style="color: #9ca3af; font-size: 14px;">
-                Liên quan đến yêu cầu hỗ trợ #{{ $lienHe->id }} bạn đã gửi, đội ngũ CineHome xin gửi tặng bạn một voucher ưu đãi
+                Liên quan đến yêu cầu hỗ trợ của bạn đã gửi, đội ngũ CineHome xin gửi tặng bạn một voucher ưu đãi
                 như một lời xin lỗi vì trải nghiệm chưa tốt vừa qua.
             </p>
 
