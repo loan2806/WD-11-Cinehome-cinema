@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Voucher ưu đãi - CineHome</title>
 </head>
+
 <body style="background-color: #121212; font-family: Arial, sans-serif; color: #ffffff; padding: 20px; margin: 0;">
     <div style="max-width: 600px; margin: 0 auto; background: #1e1e1e; border-radius: 16px; border: 1px solid #333; overflow: hidden;">
 
@@ -28,6 +30,17 @@
                     {{ $lyDoNhan }}
                 </p>
             </div>
+            @if (!empty($lienHe->phan_hoi))
+            <div style="background: #262626; border-radius: 10px; padding: 14px 16px; margin: 16px 0; border: 1px solid #3f3f46;">
+                <p style="margin: 0 0 6px; color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Phản hồi từ CineHome
+                </p>
+
+                <p style="margin: 0; color: #ffffff; font-size: 14px; line-height: 1.6;">
+                    {{ $lienHe->phan_hoi }}
+                </p>
+            </div>
+            @endif
 
             <div style="background: #2a2a2a; border-radius: 12px; padding: 20px; margin: 20px 0; border-left: 4px solid #d99a32; text-align: center;">
                 <p style="margin: 0 0 6px; color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Mã voucher của bạn</p>
@@ -55,4 +68,5 @@
         </div>
     </div>
 </body>
+
 </html>
