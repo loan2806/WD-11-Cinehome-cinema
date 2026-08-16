@@ -7,13 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use App\Models\SuatChieu;
 use Carbon\Carbon;
-
+use Illuminate\Database\Eloquent\SoftDeletes;
 class Phims extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'phims';
 
+        public function suatChieus()
+            {
+                return $this->hasMany(SuatChieu::class, 'phim_id');
+            }
+            
     protected $fillable = [
         'ten_phim',
         'slug',
@@ -30,6 +35,7 @@ class Phims extends Model
         'ngay_ra_rap',
     ];
 
+    
 
 
     /**

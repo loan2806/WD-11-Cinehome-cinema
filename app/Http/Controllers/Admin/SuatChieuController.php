@@ -31,6 +31,7 @@ class SuatChieuController extends Controller
     {
         $now = Carbon::now();
 
+        // Suất chiếu kết thúc quá 24h sẽ tự động chuyển sang Xóa mềm (deleted_at được ghi nhận)
         SuatChieu::where('thoi_gian_ket_thuc', '<=', $now->copy()->subHours(24))->delete();
 
         SuatChieu::where('trang_thai', '!=', 'huy')
@@ -509,9 +510,56 @@ class SuatChieuController extends Controller
             "Xóa suất chiếu ID #{$suatChieu->id} (Phim: {$tenPhim}, Ngày chiếu: {$thoiGianChieu->format('d/m/Y H:i')}). Lý do: {$lyDoHuy}"
         );
 
+        // Do model SuatChieu có use SoftDeletes nên hàm delete() sẽ chuyển bản ghi vào Thùng Rác
         $suatChieu->delete(); 
 
-        return redirect()->route('admin.suat-chieus.index')->with('success', 'Đã xóa suất chiếu thành công và ghi nhận nhật ký.');
+        return redirect()->route('admin.suat-chieus.index')->with('success', 'Đã chuyển suất chiếu vào thùng rác hệ thống thành công.');
+    }
+
+    /**
+     * Khôi phục suất chiếu từ thùng rác
+     */
+    public function restore($id)
+    {
+        $suatChieu = SuatChieu::onlyTrashed()->findOrFail($id);
+        $suatChieu->restore();
+
+        $this->ghiNhatKy(
+            request(),
+            'Khôi phục suất chiếu',
+            'Quản lý phim & lịch chiếu',
+            "Khôi phục suất chiếu ID #{$id}"
+        );
+
+        return redirect()->back()->with('success', 'Đã khôi phục suất chiếu thành công!');
+    }
+
+    /**
+     * Xóa vĩnh viễn suất chiếu khỏi hệ thống
+     */
+    public function forceDelete($id)
+    {
+        $suatChieu = SuatChieu::onlyTrashed()->findOrFail($id);
+
+        $coNguoiDatVe = DB::table('ve_xem_phims')
+            ->where('suat_chieu_id', $suatChieu->id)
+            ->whereIn('trang_thai', ['da_thanh_toan', 'cho_thanh_toan', 'da_su_dung', 'da_dat'])
+            ->exists();
+
+        if ($coNguoiDatVe) {
+            return redirect()->back()->with('error', 'Không thể xóa vĩnh viễn! Suất chiếu này vẫn còn liên kết với dữ liệu vé của khách hàng.');
+        }
+
+        $suatChieu->forceDelete();
+
+        $this->ghiNhatKy(
+            request(),
+            'Xóa vĩnh viễn suất chiếu',
+            'Quản trị hệ thống',
+            "Xóa vĩnh viễn suất chiếu ID #{$id}"
+        );
+
+        return redirect()->back()->with('success', 'Đã xóa vĩnh viễn suất chiếu khỏi hệ thống!');
     }
 
     private function isNgayLe(Carbon $date): bool 

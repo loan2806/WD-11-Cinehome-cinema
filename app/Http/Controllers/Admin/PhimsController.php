@@ -73,9 +73,7 @@ class PhimsController extends Controller
     {
         $data = $request->validated();
 
-
         if (!empty($data['trailer'])) {
-
             $response = Http::get(
                 'https://www.youtube.com/oembed',
                 [
@@ -93,9 +91,6 @@ class PhimsController extends Controller
             }
         }
 
-        // upload ảnh đúng cách
-
-        // upload ảnh đúng cách
         if ($request->hasFile('poster')) {
             $path = $data['poster'] = $request->file('poster')->store('movies', 'public');
             $data['poster'] = basename($path);
@@ -103,7 +98,6 @@ class PhimsController extends Controller
 
         $data['slug'] = Str::slug($data['ten_phim']) . '-' . uniqid();
 
-        // tạo phim trước
         $movie = Phims::create($data);
 
         $this->ghiNhatKy(
@@ -172,7 +166,6 @@ class PhimsController extends Controller
         $data = $request->validated();
 
         if (!empty($data['trailer'])) {
-
             $response = Http::get(
                 'https://www.youtube.com/oembed',
                 [
@@ -222,37 +215,89 @@ class PhimsController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | DELETE
+    | DELETE (XÓA MỀM)
     |--------------------------------------------------------------------------
     */
     public function destroy(Request $request, Phims $phim)
     {
+        // 1. Kiểm tra ràng buộc: Nếu đã có suất chiếu thì CHẶN xóa
         if ($phim->showtimes()->exists()) {
             return redirect()
                 ->route('admin.phims.index')
-                ->with('error', 'Không thể xóa phim đã có suất chiếu');
+                ->with('error', 'Không thể xóa phim này vì đã có suất chiếu!');
         }
 
         $tenPhim = $phim->ten_phim;
 
-        $phim->genres()->detach();
+        // 2. Thực hiện xóa mềm (không dùng $phim->genres()->detach() để giữ quan hệ khi khôi phục)
         $phim->delete();
 
         $this->ghiNhatKy(
             $request,
-            'Xóa phim',
+            'Xóa mềm phim',
             'Quản lý phim & lịch chiếu',
-            "Xóa phim: {$tenPhim}"
+            "Xóa mềm phim: {$tenPhim}"
         );
 
         AdminNotificationService::push(
             '🗑️ Phim đã được xóa',
-            'Đã xóa phim ' . $tenPhim,
+            'Đã xóa mềm phim ' . $tenPhim,
             'Danger'
         );
 
         return redirect()
             ->route('admin.phims.index')
-            ->with('success', 'Xóa phim thành công');
+            ->with('success', 'Xóa phim thành công!');
+    }
+    /**
+     * Khôi phục phim từ thùng rác
+     */
+    public function restore($id)
+    {
+        $phim = Phims::onlyTrashed()->findOrFail($id);
+        $phim->restore();
+
+        if (method_exists($this, 'ghiNhatKy')) {
+            $this->ghiNhatKy(
+                request(),
+                'Khôi phục phim',
+                'Quản lý nội dung phim',
+                "Khôi phục phim: {$phim->ten_phim} (ID: #{$id})"
+            );
+        }
+
+        return redirect()->back()->with('success', "Đã khôi phục phim \"{$phim->ten_phim}\" thành công!");
+    }
+
+    /**
+     * Xóa vĩnh viễn phim khỏi cơ sở dữ liệu
+     */
+    public function forceDelete($id)
+    {
+        $phim = Phims::onlyTrashed()->findOrFail($id);
+
+        // Kiểm tra nếu phim còn suất chiếu liên kết
+        if (method_exists($phim, 'showtimes') && $phim->showtimes()->exists()) {
+            return redirect()->back()->with('error', 'Không thể xóa vĩnh viễn! Phim này vẫn còn lịch sử suất chiếu.');
+        }
+
+        // Gỡ bỏ liên kết thể loại nếu có
+        if (method_exists($phim, 'genres')) {
+            $phim->genres()->detach();
+        }
+
+        $tenPhim = $phim->ten_phim;
+        $phim->forceDelete();
+
+        if (method_exists($this, 'ghiNhatKy')) {
+            $this->ghiNhatKy(
+                request(),
+                'Xóa vĩnh viễn phim',
+                'Quản trị hệ thống',
+                "Xóa vĩnh viễn phim: {$tenPhim} (ID: #{$id})"
+            );
+        }
+
+        return redirect()->back()->with('success', "Đã xóa vĩnh viễn phim \"{$tenPhim}\" khỏi hệ thống!");
     }
 }
