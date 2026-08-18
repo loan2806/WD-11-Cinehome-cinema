@@ -4167,10 +4167,15 @@ body {
 }
 
 .seat-chip {
+    /* Cùng kích thước/hình dáng "ghế rạp" (bo góc trên nhiều hơn dưới + đổ
+       bóng lõm bên trong) như ghế ở trang đặt vé (.seat-button trong
+       user-home.css), để sơ đồ ghế ở Quản lý phòng chiếu nhìn nhất quán với
+       sơ đồ ghế khách hàng thấy khi đặt vé — chỉ khác là dùng để CHỌN LOẠI
+       ghế thay vì chọn ghế để mua. */
     position: relative;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px 10px 14px 14px;
+    width: 46px;
+    height: 42px;
+    border-radius: 10px 10px 6px 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4178,16 +4183,19 @@ body {
     font-weight: 800;
     color: transparent;
     /* background động từ inline style */
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 10px 18px rgba(15, 23, 42, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 -8px 14px rgba(0, 0, 0, 0.18);
     transform: translateY(0);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, color 0.15s ease;
-    cursor: default;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    cursor: pointer;
 }
 
 .seat-chip:hover {
     transform: translateY(-3px);
-    box-shadow: 0 16px 26px rgba(15, 23, 42, 0.45);
+    border-color: rgba(217, 154, 50, 0.72);
+    box-shadow:
+        inset 0 -8px 14px rgba(0, 0, 0, 0.18),
+        0 10px 24px rgba(217, 154, 50, 0.22);
 }
 
 .seat-chip--regular {
@@ -4202,18 +4210,40 @@ body {
 }
 
 .seat-chip--couple {
+    /* Ghế đôi gộp 2 ô thành 1 khối rộng — khớp tỉ lệ với .seat-button--couple
+       (100px) bên trang đặt vé thay vì bị bó hẹp bằng đúng 1 ghế thường. */
+    width: 102px;
     background: #f43f5e;
     color: #fff1f2;
     border-color: rgba(244, 63, 94, 0.6);
 }
 
 .seat-chip--maintenance {
-    background: #18181b;
+    background: #18181b !important;
     color: #9ca3af;
-    border-color: rgba(255, 255, 255, 0.04);
-    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    opacity: 0.65;
     cursor: not-allowed;
-    opacity: 0.75;
+}
+
+.seat-chip--maintenance::after {
+    content: "×";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #ef4444;
+    font-size: 18px;
+    font-weight: 950;
+    z-index: 20;
+}
+
+.seat-chip--maintenance .seat-label,
+.seat-chip--maintenance .seat-couple-left,
+.seat-chip--maintenance .seat-couple-right,
+.seat-chip--maintenance .seat-couple-sep {
+    opacity: 0;
 }
 
 .seat-chip--empty {
@@ -4236,6 +4266,7 @@ body {
     font-size: 10px !important;
     cursor: default !important;
     transform: none !important;
+    box-shadow: none !important;
 }
 
 .seat-legend {
