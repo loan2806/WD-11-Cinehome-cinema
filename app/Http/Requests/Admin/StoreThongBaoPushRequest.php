@@ -12,118 +12,172 @@ class StoreThongBaoPushRequest extends FormRequest
         return true;
     }
 
-   public function rules(): array
-{
-    return [
+    public function rules(): array
+    {
+        return [
 
-        'tieu_de' => [
-            'required',
-            'string',
-            'max:255',
-        ],
+            /*
+            |--------------------------------------------------------------------------
+            | TIÊU ĐỀ
+            |--------------------------------------------------------------------------
+            */
+            'tieu_de' => [
+                'required',
+                'string',
+                'max:255',
+            ],
 
-        'noi_dung' => [
-            'required',
-            'string',
-            'max:1000',
-        ],
+            /*
+            |--------------------------------------------------------------------------
+            | NỘI DUNG
+            |--------------------------------------------------------------------------
+            */
+            'noi_dung' => [
+                'required',
+                'string',
+                'max:1000',
+            ],
 
-        'loai' => [
-            'required',
-            Rule::in([
-                'system',
-                'promo',
-                'warning',
-                'info',
-            ]),
-        ],
+            /*
+            |--------------------------------------------------------------------------
+            | LOẠI
+            |--------------------------------------------------------------------------
+            */
+            'loai' => [
+                'required',
+                Rule::in([
+                    'system',
+                    'promo',
+                    'warning',
+                    'info',
+                ]),
+            ],
 
-        'doi_tuong_nhan' => [
-            'required',
-            Rule::in([
-                'all',
-                'khach_hang',
-                'nhan_vien',
-                'quan_ly',
-                'hang_thanh_vien',
-                'nguoi_dung_cu_the',
-            ]),
-        ],
+            /*
+            |--------------------------------------------------------------------------
+            | ĐỐI TƯỢNG NHẬN
+            |--------------------------------------------------------------------------
+            */
+            'doi_tuong_nhan' => [
+                'required',
+                Rule::in([
+                    'all',
+                    'khach_hang',
+                    'nhan_vien',
+                    'quan_ly',
+                    'hang_thanh_vien',
+                    'nguoi_dung_cu_the',
+                ]),
+            ],
 
-        // Chỉ bắt buộc khi chọn "Theo hạng thành viên"
-        'hang_thanh_vien' => [
-            'nullable',
-            'required_if:doi_tuong_nhan,hang_thanh_vien',
-            Rule::in([
-                'member',
-                'silver',
-                'gold',
-                'platinum',
-            ]),
-        ],
+            /*
+            |--------------------------------------------------------------------------
+            | HẠNG THÀNH VIÊN
+            |--------------------------------------------------------------------------
+            */
+            'hang_thanh_vien' => [
+                'nullable',
+                'required_if:doi_tuong_nhan,hang_thanh_vien',
+                Rule::in([
+                    'member',
+                    'silver',
+                    'gold',
+                    'platinum',
+                ]),
+            ],
 
-        // Chỉ bắt buộc khi chọn "Người dùng cụ thể"
-        'nguoi_dung_cu_the' => [
-            'nullable',
-            'required_if:doi_tuong_nhan,nguoi_dung_cu_the',
-            'integer',
-            'exists:nguoi_dungs,id',
-        ],
-    ];
-}
+            /*
+            |--------------------------------------------------------------------------
+            | NGƯỜI DÙNG CỤ THỂ
+            |--------------------------------------------------------------------------
+            |
+            | Đã đổi từ:
+            |
+            | nguoi_dung_cu_the = integer
+            |
+            | thành:
+            |
+            | nguoi_dung_cu_the = array
+            | nguoi_dung_cu_the.* = integer
+            |
+            */
+            'nguoi_dung_cu_the' => [
+                'nullable',
+                'array',
+                'required_if:doi_tuong_nhan,nguoi_dung_cu_the',
+                'min:1',
+            ],
+
+            'nguoi_dung_cu_the.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('nguoi_dungs', 'id'),
+            ],
+        ];
+    }
+
     public function messages(): array
     {
         return [
 
             'tieu_de.required' =>
-            'Tiêu đề thông báo không được để trống.',
+                'Tiêu đề thông báo không được để trống.',
 
             'tieu_de.string' =>
-            'Tiêu đề thông báo không hợp lệ.',
+                'Tiêu đề thông báo không hợp lệ.',
 
             'tieu_de.max' =>
-            'Tiêu đề thông báo không được vượt quá 255 ký tự.',
+                'Tiêu đề thông báo không được vượt quá 255 ký tự.',
 
 
             'noi_dung.required' =>
-            'Nội dung thông báo không được để trống.',
+                'Nội dung thông báo không được để trống.',
 
             'noi_dung.string' =>
-            'Nội dung thông báo không hợp lệ.',
+                'Nội dung thông báo không hợp lệ.',
 
             'noi_dung.max' =>
-            'Nội dung thông báo không được vượt quá 1000 ký tự.',
+                'Nội dung thông báo không được vượt quá 1000 ký tự.',
 
 
             'loai.required' =>
-            'Vui lòng chọn loại thông báo.',
+                'Vui lòng chọn loại thông báo.',
 
             'loai.in' =>
-            'Loại thông báo không hợp lệ.',
+                'Loại thông báo không hợp lệ.',
 
 
             'doi_tuong_nhan.required' =>
-            'Vui lòng chọn đối tượng nhận.',
+                'Vui lòng chọn đối tượng nhận.',
 
             'doi_tuong_nhan.in' =>
-            'Đối tượng nhận không hợp lệ.',
+                'Đối tượng nhận không hợp lệ.',
 
 
             'hang_thanh_vien.required_if' =>
-            'Vui lòng chọn hạng thành viên.',
+                'Vui lòng chọn hạng thành viên.',
 
             'hang_thanh_vien.in' =>
-            'Hạng thành viên không hợp lệ.',
+                'Hạng thành viên không hợp lệ.',
 
 
             'nguoi_dung_cu_the.required_if' =>
-            'Vui lòng chọn người dùng cần nhận thông báo.',
+                'Vui lòng chọn ít nhất một người dùng.',
 
-            'nguoi_dung_cu_the.integer' =>
-            'Người dùng được chọn không hợp lệ.',
+            'nguoi_dung_cu_the.array' =>
+                'Danh sách người nhận không hợp lệ.',
 
-            'nguoi_dung_cu_the.exists' =>
-            'Người dùng được chọn không tồn tại.',
+            'nguoi_dung_cu_the.min' =>
+                'Vui lòng chọn ít nhất một người dùng.',
+
+            'nguoi_dung_cu_the.*.integer' =>
+                'Người dùng được chọn không hợp lệ.',
+
+            'nguoi_dung_cu_the.*.distinct' =>
+                'Danh sách người nhận không được trùng nhau.',
+
+            'nguoi_dung_cu_the.*.exists' =>
+                'Một trong những người dùng được chọn không tồn tại.',
         ];
     }
 }

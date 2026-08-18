@@ -363,31 +363,31 @@ class ThongBaoPushController extends Controller
     |--------------------------------------------------------------------------
     */
 
-        $nguoiDungCuThe = null;
+        $nguoiDungCuThe = [];
 
         if (
             $validated['doi_tuong_nhan'] === 'nguoi_dung_cu_the'
             && !empty($validated['nguoi_dung_cu_the'])
         ) {
-            $nguoiDungCuThe = (int) $validated['nguoi_dung_cu_the'];
+            $nguoiDungCuThe = array_map(
+                'intval',
+                $validated['nguoi_dung_cu_the']
+            );
 
-            /*
-        | Kiểm tra user có tồn tại
-        */
+            $soLuongHopLe = NguoiDung::whereIn('id', $nguoiDungCuThe)
+                ->whereIn('vai_tro', [
+                    'khach_hang',
+                    'nhan_vien',
+                    'quan_ly',
+                ])
+                ->count();
 
-            $user = NguoiDung::whereIn('vai_tro', [
-                'khach_hang',
-                'nhan_vien',
-                'quan_ly',
-            ])
-                ->find($nguoiDungCuThe);
-
-            if (!$user) {
+            if ($soLuongHopLe !== count($nguoiDungCuThe)) {
                 return back()
                     ->withInput()
                     ->withErrors([
                         'nguoi_dung_cu_the' =>
-                        'Người dùng được chọn không tồn tại.',
+                        'Một hoặc nhiều người dùng được chọn không hợp lệ.',
                     ]);
             }
         }
@@ -443,18 +443,18 @@ class ThongBaoPushController extends Controller
             if (
                 $action === 'draft'
                 && $validated['doi_tuong_nhan'] === 'nguoi_dung_cu_the'
-                && $nguoiDungCuThe
+                && !empty($nguoiDungCuThe)
             ) {
 
-                ThongBaoPushNguoiDung::create([
-                    'thong_bao_push_id' => $thongBao->id,
+                foreach ($nguoiDungCuThe as $nguoiDungId) {
 
-                    'nguoi_dung_id' => $nguoiDungCuThe,
-
-                    'da_doc' => false,
-
-                    'thoi_gian_doc' => null,
-                ]);
+                    ThongBaoPushNguoiDung::create([
+                        'thong_bao_push_id' => $thongBao->id,
+                        'nguoi_dung_id' => $nguoiDungId,
+                        'da_doc' => false,
+                        'thoi_gian_doc' => null,
+                    ]);
+                }
             }
 
             /*
@@ -633,9 +633,12 @@ class ThongBaoPushController extends Controller
                         'thong_bao_push_id',
                         $thongBao->id
                     )
-                    ->value('nguoi_dung_id');
+                    ->pluck('nguoi_dung_id')
+                    ->map(fn($id) => (int) $id)
+                    ->values()
+                    ->toArray();
 
-                if (!$nguoiDungCuThe) {
+                if (empty($nguoiDungCuThe)) {
 
                     throw new \Exception(
                         'Bản nháp chưa có người dùng nhận thông báo.'
@@ -645,18 +648,18 @@ class ThongBaoPushController extends Controller
                 /*
             | Kiểm tra user vẫn còn tồn tại
             */
+                $validUserCount = NguoiDung::whereIn('id', $nguoiDungCuThe)
+                    ->whereIn('vai_tro', [
+                        'khach_hang',
+                        'nhan_vien',
+                        'quan_ly',
+                    ])
+                    ->count();
 
-                $user = NguoiDung::whereIn('vai_tro', [
-                    'khach_hang',
-                    'nhan_vien',
-                    'quan_ly',
-                ])
-                    ->find($nguoiDungCuThe);
-
-                if (!$user) {
+                if ($validUserCount !== count($nguoiDungCuThe)) {
 
                     throw new \Exception(
-                        'Người dùng nhận thông báo không còn tồn tại.'
+                        'Một hoặc nhiều người nhận không còn tồn tại.'
                     );
                 }
 
@@ -889,23 +892,21 @@ class ThongBaoPushController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $selectedUser = null;
+        $selectedUsers = collect();
 
         if (
-            $thongBao->doi_tuong_nhan
-            === 'nguoi_dung_cu_the'
+            $thongBao->doi_tuong_nhan === 'nguoi_dung_cu_the'
         ) {
 
-            $selectedUser =
+            $selectedUsers =
                 ThongBaoPushNguoiDung::with('nguoiDung')
                 ->where(
                     'thong_bao_push_id',
                     $thongBao->id
                 )
-                ->first();
-
-            $selectedUser =
-                $selectedUser?->nguoiDung;
+                ->get()
+                ->pluck('nguoiDung')
+                ->filter();
         }
 
         $thongBaoPush = $thongBao;
@@ -918,7 +919,7 @@ class ThongBaoPushController extends Controller
                 'doiTuongOptions',
                 'hangThanhVienOptions',
                 'audienceCounts',
-                'selectedUser'
+                'selectedUsers'
             )
         );
     }
@@ -970,7 +971,14 @@ class ThongBaoPushController extends Controller
 
                 'nguoi_dung_cu_the' => [
                     'nullable',
+                    'array',
+                    'required_if:doi_tuong_nhan,nguoi_dung_cu_the',
+                    'min:1',
+                ],
+
+                'nguoi_dung_cu_the.*' => [
                     'integer',
+                    'distinct',
                     'exists:nguoi_dungs,id',
                 ],
             ],
@@ -1090,30 +1098,38 @@ class ThongBaoPushController extends Controller
     |--------------------------------------------------------------------------
     */
 
-        $nguoiDungCuThe = null;
+        $nguoiDungCuThe = [];
 
         if (
             $validated['doi_tuong_nhan'] === 'nguoi_dung_cu_the'
             && !empty($validated['nguoi_dung_cu_the'])
         ) {
 
-            $nguoiDungCuThe =
-                (int) $validated['nguoi_dung_cu_the'];
+            $nguoiDungCuThe = array_map(
+                'intval',
+                $validated['nguoi_dung_cu_the']
+            );
 
-            $user = NguoiDung::whereIn('vai_tro', [
-                'khach_hang',
-                'nhan_vien',
-                'quan_ly',
-            ])
-                ->find($nguoiDungCuThe);
+            $soLuongHopLe = NguoiDung::whereIn(
+                'id',
+                $nguoiDungCuThe
+            )
+                ->whereIn('vai_tro', [
+                    'khach_hang',
+                    'nhan_vien',
+                    'quan_ly',
+                ])
+                ->count();
 
-            if (!$user) {
+            if (
+                $soLuongHopLe !== count($nguoiDungCuThe)
+            ) {
 
                 return back()
                     ->withInput()
                     ->withErrors([
                         'nguoi_dung_cu_the' =>
-                        'Người dùng được chọn không tồn tại.',
+                        'Một hoặc nhiều người dùng được chọn không hợp lệ.',
                     ]);
             }
         }
@@ -1174,22 +1190,21 @@ class ThongBaoPushController extends Controller
 
                 if (
                     $validated['doi_tuong_nhan'] === 'nguoi_dung_cu_the'
-                    && $nguoiDungCuThe
+                    && !empty($nguoiDungCuThe)
                 ) {
 
-                    ThongBaoPushNguoiDung::create([
-                        'thong_bao_push_id' =>
-                        $thongBao->id,
+                    foreach ($nguoiDungCuThe as $nguoiDungId) {
 
-                        'nguoi_dung_id' =>
-                        $nguoiDungCuThe,
+                        ThongBaoPushNguoiDung::create([
+                            'thong_bao_push_id' => $thongBao->id,
 
-                        'da_doc' =>
-                        false,
+                            'nguoi_dung_id' => $nguoiDungId,
 
-                        'thoi_gian_doc' =>
-                        null,
-                    ]);
+                            'da_doc' => false,
+
+                            'thoi_gian_doc' => null,
+                        ]);
+                    }
                 }
 
                 $thongBao->update([
@@ -1524,7 +1539,7 @@ class ThongBaoPushController extends Controller
     private function guiThongBao(
         ThongBaoPush $thongBao,
         string $doiTuongNhan,
-        ?int $nguoiDungCuThe = null,
+        array $nguoiDungCuThe = [],
         ?string $hangThanhVien = null
     ): void {
 
@@ -1572,12 +1587,64 @@ class ThongBaoPushController extends Controller
 
             case 'nguoi_dung_cu_the':
 
-                if (!$nguoiDungCuThe) {
+                if (empty($nguoiDungCuThe)) {
 
                     throw new \Exception(
                         'Chưa xác định được người dùng nhận thông báo.'
                     );
                 }
+
+                foreach ($nguoiDungCuThe as $nguoiDungId) {
+
+                    /*
+        |--------------------------------------------------------------------------
+        | TẠO RECIPIENT
+        |--------------------------------------------------------------------------
+        */
+
+                    ThongBaoPushNguoiDung::firstOrCreate(
+                        [
+                            'thong_bao_push_id' => $thongBao->id,
+                            'nguoi_dung_id' => $nguoiDungId,
+                        ],
+                        [
+                            'da_doc' => false,
+                            'thoi_gian_doc' => null,
+                        ]
+                    );
+
+                    /*
+        |--------------------------------------------------------------------------
+        | NHÂN VIÊN -> CHUÔNG CÁ NHÂN
+        |--------------------------------------------------------------------------
+        */
+
+                    $user = NguoiDung::find($nguoiDungId);
+
+                    if (
+                        $user
+                        && $user->vai_tro === 'nhan_vien'
+                    ) {
+
+                        ThongBaoCaNhan::create([
+                            'nguoi_dung_id' => $user->id,
+
+                            'tieu_de' => $thongBao->tieu_de,
+
+                            'noi_dung' => $thongBao->noi_dung,
+
+                            'loai_thong_bao' => 'he_thong',
+
+                            'duong_dan' => null,
+
+                            'da_doc' => false,
+
+                            'doc_luc' => null,
+                        ]);
+                    }
+                }
+
+                break;
 
                 /*
             |--------------------------------------------------------------------------
