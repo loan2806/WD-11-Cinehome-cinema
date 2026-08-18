@@ -532,35 +532,15 @@
             </div>
 
             @if(count($seatMap) > 0)
-                {{-- Legend --}}
-                <div class="mb-8 flex flex-wrap items-center justify-center gap-5">
-                    @foreach(\App\Models\LoaiGhe::all() as $loai)
-                        <div class="flex items-center gap-2">
-                            <span class="inline-block h-4 w-5 rounded-md shadow-sm" style="background-color: {{ $loai->mau_sac ?? '#666' }};"></span>
-                            <span class="text-xs font-medium text-gray-300">{{ $loai->ten_loai }}</span>
-                        </div>
-                    @endforeach
-                    <div class="flex items-center gap-2">
-                        <span class="inline-flex h-4 w-5 items-center justify-center rounded-md bg-red-500/80 text-[10px] font-bold text-white">M</span>
-                        <span class="text-xs font-medium text-gray-300">Bảo trì</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="inline-block h-4 w-5 rounded-md border-2 border-[#d99a32] bg-[#d99a32]/30"></span>
-                        <span class="text-xs font-medium text-gray-300">Đã chọn</span>
-                    </div>
-                </div>
-
                 {{-- Seat Map Container --}}
                 <div class="seat-map-container overflow-x-auto pb-4">
                     <div class="seat-map-inner mx-auto inline-flex min-w-[600px] flex-col items-center">
 
-                        {{-- SCREEN --}}
-                        <div class="screen-glow mb-8 flex w-full items-center justify-center">
-                            <div class="screen-bar relative flex items-center justify-center overflow-hidden rounded-t-2xl bg-gradient-to-b from-[#d99a32] via-[#b8832a] to-[#8a5a1a] px-16 py-3 shadow-lg shadow-[#d99a32]/30">
-                                <div class="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"></div>
-                                <span class="relative text-sm font-black uppercase tracking-[0.3em] text-[#1a0b04]">Màn Hình</span>
-                                <div class="absolute -bottom-3 left-1/2 h-3 w-24 -translate-x-1/2 rounded-full bg-[#d99a32]/30 blur-xl"></div>
-                            </div>
+                        {{-- SCREEN — cùng hình dáng mái vòm + gradient vàng như bên trang đặt vé
+                             (.booking-screen-wrap .screen-line), thay vì viên nang xanh trước đây --}}
+                        <div class="phong-screen-wrap mb-8">
+                            <div class="phong-screen-line"></div>
+                            <span>Màn Hình</span>
                         </div>
 
                         {{-- Seat Rows --}}
@@ -597,7 +577,7 @@
                                                 @endphp
                                                 <div class="seat-chip seat-interactive seat-chip--couple
                                                     {{ $isMaintenance ? 'seat-chip--maintenance' : '' }}"
-                                                    @if(!$isMaintenance) style="background-color: {{ $bgColor }}; color: #1a0b04 !important;" @else style="color: #991b1b !important;" @endif
+                                                    @if(!$isMaintenance) style="background-color: {{ $bgColor }}; color: #ffffff !important;" @else style="color: #9ca3af !important;" @endif
                                                     data-ghe-id="{{ $ghe['id'] }}"
                                                     data-ma-ghe="{{ $ghe['ma_ghe'] }}"
                                                     data-loai-ghe="{{ $ghe['loai_ghe'] ?? 'Couple' }}"
@@ -613,10 +593,10 @@
                                                     @if($thoiGianKetThuc) data-thoi-gian-ket-thuc="{{ $thoiGianKetThuc }}" @endif
                                                     @if($isUnlimitedMaintenance) data-is-unlimited-maintenance="1" @endif
                                                     title="{{ $ghe['ma_ghe'] }} - {{ $ghe['loai_ghe'] ?? 'Couple' }} ({{ number_format($ghe['phu_thu'] ?? 0) }}đ)">
-                                                    <span class="seat-couple-left seat-label" style="color: #1a0b04 !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important;">{{ $tenHang }}{{ $ghe['display_number'] }}</span>
+                                                    <span class="seat-couple-left seat-label" style="color: #ffffff !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important;">{{ $tenHang }}{{ $ghe['display_number'] }}</span>
                                                     @if($gheRight)
-                                                        <span class="seat-couple-sep" style="color: rgba(0,0,0,0.45) !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important; margin: 0 2px !important; user-select: none;">|</span>
-                                                        <span class="seat-couple-right seat-label" style="color: #1a0b04 !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important;">{{ $tenHang }}{{ $gheRight['display_number'] }}</span>
+                                                        <span class="seat-couple-sep" style="color: rgba(255,255,255,0.65) !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important; margin: 0 2px !important; user-select: none;">|</span>
+                                                        <span class="seat-couple-right seat-label" style="color: #ffffff !important; font-weight: 900 !important; z-index: 10 !important; position: relative !important;">{{ $tenHang }}{{ $gheRight['display_number'] }}</span>
                                                     @endif
                                                 </div>
                                                 @php $j = ($ghe['cot_end'] ?? ($j+1)) + 1; @endphp
@@ -627,7 +607,7 @@
                                                 {{-- Normal seat: single seat with column number --}}
                                                 <div class="seat-chip seat-interactive
                                                     {{ $isMaintenance ? 'seat-chip--maintenance' : '' }}"
-                                                    @if(!$isMaintenance) style="background-color: {{ $bgColor }}; color: #1a0b04 !important;" @else style="color: #991b1b !important;" @endif
+                                                    @if(!$isMaintenance) style="background-color: {{ $bgColor }}; color: #ffffff !important;" @else style="color: #9ca3af !important;" @endif
                                                     data-ghe-id="{{ $ghe['id'] }}"
                                                     data-ma-ghe="{{ $ghe['ma_ghe'] }}"
                                                     data-loai-ghe="{{ $ghe['loai_ghe'] ?? 'Thường' }}"
@@ -639,7 +619,7 @@
                                                     @if($thoiGianKetThuc) data-thoi-gian-ket-thuc="{{ $thoiGianKetThuc }}" @endif
                                                     @if($isUnlimitedMaintenance) data-is-unlimited-maintenance="1" @endif
                                                     title="{{ $ghe['ma_ghe'] }} - {{ $ghe['loai_ghe'] ?? 'Thường' }} ({{ number_format($ghe['phu_thu'] ?? 0) }}đ)">
-                                                    <span class="seat-label" style="color: #1a0b04 !important; font-weight: 900 !important; font-size: 14px !important; text-shadow: 0 1px 0 rgba(255,255,255,0.8), 1px 0 0 rgba(255,255,255,0.5), -1px 0 0 rgba(255,255,255,0.5) !important; z-index: 10 !important; position: relative !important; display: inline-block !important;">{{ $tenHang }}{{ $j }}</span>
+                                                    <span class="seat-label" style="color: #ffffff !important; font-weight: 900 !important; font-size: 14px !important; z-index: 10 !important; position: relative !important; display: inline-block !important;">{{ $tenHang }}{{ $j }}</span>
                                                 </div>
                                                 @php $j++; @endphp
                                             @endif
@@ -655,6 +635,24 @@
                             </div>
                         @endforeach
 
+                    </div>
+                </div>
+
+                {{-- Legend — đặt DƯỚI sơ đồ ghế, cùng vị trí như trang đặt vé (.booking-seat-legend) --}}
+                <div class="mt-8 flex flex-wrap items-center justify-center gap-5 border-t border-white/5 pt-6">
+                    @foreach(\App\Models\LoaiGhe::all() as $loai)
+                        <div class="flex items-center gap-2">
+                            <span class="inline-block h-4 w-5 rounded-md shadow-sm" style="background-color: {{ $loai->mau_sac ?? '#666' }};"></span>
+                            <span class="text-xs font-medium text-gray-300">{{ $loai->ten_loai }}</span>
+                        </div>
+                    @endforeach
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex h-4 w-5 items-center justify-center rounded-md bg-[#18181b] border border-white/10 text-[10px] font-bold text-red-400">×</span>
+                        <span class="text-xs font-medium text-gray-300">Bảo trì</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-block h-4 w-5 rounded-md border-2 border-[#d99a32] bg-[#d99a32]/30"></span>
+                        <span class="text-xs font-medium text-gray-300">Đã chọn</span>
                     </div>
                 </div>
             @else
@@ -1442,23 +1440,6 @@ function closeModalHuyBaoTri() {
 <style>
     /* ==================== SEAT MAP STYLES ==================== */
 
-    /* Screen Glow */
-    .screen-glow {
-        position: relative;
-    }
-    .screen-glow::after {
-        content: '';
-        position: absolute;
-        bottom: -20px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 80%;
-        height: 40px;
-        background: radial-gradient(ellipse at center, rgba(217, 154, 50, 0.25) 0%, transparent 70%);
-        pointer-events: none;
-        filter: blur(8px);
-    }
-
     /* ==================== CUSTOM SELECT DROPDOWN ==================== */
     .custom-select {
         position: relative;
@@ -1802,70 +1783,66 @@ function closeModalHuyBaoTri() {
         letter-spacing: 0.5px;
     }
 
-    /* Seat Chip - Hình ghế giống ảnh mẫu */
-    /* Seat Chip - Hình ghế giống ảnh mẫu - DÙNG !important ĐỂ KHÔNG BỊ ĐÈ */
+    /* Màn hình - cùng hình mái vòm + gradient vàng như .booking-screen-wrap
+       .screen-line bên trang đặt vé (user-home.css). Dùng class riêng
+       "phong-screen-*" (không phải "screen-bar") để tránh bị class
+       ".screen-bar" viên nang xanh trong admin.css âm thầm đè mất. */
+    .phong-screen-wrap {
+        display: grid;
+        gap: 9px;
+        width: 100%;
+        text-align: center;
+    }
+    .phong-screen-line {
+        width: min(84%, 720px);
+        height: 38px;
+        margin: 0 auto;
+        border-radius: 100% 100% 0 0;
+        background: linear-gradient(180deg, rgba(255, 226, 155, 0.96), rgba(247, 184, 75, 0.18));
+        box-shadow: 0 18px 44px rgba(247, 184, 75, 0.24);
+    }
+    .phong-screen-wrap span {
+        color: #f7b84b;
+        font-size: 12px;
+        font-weight: 950;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+    }
+
+    /* Seat Chip - khớp đúng hình dáng ghế bên trang đặt vé (.seat-button
+       trong user-home.css): 46x42px, bo góc trên nhiều hơn dưới, đổ bóng lõm
+       bên trong tạo độ sâu — bỏ khối tựa lưng/đế 3D cầu kỳ trước đây để giao
+       diện sơ đồ ghế quản lý phòng chiếu nhất quán với sơ đồ ghế đặt vé. */
     .seat-chip {
         position: relative !important;
-        width: 48px !important;
-        height: 52px !important;
+        width: 46px !important;
+        height: 42px !important;
         display: flex !important;
-        align-items: flex-end !important;
+        align-items: center !important;
         justify-content: center !important;
-        padding: 0 0 6px 0 !important;
-        border-radius: 14px 14px 6px 6px !important;
-        font-size: 14px !important;
+        padding: 0 !important;
+        border-radius: 10px 10px 6px 6px !important;
+        font-size: 12px !important;
         font-weight: 900 !important;
-        color: #1a0b04 !important;
+        color: #ffffff !important;
         letter-spacing: 0.3px !important;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow:
-            0 3px 0 rgba(0, 0, 0, 0.4),
-            0 4px 10px rgba(0, 0, 0, 0.3),
-            inset 0 2px 0 rgba(255, 255, 255, 0.6),
-            inset 0 -3px 4px rgba(0, 0, 0, 0.2) !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease !important;
+        box-shadow: inset 0 -8px 14px rgba(0, 0, 0, 0.18) !important;
         flex-shrink: 0 !important;
-        border: 1.5px solid rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 255, 255, 0.16) !important;
         background-clip: padding-box !important;
     }
-    /* Phần tựa lưng (phía trên ghế) */
-    .seat-chip::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 6px;
-        right: 6px;
-        height: 18px;
-        background: rgba(255, 255, 255, 0.45);
-        border-radius: 10px 10px 4px 4px;
-        z-index: 1;
-        pointer-events: none;
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    }
-    /* Phần đế ghế (phía dưới) - tạo khối */
+    .seat-chip::before,
     .seat-chip::after {
-        content: "";
-        position: absolute;
-        bottom: 2px;
-        left: 4px;
-        right: 4px;
-        height: 4px;
-        background: rgba(0, 0, 0, 0.25);
-        border-radius: 3px;
-        z-index: 1;
-        pointer-events: none;
+        content: none !important;
     }
-    /* Label ghế - chữ đen đậm với viền sáng */
+    /* Label ghế - chữ trắng, không viền, khớp với .seat-button bên trang đặt vé */
     .seat-chip .seat-label,
     .seat-chip > span:not(.seat-couple-sep) {
         position: relative;
         z-index: 3;
         font-weight: 900;
-        color: #1a0b04;
-        text-shadow:
-            0 1px 0 rgba(255, 255, 255, 0.7),
-            0 -1px 0 rgba(0, 0, 0, 0.2),
-            1px 0 0 rgba(255, 255, 255, 0.5),
-            -1px 0 0 rgba(255, 255, 255, 0.5);
+        color: #ffffff;
     }
     /* Ghế couple - label 2 bên */
     .seat-chip .seat-couple-left,
@@ -1873,41 +1850,35 @@ function closeModalHuyBaoTri() {
         position: relative;
         z-index: 3;
         font-weight: 900;
-        color: #1a0b04;
-        text-shadow:
-            0 1px 0 rgba(255, 255, 255, 0.7),
-            0 -1px 0 rgba(0, 0, 0, 0.2);
+        color: #ffffff;
     }
     .seat-chip .seat-couple-sep {
         position: relative;
         z-index: 3;
-        color: rgba(0, 0, 0, 0.4);
+        color: rgba(255, 255, 255, 0.65);
         font-weight: 900;
         margin: 0 4px;
     }
-    /* Ghế bảo trì */
+    /* Ghế bảo trì - ẩn nhãn (opacity:0), hiện dấu "×" đè lên qua ::after */
     .seat-chip.seat-chip--maintenance .seat-label,
     .seat-chip.seat-chip--maintenance > span {
-        color: #991b1b !important;
-        text-shadow:
-            0 1px 0 rgba(255, 255, 255, 0.6),
-            0 -1px 0 rgba(0, 0, 0, 0.15);
+        color: #9ca3af !important;
     }
     .seat-chip--empty {
-        width: 48px;
-        height: 50px;
+        width: 46px;
+        height: 42px;
         visibility: hidden;
         pointer-events: none;
     }
     .seat-chip--maintenance {
-        background: rgba(239, 68, 68, 0.4) !important;
-        border: 2px solid #dc2626;
-        color: #991b1b;
+        background: #18181b !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03) !important;
+        color: #9ca3af;
+        opacity: 0.7;
         font-weight: 900;
         font-size: 11px;
-    }
-    .seat-chip--maintenance::before {
-        background: rgba(255, 255, 255, 0.3) !important;
+        cursor: not-allowed;
     }
     /* Ghế sắp bảo trì */
     .seat-chip.seat-chip--pending .seat-label,
@@ -1917,38 +1888,32 @@ function closeModalHuyBaoTri() {
     }
     .seat-chip--pending {
         background: #fef3c7 !important;
-        border: 2px solid #f59e0b;
+        border: 1px solid #f59e0b !important;
         color: #92400e;
         font-weight: 700;
         font-size: 11px;
-    }
-    .seat-chip--pending::before {
-        background: rgba(255, 255, 255, 0.5) !important;
     }
     /* CSS cũ .seat-chip--couple dòng 785-794 đã xóa - dùng rule mới ở phía dưới */
 
     /* Alpine.js cloak */
     [x-cloak] { display: none !important; }
 
-    /* Seat Interaction */
+    /* Seat Interaction - khớp hiệu ứng hover nhẹ nhàng (nhấc lên + viền sáng)
+       giống ghế bên trang đặt vé, bỏ hiệu ứng phóng to + phát sáng mạnh trước đây */
     .seat-interactive {
         cursor: pointer;
         user-select: none;
     }
     .seat-interactive:hover {
-        transform: scale(1.1) translateY(-3px);
+        transform: translateY(-3px);
         z-index: 10;
         box-shadow:
-            0 6px 0 rgba(0, 0, 0, 0.4),
-            0 8px 16px rgba(0, 0, 0, 0.4),
-            0 0 14px rgba(244, 197, 106, 0.6),
-            inset 0 2px 0 rgba(255, 255, 255, 0.7),
-            inset 0 -3px 4px rgba(0, 0, 0, 0.2);
-        filter: brightness(1.2) saturate(1.15);
-        border-color: #f4c56a !important;
+            inset 0 -8px 14px rgba(0, 0, 0, 0.18),
+            0 10px 24px rgba(217, 154, 50, 0.22) !important;
+        border-color: rgba(217, 154, 50, 0.72) !important;
     }
     .seat-interactive:active {
-        transform: translateY(0) scale(0.96);
+        transform: translateY(-1px);
         transition: transform 0.1s ease;
     }
     /* ==== GHẾ ĐANG ĐƯỢC CHỌN ==== */
@@ -2014,32 +1979,25 @@ function closeModalHuyBaoTri() {
         content: "✓" !important;
     }
 
-    /* Couple: 1 div to duy nhất chứa 2 nhãn ghế (H1 | H2) */
+    /* Couple: 1 div to duy nhất chứa 2 nhãn ghế (H1 | H2) — rộng khớp tỉ lệ
+       với .seat-button--couple (100px) bên trang đặt vé thay vì kích thước
+       105x50 cũ, và bỏ vạch dashed trang trí (trang đặt vé chỉ dùng dấu "|"
+       làm ranh giới, không có vạch dashed). */
     .seat-chip--couple {
-        width: 105px !important;
-        height: 50px     !important;
+        width: 102px !important;
+        height: 42px !important;
         gap: 0;
         padding: 0 6px !important;
         overflow: visible !important;
     }
-    /* Vạch dashed ở giữa ghế couple */
     .seat-chip--couple::after {
-        content: '';
-        position: absolute;
-        top: 18%;
-        bottom: 10px;
-        left: 50%;
-        width: 0;
-        border-left: 2px dashed rgba(0, 0, 0, 0.45);
-        transform: translateX(-50%);
-        pointer-events: none;
-        z-index: 2;
+        content: none !important;
     }
     .seat-chip--couple .seat-couple-left,
     .seat-chip--couple .seat-couple-right {
         flex: 1;
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         justify-content: center;
         min-width: 0;
         z-index: 5;
@@ -2048,12 +2006,11 @@ function closeModalHuyBaoTri() {
     }
     .seat-chip--couple .seat-couple-sep {
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         justify-content: center;
         color: rgba(0, 0, 0, 0.4);
         font-weight: 900;
         font-size: 13px;
-        padding-bottom: 1px;
         z-index: 5;
         position: relative;
         margin: 0 2px !important;
@@ -3956,7 +3913,7 @@ document.addEventListener('DOMContentLoaded', function() {
             seatEl.style.color = '#92400e';
         } else {
             seatEl.style.backgroundColor = mauSac;
-            seatEl.style.color = '#1a0b04';
+            seatEl.style.color = '#ffffff';
         }
 
         const labelSpans = seatEl.querySelectorAll('.seat-label, .seat-couple-left, .seat-couple-right');
@@ -3966,7 +3923,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (trangThai === 'sap_bao_tri') {
                 s.style.color = '#92400e';
             } else {
-                s.style.color = '#1a0b04';
+                s.style.color = '#ffffff';
             }
         });
     }
