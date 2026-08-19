@@ -129,14 +129,13 @@ class LienHeController extends Controller
     |--------------------------------------------------------------------------
     */
 
-        if (!empty($data['phan_hoi'])) {
+        if (!empty($data['phan_hoi']) || !empty($data['voucher_id'])) {
             $data['trang_thai'] = 'da_xu_ly';
             $data['thoi_gian_xu_ly'] = now();
         } else {
             $data['trang_thai'] = 'dang_xu_ly';
             $data['thoi_gian_xu_ly'] = null;
         }
-
         $data['nguoi_xu_ly_id'] = auth()->id();
 
         /*
@@ -245,12 +244,24 @@ class LienHeController extends Controller
 
         $daGuiEmail = false;
 
-        if (
-            !empty($data['phan_hoi']) &&
-            $data['phan_hoi'] !== $phanHoiCu
-        ) {
+        if ($voucher && $nguoiDungVoucher) {
+
             Mail::to($lienHe->email)
-                ->send(new LienHePhanHoiMail($lienHe));
+                ->send(
+                    new VoucherUuDaiMail(
+                        $lienHe,
+                        $nguoiDungVoucher,
+                        $lienHe->chu_de
+                    )
+                );
+
+            $daGuiEmail = true;
+        } elseif (!empty($data['phan_hoi']) && $data['phan_hoi'] !== $phanHoiCu) {
+
+            Mail::to($lienHe->email)
+                ->send(
+                    new LienHePhanHoiMail($lienHe)
+                );
 
             $daGuiEmail = true;
         }
@@ -273,14 +284,6 @@ class LienHeController extends Controller
                     . $nguoiDungVoucher->ngay_het_han->format('d/m/Y') . ".",
                 'loai' => 'voucher',
             ]);
-
-            Mail::to($lienHe->email)
-                ->send(
-                    new VoucherUuDaiMail(
-                        $lienHe,
-                        $nguoiDungVoucher
-                    )
-                );
         }
 
         /*

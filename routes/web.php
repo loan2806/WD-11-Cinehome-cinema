@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Http\Controllers\Admin\ThanhVienController as AdminThanhVienController;
 use App\Http\Controllers\Admin\KhachHangController as AdminKhachHangController;
 use App\Http\Controllers\Admin\ThongKeController;
+use App\Http\Controllers\Admin\ThungRacController;
 use App\Http\Controllers\Api\BandoRapApiController;
 use App\Http\Controllers\DatVe\DatVeController;
 use App\Http\Controllers\DongBoDuLieuController;
@@ -53,7 +54,6 @@ use App\Http\Controllers\User\VeXemPhimController;
 use App\Http\Controllers\User\ThanhVienController;
 use App\Http\Controllers\User\VoucherController;
 use App\Http\Controllers\User\ChamSocKhachHangController;
-use App\Http\Controllers\User\NotificationController;
 use App\Services\SaoLuuDuLieuService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -266,7 +266,6 @@ Route::middleware(['auth'])
         Route::get('/lich-su-ve', [LichSuVeController::class, 'index'])->name('lich-su-ve.index');
         Route::get('/ban-ve/{suatChieu}', [BanVeController::class, 'show'])->whereNumber('suatChieu')->name('ban-ve.show');
         
-        // SỬA LỖI 405: Đổi sang match ['get', 'post']
         Route::match(['get', 'post'], '/ban-ve/{suatChieu}/food', [BanVeController::class, 'food'])->whereNumber('suatChieu')->name('ban-ve.food');
         
         Route::get('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'showCheckout'])->whereNumber('suatChieu')->name('ban-ve.checkout.show');
@@ -294,19 +293,30 @@ Route::middleware(['auth'])
             ]);
         })->name('kiem-tra-quyen-ngam');
 
+        // 🌟 TRUNG TÂM THÙNG RÁC HỆ THỐNG
+        Route::get('/thung-rac', [ThungRacController::class, 'index'])->name('thung-rac.index');
+        Route::patch('/thung-rac/restore-all/{type}', [ThungRacController::class, 'restoreAll'])->name('thung-rac.restore-all');
+        Route::delete('/thung-rac/empty/{type}', [ThungRacController::class, 'emptyTrash'])->name('thung-rac.empty');
+
         // 1. TỔNG QUAN
         Route::middleware(['quyen:tong_quan.xem'])->group(function () {
             Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         });
 
-        // 2. QUẢN LÝ NỘI DUNG PHIM
+        // 2. QUẢN LÝ NỘI DUNG PHIM & SUẤT CHIẾU
         Route::middleware(['quyen:phim.xem'])->group(function () {
+            Route::get('phims/trash', [AdminMovieController::class, 'trash'])->name('phims.trash');
+            Route::patch('phims/{id}/restore', [AdminMovieController::class, 'restore'])->name('phims.restore');
+            Route::delete('phims/{id}/force-delete', [AdminMovieController::class, 'forceDelete'])->name('phims.force-delete');
+
             Route::resource('phims', AdminMovieController::class);
             Route::resource('quoc-gias', QuocGiaController::class);
             Route::resource('the-loais', TheloaisController::class);
         });
 
         Route::middleware(['quyen:suat_chieu.xem'])->group(function () {
+            Route::patch('suat-chieus/{id}/restore', [AdminSuatChieuController::class, 'restore'])->name('suat-chieus.restore');
+            Route::delete('suat-chieus/{id}/force-delete', [AdminSuatChieuController::class, 'forceDelete'])->name('suat-chieus.force-delete');
             Route::resource('suat-chieus', AdminSuatChieuController::class);
         });
 
@@ -353,7 +363,6 @@ Route::middleware(['auth'])
             Route::patch('ve-xem-phims/{veXemPhim}/cap-nhat-trang-thai', [AdminVeXemPhimController::class, 'capNhatTrangThai'])->name('ve-xem-phims.cap-nhat-trang-thai');
         });
 
-        // ĐÃ BỔ SUNG ROUTE IN VÉ Ở ĐÂY
         Route::middleware(['quyen:soat_ve.quet_qr'])->group(function () {
             Route::get('/soat-ve', [AdminSoatVeController::class, 'index'])->name('soat-ve.index');
             Route::post('/soat-ve/check', [AdminSoatVeController::class, 'check'])->name('soat-ve.check');
@@ -413,73 +422,20 @@ Route::middleware(['auth'])
         // 5. TÀI KHOẢN & NHÂN LỰC
         Route::middleware(['quyen:nhan_vien.xem'])->group(function () {
 
-            // Thùng rác
-            Route::get(
-                'nhanviens/trash',
-                [NhanVienController::class, 'trash']
-            )->name('nhanviens.trash');
+            Route::get('nhanviens/trash', [NhanVienController::class, 'trash'])->name('nhanviens.trash');
+            Route::post('nhanviens/{id}/restore', [NhanVienController::class, 'restore'])->name('nhanviens.restore');
+            Route::delete('nhanviens/{id}/force-delete', [NhanVienController::class, 'forceDelete'])->name('nhanviens.forceDelete');
+            Route::patch('nhanviens/{nhanvien}/toggle-status', [NhanVienController::class, 'toggleStatus'])->name('nhanviens.toggle-status');
 
-            // Khôi phục
-            Route::post(
-                'nhanviens/{id}/restore',
-                [NhanVienController::class, 'restore']
-            )->name('nhanviens.restore');
+            Route::resource('nhanviens', NhanVienController::class)->except('show');
 
-            // Xóa vĩnh viễn
-            Route::delete(
-                'nhanviens/{id}/force-delete',
-                [NhanVienController::class, 'forceDelete']
-            )->name('nhanviens.forceDelete');
+            Route::resource('cham-congs', ChamCongController::class)->names('cham-congs');
 
-            // Khóa / Mở khóa
-            Route::patch(
-                'nhanviens/{nhanvien}/toggle-status',
-                [NhanVienController::class, 'toggleStatus']
-            )->name('nhanviens.toggle-status');
-
-            // Resource (để cuối và bỏ show)
-            Route::resource('nhanviens', NhanVienController::class)
-                ->except('show');
-
-            /*
-    |--------------------------------------------------------------------------
-    | Chấm công
-    |--------------------------------------------------------------------------
-    */
-
-            Route::resource('cham-congs', ChamCongController::class)
-                ->names('cham-congs');
-
-            /*
-    |--------------------------------------------------------------------------
-    | Bảng lương
-    |--------------------------------------------------------------------------
-    */
-
-            Route::get(
-                'bang-luongs/calculate',
-                [BangLuongController::class, 'showCalculateForm']
-            )->name('bang-luongs.calculate');
-
-            Route::post(
-                'bang-luongs',
-                [BangLuongController::class, 'store']
-            )->name('bang-luongs.store');
-
-            Route::get(
-                'bang-luongs',
-                [BangLuongController::class, 'index']
-            )->name('bang-luongs.index');
-
-            Route::patch(
-                'bang-luongs/{bangLuong}/toggle-payment',
-                [BangLuongController::class, 'togglePaymentStatus']
-            )->name('bang-luongs.toggle-payment');
-
-            Route::delete(
-                'bang-luongs/{bangLuong}',
-                [BangLuongController::class, 'destroy']
-            )->name('bang-luongs.destroy');
+            Route::get('bang-luongs/calculate', [BangLuongController::class, 'showCalculateForm'])->name('bang-luongs.calculate');
+            Route::post('bang-luongs', [BangLuongController::class, 'store'])->name('bang-luongs.store');
+            Route::get('bang-luongs', [BangLuongController::class, 'index'])->name('bang-luongs.index');
+            Route::patch('bang-luongs/{bangLuong}/toggle-payment', [BangLuongController::class, 'togglePaymentStatus'])->name('bang-luongs.toggle-payment');
+            Route::delete('bang-luongs/{bangLuong}', [BangLuongController::class, 'destroy'])->name('bang-luongs.destroy');
         });
 
         Route::middleware(['quyen:phan_quyen.ma_tran'])->group(function () {
@@ -488,148 +444,38 @@ Route::middleware(['auth'])
         });
 
         Route::middleware(['quyen:khach_hang.xem'])->group(function () {
+            Route::get('/khach-hang/thung-rac', [AdminKhachHangController::class, 'trash'])->name('khach-hang.trash');
+            Route::patch('/khach-hang/{khachHang}/restore', [AdminKhachHangController::class, 'restore'])->name('khach-hang.restore');
+            Route::delete('/khach-hang/{khachHang}/force-delete', [AdminKhachHangController::class, 'forceDelete'])->name('khach-hang.force-delete');
 
-            // =====================================================
-            // THÙNG RÁC - PHẢI ĐẶT TRƯỚC /khach-hang/{khachHang}
-            // =====================================================
-
-            // Danh sách khách hàng đã xóa mềm
-            Route::get(
-                '/khach-hang/thung-rac',
-                [AdminKhachHangController::class, 'trash']
-            )->name('khach-hang.trash');
-
-            // Khôi phục
-            Route::patch(
-                '/khach-hang/{khachHang}/restore',
-                [AdminKhachHangController::class, 'restore']
-            )->name('khach-hang.restore');
-
-            // Xóa vĩnh viễn
-            Route::delete(
-                '/khach-hang/{khachHang}/force-delete',
-                [AdminKhachHangController::class, 'forceDelete']
-            )->name('khach-hang.force-delete');
-
-
-            // =====================================================
-            // DANH SÁCH KHÁCH HÀNG
-            // =====================================================
-
-            Route::get(
-                '/khach-hang',
-                [AdminKhachHangController::class, 'index']
-            )->name('khach-hang.index');
-
-
-            // =====================================================
-            // TẠO KHÁCH HÀNG
-            // =====================================================
-
-            Route::get(
-                '/khach-hang/tao-moi',
-                [AdminKhachHangController::class, 'create']
-            )->name('khach-hang.create');
-
-            Route::post(
-                '/khach-hang',
-                [AdminKhachHangController::class, 'store']
-            )->name('khach-hang.store');
-
-
-            // =====================================================
-            // CHI TIẾT
-            // =====================================================
-
-            Route::get(
-                '/khach-hang/{khachHang}',
-                [AdminKhachHangController::class, 'show']
-            )->name('khach-hang.show');
-
-
-            // =====================================================
-            // CHỈNH SỬA
-            // =====================================================
-
-            Route::get(
-                '/khach-hang/{khachHang}/edit',
-                [AdminKhachHangController::class, 'edit']
-            )->name('khach-hang.edit');
-
-
-            // =====================================================
-            // CẬP NHẬT
-            // =====================================================
-
-            Route::patch(
-                '/khach-hang/{khachHang}',
-                [AdminKhachHangController::class, 'update']
-            )->name('khach-hang.update');
-
-
-            // =====================================================
-            // XÓA MỀM
-            // =====================================================
-
-            Route::delete(
-                '/khach-hang/{khachHang}',
-                [AdminKhachHangController::class, 'destroy']
-            )->name('khach-hang.destroy');
-
-
-            // =====================================================
-            // KHÓA / MỞ KHÓA
-            // =====================================================
-
-            Route::patch(
-                '/khach-hang/{khachHang}/trang-thai',
-                [AdminKhachHangController::class, 'toggleStatus']
-            )->name('khach-hang.toggle-status');
+            Route::get('/khach-hang', [AdminKhachHangController::class, 'index'])->name('khach-hang.index');
+            Route::get('/khach-hang/tao-moi', [AdminKhachHangController::class, 'create'])->name('khach-hang.create');
+            Route::post('/khach-hang', [AdminKhachHangController::class, 'store'])->name('khach-hang.store');
+            Route::get('/khach-hang/{khachHang}', [AdminKhachHangController::class, 'show'])->name('khach-hang.show');
+            Route::get('/khach-hang/{khachHang}/edit', [AdminKhachHangController::class, 'edit'])->name('khach-hang.edit');
+            Route::patch('/khach-hang/{khachHang}', [AdminKhachHangController::class, 'update'])->name('khach-hang.update');
+            Route::delete('/khach-hang/{khachHang}', [AdminKhachHangController::class, 'destroy'])->name('khach-hang.destroy');
+            Route::patch('/khach-hang/{khachHang}/trang-thai', [AdminKhachHangController::class, 'toggleStatus'])->name('khach-hang.toggle-status');
         });
 
-        // ================================
-        // XEM THÀNH VIÊN
-        // ================================
         Route::middleware(['quyen:thanh_vien.xem'])->group(function () {
-
-            // Danh sách thành viên
-            Route::get('/thanh-vien', [AdminThanhVienController::class, 'index'])
-                ->name('thanh-vien.index');
-
-            // Trang tặng / thu hồi điểm toàn bộ
-            Route::get('/thanh-vien/diem-tat-ca', [AdminThanhVienController::class, 'diemTatCa'])
-                ->name('thanh-vien.diem-tat-ca');
-
-            // Chi tiết thành viên
-            Route::get('/thanh-vien/{thanhVien}', [AdminThanhVienController::class, 'show'])
-                ->name('thanh-vien.show');
+            Route::get('/thanh-vien', [AdminThanhVienController::class, 'index'])->name('thanh-vien.index');
+            Route::get('/thanh-vien/diem-tat-ca', [AdminThanhVienController::class, 'diemTatCa'])->name('thanh-vien.diem-tat-ca');
+            Route::get('/thanh-vien/{thanhVien}', [AdminThanhVienController::class, 'show'])->name('thanh-vien.show');
         });
 
-
-        // ================================
-        // QUẢN LÝ ĐIỂM THÀNH VIÊN
-        // ================================
         Route::middleware(['quyen:thanh_vien.quan_ly_diem'])->group(function () {
-
-            // Tặng điểm từng thành viên
-            Route::post('/thanh-vien/{thanhVien}/tang-diem', [AdminThanhVienController::class, 'tangDiem'])
-                ->name('thanh-vien.tang-diem');
-
-            // Thu hồi điểm từng thành viên
-            Route::post('/thanh-vien/{thanhVien}/tru-diem', [AdminThanhVienController::class, 'truDiem'])
-                ->name('thanh-vien.tru-diem');
-
-            // Xử lý tặng / thu hồi toàn bộ
-            Route::post('/thanh-vien/diem-tat-ca', [AdminThanhVienController::class, 'xuLyDiemHangLoat'])
-                ->name('thanh-vien.xu-ly-diem-hang-loat');
+            Route::post('/thanh-vien/{thanhVien}/tang-diem', [AdminThanhVienController::class, 'tangDiem'])->name('thanh-vien.tang-diem');
+            Route::post('/thanh-vien/{thanhVien}/tru-diem', [AdminThanhVienController::class, 'truDiem'])->name('thanh-vien.tru-diem');
+            Route::post('/thanh-vien/diem-tat-ca', [AdminThanhVienController::class, 'xuLyDiemHangLoat'])->name('thanh-vien.xu-ly-diem-hang-loat');
         });
+
         // 6. BÁO CÁO & VẬN HÀNH
         Route::middleware(['quyen:bao_cao.doanh_thu'])->group(function () {
             Route::get('/revenue-reports', [AdminRevenueReportController::class, 'index'])->name('revenue-reports.index');
             Route::get('/thong-ke', [ThongKeController::class, 'index'])->name('thong-ke.index');
             Route::get('/thong-ke/export-excel', [ThongKeController::class, 'exportExcel'])->name('thong-ke.export-excel');
             Route::get('/thong-ke/export-pdf', [ThongKeController::class, 'exportPdf'])->name('thong-ke.export-pdf');
-
             Route::get('/api/statistics', [ThongKeController::class, 'apiIndex'])->name('thong-ke.api');
         });
 
@@ -639,162 +485,31 @@ Route::middleware(['auth'])
 
         // 7. CÀI ĐẶT THAM SỐ GỐC
         Route::middleware(['quyen:thong_bao.gui'])->group(function () {
+            Route::resource('notifications', AdminNotificationController::class)->only(['index', 'create', 'store', 'destroy']);
+            Route::post('/notifications/mark-all-read', [AdminNotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
 
-            // =========================================================
-            // ADMIN NOTIFICATIONS
-            // =========================================================
+            Route::get('/thong-bao-push/users-by-role', [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'getUsersByRole'])->name('thong-bao-push.users-by-role');
+            Route::get('/thong-bao-push/tim-nguoi-dung', [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'timNguoiDung'])->name('thong-bao-push.tim-nguoi-dung');
+            Route::post('/thong-bao-push/{thongBao}/send', [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'send'])->name('thong-bao-push.send');
+            Route::get('/thong-bao-push/thung-rac', [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'trash'])->name('thong-bao-push.trash');
+            Route::patch('/thong-bao-push/{thongBao}/restore', [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'restore'])->withTrashed()->name('thong-bao-push.restore');
+            Route::delete('/thong-bao-push/{thongBao}/force-delete', [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'forceDelete'])->name('thong-bao-push.force-delete');
 
-            Route::resource(
-                'notifications',
-                AdminNotificationController::class
-            )->only([
-                'index',
-                'create',
-                'store',
-                'destroy'
-            ]);
-
-            Route::post(
-                '/notifications/mark-all-read',
-                [AdminNotificationController::class, 'markAllRead']
-            )->name('notifications.markAllRead');
-
-
-            // =========================================================
-            // THÔNG BÁO PUSH - AJAX
-            // Phải đặt trước Route::resource()
-            // =========================================================
-
-            Route::get(
-                '/thong-bao-push/users-by-role',
-                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'getUsersByRole']
-            )->name('thong-bao-push.users-by-role');
-
-            Route::get(
-                '/thong-bao-push/tim-nguoi-dung',
-                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'timNguoiDung']
-            )->name('thong-bao-push.tim-nguoi-dung');
-
-
-            // =========================================================
-            // GỬI THÔNG BÁO PUSH TỪ BẢN NHÁP
-            // =========================================================
-
-            Route::post(
-                '/thong-bao-push/{thongBao}/send',
-                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'send']
-            )->name('thong-bao-push.send');
-
-
-            // =========================================================
-            // THÙNG RÁC THÔNG BÁO PUSH
-            // Phải đặt trước Route::resource()
-            // =========================================================
-
-            Route::get(
-                '/thong-bao-push/thung-rac',
-                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'trash']
-            )->name('thong-bao-push.trash');
-
-
-            // =========================================================
-            // KHÔI PHỤC THÔNG BÁO PUSH
-            // =========================================================
-
-            Route::patch(
-                '/thong-bao-push/{thongBao}/restore',
-                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'restore']
-            )->withTrashed()
-                ->name('thong-bao-push.restore');
-
-
-            // =========================================================
-            // XÓA VĨNH VIỄN THÔNG BÁO PUSH
-            // =========================================================
-
-            Route::delete(
-                '/thong-bao-push/{thongBao}/force-delete',
-                [\App\Http\Controllers\Admin\ThongBaoPushController::class, 'forceDelete']
-            )->name('thong-bao-push.force-delete');
-
-
-            // =========================================================
-            // THÔNG BÁO PUSH RESOURCE
-            // =========================================================
-            //
-            // parameters:
-            // thong-bao-push/{thongBao}
-            //
-            // Để khớp với:
-            // ThongBaoPush $thongBao
-            //
-            // =========================================================
-
-            Route::resource(
-                'thong-bao-push',
-                \App\Http\Controllers\Admin\ThongBaoPushController::class
-            )
-                ->parameters([
-                    'thong-bao-push' => 'thongBao',
-                ])
+            Route::resource('thong-bao-push', \App\Http\Controllers\Admin\ThongBaoPushController::class)
+                ->parameters(['thong-bao-push' => 'thongBao'])
                 ->names('thong-bao-push');
 
+            Route::get('/movie-reviews', [AdminDanhGiaPhimController::class, 'index'])->name('movie-reviews.index');
+            Route::post('/movie-reviews', [AdminDanhGiaPhimController::class, 'store'])->name('movie-reviews.store');
+            Route::patch('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'update'])->name('movie-reviews.update');
+            Route::delete('/movie-reviews/{danhGiaPhim}', [AdminDanhGiaPhimController::class, 'destroy'])->name('movie-reviews.destroy');
 
-            // =========================================================
-            // ĐÁNH GIÁ PHIM
-            // =========================================================
-
-            Route::get(
-                '/movie-reviews',
-                [AdminDanhGiaPhimController::class, 'index']
-            )->name('movie-reviews.index');
-
-            Route::post(
-                '/movie-reviews',
-                [AdminDanhGiaPhimController::class, 'store']
-            )->name('movie-reviews.store');
-
-            Route::patch(
-                '/movie-reviews/{danhGiaPhim}',
-                [AdminDanhGiaPhimController::class, 'update']
-            )->name('movie-reviews.update');
-
-            Route::delete(
-                '/movie-reviews/{danhGiaPhim}',
-                [AdminDanhGiaPhimController::class, 'destroy']
-            )->name('movie-reviews.destroy');
-
-
-            // =========================================================
-            // LIÊN HỆ
-            // =========================================================
-
-            Route::get(
-                '/lien-he',
-                [AdminLienHeController::class, 'index']
-            )->name('lien-he.index');
-
-            Route::get(
-                '/lien-he/{lienHe}',
-                [AdminLienHeController::class, 'show']
-            )->name('lien-he.show');
-
-            Route::patch(
-                '/lien-he/{lienHe}',
-                [AdminLienHeController::class, 'update']
-            )->name('lien-he.update');
-
-            Route::post(
-                '/lien-he/{lienHe}/tang-voucher',
-                [AdminLienHeController::class, 'tangVoucher']
-            )->name('lien-he.tang-voucher');
-
-            Route::delete(
-                '/lien-he/{lienHe}',
-                [AdminLienHeController::class, 'destroy']
-            )->name('lien-he.destroy');
+            Route::get('/lien-he', [AdminLienHeController::class, 'index'])->name('lien-he.index');
+            Route::get('/lien-he/{lienHe}', [AdminLienHeController::class, 'show'])->name('lien-he.show');
+            Route::patch('/lien-he/{lienHe}', [AdminLienHeController::class, 'update'])->name('lien-he.update');
+            Route::post('/lien-he/{lienHe}/tang-voucher', [AdminLienHeController::class, 'tangVoucher'])->name('lien-he.tang-voucher');
+            Route::delete('/lien-he/{lienHe}', [AdminLienHeController::class, 'destroy'])->name('lien-he.destroy');
         });
-
 
         Route::middleware(['quyen:cai_dat.he_thong'])->group(function () {
             Route::get('/cai-dat-thanh-toan', [AdminCaiDatThanhToanController::class, 'edit'])->name('cai-dat-thanh-toan.edit');
@@ -890,6 +605,5 @@ Route::get('/test-php', function () {
         'openssl' => ini_get('openssl.cafile'),
     ];
 });
-
 
 require __DIR__ . '/auth.php';

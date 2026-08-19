@@ -158,7 +158,6 @@
     });
 </script>
 
-
 {{-- STAFF NOTIFICATION REALTIME POLLING --}}
 @if(($isStaff ?? false))
 <script>
@@ -432,7 +431,6 @@
                             <a href="{{ route('staff.ban-ve.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('staff.ban-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                 Bán vé trực tiếp rạp
                             </a>
-
                             @endif
 
                             @if(coQuyen('soat_ve.quet_qr'))
@@ -538,36 +536,41 @@
                 @endif
 
                 {{-- 7. THIẾT LẬP HỆ THỐNG & HỖ TRỢ --}}
-                @if(coBatKyQuyenNao(['thong_bao.gui', 'cai_dat.he_thong', 'lien_he.xem']))
-                    @php
-                        $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
-                            || request()->routeIs('admin.movie-reviews.*')
-                            || request()->routeIs('admin.lien-he.*')
-                            || request()->routeIs('admin.system-settings.*');
-                    @endphp
-                    <div class="sidebar-dropdown-box {{ $isSystemActive ? 'open' : '' }}">
-                        <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
-                            <span class="flex items-center gap-3.5">
-                                <i class="fa-solid fa-gear w-5 text-center text-xl text-[#d99a32]"></i>
-                                <span>Hệ thống và Hỗ Trợ</span>
-                            </span>
-                            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
-                        </button>
-                        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            @if(coQuyen('thong_bao.gui'))
-                            <a href="{{ route('admin.thong-bao-push.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
-                                Thông báo đẩy
-                            </a>
-                            @endif
+@if(coBatKyQuyenNao(['thong_bao.gui', 'cai_dat.he_thong', 'lien_he.xem']))
+    @php
+        $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
+            || request()->routeIs('admin.movie-reviews.*')
+            || request()->routeIs('admin.lien-he.*')
+            || request()->routeIs('admin.system-settings.*')
+            || request()->routeIs('admin.thung-rac.*');
+    @endphp
+    <div class="sidebar-dropdown-box {{ $isSystemActive ? 'open' : '' }}">
+        <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
+            <span class="flex items-center gap-3.5">
+                <i class="fa-solid fa-gear w-5 text-center text-xl text-[#d99a32]"></i>
+                <span>Hệ thống và Hỗ Trợ</span>
+            </span>
+            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
+        </button>
+        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
+            @if(coQuyen('thong_bao.gui'))
+            <a href="{{ route('admin.thong-bao-push.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                Thông báo đẩy
+            </a>
+            @endif
 
-                            @if(coQuyen('lien_he.xem'))
-                            <a href="{{ route('admin.lien-he.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.lien-he.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
-                                Liên hệ khách hàng
-                            </a>
-                            @endif
-                        </div>
-                    </div>
-                @endif
+            @if(coQuyen('lien_he.xem'))
+            <a href="{{ route('admin.lien-he.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.lien-he.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                Liên hệ khách hàng
+            </a>
+            @endif
+
+            <a href="{{ route('admin.thung-rac.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thung-rac.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                Thùng rác hệ thống
+            </a>
+        </div>
+    </div>
+@endif
 
                 {{-- VỀ TRANG CHỦ --}}
                 <div class="border-t border-white/10 pt-3">
@@ -764,7 +767,7 @@
 
     @stack('scripts')
 
-    {{-- INTERACTION SCRIPT: CHỐNG NỔI BỌT VÀ ĐÓNG MỞ ĐỘC LẬP TUYỆT ĐỐI --}}
+    {{-- INTERACTION SCRIPT --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const dropdownBoxes = document.querySelectorAll('.sidebar-dropdown-box');
@@ -790,14 +793,13 @@
         );
     </script>
     @endif
-    {{-- SCRIPT TỰ ĐỘNG ĐẨY VỀ DASHBOARD KHI BỊ TƯỚC QUYỀN TRỰC TIẾP --}}
+    
     @hasSection('module-permission')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const requiredPerm = "@yield('module-permission')";
             if (!requiredPerm) return;
 
-            // Kiểm tra ngầm mỗi 5000ms (5 giây)
             setInterval(function() {
                 fetch(`{{ route('admin.kiem-tra-quyen-ngam') }}?quyen=${requiredPerm}`, {
                     headers: {
@@ -808,7 +810,6 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data && data.co_quyen === false) {
-                        // Tự động chuyển hướng ngay lập tức khi phát hiện mất quyền
                         window.location.href = "{{ route('admin.dashboard') }}";
                     }
                 })

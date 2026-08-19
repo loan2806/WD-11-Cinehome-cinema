@@ -24,7 +24,6 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-
         $request->validate([
 
             'ho_ten' => [
@@ -48,8 +47,7 @@ class RegisteredUserController extends Controller
                 Rules\Password::defaults()
             ],
 
-
-            // mã giới thiệu không bắt buộc
+            // Mã giới thiệu không bắt buộc
             'ma_gioi_thieu' => [
                 'nullable',
                 'string',
@@ -59,8 +57,12 @@ class RegisteredUserController extends Controller
         ]);
 
 
+        /*
+    |--------------------------------------------------------------------------
+    | TẠO TÀI KHOẢN
+    |--------------------------------------------------------------------------
+    */
 
-        // tạo tài khoản
         $user = NguoiDung::create([
 
             'ho_ten' => $request->ho_ten,
@@ -77,18 +79,19 @@ class RegisteredUserController extends Controller
 
             'bat_buoc_xac_thuc_email' => false,
 
-            // Vẫn chưa xác thực email
+            // Chưa xác thực email
             'email_verified_at' => null,
 
         ]);
 
 
+        /*
+    |--------------------------------------------------------------------------
+    | TÌM NGƯỜI GIỚI THIỆU
+    |--------------------------------------------------------------------------
+    */
 
-        /**
-         * tìm người giới thiệu
-         */
         $nguoiGioiThieu = null;
-
 
         if ($request->filled('ma_gioi_thieu')) {
 
@@ -99,8 +102,12 @@ class RegisteredUserController extends Controller
         }
 
 
+        /*
+    |--------------------------------------------------------------------------
+    | TẠO THẺ THÀNH VIÊN
+    |--------------------------------------------------------------------------
+    */
 
-        // tạo thẻ thành viên mới
         $thanhVien = ThanhVien::create([
 
             'nguoi_dung_id' => $user->id,
@@ -113,20 +120,17 @@ class RegisteredUserController extends Controller
                 STR_PAD_LEFT
             ),
 
-
             'ma_gioi_thieu' =>
             ThanhVien::taoMaGioiThieu(
                 $user->id
             ),
 
-
             'nguoi_gioi_thieu_id' =>
             $nguoiGioiThieu?->id,
 
-
             'hang_thanh_vien' => 'member',
 
-            'diem_hien_tai' => 50,
+            'diem_hien_tai' => 0,
 
             'tong_diem_tich_luy' => 0,
 
@@ -135,69 +139,63 @@ class RegisteredUserController extends Controller
         ]);
 
 
+        /*
+    |--------------------------------------------------------------------------
+    | NGƯỜI GIỚI THIỆU NHẬN 100 ĐIỂM
+    |--------------------------------------------------------------------------
+    */
 
-        /**
-         * Người mới đăng ký nhận điểm chào mừng
-         */
-        $thanhVien->lichSuDiems()->create([
-
-            've_xem_phim_id' => null,
-
-            'loai_giao_dich' => 'cong_diem',
-
-            'so_diem' => 50,
-
-            'noi_dung' =>
-            'Điểm chào mừng thành viên mới',
-
-        ]);
-
-
-
-
-        /**
-         * Người giới thiệu nhận thưởng
-         */
         if (
             $nguoiGioiThieu
             && !$nguoiGioiThieu->da_nhan_thuong
         ) {
 
-
             $nguoiGioiThieu->congDiem(
-
                 100,
-
                 null,
-
                 'Giới thiệu thành viên mới'
-
             );
 
-
             $nguoiGioiThieu->update([
-
                 'da_nhan_thuong' => true
-
             ]);
         }
 
 
+        /*
+    |--------------------------------------------------------------------------
+    | SỰ KIỆN ĐĂNG KÝ
+    |--------------------------------------------------------------------------
+    */
 
         event(
             new Registered($user)
         );
 
 
-        Auth::login($user);
+        /*
+    |--------------------------------------------------------------------------
+    | KHÔNG TỰ ĐĂNG NHẬP
+    |--------------------------------------------------------------------------
+    |
+    | ĐÃ XÓA:
+    |
+    | Auth::login($user);
+    |
+    */
 
 
+        /*
+    |--------------------------------------------------------------------------
+    | CHUYỂN VỀ TRANG ĐĂNG NHẬP
+    |--------------------------------------------------------------------------
+    */
 
-        return redirect(
-            route(
-                'dashboard',
-                absolute: false
-            )
-        );
+        return redirect()
+            ->route('login')
+            ->with(
+                'success',
+                'Đăng ký tài khoản thành công. Vui lòng đăng nhập.'
+            );
     }
 }

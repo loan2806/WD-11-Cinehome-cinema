@@ -46,13 +46,27 @@ class NotificationController extends Controller
 
                 return (object) [
                     'id' => 'personal_' . $item->id,
-                    'loai_thong_bao' => $item->loai_thong_bao,
-                    'tieu_de' => $item->tieu_de,
-                    'noi_dung' => $item->noi_dung,
-                    'da_doc' => (bool) $item->da_doc,
-                    'doc_luc' => $item->doc_luc,
-                    'duong_dan' => $item->duong_dan,
-                    'created_at' => $item->created_at,
+
+                    'loai_thong_bao' =>
+                    $item->loai_thong_bao,
+
+                    'tieu_de' =>
+                    $item->tieu_de,
+
+                    'noi_dung' =>
+                    $item->noi_dung,
+
+                    'da_doc' =>
+                    (bool) $item->da_doc,
+
+                    'doc_luc' =>
+                    $item->doc_luc,
+
+                    'duong_dan' =>
+                    $item->duong_dan,
+
+                    'created_at' =>
+                    $item->created_at,
                 ];
             });
 
@@ -60,35 +74,81 @@ class NotificationController extends Controller
         // ==============================
         // THÔNG BÁO PUSH
         // ==============================
+        //
+        // CHỈ LẤY PUSH ĐÃ GỬI
+        // KHÔNG LẤY BẢN NHÁP
+        // ==============================
 
-        $pushNotifications = \App\Models\ThongBaoPushNguoiDung::with(
+        $pushNotifications = ThongBaoPushNguoiDung::with(
             'thongBaoPush'
         )
-            ->where('nguoi_dung_id', $user->id)
+            ->where(
+                'nguoi_dung_id',
+                $user->id
+            )
+            ->whereHas(
+                'thongBaoPush',
+                function ($query) {
+
+                    $query->where(
+                        'trang_thai',
+                        'da_gui'
+                    );
+                }
+            )
             ->get()
             ->map(function ($item) {
 
                 $push = $item->thongBaoPush;
 
+                /*
+            |--------------------------------------------------------------------------
+            | Không còn thông báo cha
+            |--------------------------------------------------------------------------
+            */
+
                 if (!$push) {
                     return null;
                 }
 
+                /*
+            |--------------------------------------------------------------------------
+            | Chỉ hiển thị thông báo đã gửi
+            |--------------------------------------------------------------------------
+            */
+
+                if ($push->trang_thai !== 'da_gui') {
+                    return null;
+                }
+
                 return (object) [
-                    'id' => 'push_' . $item->id,
+                    'id' =>
+                    'push_' . $item->id,
 
-                    // Push được đưa vào nhóm Hệ thống
-                    'loai_thong_bao' => 'he_thong',
+                    /*
+                | Push được đưa vào nhóm Hệ thống
+                */
 
-                    'tieu_de' => $push->tieu_de,
-                    'noi_dung' => $push->noi_dung,
+                    'loai_thong_bao' =>
+                    'he_thong',
 
-                    'da_doc' => (bool) $item->da_doc,
-                    'doc_luc' => $item->doc_luc,
+                    'tieu_de' =>
+                    $push->tieu_de,
 
-                    'duong_dan' => null,
+                    'noi_dung' =>
+                    $push->noi_dung,
 
-                    'created_at' => $push->created_at,
+                    'da_doc' =>
+                    (bool) $item->da_doc,
+
+                    'doc_luc' =>
+                    $item->doc_luc,
+
+                    'duong_dan' =>
+                    null,
+
+                    'created_at' =>
+                    $push->created_at,
                 ];
             })
             ->filter()
@@ -110,34 +170,57 @@ class NotificationController extends Controller
         // ==============================
 
         $notificationStats = [
-            'total' => $allNotifications->count(),
+            'total' =>
+            $allNotifications->count(),
 
-            'unread' => $allNotifications
+            'unread' =>
+            $allNotifications
                 ->where('da_doc', false)
                 ->count(),
 
-            'read' => $allNotifications
+            'read' =>
+            $allNotifications
                 ->where('da_doc', true)
                 ->count(),
 
-            'he_thong' => $allNotifications
-                ->where('loai_thong_bao', 'he_thong')
+            'he_thong' =>
+            $allNotifications
+                ->where(
+                    'loai_thong_bao',
+                    'he_thong'
+                )
                 ->count(),
 
-            've' => $allNotifications
-                ->where('loai_thong_bao', 've')
+            've' =>
+            $allNotifications
+                ->where(
+                    'loai_thong_bao',
+                    've'
+                )
                 ->count(),
 
-            'diem' => $allNotifications
-                ->where('loai_thong_bao', 'diem')
+            'diem' =>
+            $allNotifications
+                ->where(
+                    'loai_thong_bao',
+                    'diem'
+                )
                 ->count(),
 
-            'voucher' => $allNotifications
-                ->where('loai_thong_bao', 'voucher')
+            'voucher' =>
+            $allNotifications
+                ->where(
+                    'loai_thong_bao',
+                    'voucher'
+                )
                 ->count(),
 
-            'hang_thanh_vien' => $allNotifications
-                ->where('loai_thong_bao', 'hang_thanh_vien')
+            'hang_thanh_vien' =>
+            $allNotifications
+                ->where(
+                    'loai_thong_bao',
+                    'hang_thanh_vien'
+                )
                 ->count(),
         ];
 
@@ -159,8 +242,13 @@ class NotificationController extends Controller
         $filteredNotifications = $allNotifications;
 
         if ($activeType) {
-            $filteredNotifications = $filteredNotifications
-                ->where('loai_thong_bao', $activeType)
+
+            $filteredNotifications =
+                $filteredNotifications
+                ->where(
+                    'loai_thong_bao',
+                    $activeType
+                )
                 ->values();
         }
 
@@ -177,27 +265,36 @@ class NotificationController extends Controller
         $perPage = 8;
 
         $items = $filteredNotifications
-            ->forPage($page, $perPage)
+            ->forPage(
+                $page,
+                $perPage
+            )
             ->values();
 
-        $thongBaos = new \Illuminate\Pagination\LengthAwarePaginator(
+        $thongBaos = new LengthAwarePaginator(
             $items,
             $filteredNotifications->count(),
             $perPage,
             $page,
             [
-                'path' => $request->url(),
-                'query' => $request->query(),
+                'path' =>
+                $request->url(),
+
+                'query' =>
+                $request->query(),
             ]
         );
 
 
-        return view('user.thong_bao.index', compact(
-            'thongBaos',
-            'notificationStats',
-            'activeType',
-            'latestUnread'
-        ));
+        return view(
+            'user.thong_bao.index',
+            compact(
+                'thongBaos',
+                'notificationStats',
+                'activeType',
+                'latestUnread'
+            )
+        );
     }
 
 
@@ -210,25 +307,53 @@ class NotificationController extends Controller
     {
         $userId = Auth::id();
 
+        /*
+    |--------------------------------------------------------------------------
+    | THÔNG BÁO CÁ NHÂN
+    |--------------------------------------------------------------------------
+    */
 
-        // Thông báo cá nhân
         ThongBaoCaNhan::where(
             'nguoi_dung_id',
             $userId
         )
-            ->where('da_doc', false)
+            ->where(
+                'da_doc',
+                false
+            )
             ->update([
                 'da_doc' => true,
                 'doc_luc' => now(),
             ]);
 
 
-        // Thông báo Push
+        /*
+    |--------------------------------------------------------------------------
+    | THÔNG BÁO PUSH
+    |--------------------------------------------------------------------------
+    |
+    | CHỈ ĐÁNH DẤU PUSH ĐÃ GỬI
+    |
+    */
+
         ThongBaoPushNguoiDung::where(
             'nguoi_dung_id',
             $userId
         )
-            ->where('da_doc', false)
+            ->where(
+                'da_doc',
+                false
+            )
+            ->whereHas(
+                'thongBaoPush',
+                function ($query) {
+
+                    $query->where(
+                        'trang_thai',
+                        'da_gui'
+                    );
+                }
+            )
             ->update([
                 'da_doc' => true,
                 'doc_luc' => now(),

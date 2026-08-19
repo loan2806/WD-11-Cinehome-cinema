@@ -6,6 +6,7 @@ use App\Models\NguoiDung;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use App\Models\ThanhVien;
 
 class TaiKhoanSeeder extends Seeder
 {
@@ -23,7 +24,7 @@ class TaiKhoanSeeder extends Seeder
             [
                 'ho_ten' => 'Quản Lý Hệ Thống CineHome',
                 'mat_khau' => Hash::make('12345678'),
-                'vai_tro' => 'admin', 
+                'vai_tro' => 'admin',
                 'trang_thai_hoat_dong' => true,
             ]
         );
@@ -66,13 +67,26 @@ class TaiKhoanSeeder extends Seeder
         $staffUser->assignRole($roleStaff);
 
         // 5. Tài khoản Khách hàng
-        NguoiDung::updateOrCreate(
+        $user = NguoiDung::updateOrCreate(
             ['email' => 'user@cinehome.vn'],
             [
                 'ho_ten' => 'User CineHome',
                 'mat_khau' => Hash::make('12345678'),
                 'vai_tro' => 'khach_hang',
                 'trang_thai_hoat_dong' => true,
+            ]
+        );
+        ThanhVien::updateOrCreate(
+            ['nguoi_dung_id' => $user->id],
+            [
+                'ma_thanh_vien' => 'TV-' . str_pad($user->id, 6, '0', STR_PAD_LEFT),
+                'ma_gioi_thieu' => ThanhVien::taoMaGioiThieu($user->id),
+                'nguoi_gioi_thieu_id' => null,
+                'da_nhan_thuong' => false,
+                'hang_thanh_vien' => 'member',
+                'diem_hien_tai' => 0,
+                'tong_diem_tich_luy' => 0,
+                'ngay_tham_gia' => now(),
             ]
         );
     }

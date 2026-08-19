@@ -6,16 +6,81 @@
 
 @section('content')
 
+@php
+/*
+|--------------------------------------------------------------------------
+| ĐỐI TƯỢNG
+|--------------------------------------------------------------------------
+*/
+$audienceGuide = [
+'all' => [
+'label' => 'Tất cả thành viên',
+'description' => 'Áp dụng cho toàn bộ thành viên',
+'icon' => 'fa-globe',
+'class' => 'audience-all',
+],
+
+'hang_thanh_vien' => [
+'label' => 'Theo hạng thành viên',
+'description' => 'Chỉ áp dụng cho một hạng cụ thể',
+'icon' => 'fa-ranking-star',
+'class' => 'audience-rank',
+],
+
+'nguoi_dung_cu_the' => [
+'label' => 'Người dùng cụ thể',
+'description' => 'Có thể chọn nhiều người dùng',
+'icon' => 'fa-user-pen',
+'class' => 'audience-specific',
+],
+];
+
+/*
+|--------------------------------------------------------------------------
+| OLD DATA
+|--------------------------------------------------------------------------
+*/
+
+$oldAudience = old('doi_tuong_nhan', 'all');
+$oldRank = old('hang_thanh_vien', '');
+
+$oldUsers = old('nguoi_dung_cu_the', []);
+
+if (!is_array($oldUsers)) {
+$oldUsers = $oldUsers ? [$oldUsers] : [];
+}
+@endphp
+
+
 <style>
+    /* =========================================================
+       PAGE
+    ========================================================= */
+
+    .all-point-page {
+        width: 100%;
+    }
+
+
+    /* =========================================================
+       HERO
+    ========================================================= */
+
     .all-point-hero {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 24px;
+
         padding: 28px;
         margin-bottom: 22px;
+
         border-radius: 22px;
-        background: linear-gradient(135deg, #171b24, #202633);
+
+        background: linear-gradient(135deg,
+                #171b24,
+                #202633);
+
         border: 1px solid rgba(255, 255, 255, .07);
     }
 
@@ -27,21 +92,26 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
+
+        margin-bottom: 8px;
+
         color: #f5b942;
         font-size: 13px;
         font-weight: 800;
-        margin-bottom: 8px;
     }
 
     .all-point-hero h2 {
         margin: 0 0 8px;
+
         color: #fff;
+
         font-size: 26px;
         font-weight: 900;
     }
 
     .all-point-hero p {
         margin: 0;
+
         color: #9ca3af;
     }
 
@@ -49,11 +119,16 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
+
         padding: 11px 16px;
+
         border-radius: 12px;
+
         color: #fff;
         background: rgba(255, 255, 255, .07);
+
         text-decoration: none;
+
         font-weight: 800;
         white-space: nowrap;
     }
@@ -63,12 +138,21 @@
         background: rgba(255, 255, 255, .12);
     }
 
+
+    /* =========================================================
+       COUNT
+    ========================================================= */
+
     .all-point-count {
         margin-bottom: 22px;
         padding: 18px 22px;
+
         border-radius: 18px;
+
         background: #171b24;
+
         border: 1px solid rgba(255, 255, 255, .07);
+
         color: #cbd5e1;
     }
 
@@ -77,32 +161,62 @@
         font-size: 20px;
     }
 
+
+    /* =========================================================
+       GRID
+    ========================================================= */
+
     .all-point-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+
+        grid-template-columns:
+            minmax(0, 1fr) minmax(0, 1fr);
+
         gap: 22px;
+
+        align-items: start;
     }
 
+
+    /* =========================================================
+       CARD
+    ========================================================= */
+
     .all-point-card {
+        position: relative;
+
+        min-width: 0;
+
         padding: 26px;
+
         border-radius: 22px;
+
         background: #171b24;
+
         border: 1px solid rgba(255, 255, 255, .07);
+
+        overflow: visible;
     }
 
     .all-point-card-head {
         display: flex;
         align-items: center;
         gap: 14px;
+
         margin-bottom: 22px;
     }
 
     .all-point-icon {
         width: 48px;
         height: 48px;
+
+        flex: 0 0 48px;
+
         display: grid;
         place-items: center;
+
         border-radius: 14px;
+
         font-size: 20px;
     }
 
@@ -118,730 +232,3729 @@
 
     .all-point-card-head h3 {
         margin: 0;
+
         color: #fff;
+
         font-size: 19px;
         font-weight: 900;
     }
 
     .all-point-card-head p {
         margin: 3px 0 0;
+
         color: #8b93a1;
+
         font-size: 13px;
     }
 
+
+    /* =========================================================
+       FIELD
+    ========================================================= */
+
     .all-point-field {
+        position: relative;
+
         margin-bottom: 17px;
+
+        min-width: 0;
     }
 
-    .all-point-field label {
+    .all-point-field>label,
+    .all-point-field-label {
         display: block;
+
         margin-bottom: 8px;
+
         color: #e5e7eb;
+
         font-size: 14px;
         font-weight: 800;
     }
 
+    .required {
+        color: #ef4444;
+    }
+
+
+    /* =========================================================
+       INPUT
+    ========================================================= */
+
     .all-point-field input,
-    .all-point-field select,
     .all-point-field textarea {
         width: 100%;
+
         box-sizing: border-box;
+
         padding: 12px 14px;
+
         border: 1px solid rgba(255, 255, 255, .1);
+
         border-radius: 12px;
+
         outline: none;
+
         background: #10141b;
+
         color: #fff;
+
         font-size: 14px;
+
+        transition: .2s;
     }
 
-    .all-point-field input:focus,
-    .all-point-field select:focus,
-    .all-point-field textarea:focus {
-        border-color: #f5b942;
-    }
-
-    .all-point-field select option {
-        background: #171b24;
-        color: #fff;
+    .all-point-field input {
+        height: 48px;
     }
 
     .all-point-field textarea {
         min-height: 100px;
+
         resize: vertical;
     }
 
+    .all-point-field input::placeholder,
+    .all-point-field textarea::placeholder {
+        color: #667085;
+    }
+
+    .all-point-field input:focus,
+    .all-point-field textarea:focus {
+        border-color: #f5b942;
+
+        box-shadow:
+            0 0 0 3px rgba(245, 185, 66, .08);
+    }
+
+
+    /* =========================================================
+       INVALID
+    ========================================================= */
+
+    .all-point-field input.is-invalid,
+    .all-point-field textarea.is-invalid,
+    .all-point-field .all-point-custom-select.is-invalid .all-point-custom-trigger {
+        border-color: #ef4444 !important;
+
+        box-shadow:
+            0 0 0 3px rgba(239, 68, 68, .08) !important;
+    }
+
+    .all-point-error {
+        display: block;
+
+        margin-top: 6px;
+
+        color: #ff5c67;
+
+        font-size: 12px;
+        line-height: 1.45;
+
+        font-weight: 600;
+    }
+
+    .all-point-error i {
+        margin-right: 4px;
+    }
+
+
+    /* =========================================================
+       HELP
+    ========================================================= */
+
     .all-point-help {
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+
         margin-top: 7px;
+
         color: #7f8795;
+
         font-size: 12px;
         line-height: 1.5;
     }
 
+    .all-point-help i {
+        margin-top: 2px;
+
+        color: #a855f7;
+    }
+
+
+    /* =========================================================
+       WARNING
+    ========================================================= */
+
     .all-point-warning {
         display: flex;
         gap: 10px;
+
         padding: 13px 14px;
         margin-bottom: 18px;
+
         border-radius: 12px;
+
         color: #fbbf24;
+
         background: rgba(245, 158, 11, .08);
+
         border: 1px solid rgba(245, 158, 11, .15);
+
         font-size: 13px;
+
         line-height: 1.5;
     }
 
+    [data-rank-select] .all-point-custom-menu {
+        max-height: none !important;
+        overflow-y: visible !important;
+    }
+
+    /* Dropdown mở lên trên khi không đủ khoảng trống phía dưới */
+    .all-point-custom-select.open-up .all-point-custom-menu {
+        top: auto;
+        bottom: calc(100% + 7px);
+    }
+
+    /* Khi mở lên thì giới hạn chiều cao theo màn hình */
+    .all-point-custom-select.open-up .all-point-custom-menu,
+    .all-point-custom-select.is-open .all-point-custom-menu {
+        max-height: min(280px, calc(100vh - 30px));
+    }
+
+    /* =========================================================
+       CUSTOM DROPDOWN
+    ========================================================= */
+
+    .all-point-custom-select {
+        position: relative;
+
+        width: 100%;
+
+        z-index: 30;
+    }
+
+    .all-point-custom-select.is-open {
+        z-index: 9999;
+    }
+
+    .all-point-custom-trigger {
+        width: 100%;
+        height: 48px;
+
+        padding: 0 14px;
+
+        border: 1px solid rgba(255, 255, 255, .1);
+
+        border-radius: 12px;
+
+        background: #10141b;
+
+        color: #fff;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        cursor: pointer;
+
+        transition: .2s;
+    }
+
+    .all-point-custom-trigger:hover {
+        border-color: rgba(255, 255, 255, .2);
+    }
+
+    .all-point-custom-select.is-open .all-point-custom-trigger {
+        border-color: #f5b942;
+
+        box-shadow:
+            0 0 0 3px rgba(245, 185, 66, .08);
+    }
+
+    .all-point-current {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        min-width: 0;
+    }
+
+    .all-point-current-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .all-point-arrow {
+        color: #8992a1;
+
+        font-size: 12px;
+
+        transition: transform .2s;
+    }
+
+    .all-point-custom-select.is-open .all-point-arrow {
+        transform: rotate(180deg);
+    }
+
+
+    /* =========================================================
+       DROPDOWN MENU
+    ========================================================= */
+
+    .all-point-custom-menu {
+        position: absolute;
+
+        left: 0;
+        right: 0;
+
+        top: calc(100% + 7px);
+
+        display: none;
+
+        max-height: 280px;
+
+        padding: 6px;
+
+        border-radius: 14px;
+
+        background: #1b202a;
+
+        border: 1px solid rgba(255, 255, 255, .10);
+
+        box-shadow:
+            0 18px 50px rgba(0, 0, 0, .45);
+
+        overflow-y: auto;
+
+        z-index: 10000;
+    }
+
+    .all-point-custom-select.is-open .all-point-custom-menu {
+        display: block;
+    }
+
+    .all-point-option {
+        width: 100%;
+
+        display: flex;
+        align-items: center;
+
+        gap: 11px;
+
+        padding: 12px;
+
+        border: 0;
+
+        border-radius: 10px;
+
+        background: transparent;
+
+        color: #fff;
+
+        text-align: left;
+
+        cursor: pointer;
+    }
+
+    .all-point-option:hover {
+        background: rgba(255, 255, 255, .07);
+    }
+
+    .all-point-option.is-selected {
+        background: rgba(245, 185, 66, .10);
+    }
+
+    .all-point-option-icon {
+        width: 32px;
+        height: 32px;
+
+        flex: 0 0 32px;
+
+        display: grid;
+        place-items: center;
+
+        border-radius: 9px;
+
+        font-size: 14px;
+    }
+
+    .all-point-option-content {
+        flex: 1;
+
+        min-width: 0;
+    }
+
+    .all-point-option-content strong {
+        display: block;
+
+        color: #fff;
+
+        font-size: 13px;
+    }
+
+    .all-point-option-content small {
+        display: block;
+
+        margin-top: 2px;
+
+        color: #7f8795;
+
+        font-size: 11px;
+    }
+
+    .all-point-check {
+        color: #22c55e;
+
+        opacity: 0;
+    }
+
+    .all-point-option.is-selected .all-point-check {
+        opacity: 1;
+    }
+
+
+    /* =========================================================
+       AUDIENCE COLORS
+    ========================================================= */
+
+    .audience-all {
+        color: #60a5fa;
+        background: rgba(59, 130, 246, .12);
+    }
+
+    .audience-rank {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, .12);
+    }
+
+    .audience-specific {
+        color: #c084fc;
+        background: rgba(168, 85, 247, .12);
+    }
+
+
+    /* =========================================================
+       RANK COLORS
+    ========================================================= */
+
+    .rank-default {
+        color: #94a3b8;
+        background: rgba(148, 163, 184, .12);
+    }
+
+    .rank-member {
+        color: #3b82f6;
+        background: rgba(59, 130, 246, .12);
+    }
+
+    .rank-silver {
+        color: #cbd5e1;
+        background: rgba(203, 213, 225, .12);
+    }
+
+    .rank-gold {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, .12);
+    }
+
+    .rank-platinum {
+        color: #c084fc;
+        background: rgba(192, 132, 252, .12);
+    }
+
+
+    /* =========================================================
+       CONDITIONAL BOX
+    ========================================================= */
+
+    .point-conditional {
+        display: none;
+
+        padding: 0;
+
+        margin-bottom: 17px;
+
+        border-radius: 0;
+
+        background: transparent;
+
+        border: none;
+    }
+
+    .point-conditional.is-visible {
+        display: block;
+    }
+
+
+    /* =========================================================
+       SEARCH USER
+    ========================================================= */
+
+    .point-user-search {
+        position: relative;
+    }
+
+    .point-user-search>i {
+        position: absolute;
+
+        left: 14px;
+        top: 50%;
+
+        transform: translateY(-50%);
+
+        color: #718096;
+
+        pointer-events: none;
+    }
+
+    .point-user-search input {
+        padding-left: 42px;
+    }
+
+
+    /* =========================================================
+       SEARCH RESULTS
+    ========================================================= */
+
+    .point-user-results {
+        position: absolute;
+
+        left: 0;
+        right: 0;
+
+        top: calc(100% + 7px);
+
+        max-height: 260px;
+
+        padding: 6px;
+
+        border-radius: 14px;
+
+        background: #1b202a;
+
+        border: 1px solid rgba(255, 255, 255, .10);
+
+        box-shadow:
+            0 18px 50px rgba(0, 0, 0, .45);
+
+        overflow-y: auto;
+
+        z-index: 99999;
+    }
+
+    .point-user-results.is-hidden {
+        display: none;
+    }
+
+    .point-user-result {
+        width: 100%;
+
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+
+        padding: 11px;
+
+        border: 0;
+
+        border-radius: 10px;
+
+        background: transparent;
+
+        color: #fff;
+
+        cursor: pointer;
+
+        text-align: left;
+    }
+
+    .point-user-result:hover {
+        background: rgba(255, 255, 255, .07);
+    }
+
+    .point-user-avatar {
+        width: 34px;
+        height: 34px;
+
+        flex: 0 0 34px;
+
+        display: grid;
+        place-items: center;
+
+        border-radius: 50%;
+
+        background: rgba(168, 85, 247, .12);
+
+        color: #c084fc;
+    }
+
+    .point-user-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .point-user-info strong {
+        display: block;
+
+        color: #fff;
+
+        font-size: 13px;
+    }
+
+    .point-user-info small {
+        display: block;
+
+        margin-top: 2px;
+
+        color: #7f8795;
+
+        font-size: 11px;
+
+        white-space: nowrap;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+    }
+
+
+    /* =========================================================
+       SELECTED USERS
+    ========================================================= */
+
+    .point-selected-users {
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 7px;
+
+        margin-top: 10px;
+    }
+
+    .point-selected-user {
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+
+        padding: 9px 10px;
+
+        border-radius: 11px;
+
+        background: rgba(168, 85, 247, .07);
+
+        border: 1px solid rgba(168, 85, 247, .12);
+    }
+
+    .point-selected-user-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .point-selected-user-info strong {
+        display: block;
+
+        color: #fff;
+
+        font-size: 12px;
+    }
+
+    .point-selected-user-info small {
+        display: block;
+
+        margin-top: 2px;
+
+        color: #7f8795;
+
+        font-size: 11px;
+    }
+
+    .point-remove-user {
+        width: 28px;
+        height: 28px;
+
+        display: grid;
+        place-items: center;
+
+        border: 0;
+
+        border-radius: 8px;
+
+        background: rgba(239, 68, 68, .10);
+
+        color: #ef4444;
+
+        cursor: pointer;
+    }
+
+
+    /* =========================================================
+       SUBMIT
+    ========================================================= */
+
     .all-point-submit {
         width: 100%;
+
         min-height: 48px;
+
         border: 0;
+
         border-radius: 13px;
+
         color: #fff;
+
         font-weight: 900;
+
         cursor: pointer;
+
         display: inline-flex;
         align-items: center;
         justify-content: center;
+
         gap: 8px;
     }
 
     .all-point-submit.gift {
-        background: linear-gradient(135deg, #16a34a, #22c55e);
+        background: linear-gradient(135deg,
+                #16a34a,
+                #22c55e);
     }
 
     .all-point-submit.withdraw {
-        background: linear-gradient(135deg, #dc2626, #ef4444);
+        background: linear-gradient(135deg,
+                #dc2626,
+                #ef4444);
     }
 
+
+    /* =========================================================
+       MOBILE
+    ========================================================= */
+
     @media (max-width: 900px) {
+
         .all-point-grid {
             grid-template-columns: 1fr;
         }
 
         .all-point-hero {
             flex-direction: column;
+
             align-items: flex-start;
         }
     }
 </style>
 
 
-{{-- HEADER --}}
-<section class="all-point-hero">
+<div class="all-point-page">
 
-    <div class="all-point-hero-copy">
+    {{-- =========================================================
+         HEADER
+    ========================================================== --}}
 
-        <span class="all-point-kicker">
-            <i class="fa-solid fa-star"></i>
-            Quản lý điểm thành viên
-        </span>
+    <section class="all-point-hero">
 
-        <h2>Tặng & thu hồi điểm</h2>
+        <div class="all-point-hero-copy">
 
-        <p>
-            Thực hiện cộng hoặc thu hồi điểm cho toàn bộ thành viên
-            trong một lần.
-        </p>
+            <span class="all-point-kicker">
+                <i class="fa-solid fa-star"></i>
+                Quản lý điểm thành viên
+            </span>
+
+            <h2>
+                Tặng & thu hồi điểm
+            </h2>
+
+            <p>
+                Thực hiện cộng hoặc thu hồi điểm theo đối tượng được chọn.
+            </p>
+
+        </div>
+
+
+        <a
+            href="{{ route('admin.thanh-vien.index') }}"
+            class="all-point-back">
+
+            <i class="fa-solid fa-arrow-left"></i>
+
+            Danh sách thành viên
+
+        </a>
+
+    </section>
+
+
+    {{-- =========================================================
+         COUNT
+    ========================================================== --}}
+
+    <section class="all-point-count">
+
+        <i class="fa-solid fa-users"></i>
+
+        Hiện có
+
+        <strong>
+            {{ number_format($soLuongThanhVien) }}
+        </strong>
+
+        thành viên trong hệ thống.
+
+    </section>
+
+
+    {{-- =========================================================
+         2 FORM
+    ========================================================== --}}
+
+    <div class="all-point-grid">
+
+
+        {{-- =====================================================
+             TẶNG ĐIỂM
+        ====================================================== --}}
+
+        <section class="all-point-card">
+
+            <div class="all-point-card-head">
+
+                <span class="all-point-icon gift">
+                    <i class="fa-solid fa-gift"></i>
+                </span>
+
+                <div>
+
+                    <h3>
+                        Tặng điểm
+                    </h3>
+
+                    <p>
+                        Cộng điểm cho thành viên theo đối tượng được chọn
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="all-point-warning">
+
+                <i class="fa-solid fa-triangle-exclamation"></i>
+
+                <span id="giftWarningText">
+                    Điểm sẽ được cộng cho
+                    <strong>tất cả thành viên</strong>.
+                </span>
+
+            </div>
+
+
+            <form
+                method="POST"
+                action="{{ route('admin.thanh-vien.xu-ly-diem-hang-loat') }}"
+                id="giftPointForm">
+
+                @csrf
+
+                <input
+                    type="hidden"
+                    name="loai"
+                    value="tang">
+
+
+                {{-- =================================================
+                     ĐỐI TƯỢNG
+                ================================================== --}}
+
+                <div class="all-point-field">
+
+                    <label>
+                        Đối tượng được áp dụng
+                        <span class="required">*</span>
+                    </label>
+
+
+                    <div
+                        class="all-point-custom-select
+                        @error('doi_tuong_nhan') is-invalid @enderror"
+                        data-audience-select
+                        data-form="gift">
+
+
+                        <input
+                            type="hidden"
+                            name="doi_tuong_nhan"
+                            value="{{ old('loai') === 'tang' ? $oldAudience : 'all' }}"
+                            data-audience-value>
+
+
+                        <button
+                            type="button"
+                            class="all-point-custom-trigger"
+                            data-audience-trigger>
+
+                            <span
+                                class="all-point-current"
+                                data-audience-current>
+
+                                @php
+                                $giftAudience =
+                                old('loai') === 'tang'
+                                ? $oldAudience
+                                : 'all';
+                                @endphp
+
+                                <span
+                                    class="all-point-option-icon {{ $audienceGuide[$giftAudience]['class'] ?? 'audience-all' }}">
+
+                                    <i class="fa-solid {{ $audienceGuide[$giftAudience]['icon'] ?? 'fa-globe' }}"></i>
+
+                                </span>
+
+                                <span class="all-point-current-text">
+                                    {{ $audienceGuide[$giftAudience]['label'] ?? 'Tất cả thành viên' }}
+                                </span>
+
+                            </span>
+
+
+                            <i class="fa-solid fa-chevron-down all-point-arrow"></i>
+
+                        </button>
+
+
+                        <div
+                            class="all-point-custom-menu"
+                            data-audience-menu>
+
+                            @foreach ($audienceGuide as $value => $meta)
+
+                            <button
+                                type="button"
+                                class="all-point-option
+                                    {{ $giftAudience === $value ? 'is-selected' : '' }}"
+                                data-value="{{ $value }}"
+                                data-label="{{ $meta['label'] }}"
+                                data-icon="{{ $meta['icon'] }}"
+                                data-class="{{ $meta['class'] }}">
+
+                                <span class="all-point-option-icon {{ $meta['class'] }}">
+
+                                    <i class="fa-solid {{ $meta['icon'] }}"></i>
+
+                                </span>
+
+
+                                <span class="all-point-option-content">
+
+                                    <strong>
+                                        {{ $meta['label'] }}
+                                    </strong>
+
+                                    <small>
+                                        {{ $meta['description'] }}
+                                    </small>
+
+                                </span>
+
+
+                                <i class="fa-solid fa-check all-point-check"></i>
+
+                            </button>
+
+                            @endforeach
+
+                        </div>
+
+                    </div>
+
+
+                    @error('doi_tuong_nhan')
+
+                    <small class="all-point-error">
+
+                        <i class="fa-solid fa-circle-exclamation"></i>
+
+                        {{ $message }}
+
+                    </small>
+
+                    @enderror
+
+                </div>
+
+
+                {{-- =================================================
+                     HẠNG
+                ================================================== --}}
+
+                <div
+                    class="point-conditional
+                    {{ $giftAudience === 'hang_thanh_vien' ? 'is-visible' : '' }}"
+                    data-rank-wrapper="gift">
+
+                    <div class="all-point-field">
+
+                        <label>
+                            Hạng thành viên được tặng
+                            <span class="required">*</span>
+                        </label>
+
+
+                        <div
+                            class="all-point-custom-select
+                            @error('hang_thanh_vien') is-invalid @enderror"
+                            data-rank-select>
+
+
+                            <input
+                                type="hidden"
+                                name="hang_thanh_vien"
+                                value="{{ old('loai') === 'tang' ? $oldRank : '' }}"
+                                data-rank-value>
+
+
+                            <button
+                                type="button"
+                                class="all-point-custom-trigger"
+                                data-rank-trigger>
+
+                                <span
+                                    class="all-point-current"
+                                    data-rank-current>
+
+                                    @switch(old('loai') === 'tang' ? $oldRank : '')
+
+                                    @case('member')
+
+                                    <span class="all-point-option-icon rank-member">
+                                        <i class="fa-solid fa-user"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        Member
+                                    </span>
+
+                                    @break
+
+                                    @case('silver')
+
+                                    <span class="all-point-option-icon rank-silver">
+                                        <i class="fa-solid fa-medal"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        Silver
+                                    </span>
+
+                                    @break
+
+                                    @case('gold')
+
+                                    <span class="all-point-option-icon rank-gold">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        Gold
+                                    </span>
+
+                                    @break
+
+                                    @case('platinum')
+
+                                    <span class="all-point-option-icon rank-platinum">
+                                        <i class="fa-solid fa-gem"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        Platinum
+                                    </span>
+
+                                    @break
+
+                                    @default
+
+                                    <span class="all-point-option-icon rank-default">
+                                        <i class="fa-solid fa-layer-group"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        -- Chọn hạng --
+                                    </span>
+
+                                    @endswitch
+
+                                </span>
+
+
+                                <i class="fa-solid fa-chevron-down all-point-arrow"></i>
+
+                            </button>
+
+
+                            <div
+                                class="all-point-custom-menu"
+                                data-rank-menu>
+
+                                <button
+                                    type="button"
+                                    class="all-point-option {{ $oldRank === '' ? 'is-selected' : '' }}"
+                                    data-value=""
+                                    data-label="-- Chọn hạng --"
+                                    data-icon="fa-layer-group"
+                                    data-class="rank-default">
+
+                                    <span class="all-point-option-icon rank-default">
+                                        <i class="fa-solid fa-layer-group"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            -- Chọn hạng --
+                                        </strong>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="all-point-option {{ $oldRank === 'member' ? 'is-selected' : '' }}"
+                                    data-value="member"
+                                    data-label="Member"
+                                    data-icon="fa-user"
+                                    data-class="rank-member">
+
+                                    <span class="all-point-option-icon rank-member">
+                                        <i class="fa-solid fa-user"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            Member
+                                        </strong>
+
+                                        <small>
+                                            Hạng thành viên cơ bản
+                                        </small>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="all-point-option {{ $oldRank === 'silver' ? 'is-selected' : '' }}"
+                                    data-value="silver"
+                                    data-label="Silver"
+                                    data-icon="fa-medal"
+                                    data-class="rank-silver">
+
+                                    <span class="all-point-option-icon rank-silver">
+                                        <i class="fa-solid fa-medal"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            Silver
+                                        </strong>
+
+                                        <small>
+                                            Hạng bạc
+                                        </small>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="all-point-option {{ $oldRank === 'gold' ? 'is-selected' : '' }}"
+                                    data-value="gold"
+                                    data-label="Gold"
+                                    data-icon="fa-crown"
+                                    data-class="rank-gold">
+
+                                    <span class="all-point-option-icon rank-gold">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            Gold
+                                        </strong>
+
+                                        <small>
+                                            Hạng vàng
+                                        </small>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="all-point-option {{ $oldRank === 'platinum' ? 'is-selected' : '' }}"
+                                    data-value="platinum"
+                                    data-label="Platinum"
+                                    data-icon="fa-gem"
+                                    data-class="rank-platinum">
+
+                                    <span class="all-point-option-icon rank-platinum">
+                                        <i class="fa-solid fa-gem"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            Platinum
+                                        </strong>
+
+                                        <small>
+                                            Hạng bạch kim
+                                        </small>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        @error('hang_thanh_vien')
+
+                        <small class="all-point-error">
+
+                            <i class="fa-solid fa-circle-exclamation"></i>
+
+                            {{ $message }}
+
+                        </small>
+
+                        @enderror
+
+                    </div>
+
+                </div>
+
+
+                {{-- =================================================
+                     NGƯỜI DÙNG CỤ THỂ
+                ================================================== --}}
+
+                <div
+                    class="point-conditional
+                    {{ $giftAudience === 'nguoi_dung_cu_the' ? 'is-visible' : '' }}"
+                    data-specific-wrapper="gift">
+
+
+                    <div class="all-point-field">
+
+                        <label>
+                            Tìm người dùng
+                            <span class="required">*</span>
+                        </label>
+
+
+                        <div class="point-user-search">
+
+                            <i class="fa-solid fa-magnifying-glass"></i>
+
+                            <input
+                                type="text"
+                                autocomplete="off"
+                                placeholder="Nhập tên hoặc email để tìm..."
+                                data-user-search="gift">
+
+                        </div>
+
+
+                        <div
+                            class="point-user-results is-hidden"
+                            data-user-results="gift">
+                        </div>
+
+
+                        <div
+                            class="point-selected-users"
+                            data-selected-users="gift">
+                        </div>
+
+
+                        <div data-selected-inputs="gift">
+
+                            @foreach (
+                            old('loai') === 'tang'
+                            ? $oldUsers
+                            : []
+                            as $userId
+                            )
+
+                            <input
+                                type="hidden"
+                                name="nguoi_dung_cu_the[]"
+                                value="{{ $userId }}">
+
+                            @endforeach
+
+                        </div>
+
+
+
+                        @error('nguoi_dung_cu_the')
+
+                        <small class="all-point-error">
+
+                            <i class="fa-solid fa-circle-exclamation"></i>
+
+                            {{ $message }}
+
+                        </small>
+
+                        @enderror
+
+                    </div>
+
+                </div>
+
+
+                {{-- =================================================
+                     SỐ ĐIỂM
+                ================================================== --}}
+
+                <div class="all-point-field">
+
+                    <label>
+                        Số điểm tặng
+                        <span class="required">*</span>
+                    </label>
+
+                    <input
+                        type="number"
+                        name="so_diem"
+                        min="1"
+                        max="10000"
+                        value="{{ old('loai') === 'tang' ? old('so_diem') : '' }}"
+                        placeholder="Ví dụ: 100"
+                        class="@error('so_diem') is-invalid @enderror">
+
+
+                    @error('so_diem')
+
+                    <small class="all-point-error">
+
+                        <i class="fa-solid fa-circle-exclamation"></i>
+
+                        {{ $message }}
+
+                    </small>
+
+                    @enderror
+
+                </div>
+
+
+                {{-- =================================================
+                     TÍNH HẠNG
+                ================================================== --}}
+
+                <div class="all-point-field">
+
+                    <label>
+                        Tính vào hạng thành viên
+                        <span class="required">*</span>
+                    </label>
+
+
+                    <div
+                        class="all-point-custom-select"
+                        data-tinh-hang-select>
+
+                        <input
+                            type="hidden"
+                            name="tinh_vao_hang"
+                            value="{{ old('loai') === 'tang' ? old('tinh_vao_hang', '1') : '1' }}"
+                            data-tinh-hang-value>
+
+
+                        <button
+                            type="button"
+                            class="all-point-custom-trigger"
+                            data-tinh-hang-trigger>
+
+                            <span
+                                class="all-point-current"
+                                data-tinh-hang-current>
+
+                                @if(old('loai') === 'tang' && old('tinh_vao_hang') === '0')
+
+                                <span class="all-point-option-icon"
+                                    style="color:#ef4444;background:rgba(239,68,68,.12);">
+
+                                    <i class="fa-solid fa-ban"></i>
+
+                                </span>
+
+                                <span class="all-point-current-text">
+                                    Không - Không tính vào hạng
+                                </span>
+
+                                @else
+
+                                <span class="all-point-option-icon"
+                                    style="color:#22c55e;background:rgba(34,197,94,.12);">
+
+                                    <i class="fa-solid fa-ranking-star"></i>
+
+                                </span>
+
+                                <span class="all-point-current-text">
+                                    Có - Tính vào hạng
+                                </span>
+
+                                @endif
+
+                            </span>
+
+                            <i class="fa-solid fa-chevron-down all-point-arrow"></i>
+
+                        </button>
+
+
+                        <div
+                            class="all-point-custom-menu"
+                            data-tinh-hang-menu>
+
+                            <button
+                                type="button"
+                                class="all-point-option"
+                                data-value="1"
+                                data-label="Có - Tính vào hạng"
+                                data-icon="fa-ranking-star"
+                                data-inline-color="#22c55e">
+
+                                <span
+                                    class="all-point-option-icon"
+                                    style="color:#22c55e;background:rgba(34,197,94,.12);">
+
+                                    <i class="fa-solid fa-ranking-star"></i>
+
+                                </span>
+
+                                <span class="all-point-option-content">
+
+                                    <strong>
+                                        Có - Tính vào hạng
+                                    </strong>
+
+                                    <small>
+                                        Điểm được cộng vào tổng tích lũy
+                                    </small>
+
+                                </span>
+
+                                <i class="fa-solid fa-check all-point-check"></i>
+
+                            </button>
+
+
+                            <button
+                                type="button"
+                                class="all-point-option"
+                                data-value="0"
+                                data-label="Không - Không tính vào hạng"
+                                data-icon="fa-ban"
+                                data-inline-color="#ef4444">
+
+                                <span
+                                    class="all-point-option-icon"
+                                    style="color:#ef4444;background:rgba(239,68,68,.12);">
+
+                                    <i class="fa-solid fa-ban"></i>
+
+                                </span>
+
+                                <span class="all-point-option-content">
+
+                                    <strong>
+                                        Không - Không tính vào hạng
+                                    </strong>
+
+                                    <small>
+                                        Điểm không làm thay đổi hạng
+                                    </small>
+
+                                </span>
+
+                                <i class="fa-solid fa-check all-point-check"></i>
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="all-point-help">
+
+                        <i class="fa-solid fa-circle-info"></i>
+
+                        <span>
+                            Nếu chọn "Có", điểm sẽ được cộng vào tổng tích lũy
+                            và có thể làm thay đổi hạng.
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                {{-- =================================================
+                     NỘI DUNG
+                ================================================== --}}
+
+                <div class="all-point-field">
+
+                    <label>
+                        Nội dung
+                        <span class="required">*</span>
+                    </label>
+
+                    <textarea
+                        name="noi_dung"
+                        maxlength="255"
+                        placeholder="Ví dụ: Tặng 100 điểm nhân dịp sinh nhật CineHome..."
+                        class="@error('noi_dung') is-invalid @enderror">{{ old('loai') === 'tang' ? old('noi_dung') : '' }}</textarea>
+
+
+                    @error('noi_dung')
+
+                    <small class="all-point-error">
+
+                        <i class="fa-solid fa-circle-exclamation"></i>
+
+                        {{ $message }}
+
+                    </small>
+
+                    @enderror
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="all-point-submit gift">
+
+                    <i class="fa-solid fa-gift"></i>
+
+                    Tặng điểm
+
+                </button>
+
+            </form>
+
+        </section>
+
+
+
+        {{-- =====================================================
+             THU HỒI ĐIỂM
+        ====================================================== --}}
+
+        <section class="all-point-card">
+
+            <div class="all-point-card-head">
+
+                <span class="all-point-icon withdraw">
+
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+
+                </span>
+
+                <div>
+
+                    <h3>
+                        Thu hồi điểm
+                    </h3>
+
+                    <p>
+                        Trừ điểm của thành viên theo đối tượng được chọn
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="all-point-warning">
+
+                <i class="fa-solid fa-triangle-exclamation"></i>
+
+                <span id="withdrawWarningText">
+                    Điểm sẽ được thu hồi khỏi
+                    <strong>tất cả thành viên</strong>.
+                    Không để điểm bị âm.
+                </span>
+
+            </div>
+
+
+            <form
+                method="POST"
+                action="{{ route('admin.thanh-vien.xu-ly-diem-hang-loat') }}"
+                id="withdrawPointForm">
+
+                @csrf
+
+                <input
+                    type="hidden"
+                    name="loai"
+                    value="thu_hoi">
+
+
+                {{-- =================================================
+                     ĐỐI TƯỢNG
+                ================================================== --}}
+
+                <div class="all-point-field">
+
+                    <label>
+                        Đối tượng được áp dụng
+                        <span class="required">*</span>
+                    </label>
+
+
+                    <div
+                        class="all-point-custom-select
+                        @error('doi_tuong_nhan') is-invalid @enderror"
+                        data-audience-select
+                        data-form="withdraw">
+
+
+                        <input
+                            type="hidden"
+                            name="doi_tuong_nhan"
+                            value="{{ old('loai') === 'thu_hoi' ? $oldAudience : 'all' }}"
+                            data-audience-value>
+
+
+                        <button
+                            type="button"
+                            class="all-point-custom-trigger"
+                            data-audience-trigger>
+
+                            <span
+                                class="all-point-current"
+                                data-audience-current>
+
+                                @php
+                                $withdrawAudience =
+                                old('loai') === 'thu_hoi'
+                                ? $oldAudience
+                                : 'all';
+                                @endphp
+
+                                <span
+                                    class="all-point-option-icon {{ $audienceGuide[$withdrawAudience]['class'] ?? 'audience-all' }}">
+
+                                    <i class="fa-solid {{ $audienceGuide[$withdrawAudience]['icon'] ?? 'fa-globe' }}"></i>
+
+                                </span>
+
+                                <span class="all-point-current-text">
+                                    {{ $audienceGuide[$withdrawAudience]['label'] ?? 'Tất cả thành viên' }}
+                                </span>
+
+                            </span>
+
+
+                            <i class="fa-solid fa-chevron-down all-point-arrow"></i>
+
+                        </button>
+
+
+                        <div
+                            class="all-point-custom-menu"
+                            data-audience-menu>
+
+                            @foreach ($audienceGuide as $value => $meta)
+
+                            <button
+                                type="button"
+                                class="all-point-option
+                                    {{ $withdrawAudience === $value ? 'is-selected' : '' }}"
+                                data-value="{{ $value }}"
+                                data-label="{{ $meta['label'] }}"
+                                data-icon="{{ $meta['icon'] }}"
+                                data-class="{{ $meta['class'] }}">
+
+                                <span class="all-point-option-icon {{ $meta['class'] }}">
+
+                                    <i class="fa-solid {{ $meta['icon'] }}"></i>
+
+                                </span>
+
+
+                                <span class="all-point-option-content">
+
+                                    <strong>
+                                        {{ $meta['label'] }}
+                                    </strong>
+
+                                    <small>
+                                        {{ $meta['description'] }}
+                                    </small>
+
+                                </span>
+
+
+                                <i class="fa-solid fa-check all-point-check"></i>
+
+                            </button>
+
+                            @endforeach
+
+                        </div>
+
+                    </div>
+
+
+                    @error('doi_tuong_nhan')
+
+                    <small class="all-point-error">
+
+                        <i class="fa-solid fa-circle-exclamation"></i>
+
+                        {{ $message }}
+
+                    </small>
+
+                    @enderror
+
+                </div>
+
+
+                {{-- =================================================
+                     HẠNG
+                ================================================== --}}
+
+                <div
+                    class="point-conditional
+                    {{ $withdrawAudience === 'hang_thanh_vien' ? 'is-visible' : '' }}"
+                    data-rank-wrapper="withdraw">
+
+                    <div class="all-point-field">
+
+                        <label>
+                            Hạng thành viên được thu hồi
+                            <span class="required">*</span>
+                        </label>
+
+
+                        <div
+                            class="all-point-custom-select
+                            @error('hang_thanh_vien') is-invalid @enderror"
+                            data-rank-select>
+
+
+                            <input
+                                type="hidden"
+                                name="hang_thanh_vien"
+                                value="{{ old('loai') === 'thu_hoi' ? $oldRank : '' }}"
+                                data-rank-value>
+
+
+                            <button
+                                type="button"
+                                class="all-point-custom-trigger"
+                                data-rank-trigger>
+
+                                <span
+                                    class="all-point-current"
+                                    data-rank-current>
+
+                                    @switch(
+                                    old('loai') === 'thu_hoi'
+                                    ? $oldRank
+                                    : ''
+                                    )
+
+                                    @case('member')
+
+                                    <span class="all-point-option-icon rank-member">
+                                        <i class="fa-solid fa-user"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        Member
+                                    </span>
+
+                                    @break
+
+                                    @case('silver')
+
+                                    <span class="all-point-option-icon rank-silver">
+                                        <i class="fa-solid fa-medal"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        Silver
+                                    </span>
+
+                                    @break
+
+                                    @case('gold')
+
+                                    <span class="all-point-option-icon rank-gold">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        Gold
+                                    </span>
+
+                                    @break
+
+                                    @case('platinum')
+
+                                    <span class="all-point-option-icon rank-platinum">
+                                        <i class="fa-solid fa-gem"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        Platinum
+                                    </span>
+
+                                    @break
+
+                                    @default
+
+                                    <span class="all-point-option-icon rank-default">
+                                        <i class="fa-solid fa-layer-group"></i>
+                                    </span>
+
+                                    <span class="all-point-current-text">
+                                        -- Chọn hạng --
+                                    </span>
+
+                                    @endswitch
+
+                                </span>
+
+
+                                <i class="fa-solid fa-chevron-down all-point-arrow"></i>
+
+                            </button>
+
+
+                            <div
+                                class="all-point-custom-menu"
+                                data-rank-menu>
+
+                                <button
+                                    type="button"
+                                    class="all-point-option"
+                                    data-value=""
+                                    data-label="-- Chọn hạng --"
+                                    data-icon="fa-layer-group"
+                                    data-class="rank-default">
+
+                                    <span class="all-point-option-icon rank-default">
+                                        <i class="fa-solid fa-layer-group"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            -- Chọn hạng --
+                                        </strong>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="all-point-option"
+                                    data-value="member"
+                                    data-label="Member"
+                                    data-icon="fa-user"
+                                    data-class="rank-member">
+
+                                    <span class="all-point-option-icon rank-member">
+                                        <i class="fa-solid fa-user"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            Member
+                                        </strong>
+
+                                        <small>
+                                            Hạng thành viên cơ bản
+                                        </small>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="all-point-option"
+                                    data-value="silver"
+                                    data-label="Silver"
+                                    data-icon="fa-medal"
+                                    data-class="rank-silver">
+
+                                    <span class="all-point-option-icon rank-silver">
+                                        <i class="fa-solid fa-medal"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            Silver
+                                        </strong>
+
+                                        <small>
+                                            Hạng bạc
+                                        </small>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="all-point-option"
+                                    data-value="gold"
+                                    data-label="Gold"
+                                    data-icon="fa-crown"
+                                    data-class="rank-gold">
+
+                                    <span class="all-point-option-icon rank-gold">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            Gold
+                                        </strong>
+
+                                        <small>
+                                            Hạng vàng
+                                        </small>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+
+                                <button
+                                    type="button"
+                                    class="all-point-option"
+                                    data-value="platinum"
+                                    data-label="Platinum"
+                                    data-icon="fa-gem"
+                                    data-class="rank-platinum">
+
+                                    <span class="all-point-option-icon rank-platinum">
+                                        <i class="fa-solid fa-gem"></i>
+                                    </span>
+
+                                    <span class="all-point-option-content">
+
+                                        <strong>
+                                            Platinum
+                                        </strong>
+
+                                        <small>
+                                            Hạng bạch kim
+                                        </small>
+
+                                    </span>
+
+                                    <i class="fa-solid fa-check all-point-check"></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        @error('hang_thanh_vien')
+
+                        <small class="all-point-error">
+
+                            <i class="fa-solid fa-circle-exclamation"></i>
+
+                            {{ $message }}
+
+                        </small>
+
+                        @enderror
+
+                    </div>
+
+                </div>
+
+
+                {{-- =================================================
+                     NGƯỜI DÙNG
+                ================================================== --}}
+
+                <div
+                    class="point-conditional
+                    {{ $withdrawAudience === 'nguoi_dung_cu_the' ? 'is-visible' : '' }}"
+                    data-specific-wrapper="withdraw">
+
+
+                    <div class="all-point-field">
+
+                        <label>
+                            Tìm người dùng
+                            <span class="required">*</span>
+                        </label>
+
+
+                        <div class="point-user-search">
+
+                            <i class="fa-solid fa-magnifying-glass"></i>
+
+                            <input
+                                type="text"
+                                autocomplete="off"
+                                placeholder="Nhập tên hoặc email để tìm..."
+                                data-user-search="withdraw">
+
+                        </div>
+
+
+                        <div
+                            class="point-user-results is-hidden"
+                            data-user-results="withdraw">
+                        </div>
+
+
+                        <div
+                            class="point-selected-users"
+                            data-selected-users="withdraw">
+                        </div>
+
+
+                        <div data-selected-inputs="withdraw">
+
+                            @foreach (
+                            old('loai') === 'thu_hoi'
+                            ? $oldUsers
+                            : []
+                            as $userId
+                            )
+
+                            <input
+                                type="hidden"
+                                name="nguoi_dung_cu_the[]"
+                                value="{{ $userId }}">
+
+                            @endforeach
+
+                        </div>
+
+
+
+
+                        @error('nguoi_dung_cu_the')
+
+                        <small class="all-point-error">
+
+                            <i class="fa-solid fa-circle-exclamation"></i>
+
+                            {{ $message }}
+
+                        </small>
+
+                        @enderror
+
+                    </div>
+
+                </div>
+
+
+                {{-- =================================================
+                     SỐ ĐIỂM
+                ================================================== --}}
+
+                <div class="all-point-field">
+
+                    <label>
+                        Số điểm thu hồi
+                        <span class="required">*</span>
+                    </label>
+
+                    <input
+                        type="number"
+                        name="so_diem"
+                        min="1"
+                        max="10000"
+                        value="{{ old('loai') === 'thu_hoi' ? old('so_diem') : '' }}"
+                        placeholder="Ví dụ: 50"
+                        class="@error('so_diem') is-invalid @enderror">
+
+
+                    @error('so_diem')
+
+                    <small class="all-point-error">
+
+                        <i class="fa-solid fa-circle-exclamation"></i>
+
+                        {{ $message }}
+
+                    </small>
+
+                    @enderror
+
+                </div>
+
+
+                {{-- =================================================
+                     NỘI DUNG
+                ================================================== --}}
+
+                <div class="all-point-field">
+
+                    <label>
+                        Nội dung
+                        <span class="required">*</span>
+                    </label>
+
+                    <textarea
+                        name="noi_dung"
+                        maxlength="255"
+                        placeholder="Ví dụ: Thu hồi điểm tặng nhầm..."
+                        class="@error('noi_dung') is-invalid @enderror">{{ old('loai') === 'thu_hoi' ? old('noi_dung') : '' }}</textarea>
+
+
+                    @error('noi_dung')
+
+                    <small class="all-point-error">
+
+                        <i class="fa-solid fa-circle-exclamation"></i>
+
+                        {{ $message }}
+
+                    </small>
+
+                    @enderror
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="all-point-submit withdraw">
+
+                    <i class="fa-solid fa-arrow-rotate-left"></i>
+
+                    Thu hồi điểm
+
+                </button>
+
+            </form>
+
+        </section>
 
     </div>
 
-    <a href="{{ route('admin.thanh-vien.index') }}"
-        class="all-point-back">
-
-        <i class="fa-solid fa-arrow-left"></i>
-
-        Danh sách thành viên
-
-    </a>
-
-</section>
-
-
-{{-- SỐ LƯỢNG --}}
-<section class="all-point-count">
-
-    <i class="fa-solid fa-users"></i>
-
-    Hiện có
-
-    <strong>
-        {{ number_format($soLuongThanhVien) }}
-    </strong>
-
-    thành viên trong hệ thống.
-
-</section>
-
-
-{{-- 2 FORM --}}
-<div class="all-point-grid">
-
-
-    {{-- ========================= --}}
-    {{-- TẶNG ĐIỂM --}}
-    {{-- ========================= --}}
-
-    <section class="all-point-card">
-
-        <div class="all-point-card-head">
-
-            <span class="all-point-icon gift">
-                <i class="fa-solid fa-gift"></i>
-            </span>
-
-            <div>
-                <h3>Tặng điểm tất cả</h3>
-
-                <p>
-                    Cộng điểm cho toàn bộ thành viên
-                </p>
-            </div>
-
-        </div>
-
-
-        <div class="all-point-warning">
-
-            <i class="fa-solid fa-triangle-exclamation"></i>
-
-            <span>
-                Điểm sẽ được cộng cho
-                <strong>tất cả thành viên</strong>.
-            </span>
-
-        </div>
-
-
-        <form
-            method="POST"
-            action="{{ route('admin.thanh-vien.xu-ly-diem-hang-loat') }}"
-            onsubmit="return confirm('Bạn có chắc chắn muốn tặng điểm cho TẤT CẢ thành viên không?')">
-
-            @csrf
-
-            <input type="hidden" name="loai" value="tang">
-            <div class="all-point-field">
-                <label>Hạng thành viên được tặng</label>
-
-                <div class="all-point-rank-dropdown" data-point-dropdown>
-
-                    <input
-                        type="hidden"
-                        name="hang_thanh_vien"
-                        value="{{ old('loai') === 'tang' ? old('hang_thanh_vien') : '' }}"
-                        data-point-dropdown-value>
-
-                    <button
-                        type="button"
-                        class="all-point-rank-trigger"
-                        data-point-dropdown-trigger>
-
-                        <span class="all-point-rank-current">
-
-                            @if(old('loai') === 'tang' && old('hang_thanh_vien') === 'member')
-                            <i class="fa-solid fa-user member-icon"></i>
-                            <span>Member</span>
-
-                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'silver')
-                            <i class="fa-solid fa-medal silver-icon"></i>
-                            <span>Silver</span>
-
-                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'gold')
-                            <i class="fa-solid fa-crown gold-icon"></i>
-                            <span>Gold</span>
-
-                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'platinum')
-                            <i class="fa-solid fa-gem platinum-icon"></i>
-                            <span>Platinum</span>
-
-                            @else
-                            <i class="fa-solid fa-layer-group all-icon"></i>
-                            <span>-- Chọn hạng --</span>
-                            @endif
-
-                        </span>
-
-                        <i class="fa-solid fa-chevron-down all-point-rank-arrow"></i>
-                    </button>
-
-                    <div class="all-point-rank-menu" data-point-dropdown-menu>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ !old('hang_thanh_vien') ? 'is-selected' : '' }}"
-                            data-value="">
-                            <i class="fa-solid fa-layer-group all-icon"></i>
-                            <span>-- Chọn hạng --</span>
-                        </button>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'member' ? 'is-selected' : '' }}"
-                            data-value="member">
-                            <i class="fa-solid fa-user member-icon"></i>
-                            <span>Member</span>
-                        </button>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'silver' ? 'is-selected' : '' }}"
-                            data-value="silver">
-                            <i class="fa-solid fa-medal silver-icon"></i>
-                            <span>Silver</span>
-                        </button>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'gold' ? 'is-selected' : '' }}"
-                            data-value="gold">
-                            <i class="fa-solid fa-crown gold-icon"></i>
-                            <span>Gold</span>
-                        </button>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'platinum' ? 'is-selected' : '' }}"
-                            data-value="platinum">
-                            <i class="fa-solid fa-gem platinum-icon"></i>
-                            <span>Platinum</span>
-                        </button>
-
-                    </div>
-                </div>
-
-                <div class="all-point-help">
-                    Chỉ thành viên thuộc hạng được chọn mới nhận điểm và thông báo.
-                </div>
-            </div>
-
-            {{-- SỐ ĐIỂM --}}
-            <div class="all-point-field">
-
-                <label>
-                    Số điểm tặng
-                </label>
-
-                <input
-                    type="number"
-                    name="so_diem"
-                    min="1"
-                    max="10000"
-                    value="{{ old('loai') === 'tang' ? old('so_diem') : '' }}"
-                    placeholder="Ví dụ: 100">
-                @if ($errors->has('so_diem') && old('loai') === 'tang')
-                <small style="color: #dc2626; display: block; margin-top: 5px;">
-                    {{ $errors->first('so_diem') }}
-                </small>
-                @endif
-
-            </div>
-
-
-            <div class="all-point-field">
-                <label>Tính vào hạng thành viên</label>
-
-                <div class="all-point-rank-dropdown" data-point-dropdown>
-
-                    <input
-                        type="hidden"
-                        name="tinh_vao_hang"
-                        value="{{ old('loai') === 'tang' ? old('tinh_vao_hang', '1') : '1' }}"
-                        data-point-dropdown-value>
-
-                    <button
-                        type="button"
-                        class="all-point-rank-trigger"
-                        data-point-dropdown-trigger>
-
-                        <span class="all-point-rank-current">
-
-                            @if(old('loai') === 'tang' && old('tinh_vao_hang') === '0')
-
-                            <i class="fa-solid fa-ban point-no-icon"></i>
-                            <span class="point-no-text">
-                                Không - Không tính vào hạng
-                            </span>
-
-                            @else
-
-                            <i class="fa-solid fa-ranking-star point-yes-icon"></i>
-                            <span class="point-yes-text">
-                                Có - Tính vào hạng
-                            </span>
-
-                            @endif
-
-                        </span>
-
-                        <i class="fa-solid fa-chevron-down all-point-rank-arrow"></i>
-                    </button>
-
-
-                    <div class="all-point-rank-menu" data-point-dropdown-menu>
-
-                        {{-- CÓ --}}
-                        <button
-                            type="button"
-                            class="all-point-rank-option {{ old('tinh_vao_hang', '1') === '1' ? 'is-selected' : '' }}"
-                            data-value="1">
-
-                            <i class="fa-solid fa-ranking-star point-yes-icon"></i>
-
-                            <span class="point-yes-text">
-                                Có - Tính vào hạng
-                            </span>
-
-                        </button>
-
-
-                        {{-- KHÔNG --}}
-                        <button
-                            type="button"
-                            class="all-point-rank-option {{ old('tinh_vao_hang') === '0' ? 'is-selected' : '' }}"
-                            data-value="0">
-
-                            <i class="fa-solid fa-ban point-no-icon"></i>
-
-                            <span class="point-no-text">
-                                Không - Không tính vào hạng
-                            </span>
-
-                        </button>
-
-                    </div>
-                </div>
-
-                <div class="all-point-help">
-                    Nếu chọn "Có", điểm sẽ được cộng vào tổng tích lũy
-                    và có thể làm thay đổi hạng.
-                </div>
-            </div>
-
-
-            {{-- NỘI DUNG --}}
-            <div class="all-point-field">
-
-                <label>
-                    Nội dung
-                </label>
-
-                <textarea
-                    name="noi_dung"
-                    maxlength="255"
-                    placeholder="Ví dụ: Tặng 100 điểm nhân dịp sinh nhật CineHome...">{{ old('loai') === 'tang' ? old('noi_dung') : '' }}</textarea>
-                @if ($errors->has('noi_dung') && old('loai') === 'tang')
-                <small style="color: #dc2626; display: block; margin-top: 5px;">
-                    {{ $errors->first('noi_dung') }}
-                </small>
-                @endif
-            </div>
-
-
-            <button
-                type="submit"
-                class="all-point-submit gift">
-
-                <i class="fa-solid fa-gift"></i>
-
-                Tặng điểm cho tất cả
-
-            </button>
-
-        </form>
-
-    </section>
-
-
-    {{-- ========================= --}}
-    {{-- THU HỒI ĐIỂM --}}
-    {{-- ========================= --}}
-
-    <section class="all-point-card">
-
-        <div class="all-point-card-head">
-
-            <span class="all-point-icon withdraw">
-                <i class="fa-solid fa-arrow-rotate-left"></i>
-            </span>
-
-            <div>
-
-                <h3>Thu hồi điểm tất cả</h3>
-
-                <p>
-                    Trừ điểm của toàn bộ thành viên
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="all-point-warning">
-
-            <i class="fa-solid fa-triangle-exclamation"></i>
-
-            <span>
-                Điểm sẽ được thu hồi khỏi
-                <strong>tất cả thành viên</strong>.
-                Không để điểm bị âm.
-            </span>
-
-        </div>
-
-
-        <form
-            method="POST"
-            action="{{ route('admin.thanh-vien.xu-ly-diem-hang-loat') }}"
-            onsubmit="return confirm('Bạn có chắc chắn muốn THU HỒI điểm của TẤT CẢ thành viên không?')">
-
-            @csrf
-
-            <input type="hidden" name="loai" value="thu_hoi">
-
-            <div class="all-point-field">
-                <label>Hạng thành viên được thu hồi</label>
-
-                <div class="all-point-rank-dropdown" data-point-dropdown>
-
-                    <input
-                        type="hidden"
-                        name="hang_thanh_vien"
-                        value="{{ old('loai') === 'tang' ? old('hang_thanh_vien') : '' }}"
-                        data-point-dropdown-value>
-
-                    <button
-                        type="button"
-                        class="all-point-rank-trigger"
-                        data-point-dropdown-trigger>
-
-                        <span class="all-point-rank-current">
-
-                            @if(old('loai') === 'tang' && old('hang_thanh_vien') === 'member')
-                            <i class="fa-solid fa-user member-icon"></i>
-                            <span>Member</span>
-
-                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'silver')
-                            <i class="fa-solid fa-medal silver-icon"></i>
-                            <span>Silver</span>
-
-                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'gold')
-                            <i class="fa-solid fa-crown gold-icon"></i>
-                            <span>Gold</span>
-
-                            @elseif(old('loai') === 'tang' && old('hang_thanh_vien') === 'platinum')
-                            <i class="fa-solid fa-gem platinum-icon"></i>
-                            <span>Platinum</span>
-
-                            @else
-                            <i class="fa-solid fa-layer-group all-icon"></i>
-                            <span>-- Chọn hạng --</span>
-                            @endif
-
-                        </span>
-
-                        <i class="fa-solid fa-chevron-down all-point-rank-arrow"></i>
-                    </button>
-
-                    <div class="all-point-rank-menu" data-point-dropdown-menu>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ !old('hang_thanh_vien') ? 'is-selected' : '' }}"
-                            data-value="">
-                            <i class="fa-solid fa-layer-group all-icon"></i>
-                            <span>-- Chọn hạng --</span>
-                        </button>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'member' ? 'is-selected' : '' }}"
-                            data-value="member">
-                            <i class="fa-solid fa-user member-icon"></i>
-                            <span>Member</span>
-                        </button>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'silver' ? 'is-selected' : '' }}"
-                            data-value="silver">
-                            <i class="fa-solid fa-medal silver-icon"></i>
-                            <span>Silver</span>
-                        </button>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'gold' ? 'is-selected' : '' }}"
-                            data-value="gold">
-                            <i class="fa-solid fa-crown gold-icon"></i>
-                            <span>Gold</span>
-                        </button>
-
-                        <button type="button"
-                            class="all-point-rank-option {{ old('hang_thanh_vien') === 'platinum' ? 'is-selected' : '' }}"
-                            data-value="platinum">
-                            <i class="fa-solid fa-gem platinum-icon"></i>
-                            <span>Platinum</span>
-                        </button>
-
-                    </div>
-                </div>
-
-                <div class="all-point-help">
-                    Chỉ thành viên thuộc hạng được chọn mới nhận điểm và thông báo.
-                </div>
-            </div>
-
-            {{-- SỐ ĐIỂM --}}
-            <div class="all-point-field">
-
-                <label>
-                    Số điểm thu hồi
-                </label>
-
-                <input
-                    type="number"
-                    name="so_diem"
-                    value="{{ old('loai') === 'thu_hoi' ? old('so_diem') : '' }}"
-                    placeholder="Ví dụ: 50">
-
-                @if ($errors->has('so_diem') && old('loai') === 'thu_hoi')
-                <small style="color: #dc2626; display: block; margin-top: 5px;">
-                    {{ $errors->first('so_diem') }}
-                </small>
-                @endif
-            </div>
-
-
-            {{-- NỘI DUNG --}}
-            <div class="all-point-field">
-
-                <label>
-                    Nội dung
-                </label>
-
-                <textarea
-                    name="noi_dung"
-                    maxlength="255"
-                    placeholder="Ví dụ: Thu hồi điểm tặng nhầm...">{{ old('loai') === 'thu_hoi' ? old('noi_dung') : '' }}</textarea>
-                @if ($errors->has('noi_dung') && old('loai') === 'thu_hoi')
-                <small style="color: #dc2626; display: block; margin-top: 5px;">
-                    {{ $errors->first('noi_dung') }}
-                </small>
-                @endif
-
-            </div>
-
-
-            <button
-                type="submit"
-                class="all-point-submit withdraw">
-
-                <i class="fa-solid fa-arrow-rotate-left"></i>
-
-                Thu hồi điểm tất cả
-
-            </button>
-
-        </form>
-
-    </section>
-
 </div>
 
-@endsection
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
 
-        document.querySelectorAll('[data-point-dropdown]').forEach(function(dropdown) {
+        /*
+        |--------------------------------------------------------------------------
+        | ĐÓNG TẤT CẢ DROPDOWN
+        |--------------------------------------------------------------------------
+        */
 
-            const trigger = dropdown.querySelector('[data-point-dropdown-trigger]');
-            const menu = dropdown.querySelector('[data-point-dropdown-menu]');
-            const hiddenInput = dropdown.querySelector('[data-point-dropdown-value]');
+        function closeAllDropdowns(except = null) {
+            document
+                .querySelectorAll('.all-point-custom-select.is-open')
+                .forEach(function(dropdown) {
 
-            if (!trigger || !menu || !hiddenInput) return;
+                    if (dropdown !== except) {
+                        dropdown.classList.remove('is-open');
+                        dropdown.classList.remove('open-up');
+                    }
 
+                });
+        }
 
-            function openDropdown() {
+        function adjustDropdownPosition(select) {
+            if (!select) return;
 
-                document
-                    .querySelectorAll('[data-point-dropdown].is-open')
-                    .forEach(function(other) {
+            const trigger = select.querySelector('.all-point-custom-trigger');
+            const menu = select.querySelector('.all-point-custom-menu');
 
-                        if (other !== dropdown) {
-                            other.classList.remove('is-open');
-                        }
+            if (!trigger || !menu) return;
 
-                    });
+            select.classList.remove('open-up');
 
-                dropdown.classList.add('is-open');
+            // Tạm mở menu để đo kích thước
+            const wasOpen = select.classList.contains('is-open');
+
+            if (!wasOpen) {
+                select.classList.add('is-open');
             }
 
+            const triggerRect = trigger.getBoundingClientRect();
+            const menuHeight = menu.offsetHeight;
 
-            function closeDropdown() {
-                dropdown.classList.remove('is-open');
+            const spaceBelow = window.innerHeight - triggerRect.bottom;
+            const spaceAbove = triggerRect.top;
+
+            // Nếu phía dưới không đủ chỗ nhưng phía trên nhiều chỗ hơn
+            if (
+                spaceBelow < menuHeight + 15 &&
+                spaceAbove > spaceBelow
+            ) {
+                select.classList.add('open-up');
             }
 
-
-            trigger.addEventListener('click', function(e) {
-
-                e.stopPropagation();
-
-                if (dropdown.classList.contains('is-open')) {
-                    closeDropdown();
-                } else {
-                    openDropdown();
-                }
-
-            });
+            if (!wasOpen) {
+                select.classList.remove('is-open');
+            }
+        }
 
 
-            menu.querySelectorAll('[data-value]').forEach(function(option) {
+        /*
+        |--------------------------------------------------------------------------
+        | DROPDOWN ĐỐI TƯỢNG
+        |--------------------------------------------------------------------------
+        */
 
-                option.addEventListener('click', function(e) {
+        document
+            .querySelectorAll('[data-audience-select]')
+            .forEach(function(select) {
+
+                const trigger =
+                    select.querySelector('[data-audience-trigger]');
+
+                const menu =
+                    select.querySelector('[data-audience-menu]');
+
+                const valueInput =
+                    select.querySelector('[data-audience-value]');
+
+                const current =
+                    select.querySelector('[data-audience-current]');
+
+                const form =
+                    select.dataset.form;
+
+
+                trigger.addEventListener('click', function(e) {
 
                     e.stopPropagation();
 
-                    const value = this.dataset.value;
+                    const isOpen =
+                        select.classList.contains('is-open');
 
-                    const icon = this.querySelector('i') ?
-                        this.querySelector('i').outerHTML :
-                        '';
+                    closeAllDropdowns();
 
-                    const text = this.querySelector('span') ?
-                        this.querySelector('span').textContent.trim() :
-                        '';
+                    if (!isOpen) {
+                        select.classList.add('is-open');
 
-                    hiddenInput.value = value;
-
-
-                    dropdown.querySelector(
-                            '.all-point-rank-current'
-                        ).innerHTML =
-                        icon +
-                        '<span>' +
-                        text +
-                        '</span>';
-
-
-                    menu.querySelectorAll(
-                        '.all-point-rank-option'
-                    ).forEach(function(item) {
-
-                        item.classList.remove('is-selected');
-
-                    });
-
-
-                    this.classList.add('is-selected');
-
-                    closeDropdown();
+                        requestAnimationFrame(function() {
+                            adjustDropdownPosition(select);
+                        });
+                    }
 
                 });
 
+
+                menu
+                    .querySelectorAll('.all-point-option')
+                    .forEach(function(option) {
+
+                        option.addEventListener('click', function(e) {
+
+                            e.stopPropagation();
+
+
+                            const value =
+                                this.dataset.value;
+
+                            const label =
+                                this.dataset.label;
+
+                            const icon =
+                                this.dataset.icon;
+
+                            const iconClass =
+                                this.dataset.class;
+
+
+                            valueInput.value = value;
+
+
+                            current.innerHTML = `
+                            <span class="all-point-option-icon ${iconClass}">
+                                <i class="fa-solid ${icon}"></i>
+                            </span>
+
+                            <span class="all-point-current-text">
+                                ${label}
+                            </span>
+                        `;
+
+
+                            menu
+                                .querySelectorAll('.all-point-option')
+                                .forEach(function(item) {
+
+                                    item.classList.remove(
+                                        'is-selected'
+                                    );
+
+                                });
+
+
+                            this.classList.add('is-selected');
+
+
+                            closeAllDropdowns();
+
+
+                            updateAudience(
+                                form,
+                                value
+                            );
+
+                        });
+
+                    });
+
             });
 
 
-            document.addEventListener('click', function(e) {
+        /*
+        |--------------------------------------------------------------------------
+        | UPDATE ĐỐI TƯỢNG
+        |--------------------------------------------------------------------------
+        */
 
-                if (!dropdown.contains(e.target)) {
-                    closeDropdown();
+        function updateAudience(form, value) {
+
+            const rankWrapper =
+                document.querySelector(
+                    `[data-rank-wrapper="${form}"]`
+                );
+
+            const specificWrapper =
+                document.querySelector(
+                    `[data-specific-wrapper="${form}"]`
+                );
+
+
+            if (!rankWrapper || !specificWrapper) {
+                return;
+            }
+
+
+            rankWrapper.classList.remove(
+                'is-visible'
+            );
+
+            specificWrapper.classList.remove(
+                'is-visible'
+            );
+
+
+            if (value === 'hang_thanh_vien') {
+
+                rankWrapper.classList.add(
+                    'is-visible'
+                );
+
+            }
+
+
+            if (value === 'nguoi_dung_cu_the') {
+
+                specificWrapper.classList.add(
+                    'is-visible'
+                );
+
+            }
+
+
+            updateWarning(
+                form,
+                value
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | WARNING
+        |--------------------------------------------------------------------------
+        */
+
+        function updateWarning(form, value) {
+
+            const warning =
+                document.getElementById(
+                    form === 'gift' ?
+                    'giftWarningText' :
+                    'withdrawWarningText'
+                );
+
+
+            if (!warning) {
+                return;
+            }
+
+
+            if (value === 'all') {
+
+                warning.innerHTML =
+                    form === 'gift' ?
+                    'Điểm sẽ được cộng cho <strong>tất cả thành viên</strong>.' :
+                    'Điểm sẽ được thu hồi khỏi <strong>tất cả thành viên</strong>. Không để điểm bị âm.';
+
+                return;
+            }
+
+
+            if (value === 'hang_thanh_vien') {
+
+                warning.innerHTML =
+                    form === 'gift' ?
+                    'Điểm sẽ được cộng cho <strong>thành viên thuộc hạng được chọn</strong>.' :
+                    'Điểm sẽ được thu hồi khỏi <strong>thành viên thuộc hạng được chọn</strong>. Không để điểm bị âm.';
+
+                return;
+            }
+
+
+            if (value === 'nguoi_dung_cu_the') {
+
+                warning.innerHTML =
+                    form === 'gift' ?
+                    'Điểm sẽ được cộng cho <strong>những người dùng được chọn</strong>.' :
+                    'Điểm sẽ được thu hồi khỏi <strong>những người dùng được chọn</strong>. Không để điểm bị âm.';
+
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DROPDOWN HẠNG
+        |--------------------------------------------------------------------------
+        */
+
+        document
+            .querySelectorAll('[data-rank-select]')
+            .forEach(function(select) {
+
+                const trigger =
+                    select.querySelector('[data-rank-trigger]');
+
+                const menu =
+                    select.querySelector('[data-rank-menu]');
+
+                const valueInput =
+                    select.querySelector('[data-rank-value]');
+
+                const current =
+                    select.querySelector('[data-rank-current]');
+
+
+                trigger.addEventListener('click', function(e) {
+
+                    e.stopPropagation();
+
+                    const isOpen =
+                        select.classList.contains('is-open');
+
+                    closeAllDropdowns();
+
+                    if (!isOpen) {
+                        select.classList.add('is-open');
+
+                        requestAnimationFrame(function() {
+                            adjustDropdownPosition(select);
+                        });
+                    }
+
+                });
+
+
+                menu
+                    .querySelectorAll('.all-point-option')
+                    .forEach(function(option) {
+
+                        option.addEventListener('click', function(e) {
+
+                            e.stopPropagation();
+
+
+                            const value =
+                                this.dataset.value;
+
+                            const label =
+                                this.dataset.label;
+
+                            const icon =
+                                this.dataset.icon;
+
+                            const iconClass =
+                                this.dataset.class;
+
+
+                            valueInput.value =
+                                value;
+
+
+                            current.innerHTML = `
+                            <span class="all-point-option-icon ${iconClass}">
+                                <i class="fa-solid ${icon}"></i>
+                            </span>
+
+                            <span class="all-point-current-text">
+                                ${label}
+                            </span>
+                        `;
+
+
+                            menu
+                                .querySelectorAll('.all-point-option')
+                                .forEach(function(item) {
+
+                                    item.classList.remove(
+                                        'is-selected'
+                                    );
+
+                                });
+
+
+                            this.classList.add(
+                                'is-selected'
+                            );
+
+
+                            closeAllDropdowns();
+
+                        });
+
+                    });
+
+            });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DROPDOWN TÍNH HẠNG
+        |--------------------------------------------------------------------------
+        */
+
+        document
+            .querySelectorAll('[data-tinh-hang-select]')
+            .forEach(function(select) {
+
+                const trigger =
+                    select.querySelector(
+                        '[data-tinh-hang-trigger]'
+                    );
+
+                const menu =
+                    select.querySelector(
+                        '[data-tinh-hang-menu]'
+                    );
+
+                const valueInput =
+                    select.querySelector(
+                        '[data-tinh-hang-value]'
+                    );
+
+                const current =
+                    select.querySelector(
+                        '[data-tinh-hang-current]'
+                    );
+
+
+                trigger.addEventListener(
+                    'click',
+                    function(e) {
+
+                        e.stopPropagation();
+
+                        const isOpen =
+                            select.classList.contains(
+                                'is-open'
+                            );
+
+                        closeAllDropdowns();
+
+                        if (!isOpen) {
+                            select.classList.add(
+                                'is-open'
+                            );
+                        }
+
+                    }
+                );
+
+
+                menu
+                    .querySelectorAll('.all-point-option')
+                    .forEach(function(option) {
+
+                        option.addEventListener(
+                            'click',
+                            function(e) {
+
+                                e.stopPropagation();
+
+
+                                const value =
+                                    this.dataset.value;
+
+                                const label =
+                                    this.dataset.label;
+
+                                const icon =
+                                    this.dataset.icon;
+
+
+                                valueInput.value =
+                                    value;
+
+
+                                const color =
+                                    this.dataset.inlineColor ||
+                                    '#22c55e';
+
+
+                                current.innerHTML = `
+                                <span
+                                    class="all-point-option-icon"
+                                    style="
+                                        color:${color};
+                                        background:rgba(255,255,255,.06);
+                                    "
+                                >
+                                    <i class="fa-solid ${icon}"></i>
+                                </span>
+
+                                <span class="all-point-current-text">
+                                    ${label}
+                                </span>
+                            `;
+
+
+                                closeAllDropdowns();
+
+                            }
+                        );
+
+                    });
+
+            });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | TÌM NGƯỜI DÙNG
+        |--------------------------------------------------------------------------
+        |
+        | Dùng chính endpoint tìm người dùng của trang thông báo.
+        |
+        */
+
+        const selectedUsers = {
+            gift: new Map(),
+            withdraw: new Map()
+        };
+
+
+        document
+            .querySelectorAll('[data-user-search]')
+            .forEach(function(input) {
+
+                const form =
+                    input.dataset.userSearch;
+
+                const resultBox =
+                    document.querySelector(
+                        `[data-user-results="${form}"]`
+                    );
+
+                const selectedBox =
+                    document.querySelector(
+                        `[data-selected-users="${form}"]`
+                    );
+
+                const hiddenBox =
+                    document.querySelector(
+                        `[data-selected-inputs="${form}"]`
+                    );
+
+
+                let timer = null;
+
+
+                input.addEventListener(
+                    'input',
+                    function() {
+
+                        const keyword =
+                            this.value.trim();
+
+
+                        clearTimeout(timer);
+
+
+                        if (keyword.length < 2) {
+
+                            resultBox.classList.add(
+                                'is-hidden'
+                            );
+
+                            resultBox.innerHTML = '';
+
+                            return;
+
+                        }
+
+
+                        timer = setTimeout(
+                            function() {
+
+                                fetch(
+                                        '{{ route("admin.thong-bao-push.tim-nguoi-dung") }}?keyword=' +
+                                        encodeURIComponent(keyword)
+                                    )
+                                    .then(function(response) {
+
+                                        if (!response.ok) {
+                                            throw new Error(
+                                                'Không thể tìm người dùng'
+                                            );
+                                        }
+
+                                        return response.json();
+
+                                    })
+                                    .then(function(users) {
+
+                                        resultBox.innerHTML = '';
+
+
+                                        if (
+                                            !Array.isArray(users) ||
+                                            users.length === 0
+                                        ) {
+
+                                            resultBox.innerHTML = `
+                                        <div
+                                            style="
+                                                padding:14px;
+                                                color:#7f8795;
+                                                font-size:12px;
+                                                text-align:center;
+                                            "
+                                        >
+                                            Không tìm thấy người dùng.
+                                        </div>
+                                    `;
+
+                                            resultBox.classList.remove(
+                                                'is-hidden'
+                                            );
+
+                                            return;
+                                        }
+
+
+                                        users.forEach(
+                                            function(user) {
+
+                                                if (
+                                                    selectedUsers[form]
+                                                    .has(
+                                                        String(user.id)
+                                                    )
+                                                ) {
+                                                    return;
+                                                }
+
+
+                                                const button =
+                                                    document.createElement(
+                                                        'button'
+                                                    );
+
+                                                button.type =
+                                                    'button';
+
+                                                button.className =
+                                                    'point-user-result';
+
+
+                                                button.innerHTML = `
+
+                                            <span
+                                                class="point-user-avatar"
+                                            >
+                                                <i
+                                                    class="fa-solid fa-user"
+                                                ></i>
+                                            </span>
+
+
+                                            <span
+                                                class="point-user-info"
+                                            >
+
+                                                <strong>
+                                                    ${
+                                                        user.name ??
+                                                        user.ho_ten ??
+                                                        'Người dùng'
+                                                    }
+                                                </strong>
+
+                                                <small>
+                                                    ${
+                                                        user.email ??
+                                                        ''
+                                                    }
+                                                </small>
+
+                                            </span>
+
+                                        `;
+
+
+                                                button.addEventListener(
+                                                    'click',
+                                                    function() {
+
+                                                        addUser(
+                                                            form,
+                                                            user
+                                                        );
+
+                                                        input.value =
+                                                            '';
+
+                                                        resultBox.classList.add(
+                                                            'is-hidden'
+                                                        );
+
+                                                        resultBox.innerHTML =
+                                                            '';
+
+                                                    }
+                                                );
+
+
+                                                resultBox.appendChild(
+                                                    button
+                                                );
+
+                                            }
+                                        );
+
+
+                                        resultBox.classList.remove(
+                                            'is-hidden'
+                                        );
+
+                                    })
+                                    .catch(function() {
+
+                                        resultBox.innerHTML = `
+
+                                    <div
+                                        style="
+                                            padding:14px;
+                                            color:#ff6570;
+                                            font-size:12px;
+                                            text-align:center;
+                                        "
+                                    >
+                                        Có lỗi khi tìm người dùng.
+                                    </div>
+
+                                `;
+
+                                        resultBox.classList.remove(
+                                            'is-hidden'
+                                        );
+
+                                    });
+
+                            },
+                            300
+                        );
+
+                    }
+                );
+
+            });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADD USER
+        |--------------------------------------------------------------------------
+        */
+
+        function addUser(form, user) {
+
+            const id =
+                String(user.id);
+
+
+            if (
+                selectedUsers[form].has(id)
+            ) {
+                return;
+            }
+
+
+            selectedUsers[form].set(
+                id,
+                user
+            );
+
+
+            renderSelectedUsers(
+                form
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | REMOVE USER
+        |--------------------------------------------------------------------------
+        */
+
+        function removeUser(form, id) {
+
+            selectedUsers[form].delete(
+                String(id)
+            );
+
+
+            renderSelectedUsers(
+                form
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | RENDER USERS
+        |--------------------------------------------------------------------------
+        */
+
+        function renderSelectedUsers(form) {
+
+            const selectedBox =
+                document.querySelector(
+                    `[data-selected-users="${form}"]`
+                );
+
+            const hiddenBox =
+                document.querySelector(
+                    `[data-selected-inputs="${form}"]`
+                );
+
+
+            selectedBox.innerHTML = '';
+
+            hiddenBox.innerHTML = '';
+
+
+            selectedUsers[form]
+                .forEach(function(user) {
+
+                    const id =
+                        String(user.id);
+
+                    const name =
+                        user.name ??
+                        user.ho_ten ??
+                        'Người dùng';
+
+                    const email =
+                        user.email ??
+                        '';
+
+
+                    const item =
+                        document.createElement(
+                            'div'
+                        );
+
+                    item.className =
+                        'point-selected-user';
+
+
+                    item.innerHTML = `
+
+                    <span class="point-user-avatar">
+
+                        <i class="fa-solid fa-user"></i>
+
+                    </span>
+
+
+                    <span class="point-selected-user-info">
+
+                        <strong>
+                            ${name}
+                        </strong>
+
+                        <small>
+                            ${email}
+                        </small>
+
+                    </span>
+
+
+                    <button
+                        type="button"
+                        class="point-remove-user"
+                        title="Bỏ chọn"
+                    >
+
+                        <i class="fa-solid fa-xmark"></i>
+
+                    </button>
+
+                `;
+
+
+                    item
+                        .querySelector(
+                            '.point-remove-user'
+                        )
+                        .addEventListener(
+                            'click',
+                            function() {
+
+                                removeUser(
+                                    form,
+                                    id
+                                );
+
+                            }
+                        );
+
+
+                    selectedBox.appendChild(
+                        item
+                    );
+
+
+                    const hidden =
+                        document.createElement(
+                            'input'
+                        );
+
+                    hidden.type =
+                        'hidden';
+
+                    hidden.name =
+                        'nguoi_dung_cu_the[]';
+
+                    hidden.value =
+                        id;
+
+
+                    hiddenBox.appendChild(
+                        hidden
+                    );
+
+                });
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLICK NGOÀI
+        |--------------------------------------------------------------------------
+        */
+
+        document.addEventListener(
+            'click',
+            function() {
+
+                closeAllDropdowns();
+
+
+                document
+                    .querySelectorAll(
+                        '.point-user-results'
+                    )
+                    .forEach(function(box) {
+
+                        box.classList.add(
+                            'is-hidden'
+                        );
+
+                    });
+
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | KHÔNG CHO CLICK BÊN TRONG LÀM ĐÓNG
+        |--------------------------------------------------------------------------
+        */
+
+        document
+            .querySelectorAll(
+                '.point-user-results'
+            )
+            .forEach(function(box) {
+
+                box.addEventListener(
+                    'click',
+                    function(e) {
+
+                        e.stopPropagation();
+
+                    }
+                );
+
+            });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | KHỞI TẠO
+        |--------------------------------------------------------------------------
+        */
+
+        updateAudience(
+            'gift',
+            document.querySelector(
+                '[data-audience-select][data-form="gift"] [data-audience-value]'
+            )?.value || 'all'
+        );
+
+
+        updateAudience(
+            'withdraw',
+            document.querySelector(
+                '[data-audience-select][data-form="withdraw"] [data-audience-value]'
+            )?.value || 'all'
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLIENT VALIDATION
+        |--------------------------------------------------------------------------
+        */
+
+        function showClientError(
+            field,
+            message
+        ) {
+
+            field.classList.add(
+                'is-invalid'
+            );
+
+
+            const parent =
+                field.closest(
+                    '.all-point-field'
+                );
+
+
+            if (!parent) {
+                return;
+            }
+
+
+            let error =
+                parent.querySelector(
+                    '.client-validation-error'
+                );
+
+
+            if (!error) {
+
+                error =
+                    document.createElement(
+                        'small'
+                    );
+
+                error.className =
+                    'all-point-error client-validation-error';
+
+                parent.appendChild(
+                    error
+                );
+
+            }
+
+
+            error.innerHTML = `
+
+            <i class="fa-solid fa-circle-exclamation"></i>
+
+            ${message}
+
+        `;
+
+        }
+
+
+        function clearClientError(
+            field
+        ) {
+
+            field.classList.remove(
+                'is-invalid'
+            );
+
+
+            const parent =
+                field.closest(
+                    '.all-point-field'
+                );
+
+
+            if (!parent) {
+                return;
+            }
+
+
+            const error =
+                parent.querySelector(
+                    '.client-validation-error'
+                );
+
+
+            if (error) {
+
+                error.remove();
+
+            }
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE FORM
+        |--------------------------------------------------------------------------
+        */
+
+        function validatePointForm(form) {
+
+            let valid = true;
+
+
+            const audience =
+                form.querySelector(
+                    '[data-audience-value]'
+                )?.value;
+
+
+            const rank =
+                form.querySelector(
+                    '[data-rank-value]'
+                )?.value;
+
+
+            const points =
+                form.querySelector(
+                    '[name="so_diem"]'
+                );
+
+
+            const content =
+                form.querySelector(
+                    '[name="noi_dung"]'
+                );
+
+
+            clearClientError(
+                points
+            );
+
+            clearClientError(
+                content
+            );
+
+
+            /*
+            |----------------------------------------------
+            | ĐIỂM
+            |----------------------------------------------
+            */
+
+            if (
+                !points.value ||
+                Number(points.value) < 1
+            ) {
+
+                showClientError(
+                    points,
+                    'Vui lòng nhập số điểm hợp lệ.'
+                );
+
+                valid = false;
+
+            }
+
+
+            /*
+            |----------------------------------------------
+            | NỘI DUNG
+            |----------------------------------------------
+            */
+
+            if (
+                !content.value.trim()
+            ) {
+
+                showClientError(
+                    content,
+                    'Vui lòng nhập nội dung.'
+                );
+
+                valid = false;
+
+            }
+
+
+            /*
+            |----------------------------------------------
+            | HẠNG
+            |----------------------------------------------
+            */
+
+            if (
+                audience === 'hang_thanh_vien' &&
+                !rank
+            ) {
+
+                const rankInput =
+                    form.querySelector(
+                        '[data-rank-value]'
+                    );
+
+
+                const rankSelect =
+                    rankInput?.closest(
+                        '.all-point-custom-select'
+                    );
+
+
+                if (rankSelect) {
+
+                    rankSelect.classList.add(
+                        'is-invalid'
+                    );
+
+
+                    const parent =
+                        rankSelect.closest(
+                            '.all-point-field'
+                        );
+
+
+                    if (parent) {
+
+                        let error =
+                            parent.querySelector(
+                                '.client-validation-error'
+                            );
+
+
+                        if (!error) {
+
+                            error =
+                                document.createElement(
+                                    'small'
+                                );
+
+                            error.className =
+                                'all-point-error client-validation-error';
+
+                            parent.appendChild(
+                                error
+                            );
+
+                        }
+
+
+                        error.innerHTML = `
+
+                        <i class="fa-solid fa-circle-exclamation"></i>
+
+                        Vui lòng chọn hạng thành viên.
+
+                    `;
+
+                    }
+
                 }
 
-            });
 
-        });
+                valid = false;
+
+            }
+
+
+            /*
+            |----------------------------------------------
+            | NGƯỜI DÙNG CỤ THỂ
+            |----------------------------------------------
+            */
+
+            if (
+                audience === 'nguoi_dung_cu_the'
+            ) {
+
+                if (
+                    selectedUsers[
+                        form.id === 'giftPointForm' ?
+                        'gift' :
+                        'withdraw'
+                    ].size === 0
+                ) {
+
+                    const specificWrapper =
+                        form.querySelector(
+                            '.point-conditional.is-visible'
+                        );
+
+
+                    if (specificWrapper) {
+
+                        const field =
+                            specificWrapper.querySelector(
+                                '.point-user-search input'
+                            );
+
+
+                        showClientError(
+                            field,
+                            'Vui lòng chọn ít nhất một người dùng.'
+                        );
+
+                    }
+
+
+                    valid = false;
+
+                }
+
+            }
+
+
+            return valid;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUBMIT
+        |--------------------------------------------------------------------------
+        */
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUBMIT + CONFIRM ALERT
+        |--------------------------------------------------------------------------
+        */
+
+        document
+            .getElementById('giftPointForm')
+            ?.addEventListener(
+                'submit',
+                function(e) {
+
+                    /*
+                    |--------------------------------------------------------------
+                    | Validate trước
+                    |--------------------------------------------------------------
+                    */
+
+                    if (!validatePointForm(this)) {
+
+                        e.preventDefault();
+
+                        return;
+
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------
+                    | Lấy thông tin form
+                    |--------------------------------------------------------------
+                    */
+
+                    const audience =
+                        this.querySelector(
+                            '[data-audience-value]'
+                        )?.value || 'all';
+
+                    const rank =
+                        this.querySelector(
+                            '[data-rank-value]'
+                        )?.value || '';
+
+                    const points =
+                        this.querySelector(
+                            '[name="so_diem"]'
+                        )?.value || 0;
+
+
+                    /*
+                    |--------------------------------------------------------------
+                    | Xác định đối tượng
+                    |--------------------------------------------------------------
+                    */
+
+                    let audienceText =
+                        'tất cả thành viên';
+
+                    if (audience === 'hang_thanh_vien') {
+
+                        const rankNames = {
+                            member: 'Member',
+                            silver: 'Silver',
+                            gold: 'Gold',
+                            platinum: 'Platinum'
+                        };
+
+                        audienceText =
+                            'thành viên thuộc hạng ' +
+                            (rankNames[rank] || rank);
+
+                    }
+
+
+                    if (audience === 'nguoi_dung_cu_the') {
+
+                        const count =
+                            selectedUsers.gift.size;
+
+                        audienceText =
+                            count +
+                            ' người dùng được chọn';
+
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------
+                    | Xác nhận
+                    |--------------------------------------------------------------
+                    */
+
+                    const confirmed =
+                        window.confirm(
+                            'Bạn có chắc chắn muốn TẶNG ' +
+                            points +
+                            ' điểm cho ' +
+                            audienceText +
+                            '?'
+                        );
+
+
+                    if (!confirmed) {
+
+                        e.preventDefault();
+
+                        return;
+
+                    }
+
+                }
+            );
+
+
+
+        document
+            .getElementById('withdrawPointForm')
+            ?.addEventListener(
+                'submit',
+                function(e) {
+
+                    /*
+                    |--------------------------------------------------------------
+                    | Validate trước
+                    |--------------------------------------------------------------
+                    */
+
+                    if (!validatePointForm(this)) {
+
+                        e.preventDefault();
+
+                        return;
+
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------
+                    | Lấy thông tin form
+                    |--------------------------------------------------------------
+                    */
+
+                    const audience =
+                        this.querySelector(
+                            '[data-audience-value]'
+                        )?.value || 'all';
+
+                    const rank =
+                        this.querySelector(
+                            '[data-rank-value]'
+                        )?.value || '';
+
+                    const points =
+                        this.querySelector(
+                            '[name="so_diem"]'
+                        )?.value || 0;
+
+
+                    /*
+                    |--------------------------------------------------------------
+                    | Xác định đối tượng
+                    |--------------------------------------------------------------
+                    */
+
+                    let audienceText =
+                        'tất cả thành viên';
+
+                    if (audience === 'hang_thanh_vien') {
+
+                        const rankNames = {
+                            member: 'Member',
+                            silver: 'Silver',
+                            gold: 'Gold',
+                            platinum: 'Platinum'
+                        };
+
+                        audienceText =
+                            'thành viên thuộc hạng ' +
+                            (rankNames[rank] || rank);
+
+                    }
+
+
+                    if (audience === 'nguoi_dung_cu_the') {
+
+                        const count =
+                            selectedUsers.withdraw.size;
+
+                        audienceText =
+                            count +
+                            ' người dùng được chọn';
+
+                    }
+
+
+                    /*
+                    |--------------------------------------------------------------
+                    | Xác nhận
+                    |--------------------------------------------------------------
+                    */
+
+                    const confirmed =
+                        window.confirm(
+                            'Bạn có chắc chắn muốn THU HỒI ' +
+                            points +
+                            ' điểm khỏi ' +
+                            audienceText +
+                            '?\n\nĐiểm của thành viên sẽ không bị âm.'
+                        );
+
+
+                    if (!confirmed) {
+
+                        e.preventDefault();
+
+                        return;
+
+                    }
+
+                }
+            );
 
     });
 </script>
+
+@endsection
