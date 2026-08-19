@@ -134,10 +134,6 @@
                                     font-weight:700;
                                 ">
 
-                                <i class="fa-solid fa-circle-check"></i>
-
-                                Email đã xác thực
-
                             </small>
 
                         @else
