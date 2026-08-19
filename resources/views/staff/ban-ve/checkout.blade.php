@@ -31,21 +31,48 @@ $previousUrl = url()->previous();
 
 @section('content')
 
+<style>
+    .booking-checkout-page .booking-checkout-shell {
+        background: #141414 !important;
+        border-color: #27272a !important;
+    }
+
+    .booking-checkout-page .payment-method-label {
+        border-radius: 16px !important;
+    }
+
+    .booking-checkout-page #cashPaymentSection,
+    .booking-checkout-page #vietQrPaymentSection {
+        border-radius: 16px !important;
+        background: #1a1a1a !important;
+    }
+
+    .booking-checkout-page #submitPaymentButton {
+        border-radius: 16px !important;
+    }
+
+    .booking-checkout-page input {
+        border-radius: 12px !important;
+    }
+
+</style>
+
+
 <div class="booking-checkout-page min-h-screen bg-[#080808] pt-24 pb-12 text-white" lang="vi" spellcheck="false">
     <div class="booking-checkout-container mx-auto max-w-7xl px-4 lg:px-6">
 
         {{-- ================= HEADER ================= --}}
         <div class="mb-8">
             <p class="text-xs uppercase tracking-[0.45em] text-yellow-400">
-                Staff Checkout
+                Checkout
             </p>
 
             <h1 class="mt-2 text-4xl font-black">
-                THANH TOÁN TẠI QUẦY
+                THANH TOÁN
             </h1>
 
             <p class="mt-2 text-gray-400">
-                Kiểm tra thông tin trước khi xác nhận bán vé.
+                Kiểm tra thông tin trước khi hoàn tất giao dịch tại quầy.
             </p>
         </div>
 
@@ -73,14 +100,14 @@ $previousUrl = url()->previous();
         @endif
 
         {{-- ================= CHECKOUT BOX ================= --}}
-        <div class="overflow-hidden rounded-3xl border border-white/10 bg-[#141414] shadow-2xl">
+        <div class="booking-checkout-shell overflow-hidden rounded-3xl border border-zinc-800 bg-[#141414] shadow-2xl">
 
 
             {{-- ================= MAIN LAYOUT ================= --}}
             <div class="mt-6 grid lg:grid-cols-[380px_1fr]">
 
                 {{-- ================= LEFT SIDE ================= --}}
-                <div class="border-white/10 p-8 lg:border-r">
+                <div class="booking-checkout-info border-r border-zinc-800/80 p-8">
 
                     {{-- NHÂN VIÊN --}}
                     <div class="pb-6">
@@ -169,7 +196,7 @@ $previousUrl = url()->previous();
                 </div>
 
                 {{-- ================= RIGHT SIDE ================= --}}
-                <div class="p-8">
+                <div class="booking-checkout-order p-8">
 
                     {{-- ================= DANH SÁCH ĐẶT ================= --}}
                     <div class="border-b border-white/10 pb-6">
