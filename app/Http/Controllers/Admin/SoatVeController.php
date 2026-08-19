@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ThongBaoCaNhan;
 use App\Services\TicketCheckInService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -141,6 +142,17 @@ class SoatVeController extends Controller
         $ticket = $result['ticket'] ?? null;
         $foodsFromCache = [];
 
+        if (($result['success'] ?? false) && $ticket) {
+            $this->taoThongBaoNeuLaStaff(
+                'In vé thành công',
+                'Đã in/phát hành vé ' . $ticket->ma_ve
+                    . ' - Phim: ' . $ticket->ten_phim
+                    . ' - Ghế: ' . $ticket->ma_ghe . '.',
+                've',
+                route('staff.soat-ve.index')
+            );
+        }
+
         if ($ticket) {
             $foodsFromCache = Cache::get("ve_foods:{$ticket->id}", []);
             $ticket->foods = $foodsFromCache;
@@ -194,6 +206,18 @@ class SoatVeController extends Controller
 
         $ticket = $result['ticket'];
 
+        if (($result['success'] ?? false) && $ticket) {
+            $this->taoThongBaoNeuLaStaff(
+                'Soát vé thành công',
+                'Đã xác nhận vé ' . $ticket->ma_ve
+                    . ' - Phim: ' . $ticket->ten_phim
+                    . ' - Ghế: ' . $ticket->ma_ghe
+                    . ' đã vào rạp.',
+                've',
+                route('staff.soat-ve.index')
+            );
+        }
+
         if ($request->expectsJson()) {
             $payload = $ticketCheckInService->ticketPayload(
                 $ticket
@@ -221,5 +245,40 @@ class SoatVeController extends Controller
                 $result['success'] ? 'success' : 'error',
                 $result['message']
             );
+    }
+
+
+    private function taoThongBaoNeuLaStaff(
+        string $tieuDe,
+        string $noiDung,
+        string $loai = 've',
+        ?string $duongDan = null
+    ): void {
+        $user = auth()->user();
+
+        if (!$user) {
+            return;
+        }
+
+        $laNhanVien =
+            ($user->vai_tro ?? null) === 'nhan_vien'
+            || (
+                method_exists($user, 'hasRole')
+                && $user->hasRole('Nhân viên')
+            );
+
+        if (!$laNhanVien) {
+            return;
+        }
+
+        ThongBaoCaNhan::create([
+            'nguoi_dung_id' => $user->id,
+            'tieu_de' => $tieuDe,
+            'noi_dung' => $noiDung,
+            'loai_thong_bao' => $loai,
+            'duong_dan' => $duongDan,
+            'da_doc' => false,
+            'doc_luc' => null,
+        ]);
     }
 }

@@ -62,13 +62,21 @@ class PhongChieuController extends Controller
             ->orderBy('ten_rap')
             ->get();
 
-        return view('admin.phong-chieus.create', compact('rapChieuPhims'));
+        $phuThuTheoLoai = collect(PhongChieu::LOAI_PHONG)->keys()
+            ->mapWithKeys(fn ($ma) => [$ma => PhongChieu::phuThuTheoLoai($ma)]);
+
+        return view('admin.phong-chieus.create', compact('rapChieuPhims', 'phuThuTheoLoai'));
     }
 
     public function store(StorePhongChieuRequest $request)
     {
         $data = $request->validated();
-        
+
+        // Phụ thu vé luôn theo LOẠI phòng (quản lý tập trung ở trang "Giá
+        // theo phòng chiếu"), không nhập riêng lúc tạo phòng — phòng mới tự
+        // nhận đúng mức đang cấu hình cho loại đã chọn.
+        $data['phu_thu'] = PhongChieu::phuThuTheoLoai($data['loai_phong']);
+
         PhongChieu::create($data);
 
         $this->ghiNhatKy($request, 'Thêm phòng chiếu', 'Quản lý phòng & ghế', "Thêm phòng: {$data['ten_phong']}");
@@ -123,7 +131,10 @@ class PhongChieuController extends Controller
     {
         $rapChieuPhims = RapChieuPhim::orderBy('ten_rap')->get();
 
-        return view('admin.phong-chieus.edit', compact('phongChieu', 'rapChieuPhims'));
+        $phuThuTheoLoai = collect(PhongChieu::LOAI_PHONG)->keys()
+            ->mapWithKeys(fn ($ma) => [$ma => PhongChieu::phuThuTheoLoai($ma)]);
+
+        return view('admin.phong-chieus.edit', compact('phongChieu', 'rapChieuPhims', 'phuThuTheoLoai'));
     }
 
     public function update(UpdatePhongChieuRequest $request, PhongChieu $phongChieu)
@@ -162,6 +173,11 @@ class PhongChieuController extends Controller
             }
         }
         
+        // Phụ thu vé luôn theo LOẠI phòng (quản lý tập trung ở trang "Giá
+        // theo phòng chiếu"): đổi loại phòng ở đây thì phụ thu tự đồng bộ
+        // theo đúng loại mới.
+        $data['phu_thu'] = PhongChieu::phuThuTheoLoai($data['loai_phong']);
+
         $phongChieu->update($data);
 
         $this->ghiNhatKy($request, 'Cập nhật phòng chiếu', 'Quản lý phòng & ghế', "Cập nhật phòng: {$phongChieu->ten_phong}");

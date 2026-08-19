@@ -107,7 +107,9 @@
                 notifyBox.classList.toggle('hidden');
 
                 if (wasHidden) {
-                    fetch('/admin/notifications/mark-all-read', {
+                    fetch("{{ (Auth::user()->vai_tro ?? null) === 'nhan_vien'
+                        ? route('staff.notifications.mark-all-read')
+                        : route('admin.notifications.markAllRead') }}", {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {
@@ -127,6 +129,18 @@
 
             notifyBox.addEventListener('click', function(event) {
                 event.stopPropagation();
+
+                const notificationItem = event.target.closest('[data-notification-url]');
+
+                if (!notificationItem) {
+                    return;
+                }
+
+                const url = notificationItem.dataset.notificationUrl;
+
+                if (url) {
+                    window.location.href = url;
+                }
             });
         }
 
@@ -143,6 +157,118 @@
         });
     });
 </script>
+
+{{-- STAFF NOTIFICATION REALTIME POLLING --}}
+@if(($isStaff ?? false))
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const bellBtn = document.getElementById('bellBtn');
+        const notifyBox = document.getElementById('notifyBox');
+
+        if (!bellBtn || !notifyBox) {
+            return;
+        }
+
+        const latestUrl = @json(route('staff.notifications.latest'));
+        const allNotificationsUrl = @json(route('staff.notifications.index'));
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value ?? '';
+            return div.innerHTML;
+        }
+
+        function refreshStaffNotifications() {
+            fetch(latestUrl, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function(response) {
+                if (!response.ok) {
+                    throw new Error('Không tải được thông báo nhân viên.');
+                }
+
+                return response.json();
+            })
+            .then(function(data) {
+                const unread = Number(data.unread || 0);
+                let badge = document.getElementById('notifyBadge');
+
+                if (unread > 0) {
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.id = 'notifyBadge';
+                        badge.className = 'absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold';
+                        bellBtn.appendChild(badge);
+                    }
+
+                    badge.textContent = unread > 99 ? '99+' : unread;
+                } else if (badge) {
+                    badge.remove();
+                }
+
+                const unreadText = notifyBox.querySelector('.admin-notify-head small');
+
+                if (unreadText) {
+                    unreadText.textContent = unread + ' thông báo chưa đọc';
+                }
+
+                const list = notifyBox.querySelector('.admin-notify-list');
+
+                if (!list) {
+                    return;
+                }
+
+                if (!Array.isArray(data.items) || data.items.length === 0) {
+                    list.innerHTML = `
+                        <div class="admin-notify-empty">
+                            <span style="font-size:24px; color: var(--cinema-gold);">
+                                <i class="fa-regular fa-bell"></i>
+                            </span>
+                            <strong>Không có thông báo</strong>
+                            <span>Hệ thống đang yên ổn.</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = data.items.map(function(item) {
+                    const url = item.duong_dan || allNotificationsUrl;
+                    const unreadClass = item.da_doc ? '' : 'is-unread';
+
+                    return `
+                        <article
+                            class="admin-notify-item ${unreadClass}"
+                            data-notification-url="${escapeHtml(url)}"
+                            style="cursor:pointer;"
+                        >
+                            <span class="admin-notify-icon">
+                                <i class="fa-solid fa-bell"></i>
+                            </span>
+
+                            <div class="admin-notify-content">
+                                <strong>${escapeHtml(item.tieu_de)}</strong>
+                                <p>${escapeHtml(item.noi_dung)}</p>
+                                <time>${escapeHtml(item.created_human)}</time>
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            })
+            .catch(function(error) {
+                console.log('Staff notification polling error:', error);
+            });
+        }
+
+        refreshStaffNotifications();
+        window.setInterval(refreshStaffNotifications, 15000);
+    });
+</script>
+@endif
 
 <body class="overflow-x-hidden bg-[#080808] text-white">
     @include('components.preloader')
@@ -247,7 +373,7 @@
                 {{-- 3. CƠ SỞ VẬT CHẤT PHÒNG --}}
                 @if(coBatKyQuyenNao(['phong_chieu.xem', 'loai_ghe.xem']))
                     @php
-                        $isPhongGheActive = request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*');
+                        $isPhongGheActive = request()->routeIs('admin.phong-chieus.*') || request()->routeIs('admin.loai-ghes.*') || request()->routeIs('admin.loai-phong-gia.*');
                     @endphp
                     <div class="sidebar-dropdown-box {{ $isPhongGheActive ? 'open' : '' }}">
                         <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
@@ -261,6 +387,9 @@
                             @if(coQuyen('phong_chieu.xem'))
                             <a href="{{ route('admin.phong-chieus.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.phong-chieus.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
                                 Quản lý phòng chiếu
+                            </a>
+                            <a href="{{ route('admin.loai-phong-gia.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.loai-phong-gia.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                                Giá theo phòng chiếu
                             </a>
                             @endif
 
@@ -302,7 +431,6 @@
                             <a href="{{ route('staff.ban-ve.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold no-underline transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('staff.ban-ve.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }}">
                                 Bán vé trực tiếp rạp
                             </a>
-
                             @endif
 
                             @if(coQuyen('soat_ve.quet_qr'))
@@ -408,36 +536,41 @@
                 @endif
 
                 {{-- 7. THIẾT LẬP HỆ THỐNG & HỖ TRỢ --}}
-                @if(coBatKyQuyenNao(['thong_bao.gui', 'cai_dat.he_thong', 'lien_he.xem']))
-                    @php
-                        $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
-                            || request()->routeIs('admin.movie-reviews.*')
-                            || request()->routeIs('admin.lien-he.*')
-                            || request()->routeIs('admin.system-settings.*');
-                    @endphp
-                    <div class="sidebar-dropdown-box {{ $isSystemActive ? 'open' : '' }}">
-                        <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
-                            <span class="flex items-center gap-3.5">
-                                <i class="fa-solid fa-gear w-5 text-center text-xl text-[#d99a32]"></i>
-                                <span>Hệ thống và Hỗ Trợ</span>
-                            </span>
-                            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
-                        </button>
-                        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
-                            @if(coQuyen('thong_bao.gui'))
-                            <a href="{{ route('admin.thong-bao-push.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
-                                Thông báo đẩy
-                            </a>
-                            @endif
+@if(coBatKyQuyenNao(['thong_bao.gui', 'cai_dat.he_thong', 'lien_he.xem']))
+    @php
+        $isSystemActive = request()->routeIs('admin.thong-bao-push.*')
+            || request()->routeIs('admin.movie-reviews.*')
+            || request()->routeIs('admin.lien-he.*')
+            || request()->routeIs('admin.system-settings.*')
+            || request()->routeIs('admin.thung-rac.*');
+    @endphp
+    <div class="sidebar-dropdown-box {{ $isSystemActive ? 'open' : '' }}">
+        <button type="button" class="sidebar-dropdown-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-[16px] font-bold text-gray-200 hover:bg-white/5 transition duration-200 border-0 bg-transparent text-left whitespace-nowrap leading-none outline-none">
+            <span class="flex items-center gap-3.5">
+                <i class="fa-solid fa-gear w-5 text-center text-xl text-[#d99a32]"></i>
+                <span>Hệ thống và Hỗ Trợ</span>
+            </span>
+            <i class="fa-solid fa-chevron-down mr-1 text-[11px] text-gray-500"></i>
+        </button>
+        <div class="sidebar-dropdown-content pl-5 mt-1 border-l-2 border-[#d99a32]/20 ml-6 space-y-1">
+            @if(coQuyen('thong_bao.gui'))
+            <a href="{{ route('admin.thong-bao-push.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thong-bao-push.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                Thông báo đẩy
+            </a>
+            @endif
 
-                            @if(coQuyen('lien_he.xem'))
-                            <a href="{{ route('admin.lien-he.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.lien-he.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
-                                Liên hệ khách hàng
-                            </a>
-                            @endif
-                        </div>
-                    </div>
-                @endif
+            @if(coQuyen('lien_he.xem'))
+            <a href="{{ route('admin.lien-he.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.lien-he.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                Liên hệ khách hàng
+            </a>
+            @endif
+
+            <a href="{{ route('admin.thung-rac.index') }}" class="block py-2.5 pl-3 text-[15px] font-semibold transition duration-200 hover:translate-x-1.5 {{ request()->routeIs('admin.thung-rac.*') ? 'text-[#d99a32]' : 'text-gray-400 hover:text-white' }} no-underline">
+                Thùng rác hệ thống
+            </a>
+        </div>
+    </div>
+@endif
 
                 {{-- VỀ TRANG CHỦ --}}
                 <div class="border-t border-white/10 pt-3">
@@ -482,14 +615,29 @@
                     {{-- ADMIN USER --}}
                     <div class="flex items-center gap-3">
                         @php
-                            $notificationCount = $notificationCount ?? 0;
                             $userRole = Auth::user()->vai_tro ?? Auth::user()->role;
+                            $isStaff = $userRole === 'nhan_vien';
+
                             $adminRoleLabel = match ($userRole) {
                                 'super_admin', 'admin', 'quan_ly_he_thong' => 'Quản trị viên (Super-admin)',
                                 'quan_ly' => 'Quản lý rạp',
                                 'nhan_vien' => 'Nhân viên quầy',
                                 default => 'Người dùng',
                             };
+
+                            if ($isStaff) {
+                                $notificationCount = \App\Models\ThongBaoCaNhan::where('nguoi_dung_id', Auth::id())
+                                    ->where('da_doc', false)
+                                    ->count();
+
+                                $layoutNotifications = \App\Models\ThongBaoCaNhan::where('nguoi_dung_id', Auth::id())
+                                    ->latest()
+                                    ->take(10)
+                                    ->get();
+                            } else {
+                                $notificationCount = $notificationCount ?? 0;
+                                $layoutNotifications = $adminNotifications ?? collect();
+                            }
                         @endphp
 
                         @php
@@ -512,14 +660,20 @@
                                 <div class="admin-notify-head">
                                     <span style="font-size:16px;">{!! $bellSvg !!}</span>
                                     <div>
-                                        <h3>Thông báo hệ thống</h3>
+                                        <h3>{{ $isStaff ? 'Thông báo nhân viên' : 'Thông báo hệ thống' }}</h3>
                                         <small>{{ $notificationCount }} thông báo chưa đọc</small>
                                     </div>
                                 </div>
 
                                 <div class="admin-notify-list">
-                                    @forelse($adminNotifications ?? [] as $item)
-                                    <article class="admin-notify-item {{ $item->da_doc ? '' : 'is-unread' }}">
+                                    @forelse($layoutNotifications as $item)
+                                    <article
+                                        class="admin-notify-item {{ $item->da_doc ? '' : 'is-unread' }}"
+                                        @if($isStaff && !empty($item->duong_dan))
+                                            data-notification-url="{{ $item->duong_dan }}"
+                                            style="cursor: pointer;"
+                                        @endif
+                                    >
                                         <span class="admin-notify-icon">
                                             {!! $bellSvg !!}
                                         </span>
@@ -539,7 +693,7 @@
                                 </div>
 
                                 <div class="admin-notify-footer">
-                                    <a href="{{ route('admin.notifications.index') }}">
+                                    <a href="{{ $isStaff ? route('staff.notifications.index') : route('admin.notifications.index') }}">
                                         Xem tất cả {!! $arrowSvg !!}
                                     </a>
                                 </div>
@@ -613,7 +767,7 @@
 
     @stack('scripts')
 
-    {{-- INTERACTION SCRIPT: CHỐNG NỔI BỌT VÀ ĐÓNG MỞ ĐỘC LẬP TUYỆT ĐỐI --}}
+    {{-- INTERACTION SCRIPT --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const dropdownBoxes = document.querySelectorAll('.sidebar-dropdown-box');
@@ -639,14 +793,13 @@
         );
     </script>
     @endif
-    {{-- SCRIPT TỰ ĐỘNG ĐẨY VỀ DASHBOARD KHI BỊ TƯỚC QUYỀN TRỰC TIẾP --}}
+    
     @hasSection('module-permission')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const requiredPerm = "@yield('module-permission')";
             if (!requiredPerm) return;
 
-            // Kiểm tra ngầm mỗi 5000ms (5 giây)
             setInterval(function() {
                 fetch(`{{ route('admin.kiem-tra-quyen-ngam') }}?quyen=${requiredPerm}`, {
                     headers: {
@@ -657,7 +810,6 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data && data.co_quyen === false) {
-                        // Tự động chuyển hướng ngay lập tức khi phát hiện mất quyền
                         window.location.href = "{{ route('admin.dashboard') }}";
                     }
                 })

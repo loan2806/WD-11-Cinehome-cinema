@@ -1254,8 +1254,8 @@ body.overflow-hidden {
     display: block;
     visibility: hidden;
     opacity: 0;
-    background-position: center;
-    background-size: cover;
+    overflow: hidden;
+    background: var(--cinema-bg, #05070b);
     transform: scale(1.04);
     transition:
         opacity 0.9s var(--cinema-ease),
@@ -1269,14 +1269,22 @@ body.overflow-hidden {
     transform: scale(1);
 }
 
+/* Poster phim vốn là ảnh DỌC (~2:3) còn banner lại rất RỘNG theo chiều
+   ngang — không có cách crop/scale nào vừa lấp đầy chiều ngang vừa giữ được
+   trọn vẹn nội dung ảnh. Giải pháp: dùng bản MỜ (blur) phóng to của chính
+   poster làm phông nền không khí, phủ kín toàn banner cho đẹp mắt/đúng tông
+   phim; ảnh SẮC NÉT, không cắt xén thì đã có ở khung poster bên phải
+   (.booking-hero-poster). Phóng to (scale) + lùi mép (inset âm) để viền mờ
+   không lộ ra khi blur. */
 .booking-hero-slide::before {
     content: "";
     position: absolute;
-    inset: 0;
-    background:
-        linear-gradient(90deg, rgba(5, 7, 11, 0.98) 0%, rgba(5, 7, 11, 0.74) 38%, rgba(5, 7, 11, 0.28) 68%, rgba(5, 7, 11, 0.9) 100%),
-        linear-gradient(0deg, #080a0f 0%, rgba(8, 10, 15, 0.82) 16%, rgba(8, 10, 15, 0.1) 54%, rgba(8, 10, 15, 0.38) 100%);
-    backdrop-filter: blur(1px);
+    inset: -30px;
+    background-image: var(--hero-poster);
+    background-position: center 22%;
+    background-size: cover;
+    filter: blur(14px) saturate(1.15) brightness(0.78) contrast(1.05);
+    transform: scale(1.06);
 }
 
 .booking-hero-slide::after {
@@ -1284,8 +1292,10 @@ body.overflow-hidden {
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(circle at 18% 38%, rgba(229, 9, 20, 0.26), transparent 24%),
-        linear-gradient(135deg, rgba(247, 184, 75, 0.12), transparent 42%);
+        radial-gradient(circle at 18% 38%, rgba(229, 9, 20, 0.2), transparent 24%),
+        linear-gradient(135deg, rgba(247, 184, 75, 0.08), transparent 42%),
+        linear-gradient(90deg, rgba(5, 7, 11, 0.95) 0%, rgba(5, 7, 11, 0.72) 34%, rgba(5, 7, 11, 0.32) 64%, rgba(5, 7, 11, 0.6) 100%),
+        linear-gradient(0deg, #080a0f 0%, rgba(8, 10, 15, 0.78) 12%, rgba(8, 10, 15, 0.08) 50%, rgba(8, 10, 15, 0.32) 100%);
     pointer-events: none;
 }
 
@@ -1491,14 +1501,29 @@ body.overflow-hidden {
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.14);
     border-radius: var(--cinema-radius);
-    box-shadow: 0 36px 80px rgba(0, 0, 0, 0.52);
+    box-shadow:
+        0 36px 80px rgba(0, 0, 0, 0.52),
+        0 0 0 1px rgba(247, 184, 75, 0.08),
+        0 0 60px -12px rgba(247, 184, 75, 0.35);
     transform: perspective(1200px) rotateY(-6deg);
+    transition: transform 0.5s var(--cinema-ease), box-shadow 0.5s var(--cinema-ease);
+}
+
+.booking-hero-poster:hover {
+    transform: perspective(1200px) rotateY(-2deg) translateY(-4px);
+    box-shadow:
+        0 44px 90px rgba(0, 0, 0, 0.58),
+        0 0 0 1px rgba(247, 184, 75, 0.14),
+        0 0 70px -10px rgba(247, 184, 75, 0.48);
 }
 
 .booking-hero-poster img {
+    /* Poster hiển thị TRỌN VẸN, không cắt xén — đây là bản ảnh sắc nét duy
+       nhất trong banner (phông nền lớn phía sau dùng bản mờ để lấy không khí). */
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    background: var(--cinema-surface);
 }
 
 .poster-ticket {
@@ -9006,6 +9031,60 @@ body.profile-body {
     background: rgba(255, 255, 255, 0.06);
     color: #ffffff;
     text-decoration: none;
+}
+.profile-notification-wrapper {
+    position: relative;
+}
+
+.profile-notification-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+
+    width: 380px;
+    max-width: calc(100vw - 30px);
+
+    background: #191c23;
+    border: 1px solid #363b46;
+    border-radius: 16px;
+
+    overflow: hidden;
+    display: none;
+
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    z-index: 99999;
+}
+
+.profile-notification-dropdown.show {
+    display: block !important;
+}
+
+.profile-notification-wrapper .booking-notification-badge {
+    position: absolute !important;
+    top: -5px !important;
+    right: -5px !important;
+
+    min-width: 18px !important;
+    width: auto !important;
+    height: 18px !important;
+
+    padding: 0 5px !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    background: #dc2626 !important;
+    color: #fff !important;
+
+    border: 2px solid #111 !important;
+    border-radius: 999px !important;
+
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+
+    z-index: 999999 !important;
 }
 
 .profile-icon-btn span {

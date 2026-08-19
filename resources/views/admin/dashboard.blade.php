@@ -101,7 +101,7 @@
             </div>
 
             <div class="mt-4">
-                <span class="text-xs text-gray-400 font-medium">Doanh thu hôm nay</span>
+                <span class="text-xs text-gray-400 font-medium">Doanh thu vé hôm nay</span>
                 <div class="text-2xl font-black text-white mt-1">
                     {{ number_format($doanhThuVeHomNay, 0, ',', '.') }}đ
                 </div>

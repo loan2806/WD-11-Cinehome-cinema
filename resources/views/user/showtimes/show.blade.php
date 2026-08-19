@@ -60,7 +60,7 @@
                         <div>
                             <i class="fa-solid fa-ticket"></i>
                             <small>Giá vé</small>
-                            <strong>{{ number_format((float) $suatChieu->gia_ve, 0, ',', '.') }}đ</strong>
+                            <strong>{{ number_format((float) $suatChieu->gia_ve_cuoi_cung, 0, ',', '.') }}đ</strong>
                         </div>
                         <div>
                             <i class="fa-solid fa-tags"></i>

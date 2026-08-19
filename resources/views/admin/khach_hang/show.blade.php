@@ -27,7 +27,21 @@
                 <h2 class="mt-2 text-3xl font-black text-white">
                     {{ $khachHang->ho_ten }}
                 </h2>
-                <p class="mt-1 text-gray-400">{{ $khachHang->email }}</p>
+                <div class="mt-2 flex flex-wrap items-center gap-3">
+                    <p class="text-gray-400">{{ $khachHang->email }}</p>
+
+                    @if($khachHang->email_verified_at)
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-green-500/15 px-3 py-1 text-xs font-bold text-green-400">
+                        <i class="fa-solid fa-circle-check"></i>
+                        Email đã xác thực
+                    </span>
+                    @else
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/15 px-3 py-1 text-xs font-bold text-yellow-400">
+                        <i class="fa-solid fa-clock"></i>
+                        Chưa xác thực email
+                    </span>
+                    @endif
+                </div>
             </div>
 
             <div>
@@ -96,13 +110,6 @@
             <div>
                 <p class="text-sm text-gray-400">Ngày tạo tài khoản</p>
                 <p class="mt-1 font-bold text-white">{{ $khachHang->created_at?->format('d/m/Y') ?? '---' }}</p>
-            </div>
-
-            <div>
-                <p class="text-sm text-gray-400">Trạng thái email</p>
-                <p class="mt-1 font-bold text-white">
-                    {{ $khachHang->email_verified_at ? 'Đã xác minh' : 'Chưa xác minh' }}
-                </p>
             </div>
 
             <div>

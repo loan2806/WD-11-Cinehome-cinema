@@ -53,6 +53,17 @@ class LoginRequest extends FormRequest
                 'email' => __('auth.failed'),
             ]);
         }
+        // Tài khoản do Admin tạo nhưng chưa xác thực email
+        if (
+            Auth::user()->bat_buoc_xac_thuc_email &&
+            is_null(Auth::user()->email_verified_at)
+        ) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Vui lòng xác thực email trước khi đăng nhập.',
+            ]);
+        }
 
         // Nếu tài khoản bị khóa thì đăng xuất ngay
         if (! Auth::user()->trang_thai_hoat_dong) {

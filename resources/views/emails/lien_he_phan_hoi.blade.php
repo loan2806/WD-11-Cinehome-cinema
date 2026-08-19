@@ -14,7 +14,7 @@
 
         <div style="padding: 24px;">
             <p style="font-size: 16px; margin-top: 0;">Xin chào <strong>{{ $lienHe->ho_ten }}</strong>,</p>
-            <p style="color: #9ca3af; font-size: 14px;">Đội ngũ hỗ trợ CineHome đã xem xét và phản hồi yêu cầu liên hệ #{{ $lienHe->id }} của bạn.</p>
+            <p style="color: #9ca3af; font-size: 14px;">Đội ngũ hỗ trợ CineHome đã xem xét và phản hồi yêu cầu liên hệ  của bạn.</p>
 
             <div style="background: #2a2a2a; border-radius: 12px; padding: 18px; margin: 20px 0; border-left: 4px solid #555;">
                 <p style="margin: 0 0 6px; color: #9ca3af; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Nội dung bạn đã gửi</p>

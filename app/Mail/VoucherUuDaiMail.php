@@ -16,11 +16,16 @@ class VoucherUuDaiMail extends Mailable
 
     public $lienHe;
     public $nguoiDungVoucher;
+    public $lyDoNhan;
 
-    public function __construct(LienHe $lienHe, NguoiDungVoucher $nguoiDungVoucher)
-    {
+    public function __construct(
+        LienHe $lienHe,
+        NguoiDungVoucher $nguoiDungVoucher,
+        string $lyDoNhan
+    ) {
         $this->lienHe = $lienHe;
         $this->nguoiDungVoucher = $nguoiDungVoucher->loadMissing('voucher');
+        $this->lyDoNhan = $lyDoNhan;
     }
 
     public function envelope(): Envelope

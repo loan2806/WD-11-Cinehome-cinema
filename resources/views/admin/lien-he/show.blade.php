@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('page-title', 'Chi tiết liên hệ #' . $lienHe->id)
+@section('page-title', 'Tiếp nhận liên hệ ' )
 @section('page-subtitle', 'Xem và phản hồi yêu cầu hỗ trợ từ khách hàng')
 
 @push('styles')
@@ -289,9 +289,17 @@
         color: var(--cinema-muted);
     }
 
-    .contact-status-select-current.is-pending .icon-svg { color: var(--cinema-red-soft); }
-    .contact-status-select-current.is-progress .icon-svg { color: var(--cinema-gold); }
-    .contact-status-select-current.is-done .icon-svg { color: #4ade80; }
+    .contact-status-select-current.is-pending .icon-svg {
+        color: var(--cinema-red-soft);
+    }
+
+    .contact-status-select-current.is-progress .icon-svg {
+        color: var(--cinema-gold);
+    }
+
+    .contact-status-select-current.is-done .icon-svg {
+        color: #4ade80;
+    }
 
     .contact-status-select-menu {
         position: absolute;
@@ -331,9 +339,17 @@
         height: 15px;
     }
 
-    .contact-status-option.is-pending .icon-svg { color: var(--cinema-red-soft); }
-    .contact-status-option.is-progress .icon-svg { color: var(--cinema-gold); }
-    .contact-status-option.is-done .icon-svg { color: #4ade80; }
+    .contact-status-option.is-pending .icon-svg {
+        color: var(--cinema-red-soft);
+    }
+
+    .contact-status-option.is-progress .icon-svg {
+        color: var(--cinema-gold);
+    }
+
+    .contact-status-option.is-done .icon-svg {
+        color: #4ade80;
+    }
 
     .contact-status-option:hover {
         background: rgba(255, 255, 255, 0.05);
@@ -363,7 +379,7 @@
         gap: 14px;
     }
 
-    .contact-voucher-body > p {
+    .contact-voucher-body>p {
         margin: 0;
         color: var(--cinema-muted);
         font-size: 13px;
@@ -466,6 +482,12 @@
         transform: rotate(180deg);
     }
 
+    .btn-admin:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
     .contact-voucher-select-menu {
         position: fixed;
         z-index: 3000;
@@ -530,27 +552,53 @@
 @endpush
 
 @php
-    $svg = fn ($paths) => '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' . $paths . '</svg>';
+$svg = fn ($paths) => '<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' . $paths . '</svg>';
 
-    $iconClock = $svg('<path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />');
-    $iconLoader = $svg('<path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />');
-    $iconCheck = $svg('<path d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />');
-    $iconEnvelope = $svg('<path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />');
-    $iconPhone = $svg('<path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />');
-    $iconUser = $svg('<path d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />');
-    $iconTag = $svg('<path d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z M6 6h.008v.008H6V6Z" />');
-    $iconCalendar = $svg('<path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />');
-    $iconInfo = $svg('<path d="M11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />');
-    $iconArrowLeft = $svg('<path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />');
-    $iconChevron = $svg('<path d="m19.5 8.25-7.5 7.5-7.5-7.5" />');
-    $iconGift = $svg('<path d="M12 8.25v13.5m0-13.5H6.375a2.625 2.625 0 0 1 0-5.25c1.5 0 2.625 1.5 3.375 3 .75-1.5 1.875-3 3.375-3a2.625 2.625 0 0 1 0 5.25H12m-9 0h18M4.5 8.25v10.5A2.25 2.25 0 0 0 6.75 21h10.5A2.25 2.25 0 0 0 19.5 18.75V8.25" />');
+$iconClock = $svg('
+<path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />');
+$iconLoader = $svg('
+<path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />');
+$iconCheck = $svg('
+<path d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />');
+$iconEnvelope = $svg('
+<path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />');
+$iconPhone = $svg('
+<path d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />');
+$iconUser = $svg('
+<path d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />');
+$iconTag = $svg('
+<path d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z M6 6h.008v.008H6V6Z" />');
+$iconCalendar = $svg('
+<path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />');
+$iconInfo = $svg('
+<path d="M11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />');
+$iconArrowLeft = $svg('
+<path d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />');
+$iconChevron = $svg('
+<path d="m19.5 8.25-7.5 7.5-7.5-7.5" />');
+$iconGift = $svg('
+<path d="M12 8.25v13.5m0-13.5H6.375a2.625 2.625 0 0 1 0-5.25c1.5 0 2.625 1.5 3.375 3 .75-1.5 1.875-3 3.375-3a2.625 2.625 0 0 1 0 5.25H12m-9 0h18M4.5 8.25v10.5A2.25 2.25 0 0 0 6.75 21h10.5A2.25 2.25 0 0 0 19.5 18.75V8.25" />');
 
-    $statusOptions = [
-        'cho_xu_ly' => ['class' => 'is-pending', 'label' => 'Chờ xử lý', 'icon' => $iconClock],
-        'dang_xu_ly' => ['class' => 'is-progress', 'label' => 'Đang xử lý', 'icon' => $iconLoader],
-        'da_xu_ly' => ['class' => 'is-done', 'label' => 'Đã xử lý', 'icon' => $iconCheck],
-    ];
-    $statusMeta = $statusOptions[$lienHe->trang_thai];
+$statusOptions = [
+'cho_xu_ly' => [
+'class' => 'is-pending',
+'label' => 'Chờ xử lý',
+'icon' => $iconClock,
+],
+'dang_xu_ly' => [
+'class' => 'is-progress',
+'label' => 'Đang xử lý',
+'icon' => $iconLoader,
+],
+'da_xu_ly' => [
+'class' => 'is-done',
+'label' => 'Đã xử lý',
+'icon' => $iconCheck,
+],
+];
+
+$statusMeta = $statusOptions[$lienHe->trang_thai] ?? $statusOptions['cho_xu_ly'];
+$daXuLy = $lienHe->trang_thai === 'da_xu_ly';
 @endphp
 
 @section('content')
@@ -564,7 +612,7 @@
 <div class="contact-detail-grid">
     <div class="contact-detail-card">
         <div class="contact-detail-head">
-            <h3>Nội dung liên hệ #{{ $lienHe->id }}</h3>
+            <h3>Nội dung liên hệ</h3>
             <span class="contact-status-pill {{ $statusMeta['class'] }}">{!! $statusMeta['icon'] !!} {{ $statusMeta['label'] }}</span>
         </div>
         <div class="contact-detail-body">
@@ -605,13 +653,13 @@
                     </div>
                 </div>
                 @if($lienHe->nguoiDung)
-                    <div class="contact-info-row">
-                        <span class="contact-info-icon-box">{!! $iconUser !!}</span>
-                        <div>
-                            <small>Tài khoản</small>
-                            <strong>{{ $lienHe->nguoiDung->ho_ten }} (#{{ $lienHe->nguoiDung->id }})</strong>
-                        </div>
+                <div class="contact-info-row">
+                    <span class="contact-info-icon-box">{!! $iconUser !!}</span>
+                    <div>
+                        <small>Tài khoản</small>
+                        <strong>{{ $lienHe->nguoiDung->ho_ten }}</strong>
                     </div>
+                </div>
                 @endif
             </div>
 
@@ -621,123 +669,145 @@
     </div>
 
     <div class="contact-side-stack">
-    <form method="POST" action="{{ route('admin.lien-he.update', $lienHe) }}" class="contact-reply-card">
-        @csrf
-        @method('PATCH')
-        <div class="contact-detail-head">
-            <h3>Xử lý liên hệ</h3>
-        </div>
-        <div class="contact-reply-body">
-            @php $currentTrangThai = old('trang_thai', $lienHe->trang_thai); @endphp
-            <div class="contact-status-select" data-name="trang_thai" data-value="{{ $currentTrangThai }}">
-                <input type="hidden" name="trang_thai" value="{{ $currentTrangThai }}">
+        <form method="POST"
+            action="{{ route('admin.lien-he.update', $lienHe) }}"
+            class="contact-reply-card">
 
-                <button type="button" class="contact-status-select-trigger">
-                    <span class="contact-status-select-current {{ $statusOptions[$currentTrangThai]['class'] }}">
-                        {!! $statusOptions[$currentTrangThai]['icon'] !!}
-                        <span class="label">{{ $statusOptions[$currentTrangThai]['label'] }}</span>
+            @csrf
+            @method('PATCH')
+
+            <div class="contact-detail-head">
+                <h3>Xử lý liên hệ</h3>
+            </div>
+
+            <div class="contact-reply-body">
+
+                {{-- Trạng thái --}}
+                <div>
+                    <span class="contact-message-label">
+                        Trạng thái xử lý
                     </span>
-                    {!! $iconChevron !!}
-                </button>
 
-                <div class="contact-status-select-menu hidden">
-                    @foreach ($statusOptions as $value => $meta)
-                        <button type="button" class="contact-status-option {{ $meta['class'] }}" data-value="{{ $value }}" data-label="{{ $meta['label'] }}">
-                            {!! $meta['icon'] !!}
-                            <span>{{ $meta['label'] }}</span>
-                        </button>
-                    @endforeach
-                </div>
-            </div>
-
-            <textarea name="phan_hoi" class="admin-input" placeholder="Nhập phản hồi gửi tới khách hàng...">{{ old('phan_hoi', $lienHe->phan_hoi) }}</textarea>
-
-            <div class="contact-reply-hint">
-                {!! $iconInfo !!}
-                <span>Nội dung này sẽ được gửi qua email tới <strong>{{ $lienHe->email }}</strong> khi bạn lưu.</span>
-            </div>
-
-            @if($lienHe->nguoiXuLy)
-                <p class="contact-reply-meta">
-                    Xử lý gần nhất bởi {{ $lienHe->nguoiXuLy->ho_ten }}
-                    @if($lienHe->thoi_gian_xu_ly)
-                        lúc {{ $lienHe->thoi_gian_xu_ly->format('d/m/Y H:i') }}
-                    @endif
-                </p>
-            @endif
-
-            <button class="btn-admin w-full" type="submit">Lưu cập nhật</button>
-        </div>
-    </form>
-
-    <div class="contact-voucher-card">
-        <div class="contact-detail-head">
-            <h3>Tặng voucher</h3>
-        </div>
-        <div class="contact-voucher-body">
-            @if(!$duocTangVoucher)
-                <div class="contact-voucher-empty">
-                    {!! $iconInfo !!}
-                    <span>Chủ đề "<strong>{{ $lienHe->chu_de }}</strong>" không thuộc nhóm sự cố nên không thể tặng voucher. Chỉ áp dụng cho Lỗi đặt vé, Lỗi thanh toán, Lỗi tài khoản, Khác.</span>
-                </div>
-            @elseif($lienHe->nguoiDung)
-                <p>Gửi tặng khách một voucher ưu đãi nếu vấn đề gặp phải quá nghiêm trọng. Voucher sẽ vào thẳng tài khoản khách và gửi kèm email thông báo.</p>
-
-                @if($activeVouchers->isEmpty())
-                    <div class="contact-voucher-empty">
-                        {!! $iconInfo !!}
-                        <span>Chưa có voucher nào đang bật. Vào <strong>Khuyến mãi &amp; Voucher</strong> để tạo trước.</span>
+                    <div class="contact-status-pill {{ $statusMeta['class'] }}"
+                        style="width: fit-content;">
+                        {!! $statusMeta['icon'] !!}
+                        {{ $statusMeta['label'] }}
                     </div>
-                @else
-                    <form method="POST" action="{{ route('admin.lien-he.tang-voucher', $lienHe) }}" onsubmit="return confirm('Xác nhận tặng voucher này cho {{ $lienHe->ho_ten }}?')">
-                        @csrf
+                </div>
 
-                        @php $selectedVoucherId = old('voucher_id', ''); @endphp
-                        <div class="contact-voucher-select" data-value="{{ $selectedVoucherId }}">
-                            <input type="hidden" name="voucher_id" value="{{ $selectedVoucherId }}" required>
+                {{-- Phản hồi --}}
+                <textarea
+                    name="phan_hoi"
+                    class="admin-input"
+                    placeholder="Nhập phản hồi gửi tới khách hàng..."
+                    @disabled($daXuLy)>{{ old('phan_hoi', $lienHe->phan_hoi) }}</textarea>
 
-                            <button type="button" class="contact-voucher-select-trigger">
-                                <span class="label is-placeholder">-- Chọn voucher --</span>
-                                {!! $iconChevron !!}
+                {{-- VOUCHER --}}
+                @if(
+                $duocTangVoucher &&
+                $lienHe->nguoiDung &&
+                !$lienHe->voucher_id &&
+                !$daXuLy
+                )
+
+                <div>
+                    <span class="contact-message-label">
+                        Tặng voucher
+                    </span>
+
+                    <div class="contact-voucher-select"
+                        data-value="{{ old('voucher_id', '') }}">
+
+                        <input
+                            type="hidden"
+                            name="voucher_id"
+                            value="{{ old('voucher_id', '') }}">
+
+                        <button type="button"
+                            class="contact-voucher-select-trigger">
+
+                            <span class="label {{ old('voucher_id') ? '' : 'is-placeholder' }}">
+                                -- Không tặng voucher --
+                            </span>
+
+                            {!! $iconChevron !!}
+                        </button>
+
+                        <div class="contact-voucher-select-menu hidden">
+
+                            {{-- Không tặng --}}
+                            <button type="button"
+                                class="contact-voucher-option"
+                                data-value=""
+                                data-label="-- Không tặng voucher --">
+
+                                Không tặng voucher
                             </button>
 
-                            <div class="contact-voucher-select-menu hidden">
-                                @foreach ($activeVouchers as $voucher)
-                                    <button
-                                        type="button"
-                                        class="contact-voucher-option"
-                                        data-value="{{ $voucher->id }}"
-                                        data-label="{{ $voucher->ten_voucher }} - Giảm {{ number_format((float) $voucher->gia_tri_giam, 0, ',', '.') }}đ"
-                                    >
-                                        {{ $voucher->ten_voucher }} - Giảm {{ number_format((float) $voucher->gia_tri_giam, 0, ',', '.') }}đ
-                                        <br>
-                                        <small style="color: var(--cinema-muted); font-weight: 500;">HSD {{ $voucher->ngay_het_han->format('d/m/Y') }}</small>
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
+                            @foreach($activeVouchers as $voucher)
 
-                        <button class="contact-voucher-btn" type="submit" style="margin-top: 14px;">
-                            {!! $iconGift !!}
-                            Tặng voucher cho khách
-                        </button>
-                    </form>
-                @endif
-            @else
-                <div class="contact-voucher-empty">
-                    {!! $iconInfo !!}
-                    <span>Khách hàng này gửi liên hệ mà không đăng nhập tài khoản, nên chưa thể tặng voucher trực tiếp vào tài khoản.</span>
+                            <button type="button"
+                                class="contact-voucher-option"
+                                data-value="{{ $voucher->id }}"
+                                data-label="{{ $voucher->ten_voucher }} - Giảm {{ number_format((float) $voucher->gia_tri_giam, 0, ',', '.') }}đ">
+
+                                {{ $voucher->ten_voucher }}
+                                - Giảm
+                                {{ number_format((float) $voucher->gia_tri_giam, 0, ',', '.') }}đ
+
+                                <br>
+
+                                <small style="color: var(--cinema-muted); font-weight: 500;">
+                                    HSD {{ $voucher->ngay_het_han->format('d/m/Y') }}
+                                </small>
+
+                            </button>
+
+                            @endforeach
+
+                        </div>
+                    </div>
                 </div>
-            @endif
-        </div>
-    </div>
+
+                @endif
+
+                <div class="contact-reply-hint">
+                    {!! $iconInfo !!}
+
+                    <span>
+                        Nội dung phản hồi sẽ được gửi qua email tới
+                        <strong>{{ $lienHe->email }}</strong>
+                        khi bạn lưu.
+                    </span>
+                </div>
+
+                @if($lienHe->nguoiXuLy)
+                <p class="contact-reply-meta">
+                    Xử lý gần nhất bởi
+                    {{ $lienHe->nguoiXuLy->ho_ten }}
+
+                    @if($lienHe->thoi_gian_xu_ly)
+                    lúc {{ $lienHe->thoi_gian_xu_ly->format('d/m/Y H:i') }}
+                    @endif
+                </p>
+                @endif
+
+                <button
+                    class="btn-admin w-full"
+                    type="submit"
+                    @disabled($daXuLy)>
+                    {{ $daXuLy ? 'Đã xử lý' : 'Lưu cập nhật' }}
+                </button>
+
+            </div>
+        </form>
     </div>
 </div>
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.contact-status-select').forEach(function (wrap) {
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.contact-status-select').forEach(function(wrap) {
             const trigger = wrap.querySelector('.contact-status-select-trigger');
             const menu = wrap.querySelector('.contact-status-select-menu');
             const hiddenInput = wrap.querySelector('input[type="hidden"]');
@@ -750,14 +820,14 @@
             }
 
             function markSelected(value) {
-                options.forEach(function (opt) {
+                options.forEach(function(opt) {
                     opt.classList.toggle('is-selected', opt.dataset.value === value);
                 });
             }
 
             markSelected(hiddenInput.value);
 
-            trigger.addEventListener('click', function (event) {
+            trigger.addEventListener('click', function(event) {
                 event.stopPropagation();
                 const willOpen = menu.classList.contains('hidden');
                 closeMenu();
@@ -767,8 +837,8 @@
                 }
             });
 
-            options.forEach(function (opt) {
-                opt.addEventListener('click', function () {
+            options.forEach(function(opt) {
+                opt.addEventListener('click', function() {
                     hiddenInput.value = opt.dataset.value;
                     current.className = 'contact-status-select-current ' + opt.className.replace('contact-status-option', '').replace('is-selected', '').trim();
                     current.innerHTML = opt.innerHTML.replace(/<span>(.*?)<\/span>/, '<span class="label">$1</span>');
@@ -777,14 +847,14 @@
                 });
             });
 
-            document.addEventListener('click', function (event) {
+            document.addEventListener('click', function(event) {
                 if (!wrap.contains(event.target)) {
                     closeMenu();
                 }
             });
         });
 
-        document.querySelectorAll('.contact-voucher-select').forEach(function (wrap) {
+        document.querySelectorAll('.contact-voucher-select').forEach(function(wrap) {
             const trigger = wrap.querySelector('.contact-voucher-select-trigger');
             const menu = wrap.querySelector('.contact-voucher-select-menu');
             const hiddenInput = wrap.querySelector('input[type="hidden"]');
@@ -818,7 +888,7 @@
                 }
             }
 
-            trigger.addEventListener('click', function (event) {
+            trigger.addEventListener('click', function(event) {
                 event.stopPropagation();
                 const willOpen = menu.classList.contains('hidden');
                 closeMenu();
@@ -832,8 +902,8 @@
             window.addEventListener('scroll', closeMenu, true);
             window.addEventListener('resize', closeMenu);
 
-            options.forEach(function (opt) {
-                opt.addEventListener('click', function () {
+            options.forEach(function(opt) {
+                opt.addEventListener('click', function() {
                     hiddenInput.value = opt.dataset.value;
                     labelEl.textContent = opt.dataset.label;
                     labelEl.classList.remove('is-placeholder');
@@ -843,7 +913,7 @@
                 });
             });
 
-            document.addEventListener('click', function (event) {
+            document.addEventListener('click', function(event) {
                 if (!wrap.contains(event.target) && !menu.contains(event.target)) {
                     closeMenu();
                 }

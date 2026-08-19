@@ -16,11 +16,15 @@ class LichSuDiem extends Model
         've_xem_phim_id',
         'loai_giao_dich',
         'so_diem',
+        'diem_con_lai',
+        'ngay_het_han',
         'noi_dung',
     ];
 
     protected $casts = [
         'so_diem' => 'integer',
+        'diem_con_lai' => 'integer',
+        'ngay_het_han' => 'datetime',
     ];
 
     /**

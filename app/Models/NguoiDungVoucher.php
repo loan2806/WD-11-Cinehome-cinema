@@ -19,6 +19,7 @@ class NguoiDungVoucher extends Model
         'ngay_nhan',
         'ngay_su_dung',
         'loai_cap_phat',
+        'ly_do_khac',
         'nam_ap_dung',
         'ngay_het_han',
     ];
