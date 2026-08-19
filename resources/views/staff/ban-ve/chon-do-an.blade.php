@@ -2,204 +2,206 @@
 
 @section('title','Chọn đồ ăn tại quầy - '.$suatChieu->phim->ten_phim)
 
+<style>
+    /* 1. Sửa lỗi thẻ cha làm hỏng thuộc tính sticky */
+    html, body, main, .booking-food-page, #bookingWrapper {
+        overflow: visible !important;
+    }
+
+    /* 2. Cấu hình lại khung Flexbox chuẩn tỉ lệ gốc */
+    .booking-food-layout {
+        display: flex !important;
+        align-items: flex-start !important;
+        gap: 24px !important;
+    }
+
+    /* Giúp cột danh sách món ăn bên trái tự động chiếm trọn phần không gian còn lại */
+    .booking-food-menu {
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+    }
+
+    /* Cố định kích thước cột giỏ hàng bên phải & giữ dính khi cuộn */
+    .booking-food-sidebar {
+        flex: 0 0 340px !important;
+        width: 340px !important;
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 90px !important; /* Khoảng cách dừng cách Header khi cuộn */
+        z-index: 20 !important;
+    }
+
+    /* 3. Tùy chỉnh thanh cuộn giỏ hàng mỏng mịn, đồng bộ Dark Theme (Ẩn thanh cuộn trắng xấu) */
+    .booking-cart-items {
+        max-height: 280px !important;
+        overflow-y: auto !important;
+        padding-right: 4px !important;
+        /* Hỗ trợ Firefox */
+        scrollbar-width: thin !important;
+        scrollbar-color: #ef4444 rgba(255, 255, 255, 0.05) !important;
+    }
+
+    /* Chrome, Safari, Edge */
+    .booking-cart-items::-webkit-scrollbar {
+        width: 4px !important;
+    }
+    .booking-cart-items::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.03) !important;
+        border-radius: 4px !important;
+    }
+    .booking-cart-items::-webkit-scrollbar-thumb {
+        background: #ef4444 !important;
+        border-radius: 4px !important;
+    }
+    .booking-cart-items::-webkit-scrollbar-thumb:hover {
+        background: #dc2626 !important;
+    }
+</style>
+<link rel="stylesheet" href="{{ asset('assets/css/user-home.css') }}?v={{ filemtime(public_path('assets/css/user-home.css')) }}">
+
 @section('content')
-@php
-$seatSummary = $selectedSeats->implode(', ');
-$seatCount = $selectedSeats->count();
+    @php
+        $seatSummary = $selectedSeats->implode(', ');
+        $seatCount = $selectedSeats->count();
+        $categoryCount = collect($menu)->count();
+        $productCount = collect($menu)->sum(function ($category) {
+            return count($category['foods'] ?? []);
+        });
+        $baseSeatPrice = (float) $seatTotal;
+    @endphp
 
-// Giả định giá vé trung bình (ví dụ: 100.000đ/ghế) để tính tiền vé riêng biệt
-// Tổng tiền ghế do backend tính theo đúng nghiệp vụ:
-// giá vé suất chiếu + phụ thu loại ghế;
-// ghế đôi = giá vé gốc x 2 + phụ thu.
-$baseSeatPrice = (float) $seatTotal;
-
-@endphp
-
-<div class="min-h-screen bg-[#0a0a0a] text-white pt-28 pb-20 px-4 md:px-6">
-    <div class="max-w-7xl mx-auto space-y-6">
-
-        {{-- 1. THANH TIẾN ĐỘ CÁC BƯỚC (GIỐNG GIAO DIỆN MẪU) --}}
-        <div class="bg-zinc-900 border border-white/10 rounded-3xl p-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-            <div class="space-y-2">
-                <span class="text-xs font-bold text-yellow-400 uppercase tracking-widest bg-yellow-400/10 px-3 py-1 rounded-md">
-                    Bước 3 trong 4
-                </span>
-                <h1 class="text-3xl font-black uppercase">Thêm combo ngon cho buổi xem phim</h1>
-                <p class="text-gray-400 text-sm">
-                    Ghế <strong class="text-white">{{ $seatSummary }}</strong> đã được giữ cho phim <strong class="text-white">{{ $suatChieu->phim->ten_phim }}</strong>.
-                </p>
+    <div class="booking-food-page" lang="vi" spellcheck="false">
+        @if(session('error'))
+            <div class="booking-seat-alert" style="background: rgba(239, 68, 68, 0.15) !important; border: 1px solid #ef4444 !important; color: #f87171 !important; padding: 16px !important; border-radius: 12px !important; margin: 15px 0 !important; display: flex !important; align-items: center !important; gap: 12px !important; font-weight: 600 !important; font-size: 14px !important; position: relative !important; z-index: 99 !important;">
+                <i class="fa-solid fa-circle-exclamation" style="color: #ef4444 !important; font-size: 18px !important;"></i>
+                <span>{{ session('error') }}</span>
             </div>
+        @endif
 
-            {{-- THANH TIẾN TRÌNH --}}
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 w-full lg:w-auto text-xs font-bold">
-                <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-2">
-                    <span class="w-4 h-4 rounded-full bg-emerald-400 text-black flex items-center justify-center font-black">✓</span> Chọn phim
-                </div>
-                <div class="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-4 py-3 rounded-xl flex items-center gap-2">
-                    <span class="w-4 h-4 rounded-full bg-emerald-400 text-black flex items-center justify-center font-black">✓</span> Chọn ghế
-                </div>
-                <div class="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl flex items-center gap-2">
-                    <span class="w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center font-black">3</span> Đồ ăn
-                </div>
-                <div class="bg-zinc-800 border border-white/5 text-gray-500 px-4 py-3 rounded-xl flex items-center gap-2">
-                    <span class="w-4 h-4 rounded-full bg-zinc-700 text-gray-500 flex items-center justify-center font-black">4</span> Thanh toán
+        <section class="booking-food-hero">
+            <div class="booking-flow-hero-copy">
+                <span class="booking-eyebrow"><i class="fa-solid fa-burger"></i> Bước 3 trong 4</span>
+                <h1>Thêm combo ngon cho buổi xem phim.</h1>
+                <p>Ghế <strong>{{ $seatSummary }}</strong> đã được giữ cho <strong>{{ $suatChieu->phim->ten_phim }}</strong>. Chọn thêm đồ ăn hoặc tiếp tục thanh toán nếu bạn muốn bỏ qua bước này.</p>
+                <div class="booking-seat-mini-stats" aria-label="Tóm tắt chọn đồ ăn">
+                    <div><strong>{{ $seatCount }}</strong><span>Ghế đã chọn</span></div>
+                    <div><strong>{{ $categoryCount }}</strong><span>Danh mục</span></div>
+                    <div><strong>{{ number_format($baseSeatPrice, 0, ',', '.') }}đ</strong><span>Tiền ghế</span></div>
                 </div>
             </div>
-        </div>
-
-        {{-- 2. THÔNG TIN GIỮ GHẾ --}}
-        <div class="bg-zinc-900 border border-white/10 rounded-2xl p-4">
-            <span class="text-yellow-400 font-bold uppercase tracking-wider block">Giữ ghế khi thanh toán VietQR</span>
-            <p class="mt-1 text-xs text-gray-400">Ghế chỉ bắt đầu được khóa 7 phút sau khi nhân viên tạo giao dịch VietQR ở bước thanh toán. Việc chuyển trang hoặc tải lại trang này không tạo khóa ghế giả.</p>
-        </div>
-
-        {{-- 3. KHU VỰC CHI TIẾT ĐỒ ĂN & GIỎ HÀNG --}}
-        <div class="grid lg:grid-cols-[1fr_350px] gap-6 items-start">
-
-            {{-- MENU ĐỒ ĂN (BÊN TRÁI) --}}
-            <section class="space-y-6">
-
-                {{-- THANH TÌM KIẾM & DANH MỤC NHANH --}}
-                <div class="bg-zinc-900 border border-white/10 p-4 rounded-2xl flex flex-col md:flex-row gap-3 sticky top-24 z-10 shadow-xl">
-                    <input id="foodSearchInput" type="text" placeholder="Tìm bắp nhanh tại đây..." class="flex-1 bg-black border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-yellow-400 focus:outline-none transition">
-
-                    <div class="flex gap-1 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
-                        <button type="button" data-filter="all" class="filter-btn bg-yellow-400 text-black px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap">Tất cả</button>
-                        @foreach($menu as $category)
-                        <button type="button" data-filter="{{ \Illuminate\Support\Str::slug($category['category']) }}" class="filter-btn bg-black hover:bg-zinc-800 border border-white/10 text-gray-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">
-                            {{ $category['category'] }}
-                        </button>
-                        @endforeach
-                    </div>
-                </div>
-
-                {{-- DANH SÁCH MÓN ĂN THEO PHÂN LOẠI --}}
-                <div class="space-y-8">
-                    @foreach($menu as $category)
-                    @php $catSlug = \Illuminate\Support\Str::slug($category['category']); @endphp
-
-                    <div class="category-section" data-cat="{{ $catSlug }}">
-                        <h2 class="text-md font-black text-yellow-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <span class="w-2 h-4 bg-yellow-400 rounded-sm"></span>
-                            {{ $category['category'] }}
-                        </h2>
-
-                        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                            @foreach($category['foods'] as $food)
-                            <div class="food-card bg-zinc-900 border border-white/10 rounded-2xl p-4 flex flex-col justify-between hover:border-yellow-400 transition" data-search-term="{{ mb_strtolower($food['name']) }}">
-                                <div class="h-28 bg-black rounded-xl flex items-center justify-center overflow-hidden mb-3 relative border border-white/5">
-                                    @php
-                                    $imagePath = trim((string) ($food['image'] ?? ''));
-
-                                    if ($imagePath !== '' && !str_starts_with($imagePath, 'foods/')) {
-                                    $imagePath = 'foods/' . $imagePath;
-                                    }
-
-                                    $imageUrl = $imagePath
-                                    ? asset('storage/' . $imagePath)
-                                    : asset('assets/images/LOGO copy.png');
-                                    @endphp
-
-                                    <img src="{{ $imageUrl }}" alt="{{ $food['name'] }}" class="h-full w-full object-contain hover:scale-110 transition duration-300" onerror="this.src='{{ asset('assets/images/LOGO copy.png') }}';">
-
-                                    @if (($food['available'] ?? 0) <= 0) <div class="absolute inset-0 bg-black/75 flex items-center justify-center">
-                                        <span class="rounded-lg bg-red-500 px-3 py-1 text-xs font-black text-white">
-                                            HẾT HÀNG
-                                        </span>
-                                </div>
-                                @endif
-                            </div>
-
-                            <h3 class="font-bold text-xs text-center line-clamp-2 min-h-[36px] text-gray-200">
-                                {{ $food['name'] }}
-                            </h3>
-
-                            @if (!empty($food['description']))
-                            <p class="mt-1 line-clamp-2 text-center text-[10px] text-gray-500">
-                                {{ $food['description'] }}
-                            </p>
-                            @endif
-
-                            <p class="mt-2 text-center text-yellow-400 font-black text-sm">
-                                {{ number_format((float) $food['price'], 0, ',', '.') }}đ
-                            </p>
-
-                            <p class="mb-3 mt-1 text-center text-[10px] text-gray-500">
-                                Còn {{ (int) ($food['available'] ?? 0) }} sản phẩm
-                            </p>
-
-                            <div class="flex gap-2">
-                                <input type="number" min="1" max="{{ max((int) ($food['available'] ?? 0), 1) }}" value="1" class="qty w-12 bg-black border border-white/10 rounded-lg text-center text-xs font-bold focus:border-yellow-400 focus:outline-none" @disabled(($food['available'] ?? 0) <=0)>
-
-                                <button type="button" class="add-food flex-1 py-2 rounded-lg font-black text-xs transition
-                {{ ($food['available'] ?? 0) > 0
-                    ? 'bg-yellow-400 text-black hover:bg-yellow-300'
-                    : 'bg-zinc-700 text-gray-500 cursor-not-allowed'
-                }}" data-cart-key="{{ $food['cart_key'] }}" data-type="{{ $food['type'] }}" data-id="{{ $food['id'] }}" data-food-id="{{ $food['food_id'] }}" data-variant-id="{{ $food['variant_id'] ?? '' }}" data-name="{{ $food['name'] }}" data-price="{{ $food['price'] }}" data-available="{{ $food['available'] ?? 0 }}" @disabled(($food['available'] ?? 0) <=0)>
-                                    {{ ($food['available'] ?? 0) > 0 ? 'THÊM' : 'HẾT HÀNG' }}
-                                </button>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endforeach
-        </div>
+            <div class="booking-stepper" aria-label="Tiến trình đặt vé">
+                <div class="booking-step is-done"><span><i class="fa-solid fa-check"></i></span><strong>Chọn phim</strong></div>
+                <div class="booking-step is-done"><span><i class="fa-solid fa-check"></i></span><strong>Chọn ghế</strong></div>
+                <div class="booking-step is-active"><span>3</span><strong>Đồ ăn</strong></div>
+                <div class="booking-step"><span>4</span><strong>Thanh toán</strong></div>
+            </div>
         </section>
 
-        {{-- GIỎ HÀNG CỐ ĐỊNH (BÊN PHẢI) --}}
-        <aside class="lg:sticky lg:top-24">
-            <div class="bg-zinc-900 border border-white/10 rounded-3xl p-5 space-y-5 shadow-2xl">
-
-                <div class="flex justify-between items-center pb-3 border-b border-white/10">
-                    <h2 class="text-lg font-black text-white flex items-center gap-2">🛒 Đơn hàng</h2>
-                    <span id="cartCount" class="bg-red-500 text-white px-2.5 py-0.5 rounded-full font-black text-xs">0</span>
-                </div>
-
-                {{-- Thông tin ghế phụ trợ từ ảnh --}}
-                <div class="bg-black/40 border border-white/5 rounded-xl p-3 text-xs flex justify-between items-center">
-                    <span class="text-gray-400">Ghế đã chọn:</span>
-                    <strong class="text-yellow-400 font-bold">{{ $seatSummary }}</strong>
-                </div>
-
-                {{-- Danh sách các món ăn đã chọn --}}
-                <div id="cart" class="space-y-3 max-h-[280px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-zinc-800">
-                    <p class="text-gray-500 text-xs text-center py-4 italic">Chưa chọn món nào</p>
-                </div>
-
-                {{-- BẢNG PHÂN BỔ CHI PHÍ TỪNG MỤC --}}
-                <div class="border-t border-white/10 pt-4 space-y-2.5 text-xs">
-                    <div class="flex justify-between text-gray-400">
-                        <span>Tiền ghế</span>
-                        <b class="text-white">{{ number_format($baseSeatPrice) }}đ</b>
+        <div id="bookingWrapper">
+            <div class="booking-food-layout">
+                <section class="booking-food-menu" aria-label="Danh sách đồ ăn">
+                    <div class="booking-food-progress">
+                        <div>
+                            <div>
+                                <span class="booking-eyebrow"><i class="fa-regular fa-clock"></i> Giữ ghế khi thanh toán VietQR</span>
+                                <h2>Hoàn tất đơn tại quầy</h2>
+                                <p>Ghế chỉ bắt đầu được khóa 7 phút sau khi nhân viên tạo giao dịch VietQR ở bước thanh toán.</p>
+                            </div>
+                        </div>
+                        <div class="booking-food-timer" aria-hidden="true"><span>Trạng thái</span><strong>ĐANG GIỮ</strong></div>
                     </div>
-                    <div class="flex justify-between text-gray-400">
-                        <span>Đồ ăn đính kèm</span>
-                        <b id="totalFood" class="text-white">0đ</b>
-                    </div>
-                    <div class="border-t border-white/5 pt-3 flex justify-between items-center text-sm">
-                        <span class="font-bold text-white">Tổng cộng</span>
-                        <b id="total" class="text-yellow-400 text-lg font-black">0đ</b>
-                    </div>
-                </div>
 
-                {{-- FORM THANH TOÁN --}}
-                <form id="checkoutForm" action="{{ route('staff.ban-ve.checkout', $suatChieu->id) }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="seats" value="{{ $selectedSeats->implode(',') }}">
-                    <input type="hidden" id="foodCartInput" name="food_cart">
-                    <input type="hidden" name="clear_cart_key" value="staff_food_cart_v2_{{ auth()->id() }}_{{ $suatChieu->id }}">
+                    <div class="booking-food-tools">
+                        <label class="booking-food-search" for="foodSearchInput">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input id="foodSearchInput" type="search" placeholder="Tìm bắp, nước, combo...">
+                        </label>
+                        <div class="booking-food-category-rail" aria-label="Danh mục nhanh">
+                            @foreach ($menu as $category)
+                                @php $categoryId = \Illuminate\Support\Str::slug($category['category']) ?: 'category-' . $loop->index; @endphp
+                                <a href="#food-cat-{{ $categoryId }}">{{ $category['category'] }}</a>
+                            @endforeach
+                        </div>
+                    </div>
 
-                    <button class="w-full bg-red-500 hover:bg-red-600 text-white py-3.5 rounded-xl font-black text-xs uppercase tracking-wider transition">
-                        Tiếp tục thanh toán →
-                    </button>
-                </form>
+                    @foreach ($menu as $category)
+                        @php
+                            $categoryId = \Illuminate\Support\Str::slug($category['category']) ?: 'category-' . $loop->index;
+                            $categoryNameLower = mb_strtolower($category['category']);
+                            $categoryIcon = str_contains($categoryNameLower, 'uống') ? 'fa-mug-saucer' : (str_contains($categoryNameLower, 'combo') || str_contains($categoryNameLower, 'quà') ? 'fa-gift' : 'fa-burger');
+                            $foodCards = collect($category['foods'] ?? []);
+                        @endphp
+                        <section id="food-cat-{{ $categoryId }}" class="booking-food-category category-section" data-food-category data-cat="{{ $categoryId }}">
+                            <div class="booking-food-category-head">
+                                <div><i class="fa-solid {{ $categoryIcon }}"></i></div>
+                                <div><span>{{ $foodCards->count() }} lựa chọn</span><h2>{{ $category['category'] }}</h2></div>
+                            </div>
+                            <div class="booking-food-grid">
+                                @foreach ($foodCards as $food)
+                                    @php
+                                        $imagePath = trim((string) ($food['image'] ?? ''));
+                                        if ($imagePath !== '' && !str_starts_with($imagePath, 'foods/')) $imagePath = 'foods/' . $imagePath;
+                                        $imageUrl = $imagePath ? asset('storage/' . $imagePath) : asset('assets/images/LOGO copy.png');
+                                        $stock = (int) ($food['available'] ?? 0);
+                                        $isSoldOut = $stock <= 0;
+                                        $searchText = mb_strtolower(($food['name'] ?? '') . ' ' . $category['category'] . ' ' . ($food['type'] ?? ''));
+                                        // Chỉ dùng cho HIỂN THỊ: lấy đúng biến thể từ tên món (S, M, Small, Large).
+                                        // Không thay đổi data-type/data cart của Staff để giữ nguyên luồng nghiệp vụ.
+                                        $foodName = trim((string) ($food['name'] ?? ''));
+                                        $variantLabel = $food['type'] ?? 'Món';
+                                        if (str_contains($foodName, ' - ')) {
+                                            $variantLabel = trim(substr($foodName, strrpos($foodName, ' - ') + 3));
+                                        }
+                                    @endphp
+                                    <article class="booking-food-card food-card {{ $isSoldOut ? 'is-sold-out' : '' }}" data-food-card data-search="{{ $searchText }}" data-search-term="{{ $searchText }}">
+                                        <div class="booking-food-image">
+                                            <img src="{{ $imageUrl }}" alt="{{ $food['name'] }}" onerror="this.src='{{ asset('assets/images/LOGO copy.png') }}';">
+                                            <span>{{ $variantLabel }}</span>
+                                        </div>
+                                        <div class="booking-food-card-body">
+                                            <h3>{{ $food['name'] }}</h3>
+                                            <div class="booking-food-meta"><strong>{{ number_format((float) ($food['price'] ?? 0), 0, ',', '.') }}đ</strong><span>{{ $isSoldOut ? 'Hết món' : 'Còn ' . $stock }}</span></div>
+                                            @if(!empty($food['description']))<p class="booking-food-desc">{{ $food['description'] }}</p>@endif
+                                            <div class="booking-food-actions">
+                                                <div class="booking-food-qty">
+                                                    <button class="btn-qty-decrease" type="button" aria-label="Giảm số lượng" @disabled($isSoldOut)><i class="fa-solid fa-minus"></i></button>
+                                                    <input type="number" min="1" max="{{ max($stock,1) }}" value="1" class="item-qty qty" @disabled($isSoldOut)>
+                                                    <button class="btn-qty-increase" type="button" aria-label="Tăng số lượng" @disabled($isSoldOut)><i class="fa-solid fa-plus"></i></button>
+                                                </div>
+                                                <button type="button" class="btn-add-to-cart add-food" data-cart-key="{{ $food['cart_key'] }}" data-type="{{ $food['type'] }}" data-id="{{ $food['id'] }}" data-food-id="{{ $food['food_id'] ?? $food['id'] }}" data-variant-id="{{ $food['variant_id'] ?? '' }}" data-name="{{ $food['name'] }}" data-price="{{ $food['price'] }}" data-available="{{ $stock }}" @disabled($isSoldOut)>{{ $isSoldOut ? 'Hết món' : 'Thêm vào giỏ' }}</button>
+                                            </div>
+                                        </div>
+                                    </article>
+                                @endforeach
+                            </div>
+                        </section>
+                    @endforeach
+                </section>
+
+                <aside id="bookingSidebar" class="booking-food-sidebar" aria-label="Giỏ hàng đồ ăn">
+                    <div class="booking-cart-panel">
+                        <div class="booking-cart-head"><div><span>Đơn hàng</span><h2>Giỏ đồ ăn</h2></div><strong id="cartCount">0</strong></div>
+                        <div class="booking-cart-seat"><span>Ghế đã chọn</span><strong>{{ $seatSummary }}</strong></div>
+                        <div id="cart" class="booking-cart-items"><p>Chưa có món nào</p></div>
+                        <button id="btnClearCart" type="button" class="booking-cart-clear"><i class="fa-solid fa-trash-can"></i> Xóa giỏ đồ ăn</button>
+                    </div>
+                    <div class="booking-cart-total">
+                        <div><span>Tiền ghế</span><strong>{{ number_format($baseSeatPrice, 0, ',', '.') }}đ</strong></div>
+                        <div><span>Đồ ăn</span><strong id="totalFood">0đ</strong></div>
+                        <div class="is-grand"><span>Tổng tiền</span><strong id="total">{{ number_format($baseSeatPrice, 0, ',', '.') }}đ</strong></div>
+                    </div>
+                    <form id="checkoutForm" action="{{ route('staff.ban-ve.checkout', $suatChieu->id) }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="seats" value="{{ $selectedSeats->implode(',') }}">
+                        <input type="hidden" id="foodCartInput" name="food_cart">
+                        <input type="hidden" name="clear_cart_key" value="staff_food_cart_v2_{{ auth()->id() }}_{{ $suatChieu->id }}">
+                        <button id="btnCheckout" type="submit" class="booking-cart-checkout">Tiếp tục thanh toán <i class="fa-solid fa-arrow-right"></i></button>
+                    </form>
+                    <a href="{{ url()->previous() }}" class="booking-cart-back"><i class="fa-solid fa-arrow-left"></i> Quay lại chọn ghế</a>
+                </aside>
             </div>
-        </aside>
-
+        </div>
     </div>
-</div>
-</div>
 @endsection
 
 @push('scripts')
@@ -407,6 +409,32 @@ $baseSeatPrice = (float) $seatTotal;
     });
 
     renderCart();
+
+    // Các nút +/- trên card và nút xóa giỏ chỉ là điều khiển giao diện,
+    // không thay đổi cấu trúc cart hay luồng thanh toán Staff.
+    document.addEventListener('click', function(e) {
+        const decrease = e.target.closest('.btn-qty-decrease');
+        const increase = e.target.closest('.btn-qty-increase');
+        const clearBtn = e.target.closest('#btnClearCart');
+
+        if (decrease || increase) {
+            const card = e.target.closest('.food-card');
+            if (!card) return;
+            const input = card.querySelector('.qty');
+            if (!input || input.disabled) return;
+            const min = Number(input.min) || 1;
+            const max = Number(input.max) || Number.MAX_SAFE_INTEGER;
+            let value = Number(input.value) || min;
+            value += increase ? 1 : -1;
+            input.value = Math.min(max, Math.max(min, value));
+            return;
+        }
+
+        if (clearBtn) {
+            cart = {};
+            renderCart();
+        }
+    });
 
 </script>
 @endpush
