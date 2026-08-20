@@ -1440,6 +1440,22 @@ function closeModalHuyBaoTri() {
 <style>
     /* ==================== SEAT MAP STYLES ==================== */
 
+    /* Nút "Áp dụng đổi loại ghế" khi bị disabled (vì loại ghế đang chọn
+       không hợp lệ cho vị trí hàng, ví dụ Couple ở 3 hàng đầu) — một số
+       trình duyệt dùng -webkit-text-fill-color thay vì color để vẽ chữ trên
+       nút disabled, khiến "color: #000" của Tailwind không ăn thua, chữ/icon
+       gần như biến mất trên nền gradient vàng. Ép rõ ràng cả hai để chữ luôn
+       hiện, chỉ mờ nhẹ + đổi con trỏ để báo hiệu trạng thái không dùng được. */
+    #rowChangeModalApply:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        color: #1a1206 !important;
+        -webkit-text-fill-color: #1a1206 !important;
+    }
+    #rowChangeModalApply:disabled:hover {
+        filter: none;
+    }
+
     /* ==================== CUSTOM SELECT DROPDOWN ==================== */
     .custom-select {
         position: relative;
@@ -2597,9 +2613,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const isTopThree = rowIndex >= 0 && rowIndex < 3;
             const isBottomThree = rowIndex >= 0 && rowIndex >= totalRows - 3;
 
-            if (isTopThree && (isVipSelected || isCoupleSelected)) {
+            if (isTopThree && isCoupleSelected) {
                 hasViolation = true;
-                violationMsg = '3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP hay Couple.';
+                violationMsg = '3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP. Không thể đặt ghế Couple.';
                 break;
             }
             if (isBottomThree && isThuongSelected) {
@@ -2895,11 +2911,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (isTopThree) {
                 const isCoupleOption = option?.dataset?.laCouple === 'true' || option?.dataset?.laCouple === '1';
-                const loaiTen = option?.textContent?.toLowerCase() || '';
-                const isVipSelected = loaiTen.includes('vip');
 
-                if (isCoupleOption || isVipSelected) {
-                    window.showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường.', 'error');
+                if (isCoupleOption) {
+                    window.showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP.', 'error');
                     if (select && select.options.length > 0) {
                         select.selectedIndex = 0;
                         const firstOpt = select.options[0];
@@ -2948,8 +2962,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const isLastTwo = rowIndex >= totalRows - 2;
             const isMiddle = !isTopThree && !isLastTwo;
 
-            if (isTopThree && (isCoupleOption || isVipSelected)) {
-                window.showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường.', 'error');
+            if (isTopThree && isCoupleOption) {
+                window.showToast('3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP.', 'error');
                 setBtnLoading(this, false);
                 return;
             }
@@ -3515,6 +3529,32 @@ document.addEventListener('DOMContentLoaded', function() {
             const rowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${hangGheId}"]`);
             updateRowModalStatsAndButton(rowEl);
 
+            // Đồng bộ currentRowIndex/currentTotalRows + tự chọn sẵn 1 loại ghế
+            // hợp lệ cho hàng này — khớp với hành vi khi mở modal bằng cách
+            // click chữ cái đầu hàng (.seat-row__label--clickable). Thiếu bước
+            // này khiến modal mở qua nút "Đổi loại" ở bảng không biết hàng
+            // đang ở vị trí nào, nên không cảnh báo/khóa nút khi chọn loại ghế
+            // không hợp lệ (vd Couple ở 3 hàng đầu).
+            if (rowEl) {
+                const allRows = Array.from(document.querySelectorAll('.seat-row'));
+                const rowIndex = allRows.indexOf(rowEl);
+                const totalRows = allRows.length;
+
+                window.currentRowIndex = rowIndex;
+                window.currentTotalRows = totalRows;
+
+                const elRowIndex = document.getElementById('rowChangeModalRowIndex');
+                if (elRowIndex) elRowIndex.textContent = 'Hàng thứ ' + (rowIndex + 1);
+
+                const wrapper = document.querySelector('.custom-select[data-select-id="rowChangeModalLoaiGhe"]');
+                if (wrapper && typeof validateRowSeatType === 'function' && typeof window.selectCustomOption === 'function') {
+                    const allOptions = Array.from(wrapper.querySelectorAll('.custom-select__option'));
+                    let targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid);
+                    if (!targetOption) targetOption = allOptions[0];
+                    if (targetOption) window.selectCustomOption(targetOption);
+                }
+            }
+
             if (rowChangeModal) rowChangeModal.classList.remove('hidden');
         });
     });
@@ -3608,8 +3648,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var isLastTwo = rowIndex >= 0 && rowIndex >= totalRows - 2;
         var selectedLoai = addSeatLoaiGhe.options[addSeatLoaiGhe.selectedIndex].textContent.toLowerCase();
 
-        if (isTopThree && !selectedLoai.includes('thường')) {
-            showAddSeatErrors({ _global: ['3 hàng gần màn chiếu chỉ được đặt ghế Thường.'] });
+        if (isTopThree && (selectedLoai.includes('couple') || selectedLoai.includes('đôi'))) {
+            showAddSeatErrors({ _global: ['3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP.'] });
             return;
         }
         if (isLastTwo && !selectedLoai.includes('couple')) {
@@ -3772,8 +3812,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var isTopThree = newRowIndex < 3;
             var isLastTwo = newRowIndex >= totalRows - 2;
 
-            if (isTopThree && !isNormal) {
-                showAddRowErrors({ _global: ['3 hàng gần màn chiếu chỉ được đặt ghế Thường. Vui lòng chọn ghế Thường hoặc thêm hàng ở vị trí khác.'] });
+            if (isTopThree && isCouple) {
+                showAddRowErrors({ _global: ['3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP. Vui lòng chọn loại khác hoặc thêm hàng ở vị trí khác.'] });
                 return;
             }
             if (isLastTwo && !isCouple) {
@@ -4377,8 +4417,8 @@ function validateRowSeatType(rowIndex, totalRows, optionEl) {
     const isLastTwo = rowIndex >= totalRows - 2;
     const isMiddle = !isTopThree && !isLastTwo;
 
-    if (isTopThree && !isThuong) {
-        return { valid: false, msg: '3 hàng gần màn chiếu chỉ được đặt ghế Thường.' };
+    if (isTopThree && isCouple) {
+        return { valid: false, msg: '3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP.' };
     }
     if (isMiddle && !isVip) {
         return { valid: false, msg: 'Các hàng ở giữa chỉ được đặt ghế VIP.' };
@@ -4408,8 +4448,8 @@ function validateRowSeatType(rowIndex, totalRows, optionEl) {
     const isLastTwo = rowIndex >= totalRows - 2;
     const isMiddle = !isTopThree && !isLastTwo;
 
-    if (isTopThree && !isThuong) {
-        return { valid: false, msg: '3 hàng gần màn chiếu chỉ được đặt ghế Thường.' };
+    if (isTopThree && isCouple) {
+        return { valid: false, msg: '3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP.' };
     }
     if (isMiddle && !isVip) {
         return { valid: false, msg: 'Các hàng ở giữa chỉ được đặt ghế VIP.' };
