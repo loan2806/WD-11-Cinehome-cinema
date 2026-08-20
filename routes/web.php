@@ -270,6 +270,7 @@ Route::middleware(['auth'])
         
         Route::get('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'showCheckout'])->whereNumber('suatChieu')->name('ban-ve.checkout.show');
         Route::post('/ban-ve/{suatChieu}/checkout', [BanVeController::class, 'checkout'])->whereNumber('suatChieu')->name('ban-ve.checkout');
+        Route::post('/ban-ve/ap-dung-voucher', [BanVeController::class, 'apDungVoucher'])->name('ban-ve.ap-dung-voucher');
         Route::post('/ban-ve/{suatChieu}/store', [BanVeController::class, 'store'])->whereNumber('suatChieu')->name('ban-ve.store');
     });
 

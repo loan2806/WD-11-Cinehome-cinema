@@ -17,6 +17,7 @@ use App\Models\BienTheDoAn;
 use App\Models\VeXemPhimGhe;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Models\ThongBaoCaNhan;
+use App\Models\Voucher;
 
 class BanVeController extends Controller
 {
@@ -384,6 +385,14 @@ class BanVeController extends Controller
 
         $total = $seatTotal + $foodTotal;
 
+        // Chỉ lấy voucher đặc biệt dành cho nhân viên bán vé tại quầy.
+        $staffVouchers = Voucher::query()
+            ->where('loai_voucher', 'staff_dac_biet')
+            ->where('trang_thai', true)
+            ->whereDate('ngay_het_han', '>=', now()->toDateString())
+            ->orderBy('id')
+            ->get();
+
         $suatChieu->load([
             'phim',
             'rapChieuPhim',
@@ -397,7 +406,100 @@ class BanVeController extends Controller
             'foodCart' => $foodItems,
             'seatTotal' => $seatTotal,
             'foodTotal' => $foodTotal,
-            'total' => $total
+            'total' => $total,
+            'staffVouchers' => $staffVouchers,
+        ]);
+    }
+
+    /**
+     * Xác thực voucher đặc biệt tại quầy trước khi thanh toán.
+     */
+    public function apDungVoucher(Request $request)
+    {
+        $request->validate([
+            'voucher_code' => ['required', 'string', 'max:100'],
+            'subtotal' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $code = strtoupper(trim((string) $request->input('voucher_code')));
+        $subtotal = (float) $request->input('subtotal');
+
+        $voucher = Voucher::query()
+            ->where('ma_voucher', $code)
+            ->where('loai_voucher', 'staff_dac_biet')
+            ->where('trang_thai', true)
+            ->whereDate('ngay_het_han', '>=', now()->toDateString())
+            ->first();
+
+        if (!$voucher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Voucher không tồn tại, đã hết hạn hoặc không dành cho bán vé tại quầy.',
+            ], 422);
+        }
+
+        $discount = 0;
+
+        if ($voucher->kieu_giam === 'phan_tram') {
+            $percent = min(max((float) $voucher->gia_tri_giam, 0), 100);
+            $discount = $subtotal * ($percent / 100);
+        } else {
+            $discount = (float) $voucher->gia_tri_giam;
+        }
+
+        $discount = min(max($discount, 0), $subtotal);
+        $finalTotal = max(0, $subtotal - $discount);
+
+        return response()->json([
+            'success' => true,
+            'voucher_code' => $voucher->ma_voucher,
+            'voucher_name' => $voucher->ten_voucher,
+            'discount_type' => $voucher->kieu_giam,
+            'discount_value' => (float) $voucher->gia_tri_giam,
+            'discount' => (int) round($discount),
+            'final_total' => (int) round($finalTotal),
+        ]);
+    }
+
+    public function applyVoucher(Request $request, SuatChieu $suatChieu)
+    {
+        $validated = $request->validate([
+            'voucher_code' => ['required', 'string', 'max:100'],
+            'subtotal' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $code = strtoupper(trim($validated['voucher_code']));
+        $subtotal = (int) round((float) $validated['subtotal']);
+
+        $voucher = Voucher::query()
+            ->whereRaw('UPPER(ma_voucher) = ?', [$code])
+            ->where('loai_voucher', 'staff_dac_biet')
+            ->where('trang_thai', true)
+            ->whereDate('ngay_het_han', '>=', today())
+            ->first();
+
+        if (!$voucher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Voucher tại quầy không tồn tại, đã hết hạn hoặc không còn hiệu lực.',
+            ], 422);
+        }
+
+        $giaTriGiam = (float) $voucher->gia_tri_giam;
+        $discount = ($voucher->kieu_giam ?? 'tien') === 'phan_tram'
+            ? (int) round($subtotal * ($giaTriGiam / 100))
+            : (int) round($giaTriGiam);
+
+        $discount = min(max($discount, 0), $subtotal);
+
+        return response()->json([
+            'success' => true,
+            'voucher_code' => $voucher->ma_voucher,
+            'voucher_name' => $voucher->ten_voucher,
+            'kieu_giam' => $voucher->kieu_giam ?? 'tien',
+            'gia_tri_giam' => $giaTriGiam,
+            'discount' => $discount,
+            'final_total' => max(0, $subtotal - $discount),
         ]);
     }
 
@@ -424,6 +526,12 @@ class BanVeController extends Controller
                 'required_if:payment_method,cash',
                 'numeric',
                 'min:0',
+            ],
+
+            'voucher_code' => [
+                'nullable',
+                'string',
+                'max:100',
             ],
 
         ], [
@@ -850,8 +958,40 @@ class BanVeController extends Controller
                     ]);
                 }
 
+                $tongTienTruocVoucher = (float) ($seatTotal + $foodTotal);
+                $voucher = null;
+                $voucherDiscount = 0;
+
+                // Backend xác thực lại voucher để không thể sửa giá bằng DevTools.
+                $voucherCode = strtoupper(trim((string) ($request->input('voucher_code') ?? '')));
+
+                if ($voucherCode !== '') {
+                    $voucher = Voucher::query()
+                        ->where('ma_voucher', $voucherCode)
+                        ->where('loai_voucher', 'staff_dac_biet')
+                        ->where('trang_thai', true)
+                        ->whereDate('ngay_het_han', '>=', now()->toDateString())
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$voucher) {
+                        throw new \RuntimeException(
+                            'Voucher không tồn tại, đã hết hạn hoặc không dành cho bán vé tại quầy.'
+                        );
+                    }
+
+                    if ($voucher->kieu_giam === 'phan_tram') {
+                        $percent = min(max((float) $voucher->gia_tri_giam, 0), 100);
+                        $voucherDiscount = $tongTienTruocVoucher * ($percent / 100);
+                    } else {
+                        $voucherDiscount = (float) $voucher->gia_tri_giam;
+                    }
+
+                    $voucherDiscount = min(max($voucherDiscount, 0), $tongTienTruocVoucher);
+                }
+
                 $tongTien = (int) round(
-                    $seatTotal + $foodTotal
+                    max(0, $tongTienTruocVoucher - $voucherDiscount)
                 );
 
                 /*
@@ -936,9 +1076,13 @@ class BanVeController extends Controller
                         env('PAYOS_CHECKSUM_KEY')
                     );
 
+                    // $tongTien đã là tổng tiền SAU voucher, được backend xác thực lại ở trên.
+                    // PayOS phải nhận đúng số tiền sau giảm, không dùng $tongTienTruocVoucher.
+                    $payosAmount = (int) $tongTien;
+
                     $paymentData = [
                         'orderCode' => $orderCode,
-                        'amount' => $tongTien,
+                        'amount' => $payosAmount,
                         'description' => 'VE' . $orderCode,
                         'returnUrl' => route(
                             'staff.ban-ve.payos-callback'
