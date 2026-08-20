@@ -1076,13 +1076,9 @@ class BanVeController extends Controller
                         env('PAYOS_CHECKSUM_KEY')
                     );
 
-                    // $tongTien đã là tổng tiền SAU voucher, được backend xác thực lại ở trên.
-                    // PayOS phải nhận đúng số tiền sau giảm, không dùng $tongTienTruocVoucher.
-                    $payosAmount = (int) $tongTien;
-
                     $paymentData = [
                         'orderCode' => $orderCode,
-                        'amount' => $payosAmount,
+                        'amount' => $tongTien,
                         'description' => 'VE' . $orderCode,
                         'returnUrl' => route(
                             'staff.ban-ve.payos-callback'

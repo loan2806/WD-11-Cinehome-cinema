@@ -824,8 +824,7 @@ class PhongChieuController extends Controller
         $isMiddleRow = !$isFirstThreeRows && !$isLastTwoRows;
 
         if ($isFirstThreeRows) {
-            if ($isCouple) return ['3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế Couple.'];
-            if ($isVip) return ['3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP.'];
+            if ($isCouple) return ['3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP. Không thể đặt ghế Couple.'];
         }
         
         if ($isMiddleRow) {
@@ -1313,10 +1312,10 @@ class PhongChieuController extends Controller
                 $isCouple = $loaiGhe->la_couple === true;
                 $isThuong = strtolower($loaiGhe->ten_loai) === 'thường' || strtolower($loaiGhe->ten_loai) === 'thuong';
 
-                if ($isFirstThree && ($isVip || $isCouple)) {
+                if ($isFirstThree && $isCouple) {
                     return response()->json([
                         'success' => false,
-                        'message' => $isVip ? '3 hàng gần màn chiếu không được đặt ghế VIP.' : '3 hàng gần màn chiếu không được đặt ghế Couple.',
+                        'message' => '3 hàng gần màn chiếu không được đặt ghế Couple.',
                     ], 422);
                 }
 
