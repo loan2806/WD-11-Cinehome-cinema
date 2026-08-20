@@ -27,6 +27,24 @@ class SuatChieuController extends Controller
         '09-03' => 'Ngày Quốc Khánh (Ngày gối đầu)',
     ];
 
+    /**
+     * Hàm helper làm tròn LÊN mốc 5 phút gần nhất
+     * Ví dụ: 20:38 -> 20:40, 10:19 -> 10:20, 14:57 -> 15:00
+     */
+    private function lamTronLen5Phut(Carbon $dateTime): Carbon
+    {
+        $minute = $dateTime->minute;
+        $remainder = $minute % 5;
+
+        if ($remainder !== 0) {
+            $dateTime->addMinutes(5 - $remainder)->second(0);
+        } else {
+            $dateTime->second(0);
+        }
+
+        return $dateTime;
+    }
+
     public function index(Request $request): View
     {
         $now = Carbon::now();
@@ -155,6 +173,8 @@ class SuatChieuController extends Controller
         // TRƯỜNG HỢP 1: TẠO 1 SUẤT CHIẾU ĐƠN LẺ
         if ($request->loai_tao === 'don_le') {
             $thoiGianChieu = Carbon::parse($request->ngay_chieu_don_le . ' ' . $request->gio_chieu_don_le);
+            $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu); // Tự động làm tròn 5 phút
+
             $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
 
             $suatChieuTrung = $this->layDanhSachSuatChieuTrung($request->phong_chieu_id, $thoiGianChieu, $thoiGianKetThucChiemDung);
@@ -203,6 +223,8 @@ class SuatChieuController extends Controller
 
             for ($ngayQuet = $ngayBatDau->copy(); $ngayQuet->lte($ngayKetThuc); $ngayQuet->addDay()) {
                 $curStart = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioBatDauStr);
+                $curStart = $this->lamTronLen5Phut($curStart); // Làm tròn mốc khởi đầu
+
                 $maxEnd = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioKetThucStr);
 
                 if ($maxEnd->lte($curStart)) {
@@ -240,13 +262,24 @@ class SuatChieuController extends Controller
                         ];
                     }
 
-                    $curStart->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
+                    // Tăng thời gian cho suất tiếp theo và TỰ ĐỘNG LÀM TRÒN LÊN 5 PHÚT
+                    $nextStartRaw = $curStart->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
+                    $curStart = $this->lamTronLen5Phut($nextStartRaw);
                 }
             }
         } 
         // CHẾ ĐỘ 2: CHỌN KHUNG GIỜ THỦ CÔNG
         else {
-            $danhSachKhungGio = $request->input('khung_gio', []);
+            $danhSachKhungGioInput = $request->input('khung_gio', []);
+
+            // Làm tròn từng khung giờ nếu người dùng chèn/chọn giờ lẻ
+            $danhSachKhungGio = [];
+            foreach ($danhSachKhungGioInput as $gio) {
+                $cVal = Carbon::parse('2000-01-01 ' . $gio);
+                $cVal = $this->lamTronLen5Phut($cVal);
+                $danhSachKhungGio[] = $cVal->format('H:i');
+            }
+            $danhSachKhungGio = array_unique($danhSachKhungGio);
 
             usort($danhSachKhungGio, function($a, $b) {
                 return strtotime($a) - strtotime($b);
@@ -274,6 +307,8 @@ class SuatChieuController extends Controller
                     }
 
                     $thoiGianChieu = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioChieu);
+                    $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu);
+
                     $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
 
                     $suatChieuTrung = $this->layDanhSachSuatChieuTrung($request->phong_chieu_id, $thoiGianChieu, $thoiGianKetThucChiemDung);
@@ -438,6 +473,8 @@ class SuatChieuController extends Controller
         $thoiLuongPhim = $phim->thoi_luong ?? 90;
 
         $thoiGianChieu = Carbon::parse($request->ngay_chieu . ' ' . $request->gio_chieu); 
+        $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu); // Tự động làm tròn
+
         $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
 
         $coXungDot = SuatChieu::where('phong_chieu_id', $request->phong_chieu_id)
@@ -510,15 +547,11 @@ class SuatChieuController extends Controller
             "Xóa suất chiếu ID #{$suatChieu->id} (Phim: {$tenPhim}, Ngày chiếu: {$thoiGianChieu->format('d/m/Y H:i')}). Lý do: {$lyDoHuy}"
         );
 
-        // Do model SuatChieu có use SoftDeletes nên hàm delete() sẽ chuyển bản ghi vào Thùng Rác
         $suatChieu->delete(); 
 
         return redirect()->route('admin.suat-chieus.index')->with('success', 'Đã chuyển suất chiếu vào thùng rác hệ thống thành công.');
     }
 
-    /**
-     * Khôi phục suất chiếu từ thùng rác
-     */
     public function restore($id)
     {
         $suatChieu = SuatChieu::onlyTrashed()->findOrFail($id);
@@ -534,9 +567,6 @@ class SuatChieuController extends Controller
         return redirect()->back()->with('success', 'Đã khôi phục suất chiếu thành công!');
     }
 
-    /**
-     * Xóa vĩnh viễn suất chiếu khỏi hệ thống
-     */
     public function forceDelete($id)
     {
         $suatChieu = SuatChieu::onlyTrashed()->findOrFail($id);

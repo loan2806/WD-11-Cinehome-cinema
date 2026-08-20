@@ -1487,7 +1487,10 @@ class DatVeController extends Controller
         }
     }
 
-    private function validateSeatsAdjacent(array $seats, $suatChieuId): bool
+    /**
+ * Kiểm tra logic chọn ghế hợp lệ (đồng bộ với JS chọn ghế)
+ */
+private function validateSeatsAdjacent(array $seats, $suatChieuId): bool
 {
     if (empty($seats)) {
         return true;
@@ -1503,7 +1506,7 @@ class DatVeController extends Controller
         return false;
     }
 
-    // Lấy danh sách ghế đã được đặt hoặc đang bị khóa bởi người khác
+    // 1. Lấy danh sách ghế không thể chọn (đã đặt / khóa / bảo trì)
     $bookedTickets = VeXemPhim::where('suat_chieu_id', $suatChieuId)
         ->where(function ($q) {
             $q->whereIn('trang_thai', ['da_thanh_toan', 'da_su_dung', 'da_dat', 'da_in'])
@@ -1514,12 +1517,12 @@ class DatVeController extends Controller
         })
         ->pluck('ma_ghe');
 
-    $unavailableSeats = [];
+    $bookedSeatsMap = [];
     foreach ($bookedTickets as $maGheString) {
         foreach (explode(',', (string)$maGheString) as $code) {
             $seatCode = strtoupper(trim($code));
             if ($seatCode !== '') {
-                $unavailableSeats[$seatCode] = true;
+                $bookedSeatsMap[$seatCode] = true;
             }
         }
     }
@@ -1527,47 +1530,86 @@ class DatVeController extends Controller
     $inactiveSeats = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
         ->where('trang_thai', '!=', 'hoat_dong')
         ->pluck('ma_ghe');
+
     foreach ($inactiveSeats as $code) {
         $seatCode = strtoupper(trim($code));
         if ($seatCode !== '') {
-            $unavailableSeats[$seatCode] = true;
+            $bookedSeatsMap[$seatCode] = true;
         }
     }
 
-    // Lấy toàn bộ ghế phòng chiếu và phân loại theo hàng
+    // 2. Gom nhóm toàn bộ ghế trong phòng chiếu theo hàng
     $allRoomSeats = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)->get();
     $roomSeatsByRow = [];
+
     foreach ($allRoomSeats as $g) {
         $code = strtoupper(trim($g->ma_ghe));
         if (preg_match('/^([A-Z]+)([0-9]+)$/', $code, $m)) {
-            $r = $m[1];
-            $n = (int)$m[2];
-            $roomSeatsByRow[$r][] = [
+            $row = $m[1];
+            $num = (int)$m[2];
+            $isUnavailable = isset($bookedSeatsMap[$code]);
+            $isSelected = $selectedSeats->contains($code);
+
+            $roomSeatsByRow[$row][] = [
                 'code' => $code,
-                'num' => $n,
-                'isOccupied' => isset($unavailableSeats[$code]) || $selectedSeats->contains($code)
+                'num' => $num,
+                'isUnavailable' => $isUnavailable,
+                'isSelected' => $isSelected,
+                'isOccupied' => $isUnavailable || $isSelected,
             ];
         }
     }
 
-    // Kiểm tra từng hàng xem có tạo ra đoạn ghế trống bằng 1 hay không
-    foreach ($roomSeatsByRow as $row => $physicalSeats) {
+    // 3. Danh sách các hàng mà người dùng/nhân viên chọn ghế
+    $selectedRows = [];
+    foreach ($selectedSeats as $code) {
+        if (preg_match('/^([A-Z]+)([0-9]+)$/', $code, $m)) {
+            $selectedRows[$m[1]] = true;
+        }
+    }
+
+    // 4. Kiểm tra từng hàng có chọn ghế
+    foreach (array_keys($selectedRows) as $row) {
+        if (!isset($roomSeatsByRow[$row])) continue;
+
+        $physicalSeats = $roomSeatsByRow[$row];
         usort($physicalSeats, fn($a, $b) => $a['num'] <=> $b['num']);
 
-        $emptyBlockLength = 0;
-        foreach ($physicalSeats as $seat) {
-            if ($seat['isOccupied']) {
-                if ($emptyBlockLength === 1) {
-                    return false; // Bỏ lại đúng 1 ghế trống lẻ
+        $hasBookedOrLockedInRow = collect($physicalSeats)->contains('isUnavailable', true);
+
+        // Trường hợp 1: Hàng ĐÃ CÓ ghế người khác đặt hoặc ghế bảo trì
+        if ($hasBookedOrLockedInRow) {
+            $selectedIndices = [];
+            foreach ($physicalSeats as $idx => $seat) {
+                if ($seat['isSelected']) $selectedIndices[] = $idx;
+            }
+
+            if (count($selectedIndices) > 1) {
+                $minIdx = min($selectedIndices);
+                $maxIdx = max($selectedIndices);
+                for ($i = $minIdx + 1; $i < $maxIdx; $i++) {
+                    if (!$physicalSeats[$i]['isOccupied']) {
+                        return false; // Không được chừa ghế trống ở giữa các ghế chọn
+                    }
                 }
-                $emptyBlockLength = 0;
-            } else {
-                $emptyBlockLength++;
             }
         }
-        
-        if ($emptyBlockLength === 1) {
-            return false;
+        // Trường hợp 2: Hàng HOÀN TOÀN TRỐNG
+        else {
+            $emptyBlockLength = 0;
+            foreach ($physicalSeats as $seat) {
+                if ($seat['isOccupied']) {
+                    if ($emptyBlockLength === 1) {
+                        return false; // Không được để lại 1 ghế lẻ bên trái cụm ghế chọn
+                    }
+                    $emptyBlockLength = 0;
+                } else {
+                    $emptyBlockLength++;
+                }
+            }
+            if ($emptyBlockLength === 1) {
+                return false; // Không được để lại 1 ghế lẻ ở mép phải
+            }
         }
     }
 
