@@ -168,7 +168,7 @@
                                                     <input type="number" min="1" max="{{ max($stock,1) }}" value="1" class="item-qty qty" @disabled($isSoldOut)>
                                                     <button class="btn-qty-increase" type="button" aria-label="Tăng số lượng" @disabled($isSoldOut)><i class="fa-solid fa-plus"></i></button>
                                                 </div>
-                                                <button type="button" class="btn-add-to-cart add-food" data-cart-key="{{ $food['cart_key'] }}" data-type="{{ $food['type'] }}" data-id="{{ $food['id'] }}" data-food-id="{{ $food['food_id'] ?? $food['id'] }}" data-variant-id="{{ $food['variant_id'] ?? '' }}" data-name="{{ $food['name'] }}" data-price="{{ $food['price'] }}" data-available="{{ $stock }}" @disabled($isSoldOut)>{{ $isSoldOut ? 'Hết món' : 'Thêm vào giỏ' }}</button>
+                                                <button type="button" class="btn-add-to-cart add-food" data-cart-key="{{ $food['cart_key'] }}" data-type="{{ $food['type'] }}" data-id="{{ $food['id'] }}" data-food-id="{{ $food['food_id'] ?? $food['id'] }}" data-variant-id="{{ $food['variant_id'] ?? '' }}" data-name="{{ $food['name'] }}" data-price="{{ $food['price'] }}" data-available="{{ $stock }}" data-image="{{ $imagePath }}" @disabled($isSoldOut)>{{ $isSoldOut ? 'Hết món' : 'Thêm vào giỏ' }}</button>
                                             </div>
                                         </div>
                                     </article>
@@ -209,6 +209,15 @@
     const cartKey = 'staff_food_cart_v2_{{ auth()->id() }}_{{ $suatChieu->id }}';
     let cart = JSON.parse(localStorage.getItem(cartKey) || '{}');
     const baseSeatPrice = @json((int) $baseSeatPrice);
+
+    // Bổ sung ảnh cho các món đã có sẵn trong localStorage từ phiên trước.
+    // Cart cũ có thể chưa lưu image nên dò lại đúng card theo cart_key.
+    document.querySelectorAll('.add-food').forEach(function(button) {
+        const key = button.dataset.cartKey;
+        if (key && cart[key] && !cart[key].image) {
+            cart[key].image = button.dataset.image || '';
+        }
+    });
 
     // 1. RENDER ĐỒ ĂN TRONG GIỎ & CỘNG DỒN TỔNG TIỀN RIÊNG BIỆT
     function renderCart() {
@@ -338,6 +347,7 @@
                         Number(addBtn.dataset.variantId) : null,
 
                     name: addBtn.dataset.name
+                    , image: addBtn.dataset.image || ''
                     , price: Number(addBtn.dataset.price) || 0
                     , available: available
                     , qty: 0

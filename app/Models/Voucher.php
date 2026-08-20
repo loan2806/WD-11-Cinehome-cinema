@@ -19,13 +19,13 @@ class Voucher extends Model
         'ngay_het_han',
         'trang_thai',
         'loai_voucher',
+        'kieu_giam',
     ];
 
     protected $casts = [
         'gia_tri_giam' => 'decimal:2',
         'diem_can_doi' => 'integer',
         'ngay_het_han' => 'date',
-        'trang_thai' => 'boolean',
         'trang_thai' => 'boolean',
     ];
 

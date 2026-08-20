@@ -17,6 +17,7 @@ use App\Models\BienTheDoAn;
 use App\Models\VeXemPhimGhe;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use App\Models\ThongBaoCaNhan;
+use App\Models\Voucher;
 
 class BanVeController extends Controller
 {
@@ -48,73 +49,75 @@ class BanVeController extends Controller
     {
         $this->expirePendingTickets($suatChieu->id);
 
-        $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu']);
+    $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu']);
 
-        // 1. Lấy tất cả ghế bị khóa từ bảng VeXemPhim
-        $blockedFromTickets = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
-            ->where(function ($query) {
-                $query->whereIn('trang_thai', [
-                    'dang_giu', 'da_dat', 'da_thanh_toan', 'da_in', 'da_su_dung', 'cho_thanh_toan'
-                ]);
-            })
-            ->where(function ($query) {
-                $query->whereNull('thoi_gian_het_han')
-                      ->orWhere('thoi_gian_het_han', '>', now());
-            })
-            ->pluck('ma_ghe')
-            ->flatMap(function ($codes) {
-                return collect(explode(',', (string)$codes))
-                    ->map(fn($code) => strtoupper(trim($code)))
-                    ->filter();
-            });
+    // 1. Lấy tất cả ghế bị khóa từ bảng VeXemPhim (Bao gồm cả đơn online đang chờ thanh toán)
+    $blockedFromTickets = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
+        ->where(function ($query) {
+            $query->whereIn('trang_thai', [
+                'dang_giu', 'da_dat', 'da_thanh_toan', 'da_in', 'da_su_dung', 'cho_thanh_toan'
+            ]);
+        })
+        ->where(function ($query) {
+            // Nút thắt: Cho phép lấy cả vé cho_thanh_toan còn hạn hoặc chưa gán thời gian hết hạn
+            $query->whereNull('thoi_gian_het_han')
+                  ->orWhere('thoi_gian_het_han', '>', now());
+        })
+        ->pluck('ma_ghe')
+        ->flatMap(function ($codes) {
+            return collect(explode(',', (string)$codes))
+                ->map(fn($code) => strtoupper(trim($code)))
+                ->filter();
+        });
 
-        // 2. Lấy ghế đang giữ tạm từ Cache/Redis
-        $lockedFromCache = collect(Cache::get("seat_locks_{$suatChieu->id}", []))
-            ->keys()
-            ->map(fn($code) => strtoupper(trim($code)));
+    // 2. Lấy ghế đang giữ tạm từ Cache/Redis (Nếu SeatLockController có sử dụng Cache)
+    $lockedFromCache = collect(Cache::get("seat_locks_{$suatChieu->id}", []))
+        ->keys()
+        ->map(fn($code) => strtoupper(trim($code)));
 
-        $blockedSeatCodes = $blockedFromTickets->concat($lockedFromCache)->unique()->values();
-        $bookedSeats = $blockedSeatCodes->flip();
+    // Hợp nhất toàn bộ ghế bị khóa
+    $blockedSeatCodes = $blockedFromTickets->concat($lockedFromCache)->unique()->values();
+    $bookedSeats = $blockedSeatCodes->flip();
 
-        $gheNgois = GheNgoi::with('loaiGhe')
-            ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
-            ->orderBy('id')
-            ->get();
+    $gheNgois = GheNgoi::with('loaiGhe')
+        ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
+        ->orderBy('id')
+        ->get();
 
-        $gheTheoHang = [];
-        foreach ($gheNgois as $ghe) {
-            $hang = preg_replace('/[0-9]/', '', $ghe->ma_ghe) ?: 'A';
-            $daDat = $bookedSeats->has(strtoupper(trim($ghe->ma_ghe)));
-            $baoTri = $ghe->isEffectivelyUnderMaintenance();
-            $chonDuoc = !$daDat && !$baoTri;
+    $gheTheoHang = [];
+    foreach ($gheNgois as $ghe) {
+        $hang = preg_replace('/[0-9]/', '', $ghe->ma_ghe) ?: 'A';
+        $daDat = $bookedSeats->has(strtoupper(trim($ghe->ma_ghe)));
+        $baoTri = $ghe->isEffectivelyUnderMaintenance();
+        $chonDuoc = !$daDat && !$baoTri;
 
-            $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai ?? 'Thường');
-            $laCouple = (bool) ($ghe->loaiGhe->la_couple ?? false) ||
-                str_contains($loaiGheNorm, 'couple') ||
-                str_contains($loaiGheNorm, 'đôi') ||
-                str_contains($loaiGheNorm, 'doi') ||
-                str_contains($loaiGheNorm, 'double');
+        $loaiGheNorm = mb_strtolower($ghe->loaiGhe->ten_loai ?? 'Thường');
+        $laCouple = (bool) ($ghe->loaiGhe->la_couple ?? false) ||
+            str_contains($loaiGheNorm, 'couple') ||
+            str_contains($loaiGheNorm, 'đôi') ||
+            str_contains($loaiGheNorm, 'doi') ||
+            str_contains($loaiGheNorm, 'double');
 
-            $phuThu = (float) ($ghe->loaiGhe->phu_thu ?? 0);
-            $giaVe = (float) $suatChieu->gia_ve_cuoi_cung + $phuThu;
+        $phuThu = (float) ($ghe->loaiGhe->phu_thu ?? 0);
+        $giaVe = (float) $suatChieu->gia_ve_cuoi_cung + $phuThu;
 
-            if ($laCouple) {
-                $giaVe = ((float) $suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
-            }
-
-            $gheTheoHang[$hang][] = [
-                'id' => $ghe->id,
-                'ma_ghe' => $ghe->ma_ghe,
-                'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
-                'la_couple' => $laCouple,
-                'gia' => $giaVe,
-                'phu_thu' => $phuThu,
-                'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#3b82f6',
-                'da_dat' => $daDat,
-                'bao_tri' => $baoTri,
-                'chon_duoc' => $chonDuoc,
-            ];
+        if ($laCouple) {
+            $giaVe = ((float) $suatChieu->gia_ve_cuoi_cung * 2) + $phuThu;
         }
+
+        $gheTheoHang[$hang][] = [
+            'id' => $ghe->id,
+            'ma_ghe' => $ghe->ma_ghe,
+            'loai_ghe' => $ghe->loaiGhe->ten_loai ?? 'Thường',
+            'la_couple' => $laCouple,
+            'gia' => $giaVe,
+            'phu_thu' => $phuThu,
+            'mau_sac' => $ghe->loaiGhe->mau_sac ?? '#3b82f6',
+            'da_dat' => $daDat,
+            'bao_tri' => $baoTri,
+            'chon_duoc' => $chonDuoc,
+        ];
+    }
 
         return view('staff.ban-ve.show', [
             'suatChieu' => $suatChieu,
@@ -124,10 +127,12 @@ class BanVeController extends Controller
 
     public function food(Request $request, SuatChieu $suatChieu)
     {
+        // 1. Nếu là POST request từ trang chọn ghế, lưu ghế vào Session
         if ($request->isMethod('post') && $request->filled('seats')) {
             session(['staff_seats_' . $suatChieu->id => $request->seats]);
         }
 
+        // 2. Lấy ghế từ Form input (POST) hoặc Session (GET khi F5 / tải lại trang)
         $seatsInput = $request->input('seats') ?? session('staff_seats_' . $suatChieu->id);
 
         if (!$seatsInput) {
@@ -141,13 +146,6 @@ class BanVeController extends Controller
             ->filter()
             ->unique()
             ->values();
-
-        // Kiểm tra logic vị trí ghế chọn
-        if (!$this->validateSeatsAdjacent($selectedSeats->all(), $suatChieu->id)) {
-            return redirect()
-                ->route('staff.ban-ve.show', $suatChieu->id)
-                ->with('error', 'Sơ đồ ghế chọn không hợp lệ. Vui lòng không để trống 1 ghế đơn lẻ hoặc chừa khoảng trống ở giữa các ghế chọn.');
-        }
 
         $gheList = GheNgoi::with('loaiGhe')
             ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
@@ -168,9 +166,13 @@ class BanVeController extends Controller
         $foods = DoAn::active()
             ->with([
                 'category',
+
                 'variants' => function ($query) {
-                    $query->where('is_active', true)->orderBy('price');
+                    $query
+                        ->where('is_active', true)
+                        ->orderBy('price');
                 },
+
                 'comboItems.variant.doAn',
             ])
             ->orderBy('sort_order')
@@ -179,33 +181,69 @@ class BanVeController extends Controller
 
         $menu = $foods
             ->groupBy(function (DoAn $food) {
-                return trim($food->category?->name ?? 'Khác');
+                return trim(
+                    $food->category?->name ?? 'Khác'
+                );
             })
             ->map(function ($foods, $category) {
                 $menuItems = $foods
                     ->flatMap(function (DoAn $food) {
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Combo
+                        |--------------------------------------------------------------------------
+                        */
                         if ($food->isCombo()) {
                             $comboItems = $food->comboItems
                                 ->map(function ($comboItem) {
                                     $variant = $comboItem->variant;
 
                                     return [
-                                        'variant_id' => $comboItem->food_variant_id ?? $variant?->id,
-                                        'name' => $variant?->doAn?->name ?? 'Thành phần',
-                                        'variant' => $variant?->value,
-                                        'price' => (float) ($variant?->price ?? 0),
-                                        'quantity' => max((int) ($comboItem->quantity ?? 1), 1),
-                                        'stock' => (int) ($variant?->stock_quantity ?? 0),
+                                        'variant_id' =>
+                                            $comboItem->food_variant_id
+                                            ?? $variant?->id,
+
+                                        'name' =>
+                                            $variant?->doAn?->name
+                                            ?? 'Thành phần',
+
+                                        'variant' =>
+                                            $variant?->value,
+
+                                        'price' => (float) (
+                                            $variant?->price ?? 0
+                                        ),
+
+                                        'quantity' => max(
+                                            (int) (
+                                                $comboItem->quantity ?? 1
+                                            ),
+                                            1
+                                        ),
+
+                                        'stock' => (int) (
+                                            $variant?->stock_quantity ?? 0
+                                        ),
                                     ];
                                 })
                                 ->values();
 
-                            $price = $comboItems->sum(fn($item) => $item['price'] * $item['quantity']);
+                            $price = $comboItems->sum(
+                                fn($item) =>
+                                $item['price']
+                                    * $item['quantity']
+                            );
 
                             $available = $comboItems
                                 ->map(function ($item) {
-                                    if ($item['quantity'] <= 0) return 0;
-                                    return intdiv($item['stock'], $item['quantity']);
+                                    if ($item['quantity'] <= 0) {
+                                        return 0;
+                                    }
+
+                                    return intdiv(
+                                        $item['stock'],
+                                        $item['quantity']
+                                    );
                                 })
                                 ->min() ?? 0;
 
@@ -215,30 +253,59 @@ class BanVeController extends Controller
                                 'id' => $food->id,
                                 'food_id' => $food->id,
                                 'variant_id' => null,
+
                                 'name' => $food->name,
                                 'description' => $food->description,
                                 'image' => $food->image,
+
                                 'price' => (int) round($price),
                                 'available' => (int) $available,
-                                'combo_items' => $comboItems->toArray(),
+
+                                'combo_items' =>
+                                $comboItems->toArray(),
                             ]];
                         }
 
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Món thường: mỗi biến thể là một lựa chọn riêng
+                        |--------------------------------------------------------------------------
+                        */
                         return $food->variants
                             ->map(function ($variant) use ($food) {
-                                $variantName = trim((string) $variant->value);
+                                $variantName = trim(
+                                    (string) $variant->value
+                                );
 
                                 return [
-                                    'cart_key' => 'variant-' . $variant->id,
+                                    'cart_key' =>
+                                        'variant-' . $variant->id,
+
                                     'type' => 'variant',
+
                                     'id' => $variant->id,
                                     'food_id' => $food->id,
                                     'variant_id' => $variant->id,
-                                    'name' => $food->name . ($variantName !== '' ? ' - ' . $variantName : ''),
-                                    'description' => $food->description,
+
+                                    'name' => $food->name
+                                        . (
+                                            $variantName !== ''
+                                            ? ' - ' . $variantName
+                                            : ''
+                                        ),
+
+                                    'description' =>
+                                        $food->description,
+
                                     'image' => $food->image,
-                                    'price' => (int) round($variant->price),
-                                    'available' => (int) ($variant->stock_quantity ?? 0),
+
+                                    'price' => (int) round(
+                                        $variant->price
+                                    ),
+
+                                    'available' => (int) (
+                                        $variant->stock_quantity ?? 0
+                                    ),
                                 ];
                             })
                             ->values()
@@ -277,22 +344,27 @@ class BanVeController extends Controller
             ->unique()
             ->values();
 
-        if (!$this->validateSeatsAdjacent($seats->all(), $suatChieu->id)) {
-            return redirect()
-                ->route('staff.ban-ve.show', $suatChieu->id)
-                ->with('error', 'Sơ đồ ghế chọn không hợp lệ. Vui lòng không để trống 1 ghế đơn lẻ hoặc chừa khoảng trống ở giữa.');
-        }
-
         $foodCart = [];
+
         if ($request->filled('food_cart')) {
-            $foodCart = json_decode($request->food_cart, true) ?? [];
+            $foodCart = json_decode(
+                $request->food_cart,
+                true
+            ) ?? [];
         }
 
-        $foodItems = collect($foodCart)->filter(fn($item) => is_array($item));
+        $foodItems = collect($foodCart)
+            ->filter(fn($item) => is_array($item));
 
         $gheList = GheNgoi::with('loaiGhe')
-            ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
-            ->whereIn('ma_ghe', $seats->all())
+            ->where(
+                'phong_chieu_id',
+                $suatChieu->phong_chieu_id
+            )
+            ->whereIn(
+                'ma_ghe',
+                $seats->all()
+            )
             ->get();
 
         $seatTotal = $gheList->sum(function ($ghe) use ($suatChieu) {
@@ -306,10 +378,26 @@ class BanVeController extends Controller
             return $giaVe + $phuThu;
         });
 
-        $foodTotal = $foodItems->sum(fn($item) => ($item['price'] ?? 0) * ($item['qty'] ?? 0));
+        $foodTotal = $foodItems->sum(function ($item) {
+            return ($item['price'] ?? 0)
+                * ($item['qty'] ?? 0);
+        });
+
         $total = $seatTotal + $foodTotal;
 
-        $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu']);
+        // Chỉ lấy voucher đặc biệt dành cho nhân viên bán vé tại quầy.
+        $staffVouchers = Voucher::query()
+            ->where('loai_voucher', 'staff_dac_biet')
+            ->where('trang_thai', true)
+            ->whereDate('ngay_het_han', '>=', now()->toDateString())
+            ->orderBy('id')
+            ->get();
+
+        $suatChieu->load([
+            'phim',
+            'rapChieuPhim',
+            'phongChieu'
+        ]);
 
         return view('staff.ban-ve.checkout', [
             'suatChieu' => $suatChieu,
@@ -318,201 +406,627 @@ class BanVeController extends Controller
             'foodCart' => $foodItems,
             'seatTotal' => $seatTotal,
             'foodTotal' => $foodTotal,
-            'total' => $total
+            'total' => $total,
+            'staffVouchers' => $staffVouchers,
+        ]);
+    }
+
+    /**
+     * Xác thực voucher đặc biệt tại quầy trước khi thanh toán.
+     */
+    public function apDungVoucher(Request $request)
+    {
+        $request->validate([
+            'voucher_code' => ['required', 'string', 'max:100'],
+            'subtotal' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $code = strtoupper(trim((string) $request->input('voucher_code')));
+        $subtotal = (float) $request->input('subtotal');
+
+        $voucher = Voucher::query()
+            ->where('ma_voucher', $code)
+            ->where('loai_voucher', 'staff_dac_biet')
+            ->where('trang_thai', true)
+            ->whereDate('ngay_het_han', '>=', now()->toDateString())
+            ->first();
+
+        if (!$voucher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Voucher không tồn tại, đã hết hạn hoặc không dành cho bán vé tại quầy.',
+            ], 422);
+        }
+
+        $discount = 0;
+
+        if ($voucher->kieu_giam === 'phan_tram') {
+            $percent = min(max((float) $voucher->gia_tri_giam, 0), 100);
+            $discount = $subtotal * ($percent / 100);
+        } else {
+            $discount = (float) $voucher->gia_tri_giam;
+        }
+
+        $discount = min(max($discount, 0), $subtotal);
+        $finalTotal = max(0, $subtotal - $discount);
+
+        return response()->json([
+            'success' => true,
+            'voucher_code' => $voucher->ma_voucher,
+            'voucher_name' => $voucher->ten_voucher,
+            'discount_type' => $voucher->kieu_giam,
+            'discount_value' => (float) $voucher->gia_tri_giam,
+            'discount' => (int) round($discount),
+            'final_total' => (int) round($finalTotal),
+        ]);
+    }
+
+    public function applyVoucher(Request $request, SuatChieu $suatChieu)
+    {
+        $validated = $request->validate([
+            'voucher_code' => ['required', 'string', 'max:100'],
+            'subtotal' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $code = strtoupper(trim($validated['voucher_code']));
+        $subtotal = (int) round((float) $validated['subtotal']);
+
+        $voucher = Voucher::query()
+            ->whereRaw('UPPER(ma_voucher) = ?', [$code])
+            ->where('loai_voucher', 'staff_dac_biet')
+            ->where('trang_thai', true)
+            ->whereDate('ngay_het_han', '>=', today())
+            ->first();
+
+        if (!$voucher) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Voucher tại quầy không tồn tại, đã hết hạn hoặc không còn hiệu lực.',
+            ], 422);
+        }
+
+        $giaTriGiam = (float) $voucher->gia_tri_giam;
+        $discount = ($voucher->kieu_giam ?? 'tien') === 'phan_tram'
+            ? (int) round($subtotal * ($giaTriGiam / 100))
+            : (int) round($giaTriGiam);
+
+        $discount = min(max($discount, 0), $subtotal);
+
+        return response()->json([
+            'success' => true,
+            'voucher_code' => $voucher->ma_voucher,
+            'voucher_name' => $voucher->ten_voucher,
+            'kieu_giam' => $voucher->kieu_giam ?? 'tien',
+            'gia_tri_giam' => $giaTriGiam,
+            'discount' => $discount,
+            'final_total' => max(0, $subtotal - $discount),
         ]);
     }
 
     public function store(Request $request, SuatChieu $suatChieu)
     {
         $validated = $request->validate([
-            'seats' => ['required', 'string'],
-            'food_cart' => ['nullable', 'string'],
-            'payment_method' => ['required', 'in:cash,vietqr'],
-            'received_amount' => ['nullable', 'required_if:payment_method,cash', 'numeric', 'min:0'],
+            'seats' => [
+                'required',
+                'string',
+            ],
+
+            'food_cart' => [
+                'nullable',
+                'string',
+            ],
+
+            'payment_method' => [
+                'required',
+                'in:cash,vietqr',
+            ],
+
+            'received_amount' => [
+                'nullable',
+                'required_if:payment_method,cash',
+                'numeric',
+                'min:0',
+            ],
+
+            'voucher_code' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
         ], [
-            'seats.required' => 'Không tìm thấy ghế đã chọn.',
-            'payment_method.required' => 'Vui lòng chọn phương thức thanh toán.',
-            'received_amount.required_if' => 'Vui lòng nhập số tiền khách đưa.',
-            'received_amount.numeric' => 'Số tiền khách đưa không hợp lệ.',
+            'seats.required' =>
+            'Không tìm thấy ghế đã chọn.',
+
+            'payment_method.required' =>
+            'Vui lòng chọn phương thức thanh toán.',
+
+            'received_amount.required_if' =>
+            'Vui lòng nhập số tiền khách đưa.',
+
+            'received_amount.numeric' =>
+            'Số tiền khách đưa không hợp lệ.',
         ]);
 
         try {
-            $result = DB::transaction(function () use ($request, $validated, $suatChieu) {
-                $suatChieu->load(['phim', 'rapChieuPhim', 'phongChieu']);
+            $result = DB::transaction(function () use (
+                $request,
+                $validated,
+                $suatChieu
+            ) {
 
-                $selectedSeats = collect(explode(',', $validated['seats']))
-                    ->map(fn($seat) => strtoupper(trim($seat)))
+                /*
+                |--------------------------------------------------------------------------
+                | Nạp thông tin suất chiếu
+                |--------------------------------------------------------------------------
+                */
+
+                $suatChieu->load([
+                    'phim',
+                    'rapChieuPhim',
+                    'phongChieu',
+                ]);
+
+                /*
+                |--------------------------------------------------------------------------
+                | Chuẩn hóa danh sách ghế
+                |--------------------------------------------------------------------------
+                */
+
+                $selectedSeats = collect(
+                    explode(',', $validated['seats'])
+                )
+                    ->map(function ($seat) {
+                        return strtoupper(trim($seat));
+                    })
                     ->filter()
                     ->unique()
                     ->values();
 
                 if ($selectedSeats->isEmpty()) {
-                    throw new \RuntimeException('Không tìm thấy ghế đã chọn.');
+                    throw new \RuntimeException(
+                        'Không tìm thấy ghế đã chọn.'
+                    );
                 }
 
                 if ($selectedSeats->count() > 8) {
-                    throw new \RuntimeException('Mỗi lần chỉ được bán tối đa 8 ghế.');
+                    throw new \RuntimeException(
+                        'Mỗi lần chỉ được bán tối đa 8 ghế.'
+                    );
                 }
 
-                // Kiểm tra sơ đồ vị trí ghế chọn
-                if (!$this->validateSeatsAdjacent($selectedSeats->all(), $suatChieu->id)) {
-                    throw new \RuntimeException('Sơ đồ ghế chọn không hợp lệ. Vui lòng không để trống 1 ghế đơn lẻ hoặc chừa khoảng trống ở giữa các ghế chọn.');
-                }
+                /*
+                |--------------------------------------------------------------------------
+                | Lấy ghế thật trong database
+                |--------------------------------------------------------------------------
+                */
 
                 $gheList = GheNgoi::with('loaiGhe')
-                    ->where('phong_chieu_id', $suatChieu->phong_chieu_id)
-                    ->whereIn('ma_ghe', $selectedSeats->all())
+                    ->where(
+                        'phong_chieu_id',
+                        $suatChieu->phong_chieu_id
+                    )
+                    ->whereIn(
+                        'ma_ghe',
+                        $selectedSeats->all()
+                    )
                     ->lockForUpdate()
                     ->get();
 
-                if ($gheList->count() !== $selectedSeats->count()) {
-                    $foundSeats = $gheList->pluck('ma_ghe')->map(fn($seat) => strtoupper(trim($seat)));
-                    $missingSeats = $selectedSeats->diff($foundSeats);
+                if (
+                    $gheList->count()
+                    !== $selectedSeats->count()
+                ) {
+                    $foundSeats = $gheList
+                        ->pluck('ma_ghe')
+                        ->map(function ($seat) {
+                            return strtoupper(trim($seat));
+                        });
 
-                    throw new \RuntimeException('Không tìm thấy ghế: ' . $missingSeats->implode(', '));
+                    $missingSeats = $selectedSeats->diff(
+                        $foundSeats
+                    );
+
+                    throw new \RuntimeException(
+                        'Không tìm thấy ghế: '
+                            . $missingSeats->implode(', ')
+                    );
                 }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Kiểm tra ghế bảo trì
+                |--------------------------------------------------------------------------
+                */
 
                 $inactiveSeats = $gheList
                     ->filter(function ($seat) {
-                        if (method_exists($seat, 'isEffectivelyUnderMaintenance')) {
-                            return $seat->isEffectivelyUnderMaintenance();
+                        if (
+                            method_exists(
+                                $seat,
+                                'isEffectivelyUnderMaintenance'
+                            )
+                        ) {
+                            return
+                                $seat
+                                ->isEffectivelyUnderMaintenance();
                         }
-                        return $seat->trang_thai !== 'hoat_dong';
+
+                        return
+                            $seat->trang_thai
+                            !== 'hoat_dong';
                     })
                     ->pluck('ma_ghe')
                     ->values();
 
                 if ($inactiveSeats->isNotEmpty()) {
-                    throw new \RuntimeException('Ghế ' . $inactiveSeats->implode(', ') . ' đang bảo trì hoặc ngừng hoạt động.');
+                    throw new \RuntimeException(
+                        'Ghế '
+                            . $inactiveSeats->implode(', ')
+                            . ' đang bảo trì hoặc ngừng hoạt động.'
+                    );
                 }
 
-                $bookedSeatCodes = VeXemPhim::where('suat_chieu_id', $suatChieu->id)
+                /*
+                |--------------------------------------------------------------------------
+                | Kiểm tra ghế đã được bán
+                |--------------------------------------------------------------------------
+                */
+
+                $bookedSeatCodes = VeXemPhim::where(
+                    'suat_chieu_id',
+                    $suatChieu->id
+                )
                     ->where(function ($query) {
                         $query->whereIn('trang_thai', [
-                            'dang_giu', 'da_dat', 'da_thanh_toan', 'da_in', 'da_su_dung',
+                            'dang_giu',
+                            'da_dat',
+                            'da_thanh_toan',
+                            'da_in',
+                            'da_su_dung',
                         ])->orWhere(function ($pendingQuery) {
-                            $pendingQuery->where('trang_thai', 'cho_thanh_toan')
+                            $pendingQuery
+                                ->where('trang_thai', 'cho_thanh_toan')
                                 ->where('thoi_gian_het_han', '>', now());
                         });
                     })
                     ->lockForUpdate()
                     ->pluck('ma_ghe')
-                    ->flatMap(fn($codes) => collect(explode(',', (string) $codes))->map(fn($code) => strtoupper(trim($code)))->filter())
+                    ->flatMap(function ($codes) {
+                        return collect(
+                            explode(',', (string) $codes)
+                        )
+                            ->map(function ($code) {
+                                return strtoupper(
+                                    trim($code)
+                                );
+                            })
+                            ->filter();
+                    })
                     ->unique()
                     ->values();
 
-                $blockedSeats = $selectedSeats->intersect($bookedSeatCodes)->values();
+                $blockedSeats = $selectedSeats
+                    ->intersect($bookedSeatCodes)
+                    ->values();
 
                 if ($blockedSeats->isNotEmpty()) {
-                    throw new \RuntimeException('Ghế ' . $blockedSeats->implode(', ') . ' đã được bán.');
+                    throw new \RuntimeException(
+                        'Ghế '
+                            . $blockedSeats->implode(', ')
+                            . ' đã được bán.'
+                    );
                 }
 
-                $seatTotal = $gheList->sum(function ($ghe) use ($suatChieu) {
-                    $giaVe = (float) ($suatChieu->gia_ve_cuoi_cung ?? 0);
-                    $phuThu = (float) ($ghe->loaiGhe?->phu_thu ?? 0);
+                /*
+                |--------------------------------------------------------------------------
+                | Backend tự tính tiền ghế
+                |--------------------------------------------------------------------------
+                */
 
-                    if ($ghe->loaiGhe?->la_couple) {
-                        return ($giaVe * 2) + $phuThu;
+                $seatTotal = $gheList->sum(
+                    function ($ghe) use ($suatChieu) {
+                        $giaVe = (float) (
+                            $suatChieu->gia_ve_cuoi_cung ?? 0
+                        );
+
+                        $phuThu = (float) (
+                            $ghe->loaiGhe?->phu_thu ?? 0
+                        );
+
+                        if (
+                            $ghe->loaiGhe?->la_couple
+                        ) {
+                            return (
+                                $giaVe * 2
+                            ) + $phuThu;
+                        }
+
+                        return $giaVe + $phuThu;
                     }
+                );
 
-                    return $giaVe + $phuThu;
-                });
+                /*
+                |--------------------------------------------------------------------------
+                | Đọc giỏ đồ ăn
+                |--------------------------------------------------------------------------
+                */
 
-                $foodCart = json_decode($request->input('food_cart', '[]'), true);
+                $foodCart = json_decode(
+                    $request->input(
+                        'food_cart',
+                        '[]'
+                    ),
+                    true
+                );
+
                 if (!is_array($foodCart)) {
                     $foodCart = [];
                 }
 
-                $requestedFoodItems = collect($foodCart)->filter(fn($item) => is_array($item))->values();
+                $requestedFoodItems = collect(
+                    $foodCart
+                )
+                    ->filter(function ($item) {
+                        return is_array($item);
+                    })
+                    ->values();
+
                 $verifiedFoodItems = collect();
                 $foodTotal = 0;
 
                 foreach ($requestedFoodItems as $foodData) {
-                    $type = (string) ($foodData['type'] ?? '');
-                    $quantity = (int) ($foodData['qty'] ?? $foodData['quantity'] ?? 0);
+                    $type = (string) (
+                        $foodData['type'] ?? ''
+                    );
 
-                    if ($quantity <= 0) continue;
+                    $quantity = (int) (
+                        $foodData['qty']
+                        ?? $foodData['quantity']
+                        ?? 0
+                    );
 
+                    if ($quantity <= 0) {
+                        continue;
+                    }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Combo
+                    |--------------------------------------------------------------------------
+                    */
                     if ($type === 'combo') {
-                        $foodId = (int) ($foodData['food_id'] ?? $foodData['id'] ?? 0);
-                        $food = DoAn::with(['category', 'comboItems.variant.doAn'])->lockForUpdate()->find($foodId);
+                        $foodId = (int) (
+                            $foodData['food_id']
+                            ?? $foodData['id']
+                            ?? 0
+                        );
 
-                        if (!$food || !$food->isCombo()) throw new \RuntimeException('Combo không tồn tại.');
-                        if (!$food->is_active) throw new \RuntimeException('Combo ' . $food->name . ' đã ngừng bán.');
-                        if ($food->comboItems->isEmpty()) throw new \RuntimeException('Combo ' . $food->name . ' chưa có thành phần.');
+                        $food = DoAn::with([
+                            'category',
+                            'comboItems.variant.doAn',
+                        ])
+                            ->lockForUpdate()
+                            ->find($foodId);
+
+                        if (!$food || !$food->isCombo()) {
+                            throw new \RuntimeException(
+                                'Combo không tồn tại.'
+                            );
+                        }
+
+                        if (!$food->is_active) {
+                            throw new \RuntimeException(
+                                'Combo ' . $food->name . ' đã ngừng bán.'
+                            );
+                        }
+
+                        if ($food->comboItems->isEmpty()) {
+                            throw new \RuntimeException(
+                                'Combo ' . $food->name
+                                    . ' chưa có thành phần.'
+                            );
+                        }
 
                         $unitPrice = 0;
                         $available = null;
 
                         foreach ($food->comboItems as $comboItem) {
                             $variant = $comboItem->variant;
-                            $quantityPerCombo = max((int) ($comboItem->quantity ?? 1), 1);
+
+                            $quantityPerCombo = max(
+                                (int) ($comboItem->quantity ?? 1),
+                                1
+                            );
 
                             if (!$variant || !$variant->is_active) {
-                                throw new \RuntimeException('Combo ' . $food->name . ' có thành phần không hợp lệ.');
+                                throw new \RuntimeException(
+                                    'Combo ' . $food->name
+                                        . ' có thành phần không hợp lệ.'
+                                );
                             }
 
-                            $unitPrice += (float) $variant->price * $quantityPerCombo;
-                            $variantAvailable = intdiv((int) $variant->stock_quantity, $quantityPerCombo);
-                            $available = $available === null ? $variantAvailable : min($available, $variantAvailable);
+                            $unitPrice +=
+                                (float) $variant->price
+                                * $quantityPerCombo;
+
+                            $variantAvailable = intdiv(
+                                (int) $variant->stock_quantity,
+                                $quantityPerCombo
+                            );
+
+                            $available = $available === null
+                                ? $variantAvailable
+                                : min($available, $variantAvailable);
                         }
 
                         if (($available ?? 0) < $quantity) {
-                            throw new \RuntimeException('Combo ' . $food->name . ' chỉ còn ' . ($available ?? 0) . ' phần.');
+                            throw new \RuntimeException(
+                                'Combo ' . $food->name
+                                    . ' chỉ còn '
+                                    . ($available ?? 0)
+                                    . ' phần.'
+                            );
                         }
 
                         $foodTotal += $unitPrice * $quantity;
+
                         $verifiedFoodItems->push([
                             'type' => 'combo',
                             'id' => $food->id,
                             'food_id' => $food->id,
                             'variant_id' => null,
+
                             'name' => $food->name,
                             'price' => $unitPrice,
                             'qty' => $quantity,
                         ]);
+
                         continue;
                     }
 
-                    $variantId = (int) ($foodData['variant_id'] ?? $foodData['id'] ?? 0);
-                    $variant = BienTheDoAn::with('doAn')->lockForUpdate()->find($variantId);
+                    /*
+                    |--------------------------------------------------------------------------
+                    | Biến thể món ăn
+                    |--------------------------------------------------------------------------
+                    */
+                    $variantId = (int) (
+                        $foodData['variant_id']
+                        ?? $foodData['id']
+                        ?? 0
+                    );
 
-                    if (!$variant || !$variant->doAn) throw new \RuntimeException('Biến thể đồ ăn không tồn tại.');
-                    if (!$variant->is_active || !$variant->doAn->is_active) {
-                        throw new \RuntimeException('Món ' . $variant->doAn->name . ' đã ngừng bán.');
+                    $variant = BienTheDoAn::with('doAn')
+                        ->lockForUpdate()
+                        ->find($variantId);
+
+                    if (!$variant || !$variant->doAn) {
+                        throw new \RuntimeException(
+                            'Biến thể đồ ăn không tồn tại.'
+                        );
                     }
-                    if ((int) $variant->stock_quantity < $quantity) {
-                        throw new \RuntimeException('Món ' . $variant->doAn->name . ' - ' . $variant->value . ' chỉ còn ' . (int) $variant->stock_quantity . ' sản phẩm.');
+
+                    if (
+                        !$variant->is_active
+                        || !$variant->doAn->is_active
+                    ) {
+                        throw new \RuntimeException(
+                            'Món '
+                                . $variant->doAn->name
+                                . ' đã ngừng bán.'
+                        );
+                    }
+
+                    if (
+                        (int) $variant->stock_quantity
+                        < $quantity
+                    ) {
+                        throw new \RuntimeException(
+                            'Món '
+                                . $variant->doAn->name
+                                . ' - '
+                                . $variant->value
+                                . ' chỉ còn '
+                                . (int) $variant->stock_quantity
+                                . ' sản phẩm.'
+                        );
                     }
 
                     $unitPrice = (float) $variant->price;
+
                     $foodTotal += $unitPrice * $quantity;
-                    $variantLabel = trim((string) $variant->value);
+
+                    $variantLabel = trim(
+                        (string) $variant->value
+                    );
 
                     $verifiedFoodItems->push([
                         'type' => 'variant',
                         'id' => $variant->id,
                         'food_id' => $variant->food_id,
                         'variant_id' => $variant->id,
-                        'name' => $variant->doAn->name . ($variantLabel !== '' ? ' - ' . $variantLabel : ''),
+
+                        'name' => $variant->doAn->name
+                            . (
+                                $variantLabel !== ''
+                                ? ' - ' . $variantLabel
+                                : ''
+                            ),
+
                         'price' => $unitPrice,
                         'qty' => $quantity,
                     ]);
                 }
 
-                $tongTien = (int) round($seatTotal + $foodTotal);
+                $tongTienTruocVoucher = (float) ($seatTotal + $foodTotal);
+                $voucher = null;
+                $voucherDiscount = 0;
+
+                // Backend xác thực lại voucher để không thể sửa giá bằng DevTools.
+                $voucherCode = strtoupper(trim((string) ($request->input('voucher_code') ?? '')));
+
+                if ($voucherCode !== '') {
+                    $voucher = Voucher::query()
+                        ->where('ma_voucher', $voucherCode)
+                        ->where('loai_voucher', 'staff_dac_biet')
+                        ->where('trang_thai', true)
+                        ->whereDate('ngay_het_han', '>=', now()->toDateString())
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$voucher) {
+                        throw new \RuntimeException(
+                            'Voucher không tồn tại, đã hết hạn hoặc không dành cho bán vé tại quầy.'
+                        );
+                    }
+
+                    if ($voucher->kieu_giam === 'phan_tram') {
+                        $percent = min(max((float) $voucher->gia_tri_giam, 0), 100);
+                        $voucherDiscount = $tongTienTruocVoucher * ($percent / 100);
+                    } else {
+                        $voucherDiscount = (float) $voucher->gia_tri_giam;
+                    }
+
+                    $voucherDiscount = min(max($voucherDiscount, 0), $tongTienTruocVoucher);
+                }
+
+                $tongTien = (int) round(
+                    max(0, $tongTienTruocVoucher - $voucherDiscount)
+                );
+
+                /*
+                |--------------------------------------------------------------------------
+                | Xử lý thanh toán
+                |--------------------------------------------------------------------------
+                */
+
                 $paymentMethod = $validated['payment_method'];
 
                 if ($paymentMethod === 'vietqr') {
                     do {
-                        $maVe = 'OFF-' . now('Asia/Ho_Chi_Minh')->format('ymdHis') . '-' . Str::upper(Str::random(5));
-                    } while (VeXemPhim::where('ma_ve', $maVe)->exists());
+                        $maVe =
+                            'OFF-'
+                            . now('Asia/Ho_Chi_Minh')->format('ymdHis')
+                            . '-'
+                            . Str::upper(Str::random(5));
+                    } while (
+                        VeXemPhim::where('ma_ve', $maVe)->exists()
+                    );
 
                     do {
-                        $orderCode = intval(filter_var(microtime(true) * 10000, FILTER_SANITIZE_NUMBER_INT)) % 9007199254740991;
-                    } while (VeXemPhim::where('payos_order_code', $orderCode)->exists());
+                        $orderCode = intval(
+                            filter_var(
+                                microtime(true) * 10000,
+                                FILTER_SANITIZE_NUMBER_INT
+                            )
+                        ) % 9007199254740991;
+                    } while (
+                        VeXemPhim::where('payos_order_code', $orderCode)->exists()
+                    );
 
-                    $expiresAt = now()->addMinutes(self::STAFF_VIETQR_HOLD_MINUTES);
+                    $expiresAt = now()->addMinutes(
+                        self::STAFF_VIETQR_HOLD_MINUTES
+                    );
 
                     $vePending = VeXemPhim::create([
                         'nguoi_dung_id' => null,
@@ -538,32 +1052,54 @@ class BanVeController extends Controller
                         'food_total' => (int) round($foodTotal),
                     ]);
 
-                    Cache::put("staff_payos_mapping:{$orderCode}", $maVe, now()->addMinutes(self::STAFF_PAYOS_CACHE_MINUTES));
-                    Cache::put("pending_staff_ve:{$maVe}", [
-                        've_id' => $vePending->id,
-                        'ma_ve' => $maVe,
-                        'suat_chieu_id' => $suatChieu->id,
-                        'danh_sach_ghe' => $selectedSeats->values()->all(),
-                        'clear_cart_key' => $request->input('clear_cart_key'),
-                    ], now()->addMinutes(self::STAFF_PAYOS_CACHE_MINUTES));
+                    Cache::put(
+                        "staff_payos_mapping:{$orderCode}",
+                        $maVe,
+                        now()->addMinutes(self::STAFF_PAYOS_CACHE_MINUTES)
+                    );
 
-                    $payOS = new PayOS(env('PAYOS_CLIENT_ID'), env('PAYOS_API_KEY'), env('PAYOS_CHECKSUM_KEY'));
+                    Cache::put(
+                        "pending_staff_ve:{$maVe}",
+                        [
+                            've_id' => $vePending->id,
+                            'ma_ve' => $maVe,
+                            'suat_chieu_id' => $suatChieu->id,
+                            'danh_sach_ghe' => $selectedSeats->values()->all(),
+                            'clear_cart_key' => $request->input('clear_cart_key'),
+                        ],
+                        now()->addMinutes(self::STAFF_PAYOS_CACHE_MINUTES)
+                    );
+
+                    $payOS = new PayOS(
+                        env('PAYOS_CLIENT_ID'),
+                        env('PAYOS_API_KEY'),
+                        env('PAYOS_CHECKSUM_KEY')
+                    );
 
                     $paymentData = [
                         'orderCode' => $orderCode,
                         'amount' => $tongTien,
                         'description' => 'VE' . $orderCode,
-                        'returnUrl' => route('staff.ban-ve.payos-callback'),
-                        'cancelUrl' => route('staff.ban-ve.payos-cancel'),
+                        'returnUrl' => route(
+                            'staff.ban-ve.payos-callback'
+                        ),
+                        'cancelUrl' => route(
+                            'staff.ban-ve.payos-cancel'
+                        ),
                         'expiredAt' => $expiresAt->timestamp,
                     ];
 
-                    $response = $payOS->paymentRequests->create($paymentData);
+                    $response = $payOS->paymentRequests->create(
+                        $paymentData
+                    );
+
                     $checkoutUrl = data_get($response, 'checkoutUrl');
                     $qrCode = data_get($response, 'qrCode');
 
                     if (!$checkoutUrl || !$qrCode) {
-                        throw new \RuntimeException('PayOS không trả về đầy đủ thông tin thanh toán VietQR.');
+                        throw new \RuntimeException(
+                            'PayOS không trả về đầy đủ thông tin thanh toán VietQR.'
+                        );
                     }
 
                     $vePending->update([
@@ -577,18 +1113,47 @@ class BanVeController extends Controller
                     ];
                 }
 
-                // Thanh toán tiền mặt
-                $receivedAmount = (int) ($validated['received_amount'] ?? 0);
+                /*
+                |--------------------------------------------------------------------------
+                | Thanh toán tiền mặt
+                |--------------------------------------------------------------------------
+                */
+                $receivedAmount = (int) (
+                    $validated['received_amount'] ?? 0
+                );
 
                 if ($receivedAmount < $tongTien) {
-                    throw new \RuntimeException('Khách còn thiếu ' . number_format($tongTien - $receivedAmount, 0, ',', '.') . 'đ.');
+                    throw new \RuntimeException(
+                        'Khách còn thiếu '
+                            . number_format(
+                                $tongTien - $receivedAmount,
+                                0,
+                                ',',
+                                '.'
+                            )
+                            . 'đ.'
+                    );
                 }
 
                 do {
-                    $maVe = 'OFF-' . now('Asia/Ho_Chi_Minh')->format('ymdHis') . '-' . Str::upper(Str::random(5));
-                } while (VeXemPhim::where('ma_ve', $maVe)->exists());
+                    $maVe =
+                        'OFF-'
+                        . now(
+                            'Asia/Ho_Chi_Minh'
+                        )->format('ymdHis')
+                        . '-'
+                        . Str::upper(
+                            Str::random(5)
+                        );
+                } while (
+                    VeXemPhim::where(
+                        'ma_ve',
+                        $maVe
+                    )->exists()
+                );
 
                 $ve = new VeXemPhim();
+
                 $ve->nguoi_dung_id = null;
                 $ve->nhan_vien_id = auth()->id();
                 $ve->suat_chieu_id = $suatChieu->id;
@@ -602,31 +1167,65 @@ class BanVeController extends Controller
                 $ve->tien_hoan = 0;
                 $ve->loai_ve = 'tai_quay';
                 $ve->trang_thai = 'da_thanh_toan';
+
                 $ve->payment_method = 'cash';
                 $ve->received_amount = $receivedAmount;
                 $ve->change_amount = $receivedAmount - $tongTien;
                 $ve->seat_total = (int) round($seatTotal);
                 $ve->food_total = (int) round($foodTotal);
                 $ve->food_items = $verifiedFoodItems->values()->all();
+
                 $ve->save();
 
                 if (!$ve->exists || !$ve->id) {
-                    throw new \RuntimeException('Không thể lưu vé vào database.');
+                    throw new \RuntimeException(
+                        'Không thể lưu vé vào database.'
+                    );
                 }
 
-                $this->createSeatTickets($ve, $selectedSeats->all());
+                $this->createSeatTickets(
+                    $ve,
+                    $selectedSeats->all()
+                );
 
+                /*
+                |--------------------------------------------------------------------------
+                | Trừ kho sau khi vé đã lưu
+                |--------------------------------------------------------------------------
+                */
                 foreach ($verifiedFoodItems as $foodItem) {
                     $quantity = (int) ($foodItem['qty'] ?? 0);
-                    if ($quantity <= 0) continue;
+                    if ($quantity <= 0) {
+                        continue;
+                    }
 
                     if (($foodItem['type'] ?? null) === 'combo') {
-                        $food = DoAn::with(['comboItems.variant'])->lockForUpdate()->find($foodItem['food_id']);
-                        if (!$food || !$food->isCombo()) throw new \RuntimeException('Không tìm thấy combo ' . ($foodItem['name'] ?? '') . '.');
+                        $food = DoAn::with(['comboItems.variant'])
+                            ->lockForUpdate()
+                            ->find($foodItem['food_id']);
+
+                        if (!$food || !$food->isCombo()) {
+                            throw new \RuntimeException(
+                                'Không tìm thấy combo ' . ($foodItem['name'] ?? '') . '.'
+                            );
+                        }
+
+                        if ($food->comboItems->isEmpty()) {
+                            throw new \RuntimeException(
+                                'Combo ' . $food->name . ' chưa có thành phần.'
+                            );
+                        }
 
                         foreach ($food->comboItems as $comboItem) {
-                            $variantId = $comboItem->food_variant_id ?? $comboItem->variant_id ?? $comboItem->variant?->id;
-                            if (!$variantId) throw new \RuntimeException('Một thành phần của combo ' . $food->name . ' không có biến thể hợp lệ.');
+                            $variantId = $comboItem->food_variant_id
+                                ?? $comboItem->variant_id
+                                ?? $comboItem->variant?->id;
+
+                            if (!$variantId) {
+                                throw new \RuntimeException(
+                                    'Một thành phần của combo ' . $food->name . ' không có biến thể hợp lệ.'
+                                );
+                            }
 
                             $quantityPerCombo = max((int) ($comboItem->quantity ?? 1), 1);
                             $quantityToDeduct = $quantityPerCombo * $quantity;
@@ -636,26 +1235,38 @@ class BanVeController extends Controller
                                 ->decrement('stock_quantity', $quantityToDeduct);
 
                             if ($updatedRows === 0) {
-                                throw new \RuntimeException('Không đủ tồn kho thành phần của combo ' . $food->name . '.');
+                                throw new \RuntimeException(
+                                    'Không đủ tồn kho thành phần của combo ' . $food->name . '.'
+                                );
                             }
                         }
                         continue;
                     }
 
                     $variantId = (int) ($foodItem['variant_id'] ?? $foodItem['id'] ?? 0);
-                    if ($variantId <= 0) throw new \RuntimeException('Không xác định được biến thể của món ' . ($foodItem['name'] ?? '') . '.');
+                    if ($variantId <= 0) {
+                        throw new \RuntimeException(
+                            'Không xác định được biến thể của món ' . ($foodItem['name'] ?? '') . '.'
+                        );
+                    }
 
                     $updatedRows = BienTheDoAn::where('id', $variantId)
                         ->where('stock_quantity', '>=', $quantity)
                         ->decrement('stock_quantity', $quantity);
 
                     if ($updatedRows === 0) {
-                        throw new \RuntimeException('Món ' . ($foodItem['name'] ?? '') . ' không còn đủ tồn kho.');
+                        throw new \RuntimeException(
+                            'Món ' . ($foodItem['name'] ?? '') . ' không còn đủ tồn kho.'
+                        );
                     }
                 }
 
                 if ($verifiedFoodItems->isNotEmpty()) {
-                    Cache::put("ve_foods:{$ve->id}", $verifiedFoodItems->values()->all(), now()->addDays(30));
+                    Cache::put(
+                        "ve_foods:{$ve->id}",
+                        $verifiedFoodItems->values()->all(),
+                        now()->addDays(30)
+                    );
                 }
 
                 return [
@@ -665,7 +1276,10 @@ class BanVeController extends Controller
             });
 
             if (($result['payment_method'] ?? null) === 'vietqr') {
-                return redirect()->route('staff.ban-ve.vietqr-waiting', ['id' => $result['pending_ticket_id']]);
+                return redirect()->route(
+                    'staff.ban-ve.vietqr-waiting',
+                    ['id' => $result['pending_ticket_id']]
+                );
             }
 
             $ve = $result['ve'];
@@ -673,29 +1287,54 @@ class BanVeController extends Controller
 
             $this->taoThongBaoStaff(
                 'Bán vé thành công',
-                'Đã bán vé ' . $ve->ma_ve . ' - Phim: ' . $ve->ten_phim . ' - Ghế: ' . $ve->ma_ghe . ' - Tổng tiền: ' . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
+                'Đã bán vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế: ' . $ve->ma_ghe
+                    . ' - Tổng tiền: '
+                    . number_format($ve->tong_tien, 0, ',', '.')
+                    . 'đ.',
                 've',
                 route('staff.ban-ve.success', ['id' => $ve->id])
             );
 
-            session()->flash('clear_food_cart_key', $request->input('clear_cart_key', 'staff_food_cart_v2_' . auth()->id() . '_' . $suatChieu->id));
+            session()->flash(
+                'clear_food_cart_key',
+                $request->input(
+                    'clear_cart_key',
+                    'staff_food_cart_v2_' . auth()->id() . '_' . $suatChieu->id
+                )
+            );
 
             return redirect()
                 ->route('staff.ban-ve.success', ['id' => $ve->id])
-                ->with('success', 'Bán vé thành công. Mã vé: ' . $ve->ma_ve . '. Tiền thừa: ' . number_format($changeAmount, 0, ',', '.') . 'đ.');
+                ->with(
+                    'success',
+                    'Bán vé thành công. Mã vé: '
+                        . $ve->ma_ve
+                        . '. Tiền thừa: '
+                        . number_format($changeAmount, 0, ',', '.')
+                        . 'đ.'
+                );
         } catch (\Throwable $e) {
             report($e);
 
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'Không thể bán vé: ' . $e->getMessage());
+                ->with(
+                    'error',
+                    'Không thể bán vé: ' . $e->getMessage()
+                );
         }
     }
 
     public function showCheckout(SuatChieu $suatChieu)
     {
-        return redirect()->route('staff.ban-ve.show', $suatChieu->id);
+        return redirect()
+            ->route(
+                'staff.ban-ve.show',
+                $suatChieu->id
+            );
     }
 
     public function vietQrWaiting(int $id)
@@ -766,7 +1405,10 @@ class BanVeController extends Controller
                 $this->taoThongBaoVeMotLan(
                     $ve,
                     'Giao dịch VietQR hết hạn',
-                    'Giao dịch VietQR của vé ' . $ve->ma_ve . ' - Phim: ' . $ve->ten_phim . ' - Ghế: ' . $ve->ma_ghe . ' đã hết thời gian thanh toán. Ghế đã được giải phóng.',
+                    'Giao dịch VietQR của vé ' . $ve->ma_ve
+                        . ' - Phim: ' . $ve->ten_phim
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã hết thời gian thanh toán. Ghế đã được giải phóng.',
                     've',
                     route('staff.ban-ve.show', $ve->suat_chieu_id)
                 );
@@ -788,7 +1430,11 @@ class BanVeController extends Controller
                 $this->taoThongBaoVeMotLan(
                     $ve,
                     'Thanh toán VietQR thành công',
-                    'Vé ' . $ve->ma_ve . ' - Phim: ' . $ve->ten_phim . ' - Ghế: ' . $ve->ma_ghe . ' đã thanh toán VietQR thành công - Tổng tiền: ' . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
+                    'Vé ' . $ve->ma_ve
+                        . ' - Phim: ' . $ve->ten_phim
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã thanh toán VietQR thành công - Tổng tiền: '
+                        . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
                     've',
                     route('staff.ban-ve.success', ['id' => $ve->id])
                 );
@@ -809,7 +1455,9 @@ class BanVeController extends Controller
                 $this->taoThongBaoVeMotLan(
                     $ve,
                     'Giao dịch VietQR đã hủy',
-                    'Giao dịch VietQR của vé ' . $ve->ma_ve . ' - Ghế: ' . $ve->ma_ghe . ' đã bị hủy. Ghế đã được giải phóng.',
+                    'Giao dịch VietQR của vé ' . $ve->ma_ve
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã bị hủy. Ghế đã được giải phóng.',
                     've',
                     route('staff.ban-ve.show', $ve->suat_chieu_id)
                 );
@@ -867,7 +1515,9 @@ class BanVeController extends Controller
             $this->taoThongBaoVeMotLan(
                 $ve,
                 'Đã hủy giao dịch VietQR',
-                'Nhân viên đã hủy giao dịch VietQR của vé ' . $ve->ma_ve . ' - Phim: ' . $ve->ten_phim . ' - Ghế: ' . $ve->ma_ghe . '. Ghế đã được giải phóng.',
+                'Nhân viên đã hủy giao dịch VietQR của vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế: ' . $ve->ma_ghe . '. Ghế đã được giải phóng.',
                 've',
                 route('staff.ban-ve.show', $ve->suat_chieu_id)
             );
@@ -884,10 +1534,10 @@ class BanVeController extends Controller
 
         $ve = $orderCode > 0
             ? VeXemPhim::query()
-                ->where('loai_ve', 'tai_quay')
-                ->where('payment_method', 'vietqr')
-                ->where('payos_order_code', $orderCode)
-                ->first()
+            ->where('loai_ve', 'tai_quay')
+            ->where('payment_method', 'vietqr')
+            ->where('payos_order_code', $orderCode)
+            ->first()
             : null;
 
         if (!$ve) {
@@ -905,7 +1555,11 @@ class BanVeController extends Controller
                 $this->taoThongBaoVeMotLan(
                     $ve,
                     'Thanh toán VietQR thành công',
-                    'Vé ' . $ve->ma_ve . ' - Phim: ' . $ve->ten_phim . ' - Ghế: ' . $ve->ma_ghe . ' đã thanh toán VietQR thành công - Tổng tiền: ' . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
+                    'Vé ' . $ve->ma_ve
+                        . ' - Phim: ' . $ve->ten_phim
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã thanh toán VietQR thành công - Tổng tiền: '
+                        . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
                     've',
                     route('staff.ban-ve.success', ['id' => $ve->id])
                 );
@@ -924,7 +1578,9 @@ class BanVeController extends Controller
                 $this->taoThongBaoVeMotLan(
                     $ve,
                     'Giao dịch VietQR đã hủy',
-                    'Giao dịch VietQR của vé ' . $ve->ma_ve . ' - Ghế: ' . $ve->ma_ghe . ' đã bị hủy. Ghế đã được giải phóng.',
+                    'Giao dịch VietQR của vé ' . $ve->ma_ve
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã bị hủy. Ghế đã được giải phóng.',
                     've',
                     route('staff.ban-ve.show', $ve->suat_chieu_id)
                 );
@@ -946,10 +1602,10 @@ class BanVeController extends Controller
 
         $ve = $orderCode > 0
             ? VeXemPhim::query()
-                ->where('loai_ve', 'tai_quay')
-                ->where('payment_method', 'vietqr')
-                ->where('payos_order_code', $orderCode)
-                ->first()
+            ->where('loai_ve', 'tai_quay')
+            ->where('payment_method', 'vietqr')
+            ->where('payos_order_code', $orderCode)
+            ->first()
             : null;
 
         if (!$ve) {
@@ -965,7 +1621,11 @@ class BanVeController extends Controller
                 $this->taoThongBaoVeMotLan(
                     $ve,
                     'Thanh toán VietQR thành công',
-                    'Vé ' . $ve->ma_ve . ' - Phim: ' . $ve->ten_phim . ' - Ghế: ' . $ve->ma_ghe . ' đã thanh toán VietQR thành công - Tổng tiền: ' . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
+                    'Vé ' . $ve->ma_ve
+                        . ' - Phim: ' . $ve->ten_phim
+                        . ' - Ghế: ' . $ve->ma_ghe
+                        . ' đã thanh toán VietQR thành công - Tổng tiền: '
+                        . number_format($ve->tong_tien, 0, ',', '.') . 'đ.',
                     've',
                     route('staff.ban-ve.success', ['id' => $ve->id])
                 );
@@ -987,7 +1647,9 @@ class BanVeController extends Controller
             $this->taoThongBaoVeMotLan(
                 $ve,
                 'Giao dịch VietQR đã hủy',
-                'Giao dịch VietQR của vé ' . $ve->ma_ve . ' - Ghế: ' . $ve->ma_ghe . ' đã được hủy. Ghế đã được giải phóng.',
+                'Giao dịch VietQR của vé ' . $ve->ma_ve
+                    . ' - Ghế: ' . $ve->ma_ghe
+                    . ' đã được hủy. Ghế đã được giải phóng.',
                 've',
                 route('staff.ban-ve.show', $ve->suat_chieu_id)
             );
@@ -1042,7 +1704,10 @@ class BanVeController extends Controller
             $this->taoThongBaoVeMotLan(
                 $ve,
                 'In vé thành công',
-                'Vé ' . $ve->ma_ve . ' - Phim: ' . $ve->ten_phim . ' - Ghế: ' . $ve->ma_ghe . ' đã được in/phát hành.',
+                'Vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế: ' . $ve->ma_ghe
+                    . ' đã được in/phát hành.',
                 've',
                 route('staff.ban-ve.success', ['id' => $ve->id])
             );
@@ -1067,12 +1732,20 @@ class BanVeController extends Controller
 
         $seatDetails = GheNgoi::query()
             ->with('loaiGhe')
-            ->where('phong_chieu_id', $ve->suatChieu->phong_chieu_id)
+            ->where(
+                'phong_chieu_id',
+                $ve->suatChieu->phong_chieu_id
+            )
             ->whereIn('ma_ghe', $seatCodes->all())
             ->get()
-            ->keyBy(fn($seat) => strtoupper(trim((string) $seat->ma_ghe)));
+            ->keyBy(function ($seat) {
+                return strtoupper(trim((string) $seat->ma_ghe));
+            });
 
-        return view('staff.ban-ve.print-ticket', compact('ve', 'seatDetails'));
+        return view(
+            'staff.ban-ve.print-ticket',
+            compact('ve', 'seatDetails')
+        );
     }
 
     public function printInvoice(int $id)
@@ -1080,135 +1753,6 @@ class BanVeController extends Controller
         $ve = $this->findPrintableTicket($id);
 
         return view('staff.ban-ve.print-invoice', compact('ve'));
-    }
-
-    /**
-     * Hàm kiểm tra vị trí ghế chọn hợp lệ (Đồng bộ logic 100% với Client JS / DatVeController)
-     */
-    private function validateSeatsAdjacent(array $seats, $suatChieuId): bool
-    {
-        if (empty($seats)) {
-            return true;
-        }
-
-        $selectedSeats = collect($seats)
-            ->map(fn($s) => strtoupper(trim($s)))
-            ->filter()
-            ->unique();
-
-        $suatChieu = SuatChieu::find($suatChieuId);
-        if (!$suatChieu) {
-            return false;
-        }
-
-        // 1. Lấy danh sách ghế không thể chọn (đã đặt / giữ chỗ / bảo trì)
-        $bookedTickets = VeXemPhim::where('suat_chieu_id', $suatChieuId)
-            ->where(function ($q) {
-                $q->whereIn('trang_thai', ['dang_giu', 'da_thanh_toan', 'da_su_dung', 'da_dat', 'da_in'])
-                    ->orWhere(function ($sub) {
-                        $sub->where('trang_thai', 'cho_thanh_toan')
-                            ->where('thoi_gian_het_han', '>', now());
-                    });
-            })
-            ->pluck('ma_ghe');
-
-        $bookedSeatsMap = [];
-        foreach ($bookedTickets as $maGheString) {
-            foreach (explode(',', (string)$maGheString) as $code) {
-                $seatCode = strtoupper(trim($code));
-                if ($seatCode !== '') {
-                    $bookedSeatsMap[$seatCode] = true;
-                }
-            }
-        }
-
-        $inactiveSeats = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)
-            ->where('trang_thai', '!=', 'hoat_dong')
-            ->pluck('ma_ghe');
-
-        foreach ($inactiveSeats as $code) {
-            $seatCode = strtoupper(trim($code));
-            if ($seatCode !== '') {
-                $bookedSeatsMap[$seatCode] = true;
-            }
-        }
-
-        // 2. Gom nhóm toàn bộ ghế trong phòng chiếu theo hàng
-        $allRoomSeats = GheNgoi::where('phong_chieu_id', $suatChieu->phong_chieu_id)->get();
-        $roomSeatsByRow = [];
-
-        foreach ($allRoomSeats as $g) {
-            $code = strtoupper(trim($g->ma_ghe));
-            if (preg_match('/^([A-Z]+)([0-9]+)$/', $code, $m)) {
-                $row = $m[1];
-                $num = (int)$m[2];
-                $isUnavailable = isset($bookedSeatsMap[$code]);
-                $isSelected = $selectedSeats->contains($code);
-
-                $roomSeatsByRow[$row][] = [
-                    'code' => $code,
-                    'num' => $num,
-                    'isUnavailable' => $isUnavailable,
-                    'isSelected' => $isSelected,
-                    'isOccupied' => $isUnavailable || $isSelected,
-                ];
-            }
-        }
-
-        // 3. Danh sách hàng có ghế được chọn
-        $selectedRows = [];
-        foreach ($selectedSeats as $code) {
-            if (preg_match('/^([A-Z]+)([0-9]+)$/', $code, $m)) {
-                $selectedRows[$m[1]] = true;
-            }
-        }
-
-        // 4. Kiểm tra từng hàng theo 2 trường hợp
-        foreach (array_keys($selectedRows) as $row) {
-            if (!isset($roomSeatsByRow[$row])) continue;
-
-            $physicalSeats = $roomSeatsByRow[$row];
-            usort($physicalSeats, fn($a, $b) => $a['num'] <=> $b['num']);
-
-            $hasBookedOrLockedInRow = collect($physicalSeats)->contains('isUnavailable', true);
-
-            // Trường hợp 1: Hàng ĐÃ CÓ ghế người khác đặt hoặc ghế bảo trì
-            if ($hasBookedOrLockedInRow) {
-                $selectedIndices = [];
-                foreach ($physicalSeats as $idx => $seat) {
-                    if ($seat['isSelected']) $selectedIndices[] = $idx;
-                }
-
-                if (count($selectedIndices) > 1) {
-                    $minIdx = min($selectedIndices);
-                    $maxIdx = max($selectedIndices);
-                    for ($i = $minIdx + 1; $i < $maxIdx; $i++) {
-                        if (!$physicalSeats[$i]['isOccupied']) {
-                            return false; // Không được để trống ghế ở giữa cụm ghế chọn
-                        }
-                    }
-                }
-            }
-            // Trường hợp 2: Hàng HOÀN TOÀN TRỐNG
-            else {
-                $emptyBlockLength = 0;
-                foreach ($physicalSeats as $seat) {
-                    if ($seat['isOccupied']) {
-                        if ($emptyBlockLength === 1) {
-                            return false; // Không được chừa 1 ghế lẻ bên trái cụm ghế
-                        }
-                        $emptyBlockLength = 0;
-                    } else {
-                        $emptyBlockLength++;
-                    }
-                }
-                if ($emptyBlockLength === 1) {
-                    return false; // Không được chừa 1 ghế lẻ bên phải cụm ghế
-                }
-            }
-        }
-
-        return true;
     }
 
     private function findPrintableTicket(int $id): VeXemPhim
@@ -1224,12 +1768,20 @@ class BanVeController extends Controller
             ->where('loai_ve', 'tai_quay')
             ->findOrFail($id);
 
-        if (!in_array($ve->trang_thai, ['da_thanh_toan', 'da_in', 'da_su_dung'], true)) {
+        if (!in_array(
+            $ve->trang_thai,
+            ['da_thanh_toan', 'da_in', 'da_su_dung'],
+            true
+        )) {
             abort(422, 'Vé chưa thanh toán thành công nên chưa thể xem hoặc in.');
         }
 
         if ($ve->gheVes->isEmpty()) {
-            $this->createSeatTickets($ve, explode(',', $ve->ma_ghe));
+            $this->createSeatTickets(
+                $ve,
+                explode(',', $ve->ma_ghe)
+            );
+
             $ve->load('gheVes');
         }
 
@@ -1248,10 +1800,15 @@ class BanVeController extends Controller
                 'x-client-id' => (string) env('PAYOS_CLIENT_ID'),
                 'x-api-key' => (string) env('PAYOS_API_KEY'),
             ])
-            ->get('https://api-merchant.payos.vn/v2/payment-requests/' . $ve->payos_order_code);
+            ->get(
+                'https://api-merchant.payos.vn/v2/payment-requests/'
+                    . $ve->payos_order_code
+            );
 
         if (!$response->successful()) {
-            throw new \RuntimeException('Không thể lấy trạng thái PayOS (HTTP ' . $response->status() . ').');
+            throw new \RuntimeException(
+                'Không thể lấy trạng thái PayOS (HTTP ' . $response->status() . ').'
+            );
         }
 
         return strtoupper((string) data_get($response->json(), 'data.status', 'PENDING'));
@@ -1259,7 +1816,9 @@ class BanVeController extends Controller
 
     private function cancelPayosLinkSilently(VeXemPhim $ve, string $reason): void
     {
-        if (!$ve->payos_order_code) return;
+        if (!$ve->payos_order_code) {
+            return;
+        }
 
         try {
             Http::timeout(10)
@@ -1268,9 +1827,12 @@ class BanVeController extends Controller
                     'x-client-id' => (string) env('PAYOS_CLIENT_ID'),
                     'x-api-key' => (string) env('PAYOS_API_KEY'),
                 ])
-                ->post('https://api-merchant.payos.vn/v2/payment-requests/' . $ve->payos_order_code . '/cancel', [
-                    'cancellationReason' => $reason
-                ]);
+                ->post(
+                    'https://api-merchant.payos.vn/v2/payment-requests/'
+                        . $ve->payos_order_code
+                        . '/cancel',
+                    ['cancellationReason' => $reason]
+                );
         } catch (\Throwable $e) {
             report($e);
         }
@@ -1303,9 +1865,14 @@ class BanVeController extends Controller
                 ->where('id', '!=', $ve->id)
                 ->where(function ($query) {
                     $query->whereIn('trang_thai', [
-                        'dang_giu', 'da_dat', 'da_thanh_toan', 'da_in', 'da_su_dung',
+                        'dang_giu',
+                        'da_dat',
+                        'da_thanh_toan',
+                        'da_in',
+                        'da_su_dung',
                     ])->orWhere(function ($pendingQuery) {
-                        $pendingQuery->where('trang_thai', 'cho_thanh_toan')
+                        $pendingQuery
+                            ->where('trang_thai', 'cho_thanh_toan')
                             ->where('thoi_gian_het_han', '>', now());
                     });
                 })
@@ -1319,7 +1886,9 @@ class BanVeController extends Controller
             $conflicts = $seatCodes->intersect($otherBlockedSeats)->values();
 
             if ($conflicts->isNotEmpty()) {
-                throw new \RuntimeException('Ghế ' . $conflicts->implode(', ') . ' đã được giao dịch khác chiếm.');
+                throw new \RuntimeException(
+                    'Ghế ' . $conflicts->implode(', ') . ' đã được giao dịch khác chiếm.'
+                );
             }
 
             $this->deductFoodStock(is_array($ve->food_items) ? $ve->food_items : []);
@@ -1357,6 +1926,11 @@ class BanVeController extends Controller
             $query->where('suat_chieu_id', $showtimeId);
         }
 
+        /*
+         * Không update hàng loạt ở đây.
+         * Cần xử lý từng vé để vừa đổi trạng thái vừa tạo thông báo
+         * cho đúng nhân viên đã tạo giao dịch.
+         */
         $expiredTickets = $query->get();
 
         foreach ($expiredTickets as $ve) {
@@ -1365,12 +1939,18 @@ class BanVeController extends Controller
                 'thoi_gian_het_han' => null,
             ]);
 
-            $this->cancelPayosLinkSilently($ve, 'Het thoi gian giu ghe');
+            $this->cancelPayosLinkSilently(
+                $ve,
+                'Het thoi gian giu ghe'
+            );
 
             $this->taoThongBaoVeMotLan(
                 $ve,
                 'Giao dịch VietQR hết hạn',
-                'Giao dịch VietQR của vé ' . $ve->ma_ve . ' - Phim: ' . $ve->ten_phim . ' - Ghế: ' . $ve->ma_ghe . ' đã hết thời gian thanh toán. Ghế đã được giải phóng.',
+                'Giao dịch VietQR của vé ' . $ve->ma_ve
+                    . ' - Phim: ' . $ve->ten_phim
+                    . ' - Ghế: ' . $ve->ma_ghe
+                    . ' đã hết thời gian thanh toán. Ghế đã được giải phóng.',
                 've',
                 route('staff.ban-ve.show', $ve->suat_chieu_id)
             );
@@ -1380,10 +1960,15 @@ class BanVeController extends Controller
     private function deductFoodStock(array $foodItems): void
     {
         foreach ($foodItems as $foodItem) {
-            if (!is_array($foodItem)) continue;
+            if (!is_array($foodItem)) {
+                continue;
+            }
 
             $quantity = (int) ($foodItem['qty'] ?? 0);
-            if ($quantity <= 0) continue;
+
+            if ($quantity <= 0) {
+                continue;
+            }
 
             if (($foodItem['type'] ?? null) === 'combo') {
                 $food = DoAn::with(['comboItems.variant'])
@@ -1391,14 +1976,28 @@ class BanVeController extends Controller
                     ->find((int) ($foodItem['food_id'] ?? 0));
 
                 if (!$food || !$food->isCombo()) {
-                    throw new \RuntimeException('Không tìm thấy combo ' . ($foodItem['name'] ?? '') . '.');
+                    throw new \RuntimeException(
+                        'Không tìm thấy combo ' . ($foodItem['name'] ?? '') . '.'
+                    );
                 }
 
                 foreach ($food->comboItems as $comboItem) {
-                    $variantId = $comboItem->food_variant_id ?? $comboItem->variant_id ?? $comboItem->variant?->id;
-                    if (!$variantId) throw new \RuntimeException('Combo ' . $food->name . ' có thành phần không hợp lệ.');
+                    $variantId =
+                        $comboItem->food_variant_id
+                        ?? $comboItem->variant_id
+                        ?? $comboItem->variant?->id;
 
-                    $quantityPerCombo = max((int) ($comboItem->quantity ?? 1), 1);
+                    if (!$variantId) {
+                        throw new \RuntimeException(
+                            'Combo ' . $food->name . ' có thành phần không hợp lệ.'
+                        );
+                    }
+
+                    $quantityPerCombo = max(
+                        (int) ($comboItem->quantity ?? 1),
+                        1
+                    );
+
                     $quantityToDeduct = $quantityPerCombo * $quantity;
 
                     $updatedRows = BienTheDoAn::where('id', $variantId)
@@ -1406,15 +2005,27 @@ class BanVeController extends Controller
                         ->decrement('stock_quantity', $quantityToDeduct);
 
                     if ($updatedRows === 0) {
-                        throw new \RuntimeException('Không đủ tồn kho thành phần của combo ' . $food->name . '.');
+                        throw new \RuntimeException(
+                            'Không đủ tồn kho thành phần của combo '
+                                . $food->name . '.'
+                        );
                     }
                 }
+
                 continue;
             }
 
-            $variantId = (int) ($foodItem['variant_id'] ?? $foodItem['id'] ?? 0);
+            $variantId = (int) (
+                $foodItem['variant_id']
+                ?? $foodItem['id']
+                ?? 0
+            );
+
             if ($variantId <= 0) {
-                throw new \RuntimeException('Không xác định được biến thể của món ' . ($foodItem['name'] ?? '') . '.');
+                throw new \RuntimeException(
+                    'Không xác định được biến thể của món '
+                        . ($foodItem['name'] ?? '') . '.'
+                );
             }
 
             $updatedRows = BienTheDoAn::where('id', $variantId)
@@ -1422,16 +2033,24 @@ class BanVeController extends Controller
                 ->decrement('stock_quantity', $quantity);
 
             if ($updatedRows === 0) {
-                throw new \RuntimeException('Món ' . ($foodItem['name'] ?? '') . ' không còn đủ tồn kho.');
+                throw new \RuntimeException(
+                    'Món ' . ($foodItem['name'] ?? '')
+                        . ' không còn đủ tồn kho.'
+                );
             }
         }
     }
 
-    private function createSeatTickets(VeXemPhim $ve, iterable $seatCodes): void
-    {
+    private function createSeatTickets(
+        VeXemPhim $ve,
+        iterable $seatCodes
+    ): void {
         foreach ($seatCodes as $seatCode) {
             $seatCode = strtoupper(trim((string) $seatCode));
-            if ($seatCode === '') continue;
+
+            if ($seatCode === '') {
+                continue;
+            }
 
             VeXemPhimGhe::firstOrCreate(
                 [
@@ -1439,17 +2058,27 @@ class BanVeController extends Controller
                     'ma_ghe' => $seatCode,
                 ],
                 [
-                    'ma_qr' => 'CH-' . Str::upper(Str::random(48)),
-                    'trang_thai' => VeXemPhimGhe::CHUA_SU_DUNG,
+                    'ma_qr' => 'CH-'
+                        . Str::upper(Str::random(48)),
+
+                    'trang_thai' =>
+                    VeXemPhimGhe::CHUA_SU_DUNG,
                 ]
             );
         }
     }
 
-    private function taoThongBaoStaff(string $tieuDe, string $noiDung, string $loai = 've', ?string $duongDan = null): void
-    {
+    private function taoThongBaoStaff(
+        string $tieuDe,
+        string $noiDung,
+        string $loai = 've',
+        ?string $duongDan = null
+    ): void {
         $staffId = auth()->id();
-        if (!$staffId) return;
+
+        if (!$staffId) {
+            return;
+        }
 
         ThongBaoCaNhan::create([
             'nguoi_dung_id' => $staffId,
@@ -1462,17 +2091,28 @@ class BanVeController extends Controller
         ]);
     }
 
-    private function taoThongBaoVeMotLan(VeXemPhim $ve, string $tieuDe, string $noiDung, string $loai = 've', ?string $duongDan = null): void
-    {
+
+    private function taoThongBaoVeMotLan(
+        VeXemPhim $ve,
+        string $tieuDe,
+        string $noiDung,
+        string $loai = 've',
+        ?string $duongDan = null
+    ): void {
         $staffId = $ve->nhan_vien_id ?: auth()->id();
-        if (!$staffId) return;
+
+        if (!$staffId) {
+            return;
+        }
 
         $daTonTai = ThongBaoCaNhan::where('nguoi_dung_id', $staffId)
             ->where('tieu_de', $tieuDe)
             ->where('noi_dung', $noiDung)
             ->exists();
 
-        if ($daTonTai) return;
+        if ($daTonTai) {
+            return;
+        }
 
         ThongBaoCaNhan::create([
             'nguoi_dung_id' => $staffId,

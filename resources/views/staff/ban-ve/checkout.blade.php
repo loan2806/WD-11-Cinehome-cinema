@@ -27,34 +27,101 @@ $posterPath = asset('storage/movies/' . $suatChieu->phim->poster);
 
 $staffId = auth()->id();
 $previousUrl = url()->previous();
+$staffVoucherData = $staffVouchers->map(function ($voucher) {
+    return [
+        'code' => $voucher->ma_voucher,
+        'name' => $voucher->ten_voucher,
+        'type' => $voucher->kieu_giam,
+        'value' => (float) $voucher->gia_tri_giam,
+    ];
+})->values();
 @endphp
 
 @section('content')
 
 <style>
+    /* ===== NGOÀI ĐEN - KHUNG TRONG XÁM ĐEN ===== */
+    .booking-checkout-page {
+        background: #080808 !important;
+    }
+
     .booking-checkout-page .booking-checkout-shell {
-        background: #141414 !important;
-        border-color: #27272a !important;
+        background: #1b1b1b !important;
+        border-color: rgba(255, 255, 255, 0.12) !important;
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.55) !important;
+        backdrop-filter: blur(8px);
+    }
+
+    .booking-checkout-page .booking-checkout-info,
+    .booking-checkout-page .booking-checkout-order {
+        border-color: rgba(148, 163, 184, 0.14) !important;
     }
 
     .booking-checkout-page .payment-method-label {
         border-radius: 16px !important;
+        background: #141414;
+        transition: transform .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+
+    .booking-checkout-page .payment-method-label:hover {
+        transform: translateY(-1px);
+        border-color: rgba(250, 204, 21, .5) !important;
+        box-shadow: 0 10px 28px rgba(2, 6, 23, .22);
     }
 
     .booking-checkout-page #cashPaymentSection,
     .booking-checkout-page #vietQrPaymentSection {
         border-radius: 16px !important;
-        background: #1a1a1a !important;
+        background: #141414 !important;
+        border-color: rgba(148, 163, 184, 0.14) !important;
+    }
+
+    .booking-checkout-page input {
+        border-radius: 12px !important;
+        background: #111111 !important;
+        border-color: rgba(148, 163, 184, 0.18) !important;
+    }
+
+    .booking-checkout-page input:focus {
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, .08);
+    }
+
+    .staff-voucher-scroll::-webkit-scrollbar {
+        width: 4px;
+    }
+    .staff-voucher-scroll::-webkit-scrollbar-track {
+        background: rgba(148, 163, 184, .06);
+        border-radius: 4px;
+    }
+    .staff-voucher-scroll::-webkit-scrollbar-thumb {
+        background: rgba(250, 204, 21, .65);
+        border-radius: 4px;
+    }
+    .staff-voucher-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(250, 204, 21, .65) rgba(148, 163, 184, .06);
+    }
+
+    .staff-voucher-card {
+        transition: all .2s ease;
+    }
+    .staff-voucher-card:hover {
+        transform: translateY(-1px);
+        border-color: rgba(250, 204, 21, .5) !important;
+        background: #242424 !important;
+    }
+
+    .booking-checkout-page .checkout-food-image {
+        width: 72px !important;
+        height: 72px !important;
+        min-width: 72px !important;
+        min-height: 72px !important;
+        flex: 0 0 72px !important;
     }
 
     .booking-checkout-page #submitPaymentButton {
         border-radius: 16px !important;
     }
-
-    .booking-checkout-page input {
-        border-radius: 12px !important;
-    }
-
 </style>
 
 
@@ -232,17 +299,37 @@ $previousUrl = url()->previous();
                                 @forelse ($foodItems as $item)
 
                                 @php
-                                $foodImagePath = '';
+                                $foodImagePath = trim((string) (
+                                    $item['image_url']
+                                    ?? $item['image']
+                                    ?? $item['image_path']
+                                    ?? $item['hinh_anh']
+                                    ?? $item['anh']
+                                    ?? $item['food_image']
+                                    ?? data_get($item, 'food.image_url')
+                                    ?? data_get($item, 'food.image')
+                                    ?? data_get($item, 'food.image_path')
+                                    ?? ''
+                                ));
+                                $foodFallbackImage = asset('assets/images/LOGO copy.png');
+                                $foodImageUrl = $foodFallbackImage;
 
-                                if (!empty($item['image'])) {
-                                $foodImagePath = trim((string) $item['image']);
+                                // Hỗ trợ cả URL đầy đủ, /storage/foods/..., foods/... và tên file.
+                                if ($foodImagePath !== '') {
+                                    if (preg_match('/^https?:\/\//i', $foodImagePath)) {
+                                        $foodImageUrl = $foodImagePath;
+                                    } else {
+                                        $normalizedFoodImage = ltrim(str_replace('\\', '/', $foodImagePath), '/');
+                                        $normalizedFoodImage = preg_replace('#^public/#', '', $normalizedFoodImage);
 
-                                if (
-                                $foodImagePath !== '' &&
-                                strpos($foodImagePath, 'foods/') !== 0
-                                ) {
-                                $foodImagePath = 'foods/' . $foodImagePath;
-                                }
+                                        if (strpos($normalizedFoodImage, 'storage/') === 0) {
+                                            $foodImageUrl = asset($normalizedFoodImage);
+                                        } elseif (strpos($normalizedFoodImage, 'foods/') === 0) {
+                                            $foodImageUrl = asset('storage/' . $normalizedFoodImage);
+                                        } else {
+                                            $foodImageUrl = asset('storage/foods/' . $normalizedFoodImage);
+                                        }
+                                    }
                                 }
 
                                 $foodName = $item['name'] ?? 'Sản phẩm';
@@ -255,8 +342,17 @@ $previousUrl = url()->previous();
 
                                     <div class="flex min-w-0 items-center gap-3">
 
-                                        @if ($foodImagePath !== '')
-                                        <img src="{{ asset('storage/' . $foodImagePath) }}" alt="{{ $foodName }}" class="h-16 w-16 rounded-lg bg-white/5 object-contain">
+                                        @if ($foodImageUrl !== '')
+                                        <div class="h-[64px] w-[64px] shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[#111111]">
+                                            <img
+                                                src="{{ $foodImageUrl }}"
+                                                alt="{{ $foodName }}"
+                                                class="block h-full w-full object-cover object-center"
+                                                loading="lazy"
+                                                decoding="async"
+                                                onerror="this.onerror=null;this.src='{{ $foodFallbackImage }}';"
+                                            >
+                                        </div>
                                         @endif
 
                                         <div class="min-w-0">
@@ -329,6 +425,11 @@ $previousUrl = url()->previous();
 
                         </div>
 
+                        <div id="discountRow" class="mt-4 hidden justify-between border-t border-white/10 pt-4 font-semibold text-green-400">
+                            <span>Giảm giá (Voucher)</span>
+                            <span id="discountAmount">-0đ</span>
+                        </div>
+
                         <div class="mt-5 flex justify-between border-t border-white/10 pt-5 text-2xl font-black text-yellow-400">
 
                             <span>
@@ -339,6 +440,102 @@ $previousUrl = url()->previous();
                                 {{ number_format($total, 0, ',', '.') }}đ
                             </span>
 
+                        </div>
+
+                    </div>
+
+                    {{-- ================= VOUCHER ĐẶC BIỆT TẠI QUẦY ================= --}}
+                    <div class="border-b border-white/10 py-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h2 class="text-xl font-black text-yellow-400">Mã giảm giá</h2>
+                                <p class="mt-1 text-xs text-gray-400">
+                                    Dùng voucher cho khách thuộc trường hợp đặc biệt.
+                                </p>
+                            </div>
+                            <span class="rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-bold text-yellow-400">
+                                {{ $staffVouchers->count() }} voucher khả dụng
+                            </span>
+                        </div>
+
+                        {{-- DANH SÁCH VOUCHER ĐẶC BIỆT HIỆN SẴN --}}
+                        <div class="staff-voucher-scroll mb-4 max-h-[245px] space-y-2 overflow-y-auto pr-1">
+                            @forelse($staffVouchers as $voucher)
+                                @php
+                                    $voucherValue = (float) $voucher->gia_tri_giam;
+                                    $voucherDisplay = $voucher->kieu_giam === 'phan_tram'
+                                        ? rtrim(rtrim(number_format($voucherValue, 2, ',', '.'), '0'), ',') . '%'
+                                        : number_format($voucherValue, 0, ',', '.') . 'đ';
+                                @endphp
+
+                                <div class="staff-voucher-card flex items-center gap-3 rounded-2xl border border-white/10 bg-[#161616] p-3">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-400 text-black">
+                                        <span class="text-lg">🎟</span>
+                                    </div>
+
+                                    <div class="min-w-0 flex-1">
+                                        <div class="truncate text-sm font-black text-white">
+                                            {{ $voucher->ten_voucher }}
+                                        </div>
+                                        <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                                            <span class="rounded-md border border-yellow-400/50 bg-yellow-400/10 px-2 py-0.5 font-bold text-yellow-300">
+                                                {{ $voucher->ma_voucher }}
+                                            </span>
+                                            <span class="font-bold text-green-400">
+                                                Giảm {{ $voucherDisplay }}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        class="use-staff-voucher shrink-0 rounded-xl border border-yellow-400/60 px-3 py-2 text-xs font-black text-yellow-300 transition hover:bg-yellow-400 hover:text-black"
+                                        data-voucher-code="{{ $voucher->ma_voucher }}"
+                                    >
+                                        Sử dụng
+                                    </button>
+                                </div>
+                            @empty
+                                <div class="rounded-2xl border border-white/10 bg-[#161616] p-4 text-sm text-gray-400">
+                                    Hiện chưa có voucher đặc biệt nào đang hoạt động tại quầy.
+                                </div>
+                            @endforelse
+                        </div>
+
+                        <div class="mb-3 text-xs text-gray-500">
+                            Hoặc nhập mã voucher khác nếu khách cung cấp mã riêng.
+                        </div>
+
+                        <div class="flex gap-2">
+                            <input
+                                type="text"
+                                id="voucherCode"
+                                placeholder="HOẶC NHẬP MÃ VOUCHER KHÁC..."
+                                autocomplete="off"
+                                class="flex-1 rounded-2xl border border-white/10 bg-[#111111] px-4 py-3 text-sm uppercase tracking-wider text-white outline-none transition focus:border-yellow-400"
+                            >
+
+                            <button
+                                type="button"
+                                id="applyVoucherButton"
+                                class="shrink-0 rounded-2xl bg-yellow-400 px-5 text-sm font-black text-black transition duration-200 hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                Áp dụng
+                            </button>
+                        </div>
+
+                        <div
+                            id="voucherResult"
+                            class="mt-3 hidden items-center justify-between rounded-2xl border border-yellow-400/30 bg-yellow-400/10 p-3.5 text-sm text-yellow-300"
+                        >
+                            <span id="voucherResultText">✔ Đã áp dụng voucher</span>
+                            <button
+                                type="button"
+                                id="resetVoucherButton"
+                                class="ml-2 text-xs font-bold text-red-400 underline transition hover:text-red-300"
+                            >
+                                Hủy dùng
+                            </button>
                         </div>
 
                     </div>
@@ -358,6 +555,8 @@ $previousUrl = url()->previous();
                             <input type="hidden" name="food_cart" value="{{ json_encode($foodItems->values()->all()) }}">
 
                             <input type="hidden" name="clear_cart_key" value="staff_food_cart_v2_{{ $staffId }}_{{ $suatChieu->id }}">
+
+                            <input type="hidden" id="submitVoucherCode" name="voucher_code" value="">
 
                             {{-- PHƯƠNG THỨC THANH TOÁN --}}
                             <div class="space-y-3">
@@ -508,7 +707,7 @@ $previousUrl = url()->previous();
                                         Số tiền chuyển khoản
                                     </span>
 
-                                    <strong class="text-yellow-400">
+                                    <strong id="vietQrAmount" class="text-yellow-400">
                                         {{ number_format($total, 0, ',', '.') }}đ
                                     </strong>
 
@@ -547,7 +746,10 @@ $previousUrl = url()->previous();
 
 <script>
     (function() {
-        const totalAmount = @json((int) $total);
+        let totalAmount = @json((int) $total);
+        const baseTotalAmount = totalAmount;
+        let appliedVoucher = null;
+        let voucherRequestRunning = false;
 
         const paymentForm = document.getElementById('paymentForm');
         const paymentRadios = document.querySelectorAll(
@@ -651,6 +853,184 @@ $previousUrl = url()->previous();
                     , 'shadow-lg'
                     , 'shadow-yellow-400/10'
                 );
+            }
+        }
+
+        function formatVoucherMoney(value) {
+            const number = Number(value);
+            if (!Number.isFinite(number) || number < 0) return '0đ';
+            return new Intl.NumberFormat('vi-VN').format(Math.round(number)) + 'đ';
+        }
+
+        function showVoucherResult(message, isError = false) {
+            const result = document.getElementById('voucherResult');
+            const text = document.getElementById('voucherResultText');
+
+            if (!result || !text) return;
+
+            result.classList.remove(
+                'hidden',
+                'flex',
+                'border-yellow-400/30',
+                'bg-yellow-400/10',
+                'text-yellow-300',
+                'border-red-400/30',
+                'bg-red-400/10',
+                'text-red-300'
+            );
+
+            result.classList.add(
+                'flex',
+                isError ? 'border-red-400/30' : 'border-yellow-400/30',
+                isError ? 'bg-red-400/10' : 'bg-yellow-400/10',
+                isError ? 'text-red-300' : 'text-yellow-300'
+            );
+
+            text.textContent = message;
+        }
+
+        function updateStaffVoucherTotal() {
+            const totalEl = document.getElementById('grandTotal');
+            const discountRow = document.getElementById('discountRow');
+            const discountAmount = document.getElementById('discountAmount');
+
+            if (totalEl) {
+                totalEl.textContent = formatVoucherMoney(totalAmount);
+            }
+
+            const vietQrAmount = document.getElementById('vietQrAmount');
+            if (vietQrAmount) {
+                vietQrAmount.textContent = formatVoucherMoney(totalAmount);
+            }
+
+            if (appliedVoucher && discountRow && discountAmount) {
+                discountAmount.textContent = '-' + formatVoucherMoney(appliedVoucher.discount);
+                discountRow.classList.remove('hidden');
+                discountRow.classList.add('flex');
+            }
+        }
+
+        function resetStaffVoucher(message = '') {
+            appliedVoucher = null;
+            totalAmount = baseTotalAmount;
+
+            const codeInput = document.getElementById('voucherCode');
+            const hiddenInput = document.getElementById('submitVoucherCode');
+            const result = document.getElementById('voucherResult');
+            const discountRow = document.getElementById('discountRow');
+
+            if (codeInput) codeInput.value = '';
+            if (hiddenInput) hiddenInput.value = '';
+
+            if (result) {
+                result.classList.add('hidden');
+                result.classList.remove('flex');
+            }
+
+            if (discountRow) {
+                discountRow.classList.add('hidden');
+                discountRow.classList.remove('flex');
+            }
+
+            updateStaffVoucherTotal();
+
+            if (message) {
+                showVoucherResult(message, true);
+            }
+
+            updateCashCalculation();
+        }
+
+        async function applyStaffVoucher() {
+            if (voucherRequestRunning) return;
+
+            const codeInput = document.getElementById('voucherCode');
+            const applyButton = document.getElementById('applyVoucherButton');
+            const hiddenInput = document.getElementById('submitVoucherCode');
+
+            const code = (codeInput?.value || '').trim().toUpperCase();
+
+            if (!code) {
+                showVoucherResult('Vui lòng nhập mã voucher.', true);
+                return;
+            }
+
+            voucherRequestRunning = true;
+
+            if (applyButton) {
+                applyButton.disabled = true;
+                applyButton.textContent = 'Đang kiểm tra...';
+            }
+
+            try {
+                // Không gọi route riêng để tránh phụ thuộc endpoint chưa được khai báo.
+                // Backend BanVeController::store vẫn xác thực và tính lại voucher khi thanh toán.
+                const voucherList = @json($staffVoucherData);
+
+                const voucher = voucherList.find(function(item) {
+                    return String(item.code || '').trim().toUpperCase() === code;
+                });
+
+                if (!voucher) {
+                    resetStaffVoucher('Voucher không tồn tại, đã hết hạn hoặc không dành cho bán vé tại quầy.');
+                    return;
+                }
+
+                let discount = 0;
+                const voucherValue = Number(voucher.value || 0);
+
+                if (voucher.type === 'phan_tram') {
+                    const percent = Math.min(Math.max(voucherValue, 0), 100);
+                    discount = baseTotalAmount * (percent / 100);
+                } else {
+                    discount = voucherValue;
+                }
+
+                discount = Math.min(Math.max(discount, 0), baseTotalAmount);
+
+                appliedVoucher = {
+                    code: voucher.code,
+                    discount: Math.round(discount),
+                    finalTotal: Math.max(0, Math.round(baseTotalAmount - discount)),
+                };
+
+                totalAmount = Math.max(0, appliedVoucher.finalTotal);
+
+                if (codeInput) codeInput.value = appliedVoucher.code;
+                if (hiddenInput) hiddenInput.value = appliedVoucher.code;
+
+                const result = document.getElementById('voucherResult');
+                const text = document.getElementById('voucherResultText');
+
+                if (result && text) {
+                    result.classList.remove(
+                        'hidden',
+                        'border-red-400/30',
+                        'bg-red-400/10',
+                        'text-red-300'
+                    );
+                    result.classList.add(
+                        'flex',
+                        'border-yellow-400/30',
+                        'bg-yellow-400/10',
+                        'text-yellow-300'
+                    );
+                    text.innerHTML =
+                        `✔ Đã áp dụng <b>${appliedVoucher.code}</b> (-${formatVoucherMoney(appliedVoucher.discount)})`;
+                }
+
+                updateStaffVoucherTotal();
+                updateCashCalculation();
+            } catch (error) {
+                console.error('Staff checkout voucher:', error);
+                resetStaffVoucher('Không thể kết nối máy chủ để kiểm tra voucher.');
+            } finally {
+                voucherRequestRunning = false;
+
+                if (applyButton) {
+                    applyButton.disabled = false;
+                    applyButton.textContent = 'Áp dụng';
+                }
             }
         }
 
@@ -863,6 +1243,50 @@ $previousUrl = url()->previous();
                 });
             });
 
+        document.querySelectorAll('.use-staff-voucher').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const code = (this.dataset.voucherCode || '').trim().toUpperCase();
+                const input = document.getElementById('voucherCode');
+
+                if (input) {
+                    input.value = code;
+                }
+
+                applyStaffVoucher();
+            });
+        });
+
+        const voucherCodeInput = document.getElementById('voucherCode');
+        const applyVoucherButton = document.getElementById('applyVoucherButton');
+        const resetVoucherButton = document.getElementById('resetVoucherButton');
+
+        if (applyVoucherButton) {
+            applyVoucherButton.addEventListener('click', applyStaffVoucher);
+        }
+
+        if (resetVoucherButton) {
+            resetVoucherButton.addEventListener('click', function() {
+                resetStaffVoucher();
+            });
+        }
+
+        if (voucherCodeInput) {
+            voucherCodeInput.addEventListener('input', function() {
+                const typedCode = this.value.trim().toUpperCase();
+
+                if (appliedVoucher && typedCode !== appliedVoucher.code) {
+                    resetStaffVoucher();
+                }
+            });
+
+            voucherCodeInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    applyStaffVoucher();
+                }
+            });
+        }
+
         paymentForm.addEventListener('submit', function(event) {
             if (submitting) {
                 event.preventDefault();
@@ -870,6 +1294,23 @@ $previousUrl = url()->previous();
             }
 
             const paymentMethod = getPaymentMethod();
+
+            const typedVoucherCode = (
+                document.getElementById('voucherCode')?.value || ''
+            ).trim().toUpperCase();
+
+            if (
+                typedVoucherCode &&
+                (!appliedVoucher || appliedVoucher.code !== typedVoucherCode)
+            ) {
+                event.preventDefault();
+                showVoucherResult(
+                    'Bạn phải bấm “Áp dụng” và xác thực voucher trước khi thanh toán.',
+                    true
+                );
+                document.getElementById('voucherCode')?.focus();
+                return;
+            }
 
             if (paymentMethod === 'cash') {
                 const receivedAmount = Number(
