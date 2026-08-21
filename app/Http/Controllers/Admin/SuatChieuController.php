@@ -27,10 +27,6 @@ class SuatChieuController extends Controller
         '09-03' => 'Ngày Quốc Khánh (Ngày gối đầu)',
     ];
 
-    /**
-     * Hàm helper làm tròn LÊN mốc 5 phút gần nhất
-     * Ví dụ: 20:38 -> 20:40, 10:19 -> 10:20, 14:57 -> 15:00
-     */
     private function lamTronLen5Phut(Carbon $dateTime): Carbon
     {
         $minute = $dateTime->minute;
@@ -49,9 +45,14 @@ class SuatChieuController extends Controller
     {
         $now = Carbon::now();
 
-        // Suất chiếu kết thúc quá 24h sẽ tự động chuyển sang Xóa mềm (deleted_at được ghi nhận)
-        SuatChieu::where('thoi_gian_ket_thuc', '<=', $now->copy()->subHours(24))->delete();
+        // Xử lý bảo vệ: Nếu 'tu_ngay' > 'den_ngay' -> Tự động điều chỉnh 'den_ngay' = 'tu_ngay'
+        if ($request->filled('tu_ngay') && $request->filled('den_ngay')) {
+            if ($request->tu_ngay > $request->den_ngay) {
+                $request->merge(['den_ngay' => $request->tu_ngay]);
+            }
+        }
 
+        // 1. Tự động chuyển suất chiếu đã kết thúc sang 'da_chieu'
         SuatChieu::where('trang_thai', '!=', 'huy')
             ->where('trang_thai', '!=', 'da_chieu')
             ->where('thoi_gian_ket_thuc', '<=', $now)
@@ -68,37 +69,45 @@ class SuatChieuController extends Controller
             }
         }
 
+        // 2. Quản lý phân loại theo Tab (hoat_dong | da_chieu | tat_ca)
+        $tab = $request->get('tab', 'hoat_dong');
+
         $movieQuery = Phims::query();
 
         if ($request->filled('phim_id')) {
             $movieQuery->where('id', $request->phim_id);
         }
 
-        if ($request->filled('phong_chieu_id') || $request->filled('trang_thai') || $request->filled('ngay_chieu')) {
-            $movieQuery->whereHas('showtimes', function ($query) use ($request) {
-                if ($request->filled('trang_thai')) {
-                    $query->where('trang_thai', $request->trang_thai);
+        // Closure lọc suất chiếu theo Tab, Phòng và Khoảng ngày chiếu
+        $showtimeFilter = function ($query) use ($request, $tab) {
+            if ($tab === 'hoat_dong') {
+                $query->whereNotIn('trang_thai', ['da_chieu', 'huy']);
+            } elseif ($tab === 'da_chieu') {
+                $query->where('trang_thai', 'da_chieu');
+                
+                // Mặc định tải 30 ngày gần nhất nếu Admin không chọn khoảng ngày
+                if (! $request->filled('tu_ngay') && ! $request->filled('den_ngay')) {
+                    $query->where('thoi_gian_chieu', '>=', now()->subDays(30));
                 }
-                if ($request->filled('phong_chieu_id')) {
-                    $query->where('phong_chieu_id', $request->phong_chieu_id);
-                }
-                if ($request->filled('ngay_chieu')) {
-                    $query->whereDate('thoi_gian_chieu', $request->ngay_chieu);
-                }
-            });
-        }
-
-        $movieQuery->with(['showtimes' => function ($query) use ($request) {
-            $query->with(['rapChieuPhim', 'phongChieu']);
-            if ($request->filled('trang_thai')) {
-                $query->where('trang_thai', $request->trang_thai);
             }
+
             if ($request->filled('phong_chieu_id')) {
                 $query->where('phong_chieu_id', $request->phong_chieu_id);
             }
-            if ($request->filled('ngay_chieu')) {
-                $query->whereDate('thoi_gian_chieu', $request->ngay_chieu);
+
+            if ($request->filled('tu_ngay')) {
+                $query->whereDate('thoi_gian_chieu', '>=', $request->tu_ngay);
             }
+            if ($request->filled('den_ngay')) {
+                $query->whereDate('thoi_gian_chieu', '<=', $request->den_ngay);
+            }
+        };
+
+        $movieQuery->whereHas('showtimes', $showtimeFilter);
+
+        $movieQuery->with(['showtimes' => function ($query) use ($showtimeFilter) {
+            $query->with(['rapChieuPhim', 'phongChieu']);
+            $showtimeFilter($query);
             $query->orderBy('thoi_gian_chieu', 'asc');
         }]);
 
@@ -106,7 +115,14 @@ class SuatChieuController extends Controller
         $phims = Phims::orderBy('ten_phim')->get();
         $phongChieus = PhongChieu::with('rapChieuPhim')->orderBy('ten_phong')->get();
 
-        return view('admin.suat-chieus.index', compact('phimsPhanTrang', 'phims', 'phongChieus'));
+        // 3. Thống kê số lượng bản ghi cho các Tab
+        $tabCounts = [
+            'hoat_dong' => SuatChieu::whereNotIn('trang_thai', ['da_chieu', 'huy'])->count(),
+            'da_chieu'  => SuatChieu::where('trang_thai', 'da_chieu')->count(),
+            'tat_ca'    => SuatChieu::count(),
+        ];
+
+        return view('admin.suat-chieus.index', compact('phimsPhanTrang', 'phims', 'phongChieus', 'tab', 'tabCounts'));
     }
 
     public function create(Request $request): View
@@ -170,10 +186,9 @@ class SuatChieuController extends Controller
         $rapChieuId = $phongChieu->rap_chieu_phim_id ?? RapChieuPhim::first()?->id ?? 1;
         $thoiLuongPhim = ((int)$phim->thoi_luong > 0) ? (int)$phim->thoi_luong : 90;
 
-        // TRƯỜNG HỢP 1: TẠO 1 SUẤT CHIẾU ĐƠN LẺ
         if ($request->loai_tao === 'don_le') {
             $thoiGianChieu = Carbon::parse($request->ngay_chieu_don_le . ' ' . $request->gio_chieu_don_le);
-            $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu); // Tự động làm tròn 5 phút
+            $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu);
 
             $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
 
@@ -206,7 +221,6 @@ class SuatChieuController extends Controller
             return redirect()->route('admin.suat-chieus.index')->with('success', 'Tạo suất chiếu đơn lẻ thành công.');
         }
 
-        // TRƯỜNG HỢP 2: TẠO SUẤT CHIẾU HÀNG LOẠT
         $ngayBatDau = Carbon::parse($request->ngay_bat_dau);
         $ngayKetThuc = Carbon::parse($request->ngay_ket_thuc);
         $cheDoHangLoat = $request->input('che_do_hang_loat', 'tu_dong');
@@ -216,14 +230,13 @@ class SuatChieuController extends Controller
         $tatCaSuatChieuTrungDb = collect();
         $danhSachKhungGioTrungNoiBo = [];
 
-        // CHẾ ĐỘ 1: TỰ ĐỘNG TÍNH THEO GIỜ BẮT ĐẦU & KẾT THÚC
         if ($cheDoHangLoat === 'tu_dong') {
             $gioBatDauStr = $request->input('gio_bat_dau_tu_dong');
             $gioKetThucStr = $request->input('gio_ket_thuc_tu_dong');
 
             for ($ngayQuet = $ngayBatDau->copy(); $ngayQuet->lte($ngayKetThuc); $ngayQuet->addDay()) {
                 $curStart = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioBatDauStr);
-                $curStart = $this->lamTronLen5Phut($curStart); // Làm tròn mốc khởi đầu
+                $curStart = $this->lamTronLen5Phut($curStart);
 
                 $maxEnd = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioKetThucStr);
 
@@ -262,17 +275,13 @@ class SuatChieuController extends Controller
                         ];
                     }
 
-                    // Tăng thời gian cho suất tiếp theo và TỰ ĐỘNG LÀM TRÒN LÊN 5 PHÚT
                     $nextStartRaw = $curStart->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
                     $curStart = $this->lamTronLen5Phut($nextStartRaw);
                 }
             }
-        } 
-        // CHẾ ĐỘ 2: CHỌN KHUNG GIỜ THỦ CÔNG
-        else {
+        } else {
             $danhSachKhungGioInput = $request->input('khung_gio', []);
 
-            // Làm tròn từng khung giờ nếu người dùng chèn/chọn giờ lẻ
             $danhSachKhungGio = [];
             foreach ($danhSachKhungGioInput as $gio) {
                 $cVal = Carbon::parse('2000-01-01 ' . $gio);
@@ -473,7 +482,7 @@ class SuatChieuController extends Controller
         $thoiLuongPhim = $phim->thoi_luong ?? 90;
 
         $thoiGianChieu = Carbon::parse($request->ngay_chieu . ' ' . $request->gio_chieu); 
-        $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu); // Tự động làm tròn
+        $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu);
 
         $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
 

@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Phims;
 use App\Models\SuatChieu;
 use App\Models\ThongBaoPush;
-use App\Models\User;
+use App\Models\ThongBaoPushNguoiDung;
+use App\Models\NguoiDung;
+use App\Models\VeXemPhim;
+use App\Models\FoodInvoice;
 use App\Traits\Loggable;
 use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
@@ -17,92 +20,73 @@ class ThungRacController extends Controller
 
     public function index(Request $request)
     {
-        $tab = $request->query('tab', 'phim');
-        $tuNgay = $request->query('tu_ngay');
-        $denNgay = $request->query('den_ngay');
-        $timKiem = $request->query('tim_kiem');
+        $tab = $request->get('tab', 'suat_chieu');
+        $search = $request->get('tim_kiem', $request->get('search'));
+        $tuNgay = $request->get('tu_ngay');
+        $denNgay = $request->get('den_ngay');
 
-        // Tự động điều chỉnh nếu người dùng chọn Từ ngày > Đến ngày
-        if (!empty($tuNgay) && !empty($denNgay) && $tuNgay > $denNgay) {
-            $temp = $tuNgay;
-            $tuNgay = $denNgay;
-            $denNgay = $temp;
-        }
-
-        $applyFilters = function ($query) use ($tuNgay, $denNgay) {
-            if (!empty($tuNgay)) {
-                $query->whereDate('deleted_at', '>=', $tuNgay);
-            }
-            if (!empty($denNgay)) {
-                $query->whereDate('deleted_at', '<=', $denNgay);
-            }
-            return $query;
-        };
-
+        // 1. Thống kê số lượng bản ghi trong thùng rác cho từng Tab
         $stats = [
-            'phim'       => class_exists(Phims::class) ? $applyFilters(Phims::onlyTrashed())->count() : 0,
-            'suat_chieu' => class_exists(SuatChieu::class) ? $applyFilters(SuatChieu::onlyTrashed())->count() : 0,
-            'khach_hang' => class_exists(User::class) ? $applyFilters(User::onlyTrashed()->where('vai_tro', 'khach_hang'))->count() : 0,
-            'nhan_vien'  => class_exists(User::class) ? $applyFilters(User::onlyTrashed()->whereIn('vai_tro', ['admin', 'nhan_vien', 'quan_ly', 'super_admin']))->count() : 0,
-            'thong_bao'  => class_exists(ThongBaoPush::class) ? $applyFilters(ThongBaoPush::onlyTrashed())->count() : 0,
+            'phim'       => Phims::onlyTrashed()->count(),
+            'suat_chieu' => SuatChieu::onlyTrashed()->count(),
+            'khach_hang' => NguoiDung::onlyTrashed()->where('vai_tro', 'khach_hang')->count(),
+            'nhan_vien'  => NguoiDung::onlyTrashed()->whereIn('vai_tro', ['admin', 'nhan_vien', 'quan_ly', 'super_admin'])->count(),
+            'thong_bao'  => ThongBaoPush::onlyTrashed()->count(),
         ];
 
         $totalTrash = array_sum($stats);
-        $items = collect();
 
-        if ($tab === 'phim' && class_exists(Phims::class)) {
-            $query = Phims::onlyTrashed()->with(['country', 'genres', 'showtimes']);
-            $applyFilters($query);
-            if (!empty($timKiem)) {
-                $query->where('ten_phim', 'like', '%' . $timKiem . '%');
-            }
-            $items = $query->latest('deleted_at')->paginate(10)->withQueryString();
+        // 2. Tải dữ liệu phân trang theo Tab được chọn
+        $items = match ($tab) {
+            'phim' => Phims::onlyTrashed()
+                ->when($search, fn($q) => $q->where('ten_phim', 'like', "%{$search}%"))
+                ->when($tuNgay, fn($q) => $q->whereDate('deleted_at', '>=', $tuNgay))
+                ->when($denNgay, fn($q) => $q->whereDate('deleted_at', '<=', $denNgay))
+                ->latest('deleted_at')
+                ->paginate(10)
+                ->withQueryString(),
 
-        } elseif ($tab === 'suat_chieu' && class_exists(SuatChieu::class)) {
-            $query = SuatChieu::onlyTrashed()->with(['phim', 'phongChieu']);
-            $applyFilters($query);
-            if (!empty($timKiem)) {
-                $query->whereHas('phim', function($q) use ($timKiem) {
-                    $q->where('ten_phim', 'like', '%' . $timKiem . '%');
-                });
-            }
-            $items = $query->latest('deleted_at')->paginate(10)->withQueryString();
+            'suat_chieu' => SuatChieu::onlyTrashed()
+                ->with(['phim', 'phongChieu'])
+                ->when($search, function ($q) use ($search) {
+                    $q->whereHas('phim', fn($p) => $p->where('ten_phim', 'like', "%{$search}%"));
+                })
+                ->when($tuNgay, fn($q) => $q->whereDate('deleted_at', '>=', $tuNgay))
+                ->when($denNgay, fn($q) => $q->whereDate('deleted_at', '<=', $denNgay))
+                ->latest('deleted_at')
+                ->paginate(10)
+                ->withQueryString(),
 
-        } elseif ($tab === 'khach_hang' && class_exists(User::class)) {
-            $query = User::onlyTrashed()->where('vai_tro', 'khach_hang');
-            $applyFilters($query);
-            if (!empty($timKiem)) {
-                $query->where(function($q) use ($timKiem) {
-                    $q->where('ho_ten', 'like', '%' . $timKiem . '%')
-                      ->orWhere('name', 'like', '%' . $timKiem . '%')
-                      ->orWhere('email', 'like', '%' . $timKiem . '%')
-                      ->orWhere('so_dien_thoai', 'like', '%' . $timKiem . '%');
-                });
-            }
-            $items = $query->latest('deleted_at')->paginate(10)->withQueryString();
+            'khach_hang' => NguoiDung::onlyTrashed()
+                ->where('vai_tro', 'khach_hang')
+                ->when($search, fn($q) => $q->where(fn($sub) => $sub->where('ho_ten', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")))
+                ->when($tuNgay, fn($q) => $q->whereDate('deleted_at', '>=', $tuNgay))
+                ->when($denNgay, fn($q) => $q->whereDate('deleted_at', '<=', $denNgay))
+                ->latest('deleted_at')
+                ->paginate(10)
+                ->withQueryString(),
 
-        } elseif ($tab === 'nhan_vien' && class_exists(User::class)) {
-            $query = User::onlyTrashed()->whereIn('vai_tro', ['admin', 'nhan_vien', 'quan_ly', 'super_admin']);
-            $applyFilters($query);
-            if (!empty($timKiem)) {
-                $query->where(function($q) use ($timKiem) {
-                    $q->where('ho_ten', 'like', '%' . $timKiem . '%')
-                      ->orWhere('name', 'like', '%' . $timKiem . '%')
-                      ->orWhere('email', 'like', '%' . $timKiem . '%');
-                });
-            }
-            $items = $query->latest('deleted_at')->paginate(10)->withQueryString();
+            'nhan_vien' => NguoiDung::onlyTrashed()
+                ->whereIn('vai_tro', ['admin', 'nhan_vien', 'quan_ly', 'super_admin'])
+                ->when($search, fn($q) => $q->where(fn($sub) => $sub->where('ho_ten', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")))
+                ->when($tuNgay, fn($q) => $q->whereDate('deleted_at', '>=', $tuNgay))
+                ->when($denNgay, fn($q) => $q->whereDate('deleted_at', '<=', $denNgay))
+                ->latest('deleted_at')
+                ->paginate(10)
+                ->withQueryString(),
 
-        } elseif ($tab === 'thong_bao' && class_exists(ThongBaoPush::class)) {
-            $query = ThongBaoPush::onlyTrashed();
-            $applyFilters($query);
-            if (!empty($timKiem)) {
-                $query->where('tieu_de', 'like', '%' . $timKiem . '%');
-            }
-            $items = $query->latest('deleted_at')->paginate(10)->withQueryString();
-        }
+            'thong_bao' => ThongBaoPush::onlyTrashed()
+                ->when($search, fn($q) => $q->where('tieu_de', 'like', "%{$search}%"))
+                ->when($tuNgay, fn($q) => $q->whereDate('deleted_at', '>=', $tuNgay))
+                ->when($denNgay, fn($q) => $q->whereDate('deleted_at', '<=', $denNgay))
+                ->latest('deleted_at')
+                ->paginate(10)
+                ->withQueryString(),
 
-        return view('admin.thung_rac.index', compact('stats', 'totalTrash', 'tab', 'items', 'tuNgay', 'denNgay', 'timKiem'));
+            default => SuatChieu::onlyTrashed()->paginate(10)->withQueryString(),
+        };
+
+        return view('admin.thung_rac.index', compact('tab', 'stats', 'totalTrash', 'items'));
     }
 
     public function restoreAll(Request $request, string $type)
@@ -115,12 +99,16 @@ class ThungRacController extends Controller
         } elseif ($type === 'suat_chieu' && class_exists(SuatChieu::class)) {
             $count = SuatChieu::onlyTrashed()->count();
             SuatChieu::onlyTrashed()->restore();
-        } elseif ($type === 'khach_hang' && class_exists(User::class)) {
-            $count = User::onlyTrashed()->where('vai_tro', 'khach_hang')->count();
-            User::onlyTrashed()->where('vai_tro', 'khach_hang')->restore();
-        } elseif ($type === 'nhan_vien' && class_exists(User::class)) {
-            $count = User::onlyTrashed()->whereIn('vai_tro', ['admin', 'nhan_vien', 'quan_ly', 'super_admin'])->count();
-            User::onlyTrashed()->whereIn('vai_tro', ['admin', 'nhan_vien', 'quan_ly', 'super_admin'])->restore();
+        } elseif ($type === 'khach_hang' && class_exists(NguoiDung::class)) {
+            $count = NguoiDung::onlyTrashed()->where('vai_tro', 'khach_hang')->count();
+            NguoiDung::onlyTrashed()->where('vai_tro', 'khach_hang')->restore();
+        } elseif ($type === 'nhan_vien' && class_exists(NguoiDung::class)) {
+            $staffs = NguoiDung::onlyTrashed()->whereIn('vai_tro', ['admin', 'nhan_vien', 'quan_ly', 'super_admin'])->get();
+            $count = $staffs->count();
+            foreach ($staffs as $staff) {
+                $staff->restore();
+                $staff->update(['trang_thai_hoat_dong' => true]);
+            }
         } elseif ($type === 'thong_bao' && class_exists(ThongBaoPush::class)) {
             $count = ThongBaoPush::onlyTrashed()->count();
             ThongBaoPush::onlyTrashed()->restore();
@@ -159,12 +147,28 @@ class ThungRacController extends Controller
             }
         } elseif ($type === 'suat_chieu' && class_exists(SuatChieu::class)) {
             $count = SuatChieu::onlyTrashed()->forceDelete();
-        } elseif ($type === 'khach_hang' && class_exists(User::class)) {
-            $count = User::onlyTrashed()->where('vai_tro', 'khach_hang')->forceDelete();
-        } elseif ($type === 'nhan_vien' && class_exists(User::class)) {
-            $count = User::onlyTrashed()->whereIn('vai_tro', ['admin', 'nhan_vien', 'quan_ly', 'super_admin'])->forceDelete();
+        } elseif ($type === 'khach_hang' && class_exists(NguoiDung::class)) {
+            $count = NguoiDung::onlyTrashed()->where('vai_tro', 'khach_hang')->forceDelete();
+        } elseif ($type === 'nhan_vien' && class_exists(NguoiDung::class)) {
+            $trashedStaffs = NguoiDung::onlyTrashed()->whereIn('vai_tro', ['admin', 'nhan_vien', 'quan_ly', 'super_admin'])->get();
+            foreach ($trashedStaffs as $staff) {
+                $daBanVe = class_exists(VeXemPhim::class) ? VeXemPhim::where('nhan_vien_id', $staff->id)->exists() : false;
+                $daTaoHoaDon = class_exists(FoodInvoice::class) ? FoodInvoice::where('user_id', $staff->id)->exists() : false;
+
+                if (!$daBanVe && !$daTaoHoaDon) {
+                    $staff->forceDelete();
+                    $count++;
+                }
+            }
         } elseif ($type === 'thong_bao' && class_exists(ThongBaoPush::class)) {
-            $count = ThongBaoPush::onlyTrashed()->forceDelete();
+            $trashedNotifications = ThongBaoPush::onlyTrashed()->get();
+            foreach ($trashedNotifications as $tb) {
+                if (class_exists(ThongBaoPushNguoiDung::class)) {
+                    ThongBaoPushNguoiDung::where('thong_bao_push_id', $tb->id)->delete();
+                }
+                $tb->forceDelete();
+                $count++;
+            }
         }
 
         $this->ghiNhatKy(
