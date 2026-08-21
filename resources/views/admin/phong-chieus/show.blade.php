@@ -3560,16 +3560,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (wrapper && typeof validateRowSeatType === 'function' && typeof window.selectCustomOption === 'function') {
                     const allOptions = Array.from(wrapper.querySelectorAll('.custom-select__option'));
 
-                    // Ưu tiên hiển thị ĐÚNG loại ghế hiện tại của hàng (lấy từ
-                    // 1 ghế bất kỳ trong hàng) thay vì chỉ đoán đại 1 loại hợp
-                    // lệ — chỉ khi hàng chưa có ghế hoặc loại hiện tại không
-                    // còn hợp lệ ở vị trí này mới rơi về chọn loại hợp lệ khác.
+                    // Luôn hiển thị ĐÚNG loại ghế hiện tại của hàng (lấy từ 1
+                    // ghế bất kỳ trong hàng) — kể cả khi loại đó không còn hợp
+                    // lệ ở vị trí này (cảnh báo sẽ tự hiện qua bước validate
+                    // ngay sau). Chỉ khi hàng CHƯA có ghế mới đoán 1 loại hợp
+                    // lệ làm gợi ý mặc định.
                     const currentSeat = rowEl.querySelector('.seat-interactive[data-loai-ghe-id]');
                     const currentLoaiGheId = currentSeat ? currentSeat.dataset.loaiGheId : null;
                     let targetOption = currentLoaiGheId
                         ? allOptions.find(opt => opt.dataset.value === currentLoaiGheId)
                         : null;
-                    if (!targetOption || !validateRowSeatType(rowIndex, totalRows, targetOption).valid) {
+                    if (!targetOption) {
                         targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid) || allOptions[0];
                     }
                     if (targetOption) window.selectCustomOption(targetOption);
@@ -4668,7 +4669,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let targetOption = currentLoaiGheId
                     ? allOptions.find(opt => opt.dataset.value === currentLoaiGheId)
                     : null;
-                if (!targetOption || !validateRowSeatType(rowIndex, totalRows, targetOption).valid) {
+                if (!targetOption) {
                     targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid) || allOptions[0];
                 }
 
@@ -4774,7 +4775,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ? allOptions.find(opt => opt.dataset.value === currentLoaiGheId)
                     : null;
 
-                if (!targetOption || !validateRowSeatType(rowIndex, totalRows, targetOption).valid) {
+                if (!targetOption) {
                     targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid) || allOptions[0];
                 }
 
