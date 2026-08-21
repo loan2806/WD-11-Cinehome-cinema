@@ -902,13 +902,22 @@
 
         <!-- Form nhập thời hạn -->
         <div class="mt-5 space-y-4">
+            <!-- Bảo trì ngay lập tức (ghế hỏng đột xuất) — bỏ qua bước chọn giờ -->
+            <label class="flex items-center gap-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 cursor-pointer hover:bg-red-500/15 transition">
+                <input type="checkbox" id="maintNgayLapTuc" class="h-4 w-4 rounded accent-red-500 shrink-0">
+                <span class="text-xs font-semibold text-red-200 leading-relaxed">
+                    <i class="fa-solid fa-bolt mr-1 text-red-400"></i>
+                    Bảo trì ngay lập tức (ghế hỏng đột xuất) — không cần chọn thời gian bắt đầu
+                </span>
+            </label>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-gray-300 mb-1.5 flex items-center gap-1.5">
                         <i class="fa-regular fa-clock text-[#f4c56a]"></i>
-                        Thời gian bắt đầu <span class="text-red-400">*</span>
+                        Thời gian bắt đầu <span id="maintBatDauRequiredMark" class="text-red-400">*</span>
                     </label>
-                    <input type="datetime-local" id="maintBatDau" class="w-full rounded-xl border border-white/15 bg-[#1a1a1a] px-4 py-3 text-sm font-medium text-white focus:border-[#f4c56a] focus:outline-none focus:ring-1 focus:ring-[#f4c56a] [color-scheme:dark]">
+                    <input type="datetime-local" id="maintBatDau" class="w-full rounded-xl border border-white/15 bg-[#1a1a1a] px-4 py-3 text-sm font-medium text-white focus:border-[#f4c56a] focus:outline-none focus:ring-1 focus:ring-[#f4c56a] [color-scheme:dark] disabled:opacity-50 disabled:cursor-not-allowed">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-300 mb-1.5 flex items-center gap-1.5">
@@ -2951,6 +2960,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const isCoupleOption = selectedOption?.dataset?.laCouple === 'true' || selectedOption?.dataset?.laCouple === '1';
         const loaiTen = selectedOption ? selectedOption.textContent.toLowerCase() : '';
         const isVipSelected = loaiTen.includes('vip');
+        const isThuongSelected = !isVipSelected && !isCoupleOption;
 
         const allRows = Array.from(document.querySelectorAll('.seat-row'));
         const currentRowEl = document.querySelector(`.seat-row[data-hang-ghe-id="${currentRowHangId}"]`);
@@ -2972,8 +2982,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 setBtnLoading(this, false);
                 return;
             }
-            if (isLastTwo && !isCoupleOption) {
-                window.showToast('2 hàng cuối chỉ được đặt ghế Couple.', 'error');
+            if (isLastTwo && isThuongSelected) {
+                window.showToast('2 hàng cuối chỉ được đặt ghế VIP hoặc Couple.', 'error');
                 setBtnLoading(this, false);
                 return;
             }
@@ -3549,8 +3559,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 const wrapper = document.querySelector('.custom-select[data-select-id="rowChangeModalLoaiGhe"]');
                 if (wrapper && typeof validateRowSeatType === 'function' && typeof window.selectCustomOption === 'function') {
                     const allOptions = Array.from(wrapper.querySelectorAll('.custom-select__option'));
-                    let targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid);
-                    if (!targetOption) targetOption = allOptions[0];
+
+                    // Ưu tiên hiển thị ĐÚNG loại ghế hiện tại của hàng (lấy từ
+                    // 1 ghế bất kỳ trong hàng) thay vì chỉ đoán đại 1 loại hợp
+                    // lệ — chỉ khi hàng chưa có ghế hoặc loại hiện tại không
+                    // còn hợp lệ ở vị trí này mới rơi về chọn loại hợp lệ khác.
+                    const currentSeat = rowEl.querySelector('.seat-interactive[data-loai-ghe-id]');
+                    const currentLoaiGheId = currentSeat ? currentSeat.dataset.loaiGheId : null;
+                    let targetOption = currentLoaiGheId
+                        ? allOptions.find(opt => opt.dataset.value === currentLoaiGheId)
+                        : null;
+                    if (!targetOption || !validateRowSeatType(rowIndex, totalRows, targetOption).valid) {
+                        targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid) || allOptions[0];
+                    }
                     if (targetOption) window.selectCustomOption(targetOption);
                 }
             }
@@ -3652,8 +3673,8 @@ document.addEventListener('DOMContentLoaded', function() {
             showAddSeatErrors({ _global: ['3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP.'] });
             return;
         }
-        if (isLastTwo && !selectedLoai.includes('couple')) {
-            showAddSeatErrors({ _global: ['2 hàng cuối chỉ được đặt ghế Couple.'] });
+        if (isLastTwo && !selectedLoai.includes('couple') && !selectedLoai.includes('vip')) {
+            showAddSeatErrors({ _global: ['2 hàng cuối chỉ được đặt ghế VIP hoặc Couple.'] });
             return;
         }
 
@@ -3816,8 +3837,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 showAddRowErrors({ _global: ['3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP. Vui lòng chọn loại khác hoặc thêm hàng ở vị trí khác.'] });
                 return;
             }
-            if (isLastTwo && !isCouple) {
-                showAddRowErrors({ _global: ['2 hàng cuối chỉ được đặt ghế Couple. Vui lòng chọn ghế Couple hoặc thêm hàng ở vị trí khác.'] });
+            if (isLastTwo && isNormal) {
+                showAddRowErrors({ _global: ['2 hàng cuối chỉ được đặt ghế VIP hoặc Couple. Vui lòng chọn loại khác hoặc thêm hàng ở vị trí khác.'] });
                 return;
             }
         }
@@ -4147,8 +4168,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const batDauInput = document.getElementById('maintBatDau') || document.getElementById('maintenanceStartTime');
         if (batDauInput) batDauInput.value = nowStr;
 
+        // Mỗi lần mở modal, reset về chế độ "lên lịch" mặc định (không tick
+        // sẵn "Bảo trì ngay") — tránh nhầm lẫn nếu lần trước admin đã bật tuỳ
+        // chọn này rồi đóng modal lại.
+        const ngayLapTucEl = document.getElementById('maintNgayLapTuc');
+        if (ngayLapTucEl) {
+            ngayLapTucEl.checked = false;
+            if (batDauInput) batDauInput.disabled = false;
+        }
+
         maintenanceModal.classList.remove('hidden');
     };
+
+    // Tick "Bảo trì ngay lập tức" -> tự điền giờ hiện tại và khoá ô chọn giờ
+    // lại (khỏi cần bấm chọn), dành cho ghế hỏng đột xuất cần khoá ngay.
+    // Bỏ tick -> mở lại ô chọn giờ để lên lịch bảo trì trong tương lai như cũ.
+    document.getElementById('maintNgayLapTuc')?.addEventListener('change', function() {
+        const batDauInput = document.getElementById('maintBatDau') || document.getElementById('maintenanceStartTime');
+        if (!batDauInput) return;
+
+        if (this.checked) {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            batDauInput.value = now.toISOString().slice(0, 16);
+            batDauInput.disabled = true;
+        } else {
+            batDauInput.disabled = false;
+        }
+    });
 
     window.closeMaintenanceModal = function() {
         if (maintenanceModal) maintenanceModal.classList.add('hidden');
@@ -4423,8 +4470,8 @@ function validateRowSeatType(rowIndex, totalRows, optionEl) {
     if (isMiddle && !isVip) {
         return { valid: false, msg: 'Các hàng ở giữa chỉ được đặt ghế VIP.' };
     }
-    if (isLastTwo && !isCouple) {
-        return { valid: false, msg: '2 hàng cuối chỉ được đặt ghế Couple.' };
+    if (isLastTwo && isThuong) {
+        return { valid: false, msg: '2 hàng cuối chỉ được đặt ghế VIP hoặc Couple.' };
     }
     return { valid: true, msg: '' };
 }
@@ -4454,8 +4501,8 @@ function validateRowSeatType(rowIndex, totalRows, optionEl) {
     if (isMiddle && !isVip) {
         return { valid: false, msg: 'Các hàng ở giữa chỉ được đặt ghế VIP.' };
     }
-    if (isLastTwo && !isCouple) {
-        return { valid: false, msg: '2 hàng cuối chỉ được đặt ghế Couple.' };
+    if (isLastTwo && isThuong) {
+        return { valid: false, msg: '2 hàng cuối chỉ được đặt ghế VIP hoặc Couple.' };
     }
     return { valid: true, msg: '' };
 }
@@ -4610,12 +4657,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateRowModalStatsAndButton(row);
             }
 
-            // Đồng bộ loại ghế hợp lệ cho Modal hàng
+            // Đồng bộ loại ghế hợp lệ cho Modal hàng — ưu tiên hiển thị ĐÚNG
+            // loại ghế hiện tại của hàng, chỉ đoán loại hợp lệ khác khi hàng
+            // chưa có ghế hoặc loại hiện tại không còn hợp lệ ở vị trí này.
             const wrapper = document.querySelector('.custom-select[data-select-id="rowChangeModalLoaiGhe"]');
             if (wrapper) {
                 const allOptions = Array.from(wrapper.querySelectorAll('.custom-select__option'));
-                let targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid);
-                if (!targetOption) targetOption = allOptions[0];
+                const currentSeat = row.querySelector('.seat-interactive[data-loai-ghe-id]');
+                const currentLoaiGheId = currentSeat ? currentSeat.dataset.loaiGheId : null;
+                let targetOption = currentLoaiGheId
+                    ? allOptions.find(opt => opt.dataset.value === currentLoaiGheId)
+                    : null;
+                if (!targetOption || !validateRowSeatType(rowIndex, totalRows, targetOption).valid) {
+                    targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid) || allOptions[0];
+                }
 
                 if (targetOption) {
                     window.selectCustomOption(targetOption);
@@ -4706,15 +4761,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateRowModalStatsAndButton(row);
             }
 
-            // TỰ ĐỘNG LỰA CHỌN LOẠI GHẾ HỢP LỆ VỚI VỊ TRÍ HÀNG
+            // TỰ ĐỘNG HIỂN THỊ ĐÚNG LOẠI GHẾ HIỆN TẠI CỦA HÀNG (ưu tiên) —
+            // chỉ đoán 1 loại hợp lệ khác khi hàng chưa có ghế hoặc loại hiện
+            // tại không còn hợp lệ ở vị trí này (VD: Hàng B là 3 hàng đầu -> 'Thường'/'VIP')
             const wrapper = document.querySelector('.custom-select[data-select-id="rowChangeModalLoaiGhe"]');
             if (wrapper) {
                 const allOptions = Array.from(wrapper.querySelectorAll('.custom-select__option'));
-                
-                // Tìm option hợp lệ với hàng hiện tại (VD: Hàng B là 3 hàng đầu -> Tự chọn 'Thường')
-                let targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid);
 
-                if (!targetOption) targetOption = allOptions[0];
+                const currentSeat = row.querySelector('.seat-interactive[data-loai-ghe-id]');
+                const currentLoaiGheId = currentSeat ? currentSeat.dataset.loaiGheId : null;
+                let targetOption = currentLoaiGheId
+                    ? allOptions.find(opt => opt.dataset.value === currentLoaiGheId)
+                    : null;
+
+                if (!targetOption || !validateRowSeatType(rowIndex, totalRows, targetOption).valid) {
+                    targetOption = allOptions.find(opt => validateRowSeatType(rowIndex, totalRows, opt).valid) || allOptions[0];
+                }
 
                 if (targetOption) {
                     window.selectCustomOption(targetOption);
