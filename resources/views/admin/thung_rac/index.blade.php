@@ -28,7 +28,7 @@
                 <!-- Badges -->
                 <div class="flex flex-wrap items-center gap-3 pt-1">
                     <span class="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-3.5 py-1.5 text-xs font-bold text-gray-200">
-                        <i class="fa-solid fa-database text-amber-400"></i> {{ number_format($totalTrash) }} bản ghi trong rác
+                        <i class="fa-solid fa-database text-amber-400"></i> {{ number_format($totalTrash ?? array_sum($stats ?? [])) }} bản ghi trong rác
                     </span>
                     <span class="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-3.5 py-1.5 text-xs font-bold text-gray-200">
                         <i class="fa-solid fa-layer-group text-red-400"></i> 5 danh mục phân loại
@@ -49,7 +49,7 @@
                     </form>
 
                     <!-- Nút Dọn sạch mục này -->
-                    <form action="{{ route('admin.thung-rac.empty', $tab) }}" method="POST" onsubmit="return confirm('CẢNH BÁO NGHÊM TRỌNG: Thao tác này sẽ XÓA VĨNH VIỄN toàn bộ {{ $stats[$tab] }} bản ghi trong mục này!')">
+                    <form action="{{ route('admin.thung-rac.empty', $tab) }}" method="POST" onsubmit="return confirm('CẢNH BÁO NGHIÊM TRỌNG: Thao tác này sẽ XÓA VĨNH VIỄN toàn bộ {{ $stats[$tab] }} bản ghi trong mục này!')">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 px-5 py-3 text-xs font-bold text-white transition shadow-xl shadow-red-600/30">
@@ -72,7 +72,7 @@
             </div>
             <div class="min-w-0 flex-1">
                 <span class="text-[11px] font-black uppercase tracking-wider text-gray-400 block truncate">PHIM ĐÃ XÓA</span>
-                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['phim']) }}</span>
+                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['phim'] ?? 0) }}</span>
             </div>
         </a>
 
@@ -84,7 +84,7 @@
             </div>
             <div class="min-w-0 flex-1">
                 <span class="text-[11px] font-black uppercase tracking-wider text-gray-400 block truncate">SUẤT CHIẾU</span>
-                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['suat_chieu']) }}</span>
+                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['suat_chieu'] ?? 0) }}</span>
             </div>
         </a>
 
@@ -96,7 +96,7 @@
             </div>
             <div class="min-w-0 flex-1">
                 <span class="text-[11px] font-black uppercase tracking-wider text-gray-400 block truncate">KHÁCH HÀNG</span>
-                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['khach_hang']) }}</span>
+                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['khach_hang'] ?? 0) }}</span>
             </div>
         </a>
 
@@ -108,7 +108,7 @@
             </div>
             <div class="min-w-0 flex-1">
                 <span class="text-[11px] font-black uppercase tracking-wider text-gray-400 block truncate">NHÂN VIÊN</span>
-                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['nhan_vien']) }}</span>
+                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['nhan_vien'] ?? 0) }}</span>
             </div>
         </a>
 
@@ -120,7 +120,7 @@
             </div>
             <div class="min-w-0 flex-1">
                 <span class="text-[11px] font-black uppercase tracking-wider text-gray-400 block truncate">THÔNG BÁO PUSH</span>
-                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['thong_bao']) }}</span>
+                <span class="text-2xl font-black text-white block mt-0.5 leading-none">{{ number_format($stats['thong_bao'] ?? 0) }}</span>
             </div>
         </a>
 
@@ -142,17 +142,19 @@
                     default => 'Thùng Rác Hệ Thống'
                 } }}
             </h2>
-            <p class="text-xs text-gray-400 mt-1 font-medium">Đang hiển thị {{ $items->count() }} bản ghi phù hợp theo bộ lọc hiện tại.</p>
+            <p class="text-xs text-gray-400 mt-1 font-medium">
+                Đang hiển thị {{ $items->count() }} @if($items instanceof \Illuminate\Pagination\LengthAwarePaginator)/ {{ $items->total() }}@endif bản ghi phù hợp theo bộ lọc hiện tại.
+            </p>
         </div>
 
-        <!-- FILTER BAR (Có JS ràng buộc min/max ngày) -->
+        <!-- FILTER BAR -->
         <form action="{{ route('admin.thung-rac.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-[#18181c] p-3.5 rounded-2xl border border-white/10">
             <input type="hidden" name="tab" value="{{ $tab }}">
 
             <!-- Ô tìm kiếm -->
             <div class="relative md:col-span-5">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400"></i>
-                <input type="text" name="tim_kiem" value="{{ request('tim_kiem') }}"
+                <input type="text" name="tim_kiem" value="{{ request('tim_kiem') ?? request('search') }}"
                        placeholder="Tìm theo tên, email, từ khóa..."
                        class="h-11 w-full rounded-xl border border-white/10 bg-[#121214] pl-10 pr-3 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none transition font-medium">
             </div>
@@ -179,7 +181,7 @@
                     <i class="fa-solid fa-filter text-xs"></i> Lọc
                 </button>
 
-                @if(request()->hasAny(['tim_kiem', 'tu_ngay', 'den_ngay']))
+                @if(request()->hasAny(['tim_kiem', 'search', 'tu_ngay', 'den_ngay']))
                     <a href="{{ route('admin.thung-rac.index', ['tab' => $tab]) }}" 
                        class="h-11 w-11 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition shrink-0"
                        title="Đặt lại bộ lọc">
@@ -205,7 +207,6 @@
                     <tbody class="divide-y divide-white/5">
                         @forelse ($items as $item)
                             @php
-                                // Xử lý đường dẫn Ảnh Poster Phim đa dạng cột
                                 $rawPoster = null;
                                 if ($tab === 'phim') {
                                     $rawPoster = $item->poster ?? $item->anh_poster ?? $item->duong_dan_anh ?? $item->hinh_anh ?? $item->anh_bia ?? null;
@@ -230,7 +231,7 @@
                                     <span class="inline-block rounded-lg bg-white/5 px-2.5 py-1 font-bold border border-white/10">#{{ $item->id }}</span>
                                 </td>
 
-                                <!-- Col 2: Name + Movie Poster (fallback tự gỡ ảnh lỗi) -->
+                                <!-- Col 2: Name + Poster -->
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3.5">
                                         <div class="relative h-12 w-9 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-[#1a1a1e] shadow-md flex items-center justify-center">
@@ -276,7 +277,16 @@
                                         <span class="text-[#d99a32] font-bold text-xs"><i class="fa-regular fa-clock mr-1"></i> {{ $item->thoi_luong ?? 0 }} phút</span>
                                     @elseif($tab === 'suat_chieu')
                                         <span class="text-gray-300 text-xs">
-                                            Phòng: <strong class="text-white font-bold">{{ $item->phongChieu->ten_phong ?? 'N/A' }}</strong> | Chiếu lúc: <strong class="text-[#d99a32] font-bold">{{ $item->thoi_gian_chieu ? $item->thoi_gian_chieu->format('H:i d/m/Y') : 'N/A' }}</strong>
+                                            Phòng: <strong class="text-white font-bold">{{ $item->phongChieu->ten_phong ?? 'N/A' }}</strong> | Chiếu lúc: 
+                                            <strong class="text-[#d99a32] font-bold">
+                                                @if(isset($item->thoi_gian_bat_dau))
+                                                    {{ \Carbon\Carbon::parse($item->thoi_gian_bat_dau)->format('H:i d/m/Y') }}
+                                                @elseif(isset($item->thoi_gian_chieu))
+                                                    {{ $item->thoi_gian_chieu instanceof \Carbon\Carbon ? $item->thoi_gian_chieu->format('H:i d/m/Y') : \Carbon\Carbon::parse($item->thoi_gian_chieu)->format('H:i d/m/Y') }}
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </strong>
                                         </span>
                                     @elseif($tab === 'khach_hang' || $tab === 'nhan_vien')
                                         <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400 border border-emerald-500/20">
@@ -292,7 +302,7 @@
                                 <td class="px-6 py-4">
                                     <span class="inline-flex items-center gap-1.5 text-xs text-red-400 font-semibold">
                                         <i class="fa-regular fa-clock text-[10px]"></i>
-                                        {{ $item->deleted_at ? $item->deleted_at->format('H:i - d/m/Y') : '—' }}
+                                        {{ $item->deleted_at ? \Carbon\Carbon::parse($item->deleted_at)->format('H:i - d/m/Y') : '—' }}
                                     </span>
                                 </td>
 
@@ -355,9 +365,68 @@
                 </table>
             </div>
 
+            <!-- FOOTER PHÂN TRANG HIỂN THỊ NÚT 1, 2, 3... -->
             @if ($items instanceof \Illuminate\Pagination\LengthAwarePaginator && $items->hasPages())
-                <div class="border-t border-white/10 p-4">
-                    {{ $items->links() }}
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10 p-4 bg-[#18181c]/50">
+                    <div class="text-xs text-gray-400 font-medium">
+                        Hiển thị <strong class="text-white font-bold">{{ $items->firstItem() ?? 0 }}</strong> đến <strong class="text-white font-bold">{{ $items->lastItem() ?? 0 }}</strong> trong tổng số <strong class="text-white font-bold">{{ number_format($items->total()) }}</strong> bản ghi
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        {{-- Nút Trước --}}
+                        @if ($items->onFirstPage())
+                            <span class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-white/5 text-gray-600 text-xs font-bold cursor-not-allowed border border-white/5">
+                                <i class="fa-solid fa-chevron-left mr-1.5 text-[10px]"></i> Trước
+                            </span>
+                        @else
+                            <a href="{{ $items->previousPageUrl() }}" class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-red-600 hover:text-white hover:border-red-600 text-xs font-bold transition shadow-sm">
+                                <i class="fa-solid fa-chevron-left mr-1.5 text-[10px]"></i> Trước
+                            </a>
+                        @endif
+
+                        {{-- Các nút số 1, 2, 3... --}}
+                        @php
+                            $startPage = max(1, $items->currentPage() - 2);
+                            $endPage = min($items->lastPage(), $items->currentPage() + 2);
+                        @endphp
+
+                        @if ($startPage > 1)
+                            <a href="{{ $items->url(1) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white text-xs font-bold transition">1</a>
+                            @if ($startPage > 2)
+                                <span class="inline-flex h-9 w-6 items-center justify-center text-gray-500 text-xs font-bold">...</span>
+                            @endif
+                        @endif
+
+                        @foreach ($items->getUrlRange($startPage, $endPage) as $page => $url)
+                            @if ($page == $items->currentPage())
+                                <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-black shadow-lg shadow-red-600/30 border border-red-500">
+                                    {{ $page }}
+                                </span>
+                            @else
+                                <a href="{{ $url }}" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white text-xs font-bold transition">
+                                    {{ $page }}
+                                </a>
+                            @endif
+                        @endforeach
+
+                        @if ($endPage < $items->lastPage())
+                            @if ($endPage < $items->lastPage() - 1)
+                                <span class="inline-flex h-9 w-6 items-center justify-center text-gray-500 text-xs font-bold">...</span>
+                            @endif
+                            <a href="{{ $items->url($items->lastPage()) }}" class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white text-xs font-bold transition">{{ $items->lastPage() }}</a>
+                        @endif
+
+                        {{-- Nút Sau --}}
+                        @if ($items->hasMorePages())
+                            <a href="{{ $items->nextPageUrl() }}" class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-red-600 hover:text-white hover:border-red-600 text-xs font-bold transition shadow-sm">
+                                Sau <i class="fa-solid fa-chevron-right ml-1.5 text-[10px]"></i>
+                            </a>
+                        @else
+                            <span class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-white/5 text-gray-600 text-xs font-bold cursor-not-allowed border border-white/5">
+                                Sau <i class="fa-solid fa-chevron-right ml-1.5 text-[10px]"></i>
+                            </span>
+                        @endif
+                    </div>
                 </div>
             @endif
         </div>
