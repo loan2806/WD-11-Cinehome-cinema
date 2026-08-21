@@ -833,8 +833,7 @@ class PhongChieuController extends Controller
         }
 
         if ($isLastTwoRows) {
-            if ($isThuong) return ['2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế Thường.'];
-            if ($isVip) return ['2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế VIP.'];
+            if ($isThuong) return ['2 hàng cuối chỉ được đặt ghế VIP hoặc Couple. Không thể đặt ghế Thường.'];
         }
 
         return null;
