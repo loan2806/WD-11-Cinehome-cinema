@@ -15,94 +15,175 @@ use Illuminate\Support\Facades\DB;
 class VoucherController extends Controller
 {
     /**
-     * Hiển thị danh sách voucher có thể đổi bằng điểm.
+     * Hiển thị danh sách voucher User có thể đổi bằng điểm.
      *
-     * Lưu ý:
-     * - Không hiển thị voucher sinh nhật.
-     * - Voucher sinh nhật chỉ được hệ thống tự động cấp
-     *   khi đến đúng ngày sinh nhật của khách hàng.
+     * QUAN TRỌNG:
+     * User chỉ nhìn thấy:
+     * - doi_tuong_su_dung = user
+     * - doi_tuong_su_dung = all
+     *
+     * Tuyệt đối không hiển thị voucher staff.
      */
     public function index()
     {
-        $vouchers = Voucher::where('trang_thai', true)
+        $vouchers = Voucher::query()
+            ->forUser()
+            ->where('trang_thai', true)
             ->where('loai_voucher', '!=', 'sinh_nhat')
-            ->whereDate('ngay_het_han', '>=', today())
+            ->where(function ($query) {
+                $query->whereNull('ngay_het_han')
+                    ->orWhereDate(
+                        'ngay_het_han',
+                        '>=',
+                        today()
+                    );
+            })
             ->orderBy('diem_can_doi')
             ->get();
 
         $thanhVien = Auth::user()->thanhVien;
 
-        $availablePoints = (int) ($thanhVien?->diem_hien_tai ?? 0);
+        $availablePoints =
+            (int) ($thanhVien?->diem_hien_tai ?? 0);
+
         $affordableCount = $vouchers
-            ->filter(fn($voucher) => $availablePoints >= $voucher->diem_can_doi)
+            ->filter(
+                fn ($voucher) =>
+                    $availablePoints >=
+                    $voucher->diem_can_doi
+            )
             ->count();
+
         $nextVoucher = $vouchers
-            ->filter(fn($voucher) => $availablePoints < $voucher->diem_can_doi)
+            ->filter(
+                fn ($voucher) =>
+                    $availablePoints <
+                    $voucher->diem_can_doi
+            )
             ->sortBy('diem_can_doi')
             ->first();
+
         $pointsNeededForNext = $nextVoucher
-            ? max(0, $nextVoucher->diem_can_doi - $availablePoints)
+            ? max(
+                0,
+                $nextVoucher->diem_can_doi -
+                $availablePoints
+            )
             : 0;
 
-        return view('user.voucher.index', compact(
-            'vouchers',
-            'thanhVien',
-            'availablePoints',
-            'affordableCount',
-            'nextVoucher',
-            'pointsNeededForNext'
-        ));
+        return view(
+            'user.voucher.index',
+            compact(
+                'vouchers',
+                'thanhVien',
+                'availablePoints',
+                'affordableCount',
+                'nextVoucher',
+                'pointsNeededForNext'
+            )
+        );
     }
 
     /**
      * Đổi điểm lấy voucher.
      *
-     * Chỉ cho phép đổi các voucher thông thường.
-     * Không cho đổi voucher sinh nhật bằng điểm.
+     * Backend kiểm tra lại đối tượng sử dụng.
+     * Không thể bypass bằng cách sửa URL / POST.
      */
     public function exchange(Voucher $voucher)
     {
         $thanhVien = Auth::user()->thanhVien;
 
         if (!$thanhVien) {
-            return back()->with('error', 'Bạn chưa có thẻ thành viên.');
+            return back()->with(
+                'error',
+                'Bạn chưa có thẻ thành viên.'
+            );
         }
 
         /**
-         * Chặn tuyệt đối voucher sinh nhật.
-         * Tránh trường hợp user tự submit form hoặc sửa URL để đổi voucher sinh nhật.
+         * Không cho User đổi voucher Staff.
+         */
+        if (!$voucher->isForUser()) {
+            return back()->with(
+                'error',
+                'Voucher này không dành cho tài khoản User.'
+            );
+        }
+
+        /**
+         * Voucher sinh nhật không được đổi bằng điểm.
          */
         if ($voucher->loai_voucher === 'sinh_nhat') {
-            return back()->with('error', 'Voucher sinh nhật chỉ được hệ thống tự động tặng vào đúng ngày sinh nhật.');
+            return back()->with(
+                'error',
+                'Voucher sinh nhật chỉ được hệ thống tự động tặng vào đúng ngày sinh nhật.'
+            );
         }
 
-        if (! $voucher->trang_thai || $voucher->ngay_het_han->lt(today())) {
-            return back()->with('error', 'Voucher này đã tắt hoặc hết hạn.');
+        if (!$voucher->trang_thai) {
+            return back()->with(
+                'error',
+                'Voucher này đã tắt.'
+            );
         }
 
-        if ($thanhVien->diem_hien_tai < $voucher->diem_can_doi) {
-            return back()->with('error', 'Điểm hiện tại không đủ để đổi voucher.');
+        if (
+            $voucher->ngay_het_han &&
+            $voucher->ngay_het_han->lt(today())
+        ) {
+            return back()->with(
+                'error',
+                'Voucher này đã hết hạn.'
+            );
         }
 
-        // Trừ điểm hiện tại khi đổi voucher.
-        // Không trừ tổng điểm tích lũy để không làm tụt hạng thành viên.
-        $thanhVien->truDiem(
-            $voucher->diem_can_doi,
-            null,
-            'Đổi voucher ' . $voucher->ten_voucher
-        );
+        if (
+            $thanhVien->diem_hien_tai <
+            $voucher->diem_can_doi
+        ) {
+            return back()->with(
+                'error',
+                'Điểm hiện tại không đủ để đổi voucher.'
+            );
+        }
 
-        // Tạo voucher cá nhân sau khi đổi điểm thành công.
-        NguoiDungVoucher::create([
-            'nguoi_dung_id' => Auth::id(),
-            'voucher_id' => $voucher->id,
-            'ma_voucher_ca_nhan' => strtoupper($voucher->ma_voucher . '-' . Str::random(6)),
-            'loai_cap_phat' => 'doi_diem',
-            'nam_ap_dung' => now()->year,
-            'da_su_dung' => false,
-            'ngay_nhan' => now(),
-            'ngay_het_han' => now()->addDays(30),
-        ]);
+        DB::transaction(function () use (
+            $thanhVien,
+            $voucher
+        ) {
+            $thanhVien->truDiem(
+                $voucher->diem_can_doi,
+                null,
+                'Đổi voucher ' . $voucher->ten_voucher
+            );
+
+            do {
+                $maVoucherCaNhan = Str::upper(
+                    $voucher->ma_voucher .
+                    '-' .
+                    Str::random(6)
+                );
+            } while (
+                NguoiDungVoucher::where(
+                    'ma_voucher_ca_nhan',
+                    $maVoucherCaNhan
+                )->exists()
+            );
+
+            NguoiDungVoucher::create([
+                'nguoi_dung_id' => Auth::id(),
+                'voucher_id' => $voucher->id,
+                'ma_voucher_ca_nhan' =>
+                    $maVoucherCaNhan,
+                'loai_cap_phat' => 'doi_diem',
+                'nam_ap_dung' => now()->year,
+                'da_su_dung' => false,
+                'ngay_nhan' => now(),
+                'ngay_het_han' =>
+                    now()->addDays(30),
+            ]);
+        });
 
         return back()->with(
             'success',
@@ -111,13 +192,24 @@ class VoucherController extends Controller
     }
 
     /**
-     * Hiển thị danh sách voucher cá nhân của khách hàng.
+     * Hiển thị voucher cá nhân của User.
      */
     public function myVoucher(Request $request)
     {
         $this->capVoucherSinhNhat();
-        $allowedStatuses = ['kha_dung', 'da_su_dung', 'het_han'];
-        $activeStatus = in_array($request->query('trang_thai'), $allowedStatuses, true)
+
+        $allowedStatuses = [
+            'kha_dung',
+            'da_su_dung',
+            'het_han'
+        ];
+
+        $activeStatus =
+            in_array(
+                $request->query('trang_thai'),
+                $allowedStatuses,
+                true
+            )
             ? $request->query('trang_thai')
             : null;
 
@@ -127,169 +219,324 @@ class VoucherController extends Controller
 
         $voucherStats = [
             'total' => (clone $baseQuery)->count(),
+
             'available' => (clone $baseQuery)
                 ->where('da_su_dung', false)
                 ->where(function ($query) {
-                    $query->whereNull('ngay_het_han')
-                        ->orWhere('ngay_het_han', '>=', now());
+                    $query
+                        ->whereNull('ngay_het_han')
+                        ->orWhere(
+                            'ngay_het_han',
+                            '>=',
+                            now()
+                        );
                 })
                 ->count(),
-            'used' => (clone $baseQuery)->where('da_su_dung', true)->count(),
+
+            'used' => (clone $baseQuery)
+                ->where('da_su_dung', true)
+                ->count(),
+
             'expired' => (clone $baseQuery)
                 ->where('da_su_dung', false)
                 ->whereNotNull('ngay_het_han')
-                ->where('ngay_het_han', '<', now())
+                ->where(
+                    'ngay_het_han',
+                    '<',
+                    now()
+                )
                 ->count(),
         ];
 
         $expiringVoucher = (clone $baseQuery)
             ->where('da_su_dung', false)
             ->whereNotNull('ngay_het_han')
-            ->where('ngay_het_han', '>=', now())
+            ->where(
+                'ngay_het_han',
+                '>=',
+                now()
+            )
             ->orderBy('ngay_het_han')
             ->first();
 
         $vouchers = (clone $baseQuery)
-            ->when($activeStatus === 'kha_dung', function ($query) {
-                $query->where('da_su_dung', false)
-                    ->where(function ($innerQuery) {
-                        $innerQuery->whereNull('ngay_het_han')
-                            ->orWhere('ngay_het_han', '>=', now());
-                    });
-            })
-            ->when($activeStatus === 'da_su_dung', fn($query) => $query->where('da_su_dung', true))
-            ->when($activeStatus === 'het_han', function ($query) {
-                $query->where('da_su_dung', false)
-                    ->whereNotNull('ngay_het_han')
-                    ->where('ngay_het_han', '<', now());
-            })
+            ->when(
+                $activeStatus === 'kha_dung',
+                function ($query) {
+                    $query
+                        ->where('da_su_dung', false)
+                        ->where(function ($innerQuery) {
+                            $innerQuery
+                                ->whereNull('ngay_het_han')
+                                ->orWhere(
+                                    'ngay_het_han',
+                                    '>=',
+                                    now()
+                                );
+                        });
+                }
+            )
+            ->when(
+                $activeStatus === 'da_su_dung',
+                fn ($query) =>
+                    $query->where(
+                        'da_su_dung',
+                        true
+                    )
+            )
+            ->when(
+                $activeStatus === 'het_han',
+                function ($query) {
+                    $query
+                        ->where(
+                            'da_su_dung',
+                            false
+                        )
+                        ->whereNotNull(
+                            'ngay_het_han'
+                        )
+                        ->where(
+                            'ngay_het_han',
+                            '<',
+                            now()
+                        );
+                }
+            )
             ->latest()
             ->paginate(9)
             ->withQueryString();
 
         return view(
             'user.voucher.my-voucher',
-            compact('vouchers', 'voucherStats', 'activeStatus', 'expiringVoucher')
+            compact(
+                'vouchers',
+                'voucherStats',
+                'activeStatus',
+                'expiringVoucher'
+            )
         );
     }
 
     /**
-     * Lưu voucher tạm vào session khi nhấn "Sử dụng ngay"
+     * Lưu voucher tạm khi User nhấn "Sử dụng ngay".
+     *
+     * Đây là một lớp bảo vệ backend quan trọng.
      */
     public function saveTam(Request $request): JsonResponse
     {
         $voucherId = $request->voucher_id;
 
         if (!$voucherId) {
-            return response()->json(['success' => false, 'message' => 'Voucher không hợp lệ']);
+            return response()->json([
+                'success' => false,
+                'message' => 'Voucher không hợp lệ.'
+            ], 422);
         }
 
-        $voucher = Voucher::find($voucherId);
+        /**
+         * Chỉ tìm voucher dành cho User.
+         *
+         * Không dùng Voucher::find() vì User có thể gửi
+         * ID của voucher Staff bằng DevTools.
+         */
+        $voucher = Voucher::query()
+            ->forUser()
+            ->whereKey($voucherId)
+            ->first();
 
         if (!$voucher) {
-            return response()->json(['success' => false, 'message' => 'Voucher không tồn tại']);
+            return response()->json([
+                'success' => false,
+                'message' =>
+                    'Voucher không tồn tại hoặc không dành cho User.'
+            ], 422);
         }
 
         if (!$voucher->trang_thai) {
-            return response()->json(['success' => false, 'message' => 'Voucher đã bị tắt']);
+            return response()->json([
+                'success' => false,
+                'message' => 'Voucher đã bị tắt.'
+            ], 422);
         }
 
-        if ($voucher->ngay_het_han && $voucher->ngay_het_han->lt(now())) {
-            return response()->json(['success' => false, 'message' => 'Voucher đã hết hạn']);
+        if (
+            $voucher->ngay_het_han &&
+            $voucher->ngay_het_han->lt(now())
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Voucher đã hết hạn.'
+            ], 422);
         }
 
-        // Lưu voucher vào session
-        session(['voucher_tam' => $voucherId]);
+        session([
+            'voucher_tam' => $voucher->id
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Đã lưu voucher, đang chuyển đến trang đặt vé...'
+            'message' =>
+                'Đã lưu voucher, đang chuyển đến trang đặt vé...'
         ]);
     }
 
     /**
-     * Xóa voucher tạm khỏi session
+     * Xóa voucher tạm khỏi session.
      */
     public function xoaVoucherTam(): JsonResponse
     {
         session()->forget('voucher_tam');
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true
+        ]);
     }
 
+    /**
+     * Tự động cấp voucher sinh nhật.
+     *
+     * Giữ nguyên logic hệ thống hiện tại.
+     */
     private function capVoucherSinhNhat(): void
     {
         $nguoiDung = Auth::user();
 
         if (
-            !$nguoiDung
-            || !$nguoiDung->ngay_sinh
-            || !$nguoiDung->trang_thai_hoat_dong
+            !$nguoiDung ||
+            !$nguoiDung->ngay_sinh ||
+            !$nguoiDung->trang_thai_hoat_dong
         ) {
             return;
         }
 
-        $ngaySinh = Carbon::parse($nguoiDung->ngay_sinh);
+        $ngaySinh =
+            Carbon::parse(
+                $nguoiDung->ngay_sinh
+            );
 
         if (
-            $ngaySinh->day !== now()->day
-            || $ngaySinh->month !== now()->month
+            $ngaySinh->day !== now()->day ||
+            $ngaySinh->month !== now()->month
         ) {
             return;
         }
 
-        $voucherSinhNhat = Voucher::query()
-            ->where('loai_voucher', 'sinh_nhat')
-            ->where('trang_thai', true)
-            ->whereDate('ngay_het_han', '>=', today())
-            ->first();
+        $voucherSinhNhat =
+            Voucher::query()
+                ->where(
+                    'loai_voucher',
+                    'sinh_nhat'
+                )
+                ->forUser()
+                ->where(
+                    'trang_thai',
+                    true
+                )
+                ->whereDate(
+                    'ngay_het_han',
+                    '>=',
+                    today()
+                )
+                ->first();
 
         if (!$voucherSinhNhat) {
             return;
         }
 
-        $daNhanTrongNam = NguoiDungVoucher::query()
-            ->where('nguoi_dung_id', $nguoiDung->id)
-            ->where('nam_ap_dung', now()->year)
-            ->whereHas('voucher', function ($query) {
-                $query->where('loai_voucher', 'sinh_nhat');
-            })
-            ->exists();
+        $daNhanTrongNam =
+            NguoiDungVoucher::query()
+                ->where(
+                    'nguoi_dung_id',
+                    $nguoiDung->id
+                )
+                ->where(
+                    'nam_ap_dung',
+                    now()->year
+                )
+                ->whereHas(
+                    'voucher',
+                    function ($query) {
+                        $query
+                            ->where(
+                                'loai_voucher',
+                                'sinh_nhat'
+                            )
+                            ->forUser();
+                    }
+                )
+                ->exists();
 
         if ($daNhanTrongNam) {
             return;
         }
 
-        DB::transaction(function () use ($nguoiDung, $voucherSinhNhat) {
-            do {
-                $maVoucherCaNhan = Str::upper(
-                    $voucherSinhNhat->ma_voucher . '-' . Str::random(8)
+        DB::transaction(
+            function () use (
+                $nguoiDung,
+                $voucherSinhNhat
+            ) {
+                do {
+                    $maVoucherCaNhan =
+                        Str::upper(
+                            $voucherSinhNhat
+                                ->ma_voucher .
+                            '-' .
+                            Str::random(8)
+                        );
+                } while (
+                    NguoiDungVoucher::where(
+                        'ma_voucher_ca_nhan',
+                        $maVoucherCaNhan
+                    )->exists()
                 );
-            } while (
-                NguoiDungVoucher::where(
-                    'ma_voucher_ca_nhan',
-                    $maVoucherCaNhan
-                )->exists()
-            );
 
-            $hanSuDung = now()->copy()->addDays(7)->endOfDay();
-            $hanVoucherMau = Carbon::parse(
-                $voucherSinhNhat->ngay_het_han
-            )->endOfDay();
+                $hanSuDung =
+                    now()
+                        ->copy()
+                        ->addDays(7)
+                        ->endOfDay();
 
-            NguoiDungVoucher::create([
-                'nguoi_dung_id' => $nguoiDung->id,
-                'voucher_id' => $voucherSinhNhat->id,
-                'ma_voucher_ca_nhan' => $maVoucherCaNhan,
-                'da_su_dung' => false,
-                'ngay_nhan' => now(),
-                'ngay_su_dung' => null,
-                'loai_cap_phat' => 'sinh_nhat',
-                'nam_ap_dung' => now()->year,
-                'ngay_het_han' => $hanSuDung->lt($hanVoucherMau)
-                    ? $hanSuDung
-                    : $hanVoucherMau,
-            ]);
-        });
+                $hanVoucherMau =
+                    Carbon::parse(
+                        $voucherSinhNhat
+                            ->ngay_het_han
+                    )->endOfDay();
+
+                if (
+                    $hanSuDung->gt(
+                        $hanVoucherMau
+                    )
+                ) {
+                    $hanSuDung =
+                        $hanVoucherMau;
+                }
+
+                NguoiDungVoucher::create([
+                    'nguoi_dung_id' =>
+                        $nguoiDung->id,
+
+                    'voucher_id' =>
+                        $voucherSinhNhat->id,
+
+                    'ma_voucher_ca_nhan' =>
+                        $maVoucherCaNhan,
+
+                    'loai_cap_phat' =>
+                        'sinh_nhat',
+
+                    'nam_ap_dung' =>
+                        now()->year,
+
+                    'da_su_dung' =>
+                        false,
+
+                    'ngay_nhan' =>
+                        now(),
+
+                    'ngay_het_han' =>
+                        $hanSuDung,
+                ]);
+            }
+        );
     }
 }
