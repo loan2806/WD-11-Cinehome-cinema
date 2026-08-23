@@ -387,7 +387,7 @@ class BanVeController extends Controller
 
         // Chỉ lấy voucher đặc biệt dành cho nhân viên bán vé tại quầy.
         $staffVouchers = Voucher::query()
-            ->where('loai_voucher', 'staff_dac_biet')
+            ->forStaff()
             ->where('trang_thai', true)
             ->whereDate('ngay_het_han', '>=', now()->toDateString())
             ->orderBy('id')
@@ -426,7 +426,7 @@ class BanVeController extends Controller
 
         $voucher = Voucher::query()
             ->where('ma_voucher', $code)
-            ->where('loai_voucher', 'staff_dac_biet')
+            ->forStaff()
             ->where('trang_thai', true)
             ->whereDate('ngay_het_han', '>=', now()->toDateString())
             ->first();
@@ -473,7 +473,7 @@ class BanVeController extends Controller
 
         $voucher = Voucher::query()
             ->whereRaw('UPPER(ma_voucher) = ?', [$code])
-            ->where('loai_voucher', 'staff_dac_biet')
+            ->forStaff()
             ->where('trang_thai', true)
             ->whereDate('ngay_het_han', '>=', today())
             ->first();
@@ -968,7 +968,7 @@ class BanVeController extends Controller
                 if ($voucherCode !== '') {
                     $voucher = Voucher::query()
                         ->where('ma_voucher', $voucherCode)
-                        ->where('loai_voucher', 'staff_dac_biet')
+                        ->forStaff()
                         ->where('trang_thai', true)
                         ->whereDate('ngay_het_han', '>=', now()->toDateString())
                         ->lockForUpdate()

@@ -550,7 +550,7 @@ class DatVeController extends Controller
                         ->orWhere('ngay_het_han', '>=', now());
                 })
                 ->whereHas('voucher', function ($query) {
-                    $query->where('trang_thai', true)
+                    $query->forUser()->where('trang_thai', true)
                         ->where(function ($voucherQuery) {
                             $voucherQuery->whereNull('ngay_het_han')
                                 ->orWhereDate('ngay_het_han', '>=', today());
@@ -599,7 +599,7 @@ class DatVeController extends Controller
                     ->orWhere('ngay_het_han', '>=', now());
             })
             ->whereHas('voucher', function ($query) {
-                $query->where('trang_thai', true)
+                $query->forUser()->where('trang_thai', true)
                     ->where(function ($voucherQuery) {
                         $voucherQuery->whereNull('ngay_het_han')
                             ->orWhereDate('ngay_het_han', '>=', today());
@@ -748,7 +748,7 @@ class DatVeController extends Controller
                     $query->whereNull('ngay_het_han')->orWhere('ngay_het_han', '>=', now());
                 })
                 ->whereHas('voucher', function ($query) {
-                    $query->where('trang_thai', true)
+                    $query->forUser()->where('trang_thai', true)
                         ->where(function ($voucherQuery) {
                             $voucherQuery->whereNull('ngay_het_han')->orWhereDate('ngay_het_han', '>=', today());
                         });
@@ -1206,7 +1206,8 @@ class DatVeController extends Controller
                 if (
                     !$voucherCaNhan || $voucherCaNhan->da_su_dung
                     || ($voucherCaNhan->ngay_het_han && $voucherCaNhan->ngay_het_han->lt(now()))
-                    || !$voucherCaNhan->voucher || !$voucherCaNhan->voucher->trang_thai
+                    || !$voucherCaNhan->voucher || !$voucherCaNhan->voucher->isForUser()
+                    || !$voucherCaNhan->voucher->trang_thai
                     || ($voucherCaNhan->voucher->ngay_het_han && $voucherCaNhan->voucher->ngay_het_han->lt(today()))
                 ) {
                     throw new \RuntimeException('Voucher đã được sử dụng hoặc không hợp lệ.');

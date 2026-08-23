@@ -28,13 +28,14 @@ class VoucherController extends Controller
         'giam_gia_ghe_vip' => 'Giảm ghế VIP',
         'sinh_nhat' => 'Sinh nhật',
         'khach_hang_than_thiet' => 'Khách hàng thân thiết',
+        'staff_dac_biet' => 'Voucher đặc biệt Staff',
     ];
 
     public function index(Request $request)
     {
         $query = Voucher::withCount([
             'nguoiDungVouchers',
-            'nguoiDungVouchers as used_count' => fn ($q) => $q->where('da_su_dung', true),
+            'nguoiDungVouchers as used_count' => fn($q) => $q->where('da_su_dung', true),
         ]);
 
         if ($request->filled('q')) {
@@ -72,10 +73,10 @@ class VoucherController extends Controller
 
             $issuedQuery->where(function ($q) use ($keyword) {
                 $q->where('ma_voucher_ca_nhan', 'like', "%{$keyword}%")
-                    ->orWhereHas('voucher', fn ($voucherQuery) => $voucherQuery
+                    ->orWhereHas('voucher', fn($voucherQuery) => $voucherQuery
                         ->where('ma_voucher', 'like', "%{$keyword}%")
                         ->orWhere('ten_voucher', 'like', "%{$keyword}%"))
-                    ->orWhereHas('nguoiDung', fn ($userQuery) => $userQuery
+                    ->orWhereHas('nguoiDung', fn($userQuery) => $userQuery
                         ->where('ho_ten', 'like', "%{$keyword}%")
                         ->orWhere('email', 'like', "%{$keyword}%")
                         ->orWhere('so_dien_thoai', 'like', "%{$keyword}%"));
@@ -198,7 +199,7 @@ class VoucherController extends Controller
             'voucher_id' => ['required', 'exists:vouchers,id'],
             'nguoi_dung_id' => [
                 'required',
-                Rule::exists('nguoi_dungs', 'id')->where(fn ($q) => $q
+                Rule::exists('nguoi_dungs', 'id')->where(fn($q) => $q
                     ->where('vai_tro', 'khach_hang')
                     ->where('trang_thai_hoat_dong', true)),
             ],
@@ -211,6 +212,28 @@ class VoucherController extends Controller
         ]);
 
         $voucher = Voucher::findOrFail($data['voucher_id']);
+
+        /*
+         * Voucher đặc biệt Staff chỉ được dùng cho Staff.
+         * Admin vẫn được tạo/sửa/quản lý voucher này trong
+         * phần Quản lý Voucher, nhưng tuyệt đối không được
+         * cấp trực tiếp cho tài khoản khách hàng (User).
+         */
+        if ($voucher->loai_voucher === 'staff_dac_biet') {
+            throw ValidationException::withMessages([
+                'voucher_id' => 'Voucher đặc biệt Staff chỉ dành cho Staff và không thể tặng trực tiếp cho User.',
+            ]);
+        }
+
+        /*
+         * Admin chỉ được cấp voucher có đối tượng sử dụng là User
+         * hoặc voucher dùng chung (all).
+         */
+        if (! in_array($voucher->doi_tuong_su_dung, ['user', 'all'], true)) {
+            throw ValidationException::withMessages([
+                'voucher_id' => 'Voucher này không dành cho User nên không thể cấp trực tiếp cho khách hàng.',
+            ]);
+        }
 
         if (! $voucher->trang_thai || $voucher->ngay_het_han->lt(today())) {
             throw ValidationException::withMessages([
@@ -358,29 +381,109 @@ class VoucherController extends Controller
         return back()->with('success', 'Đã xóa voucher.');
     }
 
-    private function validatedData(Request $request, ?Voucher $voucher = null): array
-    {
+    private function validatedData(
+        Request $request,
+        ?Voucher $voucher = null
+    ): array {
         $data = $request->validate([
             'ma_voucher' => [
                 'required',
                 'string',
                 'max:50',
                 'regex:/^[A-Z0-9_-]+$/i',
-                Rule::unique('vouchers', 'ma_voucher')->ignore($voucher?->id),
+                Rule::unique('vouchers', 'ma_voucher')
+                    ->ignore($voucher?->id),
             ],
-            'ten_voucher' => ['required', 'string', 'max:255'],
-            'loai_voucher' => ['required', Rule::in(array_keys(self::VOUCHER_TYPES))],
-            'gia_tri_giam' => ['required', 'numeric', 'min:0', 'max:999999999'],
-            'diem_can_doi' => ['required', 'integer', 'min:0', 'max:999999'],
-            'ngay_het_han' => ['required', 'date'],
-            'trang_thai' => ['nullable', 'boolean'],
+
+            'ten_voucher' => [
+                'required',
+                'string',
+                'max:255',
+            ],
+
+            'loai_voucher' => [
+                'required',
+                Rule::in(array_keys(self::VOUCHER_TYPES)),
+            ],
+
+            'kieu_giam' => [
+                'required',
+                Rule::in([
+                    'tien',
+                    'phan_tram',
+                ]),
+            ],
+
+            'doi_tuong_su_dung' => [
+                'required',
+                Rule::in([
+                    'user',
+                    'staff',
+                    'all',
+                ]),
+            ],
+
+            'gia_tri_giam' => [
+                'required',
+                'numeric',
+                'min:0',
+                'max:999999999',
+            ],
+
+            'diem_can_doi' => [
+                'required',
+                'integer',
+                'min:0',
+                'max:999999',
+            ],
+
+            'ngay_het_han' => [
+                'required',
+                'date',
+            ],
+
+            'trang_thai' => [
+                'nullable',
+                'boolean',
+            ],
         ], [
-            'ma_voucher.regex' => 'Mã voucher chỉ gồm chữ, số, dấu gạch ngang hoặc gạch dưới.',
+            'ma_voucher.regex' =>
+            'Mã voucher chỉ gồm chữ, số, dấu gạch ngang hoặc dấu gạch dưới.',
+
+            'doi_tuong_su_dung.required' =>
+            'Vui lòng chọn đối tượng sử dụng voucher.',
         ]);
 
-        $data['ma_voucher'] = Str::upper(trim($data['ma_voucher']));
-        $data['ten_voucher'] = trim($data['ten_voucher']);
-        $data['trang_thai'] = $request->boolean('trang_thai');
+        $data['ma_voucher'] =
+            Str::upper(trim($data['ma_voucher']));
+
+        $data['ten_voucher'] =
+            trim($data['ten_voucher']);
+
+        $data['trang_thai'] =
+            $request->boolean('trang_thai');
+
+        /*
+         * Voucher đặc biệt Staff bắt buộc phải dành cho Staff.
+         * Không cho tạo/cập nhật thành voucher User hoặc All.
+         */
+        if (
+            ($data['loai_voucher'] ?? null) === 'staff_dac_biet'
+            && ($data['doi_tuong_su_dung'] ?? null) !== 'staff'
+        ) {
+            throw ValidationException::withMessages([
+                'doi_tuong_su_dung' => 'Voucher đặc biệt Staff chỉ được đặt đối tượng sử dụng là Staff.',
+            ]);
+        }
+
+        if (
+            ($data['doi_tuong_su_dung'] ?? null) === 'staff'
+            && ($data['loai_voucher'] ?? null) !== 'staff_dac_biet'
+        ) {
+            throw ValidationException::withMessages([
+                'loai_voucher' => 'Voucher dành cho Staff phải có loại Voucher đặc biệt Staff.',
+            ]);
+        }
 
         return $data;
     }
