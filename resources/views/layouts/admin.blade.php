@@ -587,7 +587,7 @@
         <main id="adminMain" class="ml-[285px] min-h-screen overflow-x-hidden bg-[#080808]">
 
             {{-- TOPBAR --}}
-            <header class="sticky top-0 z-50 border-b border-white/10 bg-[#101010]/95 backdrop-blur-xl">
+            <header class="sticky top-0 z-[9000] border-b border-white/10 bg-[#101010]/95 backdrop-blur-xl">
                 <div class="flex h-[76px] items-center justify-between gap-4 px-5">
 
                     {{-- LEFT --}}

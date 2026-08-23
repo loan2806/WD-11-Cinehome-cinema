@@ -892,7 +892,7 @@ request('nguoi_dung'),
 }
 
 .push-custom-select.is-open {
-    z-index: 99999 !important;
+    z-index: 200 !important;
 }
 
 .custom-select-source {
@@ -969,7 +969,7 @@ request('nguoi_dung'),
 
     transform: translateY(-5px);
 
-    z-index: 999999 !important;
+    z-index: 1000 !important;
 
     overflow: hidden !important;
     backdrop-filter: none !important;

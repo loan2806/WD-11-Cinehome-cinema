@@ -91,9 +91,16 @@ class PhimsController extends Controller
             }
         }
 
+        // Xử lý Poster
         if ($request->hasFile('poster')) {
-            $path = $data['poster'] = $request->file('poster')->store('movies', 'public');
+            $path = $request->file('poster')->store('movies', 'public');
             $data['poster'] = basename($path);
+        }
+
+        // Xử lý Banner ngang trang chủ
+        if ($request->hasFile('banner')) {
+            $pathBanner = $request->file('banner')->store('movies', 'public');
+            $data['banner'] = basename($pathBanner);
         }
 
         $data['slug'] = Str::slug($data['ten_phim']) . '-' . uniqid();
@@ -183,8 +190,16 @@ class PhimsController extends Controller
             }
         }
 
+        // Xử lý Poster
         if ($request->hasFile('poster')) {
-            $data['poster'] = $request->file('poster')->store('movies', 'public');
+            $path = $request->file('poster')->store('movies', 'public');
+            $data['poster'] = basename($path);
+        }
+
+        // Xử lý Banner
+        if ($request->hasFile('banner')) {
+            $pathBanner = $request->file('banner')->store('movies', 'public');
+            $data['banner'] = basename($pathBanner);
         }
 
         $phim->update($data);
@@ -220,7 +235,6 @@ class PhimsController extends Controller
     */
     public function destroy(Request $request, Phims $phim)
     {
-        // 1. Kiểm tra ràng buộc: Nếu đã có suất chiếu thì CHẶN xóa
         if ($phim->showtimes()->exists()) {
             return redirect()
                 ->route('admin.phims.index')
@@ -228,8 +242,6 @@ class PhimsController extends Controller
         }
 
         $tenPhim = $phim->ten_phim;
-
-        // 2. Thực hiện xóa mềm (không dùng $phim->genres()->detach() để giữ quan hệ khi khôi phục)
         $phim->delete();
 
         $this->ghiNhatKy(
@@ -249,9 +261,7 @@ class PhimsController extends Controller
             ->route('admin.phims.index')
             ->with('success', 'Xóa phim thành công!');
     }
-    /**
-     * Khôi phục phim từ thùng rác
-     */
+
     public function restore($id)
     {
         $phim = Phims::onlyTrashed()->findOrFail($id);
@@ -269,19 +279,14 @@ class PhimsController extends Controller
         return redirect()->back()->with('success', "Đã khôi phục phim \"{$phim->ten_phim}\" thành công!");
     }
 
-    /**
-     * Xóa vĩnh viễn phim khỏi cơ sở dữ liệu
-     */
     public function forceDelete($id)
     {
         $phim = Phims::onlyTrashed()->findOrFail($id);
 
-        // Kiểm tra nếu phim còn suất chiếu liên kết
         if (method_exists($phim, 'showtimes') && $phim->showtimes()->exists()) {
             return redirect()->back()->with('error', 'Không thể xóa vĩnh viễn! Phim này vẫn còn lịch sử suất chiếu.');
         }
 
-        // Gỡ bỏ liên kết thể loại nếu có
         if (method_exists($phim, 'genres')) {
             $phim->genres()->detach();
         }

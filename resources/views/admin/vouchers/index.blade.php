@@ -544,7 +544,7 @@
         border-radius: 14px;
         padding: 6px;
         box-shadow: 0 20px 44px rgba(0, 0, 0, 0.55);
-        z-index: 99999;
+        z-index: 1000;
         max-height: 260px;
         overflow-y: auto;
     }
