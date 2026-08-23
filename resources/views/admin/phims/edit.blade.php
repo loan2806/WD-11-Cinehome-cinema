@@ -1,454 +1,541 @@
 @extends('layouts.admin')
 
-@section('page-title', 'Sửa phim')
-@section('page-subtitle', 'Cập nhật thông tin phim, poster, trailer và phân loại')
+@section('page-title', 'Chỉnh sửa phim')
+@section('page-subtitle', 'Cập nhật thông tin, poster, banner trang chủ và trailer cho phim')
 
 @php
-    $selectedGenres = old('the_loai_id', $selectedGenreIds ?? []);
-    $selectedGenres = is_array($selectedGenres) ? $selectedGenres : [];
+$countryList = $quocGias ?? $countries ?? [];
+$genreList = $theLoais ?? $genres ?? [];
+$selectedGenres = old('the_loai_id', $selectedGenreIds ?? []);
+$selectedGenres = is_array($selectedGenres) ? $selectedGenres : [];
 
-    $posterUrl = function (?string $poster): string {
-        if (empty($poster)) {
-            return asset('assets/images/LOGO copy.png');
-        }
-
-        $poster = ltrim($poster, '/');
-
-        if (\Illuminate\Support\Str::startsWith($poster, ['http://', 'https://'])) {
-            return $poster;
-        }
-
-        if (\Illuminate\Support\Str::startsWith($poster, 'storage/')) {
-            return asset($poster);
-        }
-
-        if (\Illuminate\Support\Str::startsWith($poster, 'movies/')) {
-            return asset('storage/' . $poster);
-        }
-
-        return asset('storage/movies/' . $poster);
-    };
-
-    $currentPoster = $posterUrl($phim->poster);
+$posterUrl = $phim->poster ? (str_contains($phim->poster, '/') ? asset('storage/' . $phim->poster) : asset('storage/movies/' . $phim->poster)) : asset('assets/images/LOGO copy.png');
+$bannerUrl = $phim->banner ? (str_contains($phim->banner, '/') ? asset('storage/' . $phim->banner) : asset('storage/movies/' . $phim->banner)) : asset('assets/images/LOGO copy.png');
 @endphp
 
-@section('content')
-<form action="{{ route('admin.phims.update', $phim) }}" method="POST" enctype="multipart/form-data" class="movie-form-page">
-    @csrf
-    @method('PUT')
+@push('styles')
+<style>
+    .movie-create-page,
+    .movie-form-layout,
+    .movie-panel,
+    .movie-field {
+        overflow: visible !important;
+        position: relative !important;
+    }
 
+    .movie-panel {
+        background: #151518;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 24px;
+        z-index: 10;
+    }
+
+    .movie-panel:has(.cine-select-wrapper.open) {
+        z-index: 900 !important;
+    }
+
+    .cine-select-wrapper {
+        position: relative !important;
+        width: 100% !important;
+        user-select: none !important;
+        z-index: 20 !important;
+    }
+
+    .cine-select-wrapper.open {
+        z-index: 200 !important;
+    }
+
+    .text-danger {
+        display: block;
+        margin-top: 6px;
+        color: #ef4444;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .is-invalid {
+        border: 1px solid #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, .15);
+    }
+
+    .cine-select-trigger {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        background: #18181c !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        color: #f3f4f6 !important;
+        font-size: 14px !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        outline: none !important;
+    }
+
+    .cine-select-trigger:hover,
+    .cine-select-wrapper.open .cine-select-trigger {
+        border-color: #facc15 !important;
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2) !important;
+    }
+
+    .cine-select-trigger i {
+        color: #facc15 !important;
+        font-size: 12px !important;
+        transition: transform 0.2s ease !important;
+    }
+
+    .cine-select-wrapper.open .cine-select-trigger i {
+        transform: rotate(180deg) !important;
+    }
+
+    .cine-select-menu {
+        position: absolute !important;
+        top: calc(100% + 6px) !important;
+        left: 0 !important;
+        right: 0 !important;
+        min-width: 100% !important;
+        background: #18181c !important;
+        border: 1px solid rgba(250, 204, 21, 0.35) !important;
+        border-radius: 16px !important;
+        padding: 8px !important;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+        z-index: 1000 !important;
+        max-height: 260px !important;
+        overflow-y: auto !important;
+        display: none !important;
+    }
+
+    .cine-select-wrapper.open .cine-select-menu {
+        display: block !important;
+    }
+
+    .cine-select-option {
+        padding: 10px 12px !important;
+        border-radius: 10px !important;
+        color: #d1d5db !important;
+        font-size: 13.5px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        transition: all 0.15s ease !important;
+        margin-bottom: 2px !important;
+    }
+
+    .cine-select-option:hover {
+        background: rgba(250, 204, 21, 0.15) !important;
+        color: #facc15 !important;
+    }
+
+    .cine-select-option.selected {
+        background: rgba(250, 204, 21, 0.25) !important;
+        color: #facc15 !important;
+        font-weight: 700 !important;
+    }
+
+    .form-input-cine {
+        width: 100%;
+        background: #18181c;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #fff;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 14px;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    .form-input-cine:focus {
+        border-color: #facc15;
+        box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2);
+    }
+</style>
+@endpush
+
+@section('content')
+<div class="movie-create-page" style="padding-top: 10px;">
     @include('admin.partials.flash')
 
-    <section class="movie-form-hero">
-        <div class="movie-form-copy">
-            <span class="movie-kicker">
-                <i class="fa-solid fa-pen-to-square"></i>
-                Cập nhật phim #{{ $phim->id }}
-            </span>
-            <h2>{{ $phim->ten_phim }}</h2>
-            <p>
-                Chỉnh sửa thông tin phim, thay poster, cập nhật trailer và phân loại để dữ liệu hiển thị
-                nhất quán trên trang người dùng và khu vực đặt vé.
-            </p>
-        </div>
-
-        <div class="movie-form-hero-actions">
-            <a href="{{ route('admin.phims.show', $phim) }}" class="movie-action-btn is-soft">
-                <i class="fa-solid fa-eye"></i>
-                Xem chi tiết
-            </a>
-            <a href="{{ route('admin.phims.index') }}" class="movie-action-btn is-ghost">
-                <i class="fa-solid fa-arrow-left"></i>
-                Danh sách phim
-            </a>
-            <button type="submit" class="movie-action-btn is-primary">
-                <i class="fa-solid fa-floppy-disk"></i>
-                Cập nhật phim
-            </button>
-        </div>
-    </section>
-
-    <div class="movie-form-layout">
-        <main class="movie-form-main">
-            <section class="movie-form-panel">
-                <div class="movie-form-panel-head">
-                    <span><i class="fa-solid fa-circle-info"></i></span>
-                    <div>
-                        <h3>Thông tin chính</h3>
-                        <p>Cập nhật tên phim, đội ngũ sản xuất, thời lượng và ngôn ngữ hiển thị.</p>
-                    </div>
-                </div>
-
-                <div class="movie-form-grid">
-                    <label class="movie-form-field is-wide">
-                        <span>Tên phim <b>*</b></span>
-                        <input
-                            type="text"
-                            name="ten_phim"
-                            value="{{ old('ten_phim', $phim->ten_phim) }}"
-                            placeholder="Nhập tên phim"
-                            class="{{ $errors->has('ten_phim') ? 'is-invalid' : '' }}"
-                            autocomplete="off"
-                        >
-                        @error('ten_phim')
-                            <small>{{ $message }}</small>
-                        @enderror
-                    </label>
-
-                    <label class="movie-form-field">
-                        <span>Đạo diễn <b>*</b></span>
-                        <input
-                            type="text"
-                            name="dao_dien"
-                            value="{{ old('dao_dien', $phim->dao_dien) }}"
-                            placeholder="Tên đạo diễn"
-                            class="{{ $errors->has('dao_dien') ? 'is-invalid' : '' }}"
-                        >
-                        @error('dao_dien')
-                            <small>{{ $message }}</small>
-                        @enderror
-                    </label>
-
-                    <label class="movie-form-field">
-                        <span>Ngôn ngữ <b>*</b></span>
-                        <input
-                            type="text"
-                            name="ngon_ngu"
-                            value="{{ old('ngon_ngu', $phim->ngon_ngu) }}"
-                            placeholder="Tiếng Việt / Phụ đề Anh"
-                            class="{{ $errors->has('ngon_ngu') ? 'is-invalid' : '' }}"
-                        >
-                        @error('ngon_ngu')
-                            <small>{{ $message }}</small>
-                        @enderror
-                    </label>
-
-                    <label class="movie-form-field is-wide">
-                        <span>Diễn viên <b>*</b></span>
-                        <input
-                            type="text"
-                            name="dien_vien"
-                            value="{{ old('dien_vien', $phim->dien_vien) }}"
-                            placeholder="Nhập các diễn viên chính, cách nhau bằng dấu phẩy"
-                            class="{{ $errors->has('dien_vien') ? 'is-invalid' : '' }}"
-                        >
-                        @error('dien_vien')
-                            <small>{{ $message }}</small>
-                        @enderror
-                    </label>
-
-                    <label class="movie-form-field">
-                        <span>Thời lượng <b>*</b></span>
-                        <div class="movie-input-with-suffix">
-                            <input
-                                type="number"
-                                name="thoi_luong"
-                                value="{{ old('thoi_luong', $phim->thoi_luong) }}"
-                                placeholder="120"
-                                min="1"
-                                class="{{ $errors->has('thoi_luong') ? 'is-invalid' : '' }}"
-                            >
-                            <em>phút</em>
-                        </div>
-                        @error('thoi_luong')
-                            <small>{{ $message }}</small>
-                        @enderror
-                    </label>
-
-                    <label class="movie-form-field">
-                        <span>Giới hạn tuổi <b>*</b></span>
-                        <input
-                            type="text"
-                            name="gioi_han_tuoi"
-                            value="{{ old('gioi_han_tuoi', $phim->gioi_han_tuoi) }}"
-                            placeholder="P, T13, T16, T18"
-                            class="{{ $errors->has('gioi_han_tuoi') ? 'is-invalid' : '' }}"
-                        >
-                        @error('gioi_han_tuoi')
-                            <small>{{ $message }}</small>
-                        @enderror
-                    </label>
-                </div>
-            </section>
-
-            <section class="movie-form-panel">
-                <div class="movie-form-panel-head">
-                    <span><i class="fa-solid fa-tags"></i></span>
-                    <div>
-                        <h3>Phân loại phim</h3>
-                        <p>Quốc gia và thể loại giúp khách lọc phim nhanh hơn.</p>
-                    </div>
-                </div>
-
-                <div class="movie-form-grid">
-                    <label class="movie-form-field">
-                        <span>Quốc gia <b>*</b></span>
-                        <select name="quoc_gia_id" class="{{ $errors->has('quoc_gia_id') ? 'is-invalid' : '' }}">
-                            <option value="">Chọn quốc gia</option>
-                            @foreach ($countries as $country)
-                                <option value="{{ $country->id }}" @selected(old('quoc_gia_id', $phim->quoc_gia_id) == $country->id)>
-                                    {{ $country->ten_quoc_gia }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('quoc_gia_id')
-                            <small>{{ $message }}</small>
-                        @enderror
-                    </label>
-
-                    <div class="movie-form-field">
-                        <span>Thể loại đã chọn</span>
-                        <div class="movie-selected-count">
-                            <i class="fa-solid fa-check"></i>
-                            <strong id="genreCount">{{ count($selectedGenres) }}</strong>
-                            <em>thể loại</em>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="movie-genre-picker {{ $errors->has('the_loai_id') ? 'is-invalid' : '' }}">
-                    @forelse($genres as $genre)
-                        <label class="movie-genre-option">
-                            <input
-                                type="checkbox"
-                                name="the_loai_id[]"
-                                value="{{ $genre->id }}"
-                                @checked(in_array($genre->id, $selectedGenres))
-                            >
-                            <span>
-                                <i class="fa-solid fa-check"></i>
-                                {{ $genre->ten_the_loai }}
-                            </span>
-                        </label>
-                    @empty
-                        <div class="movie-form-empty">
-                            <i class="fa-solid fa-tags"></i>
-                            <strong>Chưa có thể loại nào</strong>
-                            <a href="{{ route('admin.the-loais.create') }}">Tạo thể loại ngay</a>
-                        </div>
-                    @endforelse
-                </div>
-
-                @error('the_loai_id')
-                    <p class="movie-form-error">{{ $message }}</p>
-                @enderror
-            </section>
-
-            <section class="movie-form-panel">
-                <div class="movie-form-panel-head">
-                    <span><i class="fa-solid fa-align-left"></i></span>
-                    <div>
-                        <h3>Nội dung phim</h3>
-                        <p>Cập nhật mô tả đang dùng ở trang chi tiết người dùng.</p>
-                    </div>
-                </div>
-
-                <label class="movie-form-field">
-                    <span>Mô tả phim <b>*</b></span>
-                    <textarea
-                        name="mo_ta"
-                        rows="8"
-                        placeholder="Nhập mô tả phim, bối cảnh, điểm nhấn và lý do nên xem..."
-                        class="{{ $errors->has('mo_ta') ? 'is-invalid' : '' }}"
-                    >{{ old('mo_ta', $phim->mo_ta) }}</textarea>
-                    @error('mo_ta')
-                        <small>{{ $message }}</small>
-                    @enderror
-                </label>
-            </section>
-        </main>
-
-        <aside class="movie-form-side">
-            <section class="movie-form-panel movie-media-panel">
-                <div class="movie-form-panel-head">
-                    <span><i class="fa-solid fa-image"></i></span>
-                    <div>
-                        <h3>Poster phim</h3>
-                        <p>Chọn ảnh mới nếu muốn thay poster hiện tại. Tối đa 2MB.</p>
-                    </div>
-                </div>
-
-                <label for="poster" class="movie-poster-uploader {{ $errors->has('poster') ? 'is-invalid' : '' }}">
-                    <input id="poster" type="file" name="poster" accept="image/*">
-                    <img id="posterPreview" src="{{ $currentPoster }}" alt="Poster hiện tại của {{ $phim->ten_phim }}" @if (! $phim->poster) hidden @endif>
-                    <span id="posterPlaceholder" @if ($phim->poster) hidden @endif>
-                        <i class="fa-solid fa-cloud-arrow-up"></i>
-                        <strong>Tải poster mới</strong>
-                        <small>Bấm để chọn ảnh dọc mới</small>
-                    </span>
-                </label>
-
-                <div class="movie-file-note" id="posterFileName">
-                    {{ $phim->poster ? 'Poster hiện tại: ' . basename($phim->poster) : 'Chưa có poster' }}
-                </div>
-
-                @error('poster')
-                    <p class="movie-form-error">{{ $message }}</p>
-                @enderror
-            </section>
-
-            <section class="movie-form-panel movie-media-panel">
-                <div class="movie-form-panel-head">
-                    <span><i class="fa-brands fa-youtube"></i></span>
-                    <div>
-                        <h3>Trailer</h3>
-                        <p>Dán link YouTube để kiểm tra preview trước khi cập nhật.</p>
-                    </div>
-                </div>
-
-                <label class="movie-form-field">
-                    <span>Trailer URL <b>*</b></span>
-                    <input
-                        type="url"
-                        id="trailer"
-                        name="trailer"
-                        value="{{ old('trailer', $phim->trailer) }}"
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        class="{{ $errors->has('trailer') ? 'is-invalid' : '' }}"
-                    >
-                    @error('trailer')
-                        <small>{{ $message }}</small>
-                    @enderror
-                    <small id="trailerHint" class="movie-live-hint">Hỗ trợ youtube.com, youtu.be và YouTube Shorts.</small>
-                </label>
-
-                <div id="trailerBox" class="movie-trailer-preview" hidden>
-                    <iframe id="trailerPreview" title="Xem trước trailer" src="" allowfullscreen></iframe>
-                </div>
-            </section>
-
-            <section class="movie-form-tip">
-                <i class="fa-solid fa-lightbulb"></i>
-                <div>
-                    <strong>Lưu ý khi cập nhật</strong>
-                    <span>Nếu không chọn poster mới, hệ thống sẽ giữ nguyên poster hiện tại của phim.</span>
-                </div>
-            </section>
-        </aside>
-    </div>
-
-    <div class="movie-form-savebar">
+    <!-- HERO HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
         <div>
-            <strong>Cập nhật thay đổi?</strong>
-            <span>Kiểm tra lại poster, trailer và thể loại trước khi lưu.</span>
+            <span class="showtime-kicker"><i class="fa-solid fa-film"></i> Quản lý kho phim</span>
+            <h2 style="font-size: 28px; font-weight: 900; color: #fff; margin-top: 4px;">Chỉnh sửa phim: {{ $phim->ten_phim }}</h2>
+            <p style="color: #9ca3af; font-size: 14px;">Cập nhật thông tin chi tiết, poster, banner trang chủ và trailer phim.</p>
         </div>
-        <div class="movie-form-save-actions">
-            <a href="{{ route('admin.phims.show', $phim) }}" class="movie-action-btn is-ghost">
-                <i class="fa-solid fa-xmark"></i>
-                Hủy
+
+        <div style="display: flex; gap: 12px;">
+            <a href="{{ route('admin.phims.index') }}" class="movie-action-btn is-ghost">
+                <i class="fa-solid fa-arrow-left"></i> Quay lại
             </a>
-            <button type="submit" class="movie-action-btn is-primary">
-                <i class="fa-solid fa-floppy-disk"></i>
-                Cập nhật phim
+            <button type="submit" form="editMovieForm" class="movie-action-btn is-primary">
+                <i class="fa-solid fa-floppy-disk"></i> Cập nhật phim
             </button>
         </div>
     </div>
-</form>
+
+    <form id="editMovieForm" action="{{ route('admin.phims.update', $phim) }}" method="POST" enctype="multipart/form-data">
+        @csrf
+        @method('PUT')
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+            <!-- CỘT BÊN TRÁI -->
+            <div>
+                <!-- PANEL 1: THÔNG TIN CƠ BẢN -->
+                <div class="movie-panel">
+                    <h3 style="color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-circle-info" style="color: #facc15;"></i> 1. Thông tin cơ bản
+                    </h3>
+
+                    <div style="display:flex;flex-direction:column;gap:16px;">
+                        {{-- Tên phim --}}
+                        <div>
+                            <label class="form-label">Tên phim <span style="color:#ef4444">*</span></label>
+                            <input type="text" name="ten_phim" value="{{ old('ten_phim', $phim->ten_phim) }}" placeholder="Tên phim" class="form-input-cine @error('ten_phim') is-invalid @enderror">
+                            @error('ten_phim')
+                            <small class="text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                            {{-- Đạo diễn --}}
+                            <div>
+                                <label class="form-label">Đạo diễn <span style="color:#ef4444">*</span></label>
+                                <input type="text" name="dao_dien" value="{{ old('dao_dien', $phim->dao_dien) }}" placeholder="Tên đạo diễn" class="form-input-cine @error('dao_dien') is-invalid @enderror">
+                                @error('dao_dien')
+                                <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+
+                            {{-- Diễn viên --}}
+                            <div>
+                                <label class="form-label">Diễn viên <span style="color:#ef4444">*</span></label>
+                                <input type="text" name="dien_vien" value="{{ old('dien_vien', $phim->dien_vien) }}" placeholder="Các diễn viên chính..." class="form-input-cine @error('dien_vien') is-invalid @enderror">
+                                @error('dien_vien')
+                                <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">
+                            {{-- Thời lượng --}}
+                            <div>
+                                <label class="form-label">Thời lượng (phút) <span style="color:#ef4444">*</span></label>
+                                <input type="number" name="thoi_luong" value="{{ old('thoi_luong', $phim->thoi_luong) }}" placeholder="120" class="form-input-cine @error('thoi_luong') is-invalid @enderror">
+                                @error('thoi_luong')
+                                <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+
+                            {{-- Giới hạn tuổi --}}
+                            <div>
+                                <label class="form-label">Giới hạn tuổi <span style="color:#ef4444">*</span></label>
+                                <div class="cine-select-wrapper @error('gioi_han_tuoi') is-invalid @enderror">
+                                    <input type="hidden" name="gioi_han_tuoi" value="{{ old('gioi_han_tuoi', $phim->gioi_han_tuoi ?? 'P') }}">
+                                    <div class="cine-select-trigger" tabindex="0">
+                                        <span class="cine-select-value">{{ old('gioi_han_tuoi', $phim->gioi_han_tuoi ?? 'P') }}</span>
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </div>
+                                    <div class="cine-select-menu">
+                                        <div class="cine-select-option" data-value="P">P - Mọi lứa tuổi</div>
+                                        <div class="cine-select-option" data-value="K">K - Dưới 13 tuổi có phụ huynh</div>
+                                        <div class="cine-select-option" data-value="T13">T13 - Từ 13 tuổi trở lên</div>
+                                        <div class="cine-select-option" data-value="T16">T16 - Từ 16 tuổi trở lên</div>
+                                        <div class="cine-select-option" data-value="T18">T18 - Từ 18 tuổi trở lên</div>
+                                    </div>
+                                </div>
+                                @error('gioi_han_tuoi')
+                                <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+
+                            {{-- Ngôn ngữ --}}
+                            <div>
+                                <label class="form-label">Ngôn ngữ <span style="color:#ef4444">*</span></label>
+                                <input type="text" name="ngon_ngu" value="{{ old('ngon_ngu', $phim->ngon_ngu) }}" placeholder="Tiếng Việt..." class="form-input-cine @error('ngon_ngu') is-invalid @enderror">
+                                @error('ngon_ngu')
+                                <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- PANEL 2: PHÂN LOẠI PHIM -->
+                <div class="movie-panel">
+                    <h3 style="color:#fff;font-size:18px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+                        <i class="fa-solid fa-tags" style="color:#facc15;"></i> 2. Phân loại phim
+                    </h3>
+
+                    <div style="display:flex;flex-direction:column;gap:16px;">
+                        {{-- Quốc gia --}}
+                        <div>
+                            <label class="form-label">Quốc gia <span style="color:#ef4444">*</span></label>
+                            <div class="cine-select-wrapper">
+                                <input type="hidden" name="quoc_gia_id" value="{{ old('quoc_gia_id', $phim->quoc_gia_id) }}">
+                                <div class="cine-select-trigger @error('quoc_gia_id') is-invalid @enderror" tabindex="0">
+                                    <span class="cine-select-value">
+                                        @php
+                                        $selectedCountry = collect($countryList)->first(function ($item) use ($phim) {
+                                            return (is_object($item) ? $item->id : $item) == old('quoc_gia_id', $phim->quoc_gia_id);
+                                        });
+                                        @endphp
+                                        {{ is_object($selectedCountry) ? $selectedCountry->ten_quoc_gia : 'Chọn quốc gia' }}
+                                    </span>
+                                    <i class="fa-solid fa-chevron-down"></i>
+                                </div>
+                                <div class="cine-select-menu">
+                                    @foreach ($countryList as $qg)
+                                    @php
+                                    $id = is_object($qg) ? $qg->id : $qg;
+                                    $name = is_object($qg) ? $qg->ten_quoc_gia : $qg;
+                                    @endphp
+                                    <div class="cine-select-option {{ old('quoc_gia_id', $phim->quoc_gia_id) == $id ? 'selected' : '' }}" data-value="{{ $id }}">
+                                        {{ $name }}
+                                    </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @error('quoc_gia_id')
+                            <small class="text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+
+                        {{-- Thể loại --}}
+                        <div>
+                            <label class="form-label">Thể loại phim <span style="color:#ef4444">*</span></label>
+                            <div class="@error('the_loai_id') is-invalid @enderror" style="display:flex;flex-wrap:wrap;gap:10px;background:#18181c;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.15);">
+                                @foreach($genreList as $tl)
+                                @php
+                                $id = is_object($tl) ? $tl->id : $tl;
+                                $name = is_object($tl) ? $tl->ten_the_loai : $tl;
+                                @endphp
+                                <label style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);padding:6px 12px;border-radius:8px;color:#fff;font-size:13px;cursor:pointer;">
+                                    <input type="checkbox" name="the_loai_id[]" value="{{ $id }}" {{ in_array($id, $selectedGenres) ? 'checked' : '' }} style="accent-color:#facc15;">
+                                    <span>{{ $name }}</span>
+                                </label>
+                                @endforeach
+                            </div>
+                            @error('the_loai_id')
+                            <small class="text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANEL 3: NỘI DUNG MÔ TẢ -->
+                <div class="movie-panel">
+                    <h3 style="color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-align-left" style="color: #facc15;"></i> 3. Mô tả tóm tắt
+                    </h3>
+                    <textarea name="mo_ta" rows="4" placeholder="Nhập tóm tắt nội dung phim..." class="form-input-cine" style="resize: vertical;">{{ old('mo_ta', $phim->mo_ta) }}</textarea>
+                    @error('mo_ta')
+                    <small class="text-danger d-block mt-1">{{ $message }}</small>
+                    @enderror
+                </div>
+            </div>
+
+            <!-- CỘT BÊN PHẢI -->
+            <div>
+                <!-- POSTER UPLOAD -->
+                <div class="movie-panel">
+                    <h3 style="color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-image" style="color: #facc15;"></i> Tải lên Poster (Khổ dọc)
+                    </h3>
+
+                    <div style="text-align: center; border: 2px dashed rgba(255,255,255,0.2); padding: 20px; border-radius: 16px; background: #18181c;">
+                        <img id="posterPreview" src="{{ $posterUrl }}" style="max-height: 220px; border-radius: 12px; margin-bottom: 12px; object-fit: cover;">
+                        <input type="file" name="poster" id="posterInput" accept="image/*" style="display: none;">
+                        <button type="button" onclick="document.getElementById('posterInput').click()" class="movie-action-btn is-ghost" style="width: 100%; justify-content: center;">
+                            <i class="fa-solid fa-upload"></i> Đổi file poster
+                        </button>
+                        @error('poster')
+                        <small class="text-danger d-block mt-1">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- BANNER TRANG CHỦ UPLOAD (16:9) -->
+                <div class="movie-panel">
+                    <h3 style="color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-solid fa-panorama" style="color: #facc15;"></i> Banner Trang Chủ (16:9 Ngang)
+                    </h3>
+
+                    <div style="text-align: center; border: 2px dashed rgba(255,255,255,0.2); padding: 20px; border-radius: 16px; background: #18181c;">
+                        <img id="bannerPreview" src="{{ $bannerUrl }}" style="width: 100%; max-height: 140px; border-radius: 12px; margin-bottom: 12px; object-fit: cover;">
+                        <input type="file" name="banner" id="bannerInput" accept="image/*" style="display: none;">
+                        <button type="button" onclick="document.getElementById('bannerInput').click()" class="movie-action-btn is-ghost" style="width: 100%; justify-content: center;">
+                            <i class="fa-solid fa-upload"></i> Đổi file banner ngang
+                        </button>
+                        <small style="display: block; margin-top: 8px; font-size: 12px; color: #9ca3af;">Ảnh khổ ngang sắc nét dùng để trình chiếu riêng tại Slider Trang chủ.</small>
+                        @error('banner')
+                        <small class="text-danger d-block mt-1">{{ $message }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <!-- TRAILER YOUTUBE -->
+                <div class="movie-panel">
+                    <h3 style="color: #fff; font-size: 18px; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+                        <i class="fa-brands fa-youtube" style="color: #ef4444;"></i> Trailer YouTube
+                    </h3>
+
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div>
+                            <label style="display: block; color: #d1d5db; font-size: 13px; font-weight: 600; margin-bottom: 6px;">
+                                Trailer URL <span style="color: #ef4444;">*</span>
+                            </label>
+                            <input type="url" name="trailer" id="trailerInput" value="{{ old('trailer', $phim->trailer) }}" placeholder="https://www.youtube.com/watch?v=..." class="form-input-cine" autocomplete="off">
+                            @error('trailer')
+                            <small class="text-danger d-block mt-1">{{ $message }}</small>
+                            @enderror
+                            <small id="trailerHint" style="display: block; margin-top: 6px; font-size: 12px; color: #9ca3af; transition: color 0.2s;">
+                                Hỗ trợ youtube.com, youtu.be và YouTube Shorts.
+                            </small>
+                        </div>
+
+                        <div id="trailerBox" style="display: none; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid rgba(250, 204, 21, 0.35); background: #000; aspect-ratio: 16/9; position: relative; margin-top: 4px;">
+                            <iframe id="trailerPreview" style="width: 100%; height: 100%; border: none;" title="Xem trước trailer phim" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
 @endsection
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const posterInput = document.getElementById('poster');
+        // DROPDOWN CINE-SELECT
+        document.querySelectorAll('.cine-select-wrapper').forEach(function(wrapper) {
+            const hiddenInput = wrapper.querySelector('input[type="hidden"]');
+            const trigger = wrapper.querySelector('.cine-select-trigger');
+            const triggerText = wrapper.querySelector('.cine-select-value');
+            const options = wrapper.querySelectorAll('.cine-select-option');
+
+            options.forEach(function(opt) {
+                if (opt.classList.contains('selected') && opt.dataset.value !== "") {
+                    triggerText.textContent = opt.textContent.trim();
+                }
+            });
+
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
+                    if (w !== wrapper) w.classList.remove('open');
+                });
+                wrapper.classList.toggle('open');
+            });
+
+            options.forEach(function(opt) {
+                opt.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const val = opt.dataset.value;
+                    hiddenInput.value = val;
+                    triggerText.textContent = opt.textContent.trim();
+                    options.forEach(o => o.classList.remove('selected'));
+                    opt.classList.add('selected');
+                    wrapper.classList.remove('open');
+                });
+            });
+        });
+
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.cine-select-wrapper').forEach(function(w) {
+                w.classList.remove('open');
+            });
+        });
+
+        // PREVIEW ANH POSTER
+        const posterInput = document.getElementById('posterInput');
         const posterPreview = document.getElementById('posterPreview');
-        const posterPlaceholder = document.getElementById('posterPlaceholder');
-        const posterFileName = document.getElementById('posterFileName');
-        const genreCount = document.getElementById('genreCount');
-        const trailerInput = document.getElementById('trailer');
+        if (posterInput && posterPreview) {
+            posterInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) { posterPreview.src = evt.target.result; }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // PREVIEW ANH BANNER TRANG CHỦ
+        const bannerInput = document.getElementById('bannerInput');
+        const bannerPreview = document.getElementById('bannerPreview');
+        if (bannerInput && bannerPreview) {
+            bannerInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) { bannerPreview.src = evt.target.result; }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        // PREVIEW YOUTUBE TRAILER
+        const trailerInput = document.getElementById('trailerInput');
         const trailerBox = document.getElementById('trailerBox');
         const trailerPreview = document.getElementById('trailerPreview');
         const trailerHint = document.getElementById('trailerHint');
 
-        function updateGenreCount() {
-            if (!genreCount) {
-                return;
-            }
-
-            genreCount.textContent = document.querySelectorAll('input[name="the_loai_id[]"]:checked').length;
-        }
-
         function getYoutubeEmbed(url) {
-            if (!url) {
-                return null;
-            }
-
+            if (!url) return null;
             try {
-                const parsed = new URL(url);
-                const host = parsed.hostname.replace(/^www\./, '');
-
-                if (host === 'youtube.com' && parsed.searchParams.get('v')) {
-                    return 'https://www.youtube.com/embed/' + parsed.searchParams.get('v');
-                }
-
+                const parsed = new URL(url.trim());
+                const host = parsed.hostname.replace(/^www\./, '').replace(/^m\./, '');
+                if (host === 'youtube.com' && parsed.searchParams.get('v')) return 'https://www.youtube.com/embed/' + parsed.searchParams.get('v');
                 if (host === 'youtu.be') {
                     const id = parsed.pathname.split('/').filter(Boolean)[0];
                     return id ? 'https://www.youtube.com/embed/' + id : null;
                 }
-
                 if (host === 'youtube.com' && parsed.pathname.includes('/shorts/')) {
                     const id = parsed.pathname.split('/shorts/')[1]?.split('/')[0];
                     return id ? 'https://www.youtube.com/embed/' + id : null;
                 }
-            } catch (error) {
-                return null;
-            }
-
+                if (host === 'youtube.com' && parsed.pathname.includes('/embed/')) {
+                    const id = parsed.pathname.split('/embed/')[1]?.split('/')[0];
+                    return id ? 'https://www.youtube.com/embed/' + id : null;
+                }
+            } catch (error) { return null; }
             return null;
         }
 
         function updateTrailerPreview() {
-            const embed = getYoutubeEmbed(trailerInput?.value.trim());
-
-            if (!trailerInput || !trailerBox || !trailerPreview || !trailerHint) {
-                return;
-            }
-
-            if (!trailerInput.value.trim()) {
+            if (!trailerInput || !trailerBox || !trailerPreview || !trailerHint) return;
+            const url = trailerInput.value.trim();
+            if (!url) {
                 trailerPreview.src = '';
-                trailerBox.hidden = true;
+                trailerBox.style.display = 'none';
                 trailerHint.textContent = 'Hỗ trợ youtube.com, youtu.be và YouTube Shorts.';
-                trailerHint.classList.remove('is-error');
+                trailerHint.style.color = '#9ca3af';
                 return;
             }
-
-            if (!embed) {
+            const embedUrl = getYoutubeEmbed(url);
+            if (embedUrl) {
+                if (trailerPreview.src !== embedUrl) trailerPreview.src = embedUrl;
+                trailerBox.style.display = 'block';
+                trailerHint.textContent = '✓ Link hợp lệ, có thể xem trực tiếp video bên dưới.';
+                trailerHint.style.color = '#10b981';
+            } else {
                 trailerPreview.src = '';
-                trailerBox.hidden = true;
-                trailerHint.textContent = 'Link trailer chưa đúng định dạng YouTube.';
-                trailerHint.classList.add('is-error');
-                return;
+                trailerBox.style.display = 'none';
+                trailerHint.textContent = '✕ Link chưa đúng định dạng video YouTube.';
+                trailerHint.style.color = '#ef4444';
             }
-
-            trailerPreview.src = embed;
-            trailerBox.hidden = false;
-            trailerHint.textContent = 'Trailer hợp lệ, có thể xem trước bên dưới.';
-            trailerHint.classList.remove('is-error');
         }
 
-        document.querySelectorAll('input[name="the_loai_id[]"]').forEach(function(input) {
-            input.addEventListener('change', updateGenreCount);
-        });
-
-        posterInput?.addEventListener('change', function(event) {
-            const file = event.target.files?.[0];
-
-            if (!file) {
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(loadEvent) {
-                posterPreview.src = loadEvent.target.result;
-                posterPreview.hidden = false;
-                posterPlaceholder.hidden = true;
-                posterFileName.textContent = 'Poster mới: ' + file.name;
-            };
-            reader.readAsDataURL(file);
-        });
-
-        trailerInput?.addEventListener('input', updateTrailerPreview);
-        updateGenreCount();
-        updateTrailerPreview();
+        if (trailerInput) {
+            trailerInput.addEventListener('input', updateTrailerPreview);
+            trailerInput.addEventListener('paste', function() { setTimeout(updateTrailerPreview, 100); });
+            updateTrailerPreview();
+        }
     });
 </script>
 @endpush

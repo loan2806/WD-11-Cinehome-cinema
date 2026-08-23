@@ -49,6 +49,18 @@ class SuatChieu extends Model
         self::TRANG_THAI_HUY => 'Hủy',
     ];
 
+    // Scope lọc các suất chiếu còn hoạt động (Chưa chiếu xong & Chưa hủy)
+    public function scopeHoatDong($query)
+    {
+        return $query->whereNotIn('trang_thai', [self::TRANG_THAI_DA_CHIEU, self::TRANG_THAI_HUY]);
+    }
+
+    // Scope lọc các suất chiếu đã kết thúc
+    public function scopeDaChieu($query)
+    {
+        return $query->where('trang_thai', self::TRANG_THAI_DA_CHIEU);
+    }
+
     public function phim(): BelongsTo
     {
         return $this->belongsTo(Phims::class, 'phim_id');

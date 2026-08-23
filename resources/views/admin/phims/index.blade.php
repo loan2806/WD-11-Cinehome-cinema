@@ -47,7 +47,7 @@
         box-sizing: border-box !important;
     }
 
-    /* 🌟 KHUNG TÌM KIẾM ĐÈ PHỦ HẲN LÊN NỀN CŨ - KHÔNG BỊ BÓNG CHỮ ĐÈ */
+    /* 🌟 KHUNG TÌM KIẾM GỌN GÀNG CHUẨN BỐ CỤC */
     .movie-filter-box {
         background: #151518 !important;
         border: 1px solid rgba(255, 255, 255, 0.12) !important;
@@ -57,7 +57,7 @@
         width: 100% !important;
         box-sizing: border-box !important;
         position: relative !important;
-        z-index: 50 !important;
+        z-index: 10 !important;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
     }
 
@@ -69,7 +69,7 @@
         width: 100% !important;
     }
 
-    /* 🌟 DROPDOWN POPUP NỔI HIGHLIGHT Z-INDEX CAO */
+    /* 🌟 DROPDOWN POPUP NỔI HIGHLIGHT Z-INDEX CAO TRONG NỘI DUNG */
     .cine-select-wrapper {
         position: relative !important;
         width: 100% !important;
@@ -78,7 +78,7 @@
     }
 
     .cine-select-wrapper.open {
-        z-index: 99999 !important;
+        z-index: 200 !important;
     }
 
     .cine-select-trigger {
@@ -124,7 +124,7 @@
         border-radius: 12px !important;
         padding: 6px !important;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95) !important;
-        z-index: 999999 !important;
+        z-index: 1000 !important;
         max-height: 220px !important;
         overflow-y: auto !important;
         display: none !important;
