@@ -41,7 +41,7 @@
     }
 
     .cine-select-wrapper.open {
-        z-index: 99999 !important;
+        z-index: 200 !important;
     }
 
     .cine-select-trigger {
@@ -86,7 +86,7 @@
         border-radius: 16px !important;
         padding: 8px !important;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-        z-index: 999999 !important;
+        z-index: 1000 !important;
         max-height: 260px !important;
         overflow-y: auto !important;
         display: none !important;

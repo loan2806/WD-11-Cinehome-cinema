@@ -425,7 +425,7 @@
     left: 0;
     right: 0;
     top: calc(100% + 6px);
-    z-index: 999999;
+    z-index: 1000;
     background: #171b23 !important;
     border: 1px solid #303642 !important;
     border-radius: 14px !important;
@@ -439,7 +439,7 @@
     position: fixed !important;
     left: 0;
     top: 0;
-    z-index: 2147483647 !important;
+    z-index: 8000 !important;
     margin: 0 !important;
 }
 

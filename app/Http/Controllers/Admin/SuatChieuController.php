@@ -45,7 +45,7 @@ class SuatChieuController extends Controller
     {
         $now = Carbon::now();
 
-        // Xử lý bảo vệ: Nếu 'tu_ngay' > 'den_ngay' -> Tự động điều chỉnh 'den_ngay' = 'tu_ngay'
+        // Xử lý bảo vệ: Nếu 'tu_ngay' > 'den_ngay' -> Tự điều chỉnh 'den_ngay' = 'tu_ngay'
         if ($request->filled('tu_ngay') && $request->filled('den_ngay')) {
             if ($request->tu_ngay > $request->den_ngay) {
                 $request->merge(['den_ngay' => $request->tu_ngay]);
@@ -78,14 +78,12 @@ class SuatChieuController extends Controller
             $movieQuery->where('id', $request->phim_id);
         }
 
-        // Closure lọc suất chiếu theo Tab, Phòng và Khoảng ngày chiếu
         $showtimeFilter = function ($query) use ($request, $tab) {
             if ($tab === 'hoat_dong') {
                 $query->whereNotIn('trang_thai', ['da_chieu', 'huy']);
             } elseif ($tab === 'da_chieu') {
                 $query->where('trang_thai', 'da_chieu');
                 
-                // Mặc định tải 30 ngày gần nhất nếu Admin không chọn khoảng ngày
                 if (! $request->filled('tu_ngay') && ! $request->filled('den_ngay')) {
                     $query->where('thoi_gian_chieu', '>=', now()->subDays(30));
                 }
@@ -147,14 +145,23 @@ class SuatChieuController extends Controller
             'loai_tao' => 'required|in:don_le,hang_loat',
             'che_do_hang_loat' => 'required_if:loai_tao,hang_loat|nullable|in:tu_dong,thu_cong',
             'thoi_gian_don_phong' => 'nullable|integer|min:15|max:30',
-            'ngay_chieu_don_le' => 'required_if:loai_tao,don_le|nullable|date',
+            
+            // Đơn lẻ
+            'ngay_chieu_don_le' => 'required_if:loai_tao,don_le|nullable|date|after_or_equal:today',
             'gio_chieu_don_le' => 'required_if:loai_tao,don_le|nullable|string',
-            'ngay_bat_dau' => 'required_if:loai_tao,hang_loat|nullable|date',
+            
+            // Hàng loạt
+            'ngay_bat_dau' => 'required_if:loai_tao,hang_loat|nullable|date|after_or_equal:today',
             'ngay_ket_thuc' => 'required_if:loai_tao,hang_loat|nullable|date|after_or_equal:ngay_bat_dau',
+            
+            // Chế độ 1: Tự động
             'gio_bat_dau_tu_dong' => 'required_if:che_do_hang_loat,tu_dong|nullable|string',
             'gio_ket_thuc_tu_dong' => 'required_if:che_do_hang_loat,tu_dong|nullable|string',
+            
+            // Chế độ 2: Thủ công
             'khung_gio' => 'required_if:che_do_hang_loat,thu_cong|nullable|array|min:1',
-            'khung_gio.*' => 'string',
+            'khung_gio.*' => 'required_if:che_do_hang_loat,thu_cong|string',
+            
             'gia_ve_tuy_chinh' => 'nullable|numeric|min:0',
             'gia_ve_ngay_le' => 'nullable|numeric|min:0',
         ], [
@@ -163,10 +170,12 @@ class SuatChieuController extends Controller
             'thoi_gian_don_phong.min' => 'Thời gian dọn phòng tối thiểu là 15 phút.',
             'thoi_gian_don_phong.max' => 'Thời gian dọn phòng tối đa là 30 phút.',
             'ngay_chieu_don_le.required_if' => 'Vui lòng chọn ngày chiếu cho suất đơn lẻ.',
+            'ngay_chieu_don_le.after_or_equal' => 'Ngày chiếu đơn lẻ không được nằm trong quá khứ.',
             'gio_chieu_don_le.required_if' => 'Vui lòng chọn giờ chiếu cho suất đơn lẻ.',
             'ngay_bat_dau.required_if' => 'Vui lòng chọn ngày bắt đầu khi tạo hàng loạt.',
+            'ngay_bat_dau.after_or_equal' => 'Ngày bắt đầu tạo hàng loạt không được nằm trong quá khứ.',
             'ngay_ket_thuc.required_if' => 'Vui lòng chọn ngày kết thúc khi tạo hàng loạt.',
-            'ngay_ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.',
+            'ngay_ket_thuc.after_or_equal' => 'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.',
             'gio_bat_dau_tu_dong.required_if' => 'Vui lòng nhập giờ bắt đầu cho suất đầu tiên.',
             'gio_ket_thuc_tu_dong.required_if' => 'Vui lòng nhập giờ kết thúc tối đa cho suất cuối cùng.',
             'khung_gio.required_if' => 'Vui lòng chọn hoặc chèn ít nhất một khung giờ chiếu!',
@@ -177,6 +186,10 @@ class SuatChieuController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        $now = Carbon::now();
+        // Mốc thời gian tối thiểu hợp lệ là sau thời điểm hiện tại 12 tiếng
+        $mocToiThieuHopLe = $now->copy()->addHours(12);
+
         $settings = CaiDatHeThong::first();
         $thoiGianDonPhongInput = $request->input('thoi_gian_don_phong', $settings ? $settings->thoi_gian_don_phong : 15);
         $thoiGianDonPhong = max(15, min(30, (int)$thoiGianDonPhongInput));
@@ -186,9 +199,15 @@ class SuatChieuController extends Controller
         $rapChieuId = $phongChieu->rap_chieu_phim_id ?? RapChieuPhim::first()?->id ?? 1;
         $thoiLuongPhim = ((int)$phim->thoi_luong > 0) ? (int)$phim->thoi_luong : 90;
 
+        // TRƯỜNG HỢP 1: TẠO SUẤT CHIẾU ĐƠN LẺ
         if ($request->loai_tao === 'don_le') {
             $thoiGianChieu = Carbon::parse($request->ngay_chieu_don_le . ' ' . $request->gio_chieu_don_le);
             $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu);
+
+            // Chặn tạo suất chiếu đơn lẻ trước ít nhất 12 tiếng
+            if ($thoiGianChieu->lt($mocToiThieuHopLe)) {
+                return redirect()->back()->withInput()->with('error', 'Chỉ được phép tạo suất chiếu trước giờ chiếu ít nhất 12 tiếng để phục vụ người dùng đặt vé (Suất sớm nhất hợp lệ lúc này: ' . $mocToiThieuHopLe->format('d/m/Y H:i') . ').');
+            }
 
             $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
 
@@ -221,6 +240,7 @@ class SuatChieuController extends Controller
             return redirect()->route('admin.suat-chieus.index')->with('success', 'Tạo suất chiếu đơn lẻ thành công.');
         }
 
+        // TRƯỜNG HỢP 2: TẠO SUẤT CHIẾU HÀNG LOẠT
         $ngayBatDau = Carbon::parse($request->ngay_bat_dau);
         $ngayKetThuc = Carbon::parse($request->ngay_ket_thuc);
         $cheDoHangLoat = $request->input('che_do_hang_loat', 'tu_dong');
@@ -229,7 +249,9 @@ class SuatChieuController extends Controller
         $suatChieuCanTao = [];
         $tatCaSuatChieuTrungDb = collect();
         $danhSachKhungGioTrungNoiBo = [];
+        $soSuatBoQuaKhongDu12Tieng = 0;
 
+        // CHẾ ĐỘ 1: TỰ ĐỘNG TÍNH KHUNG GIỜ ĐẦU - CUỐI
         if ($cheDoHangLoat === 'tu_dong') {
             $gioBatDauStr = $request->input('gio_bat_dau_tu_dong');
             $gioKetThucStr = $request->input('gio_ket_thuc_tu_dong');
@@ -245,6 +267,14 @@ class SuatChieuController extends Controller
                 }
 
                 while ($curStart->copy()->addMinutes($thoiLuongPhim)->lte($maxEnd)) {
+                    // Tự động bỏ qua các khung giờ không đủ 12 tiếng so với hiện tại
+                    if ($curStart->lt($mocToiThieuHopLe)) {
+                        $soSuatBoQuaKhongDu12Tieng++;
+                        $nextStartRaw = $curStart->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
+                        $curStart = $this->lamTronLen5Phut($nextStartRaw);
+                        continue;
+                    }
+
                     $curEndChiemDung = $curStart->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
                     $suatChieuTrung = $this->layDanhSachSuatChieuTrung($request->phong_chieu_id, $curStart, $curEndChiemDung);
 
@@ -279,7 +309,9 @@ class SuatChieuController extends Controller
                     $curStart = $this->lamTronLen5Phut($nextStartRaw);
                 }
             }
-        } else {
+        } 
+        // CHẾ ĐỘ 2: CHỌN CÁC KHUNG GIỜ CHIẾU THỦ CÔNG
+        else {
             $danhSachKhungGioInput = $request->input('khung_gio', []);
 
             $danhSachKhungGio = [];
@@ -288,12 +320,13 @@ class SuatChieuController extends Controller
                 $cVal = $this->lamTronLen5Phut($cVal);
                 $danhSachKhungGio[] = $cVal->format('H:i');
             }
-            $danhSachKhungGio = array_unique($danhSachKhungGio);
+            $danhSachKhungGio = array_values(array_unique($danhSachKhungGio));
 
             usort($danhSachKhungGio, function($a, $b) {
                 return strtotime($a) - strtotime($b);
             });
 
+            // Validate trùng lặp nội bộ giữa các khung giờ thủ công đã chọn
             $khungGioHopLeNoiBo = [];
             $lastEndTime = null;
 
@@ -317,6 +350,12 @@ class SuatChieuController extends Controller
 
                     $thoiGianChieu = Carbon::parse($ngayQuet->format('Y-m-d') . ' ' . $gioChieu);
                     $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu);
+
+                    // Bỏ qua khung giờ thủ công không đủ 12 tiếng
+                    if ($thoiGianChieu->lt($mocToiThieuHopLe)) {
+                        $soSuatBoQuaKhongDu12Tieng++;
+                        continue;
+                    }
 
                     $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
 
@@ -362,7 +401,11 @@ class SuatChieuController extends Controller
         }
 
         if (empty($suatChieuCanTao)) {
-            return redirect()->back()->withInput()->with('error', 'Tất cả khung giờ tạo ra đều bị trùng lịch. Không có suất chiếu nào được tạo.');
+            $msg = 'Không có suất chiếu nào được tạo do tất cả các khung giờ đã chọn đều không đủ khoảng thời gian tạo trước 12 tiếng (Giờ hợp lệ sớm nhất: ' . $mocToiThieuHopLe->format('d/m/Y H:i') . ')';
+            if ($tatCaSuatChieuTrungDb->isNotEmpty()) {
+                $msg .= ' hoặc bị trùng lịch với phòng chiếu';
+            }
+            return redirect()->back()->withInput()->with('error', $msg . '.');
         }
 
         foreach ($suatChieuCanTao as $data) {
@@ -372,8 +415,8 @@ class SuatChieuController extends Controller
         $this->ghiNhatKy($request, 'Thêm suất chiếu', 'Quản lý phim & lịch chiếu', "Thêm chuỗi suất chiếu cho phim: {$phim->ten_phim}");
         
         $thongBao = "Đã tạo thành công " . count($suatChieuCanTao) . " suất chiếu.";
-        if ($boQuaTrung && (!empty($danhSachKhungGioTrungNoiBo) || $tatCaSuatChieuTrungDb->isNotEmpty())) {
-            $thongBao .= " (Hệ thống đã tự động bỏ qua các suất chiếu bị trùng giờ).";
+        if ($soSuatBoQuaKhongDu12Tieng > 0) {
+            $thongBao .= " (Hệ thống đã tự động bỏ qua {$soSuatBoQuaKhongDu12Tieng} khung giờ do cách thời điểm hiện tại chưa đủ 12 tiếng).";
         }
 
         return redirect()->route('admin.suat-chieus.index')->with('success', $thongBao);
@@ -449,7 +492,32 @@ class SuatChieuController extends Controller
         $settings = CaiDatHeThong::first();
         $thoiGianDonPhong = $settings ? $settings->thoi_gian_don_phong : 15;
         $thoiGianDonPhong = max(15, min(30, (int)$thoiGianDonPhong));
-        return view('admin.suat-chieus.edit', compact('suatChieu', 'phims', 'rapChieuPhims', 'phongChieus', 'thoiGianDonPhong'));
+
+        $now = Carbon::now();
+        $thoiGianChieu = Carbon::parse($suatChieu->thoi_gian_chieu);
+
+        // Kiểm tra xem đã có người đặt vé chưa
+        $coNguoiDatVe = DB::table('ve_xem_phims')
+            ->where('suat_chieu_id', $suatChieu->id)
+            ->whereIn('trang_thai', ['da_thanh_toan', 'cho_thanh_toan', 'da_su_dung', 'da_dat'])
+            ->exists();
+
+        // Điều kiện sửa giá: Chưa có người đặt vé AND còn hơn 48 tiếng trước giờ chiếu
+        $choPhepSuaGia = ! $coNguoiDatVe && $now->diffInHours($thoiGianChieu, false) >= 48;
+
+        // Điều kiện hủy suất: Chưa có người đặt vé
+        $choPhepHuy = ! $coNguoiDatVe;
+
+        return view('admin.suat-chieus.edit', compact(
+            'suatChieu', 
+            'phims', 
+            'rapChieuPhims', 
+            'phongChieus', 
+            'thoiGianDonPhong',
+            'coNguoiDatVe',
+            'choPhepSuaGia',
+            'choPhepHuy'
+        ));
     }
 
     public function update(Request $request, SuatChieu $suatChieu) 
@@ -460,7 +528,7 @@ class SuatChieuController extends Controller
             'ngay_chieu' => 'required|date', 
             'gio_chieu' => 'required|string', 
             'gia_ve_tuy_chinh' => 'nullable|numeric|min:0', 
-            'trang_thai' => 'required|in:sap_ra_mat,sap_chieu,dang_chieu,dung_nhan_ve,da_chieu,huy'
+            'trang_thai' => 'required|in:sap_ra_mat,sap_chieu,dang_chieu,dung_nhan_ve,da_chieu,huy,tu_dong'
         ], [
             'phim_id.required' => 'Vui lòng chọn phim.',
             'phong_chieu_id.required' => 'Vui lòng chọn phòng chiếu.',
@@ -472,6 +540,7 @@ class SuatChieuController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        $now = Carbon::now();
         $settings = CaiDatHeThong::first(); 
         $thoiGianDonPhongInput = $request->input('thoi_gian_don_phong', $settings ? $settings->thoi_gian_don_phong : 15);
         $thoiGianDonPhong = max(15, min(30, (int)$thoiGianDonPhongInput));
@@ -484,6 +553,28 @@ class SuatChieuController extends Controller
         $thoiGianChieu = Carbon::parse($request->ngay_chieu . ' ' . $request->gio_chieu); 
         $thoiGianChieu = $this->lamTronLen5Phut($thoiGianChieu);
 
+        // 1. Kiểm tra tồn tại vé
+        $coNguoiDatVe = DB::table('ve_xem_phims')
+            ->where('suat_chieu_id', $suatChieu->id)
+            ->whereIn('trang_thai', ['da_thanh_toan', 'cho_thanh_toan', 'da_su_dung', 'da_dat'])
+            ->exists();
+
+        // 2. Validate bảo vệ Hủy suất chiếu
+        if ($request->trang_thai === 'huy' && $coNguoiDatVe) {
+            return redirect()->back()->withInput()->with('error', 'Không thể hủy suất chiếu này do đã có khách hàng đặt vé! Vui lòng thực hiện hoàn vé cho khách hàng trước.');
+        }
+
+        // 3. Validate bảo vệ Giá vé
+        $choPhepSuaGia = ! $coNguoiDatVe && $now->diffInHours($thoiGianChieu, false) >= 48;
+        $giaVeCuoiCung = $suatChieu->gia_ve;
+        $giaVeTuDong = $suatChieu->gia_ve_tu_dong;
+
+        if ($choPhepSuaGia) {
+            $giaVeTuDong = ! $request->filled('gia_ve_tuy_chinh');
+            $giaVeCuoiCung = $giaVeTuDong ? $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings) : $request->gia_ve_tuy_chinh;
+        }
+
+        // 4. Kiểm tra xung đột lịch với suất khác
         $thoiGianKetThucChiemDung = $thoiGianChieu->copy()->addMinutes($thoiLuongPhim + $thoiGianDonPhong);
 
         $coXungDot = SuatChieu::where('phong_chieu_id', $request->phong_chieu_id)
@@ -498,8 +589,6 @@ class SuatChieuController extends Controller
             return redirect()->back()->withInput()->with('error', 'Không thể cập nhật! Khung giờ điều chỉnh đã bị trùng lịch với suất chiếu khác cùng phòng.'); 
         }
 
-        $giaVeTuDong = ! $request->filled('gia_ve_tuy_chinh');
-        $giaVeCuoiCung = $giaVeTuDong ? $this->tinhGiaVeTuDong($thoiGianChieu, $phongChieu, $settings) : $request->gia_ve_tuy_chinh;
         $trangThaiCuoi = $request->trang_thai === 'huy' ? 'huy' : $this->xacDinhTrangThaiBanDau($thoiGianChieu, $thoiGianKetThucChiemDung);
 
         $suatChieu->update([
