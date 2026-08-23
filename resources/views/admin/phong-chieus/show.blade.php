@@ -1884,10 +1884,16 @@ function closeModalHuyBaoTri() {
         font-weight: 900;
         margin: 0 4px;
     }
-    /* Ghế bảo trì - ẩn nhãn (opacity:0), hiện dấu "×" đè lên qua ::after */
+    /* Ghế bảo trì - VẪN hiện rõ mã ghế (không ẩn số như bên đặt vé), vì đây
+       là trang quản trị: admin cần biết chính xác ghế nào đang bảo trì thay
+       vì chỉ thấy 1 ô trống. Chỉ đổi màu chữ xám để phân biệt với ghế thường. */
     .seat-chip.seat-chip--maintenance .seat-label,
-    .seat-chip.seat-chip--maintenance > span {
+    .seat-chip.seat-chip--maintenance > span,
+    .seat-chip.seat-chip--maintenance .seat-couple-left,
+    .seat-chip.seat-chip--maintenance .seat-couple-right,
+    .seat-chip.seat-chip--maintenance .seat-couple-sep {
         color: #9ca3af !important;
+        opacity: 1 !important;
     }
     .seat-chip--empty {
         width: 46px;
