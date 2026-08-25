@@ -52,6 +52,10 @@ class AuthenticatedSessionController extends Controller
                     if ($user->bat_buoc_xac_thuc_email && ! $user->hasVerifiedEmail()) {
                         Auth::logout();
 
+                        // Cho trang đăng nhập biết email nào để hiện nút "Gửi
+                        // lại email xác thực" ngay dưới lỗi này.
+                        session()->flash('unverified_email', $user->email);
+
                         return redirect()
                             ->route('login')
                             ->with('error', 'Tài khoản chưa được xác thực email. Vui lòng kiểm tra email và nhấn vào liên kết xác thực.');
@@ -73,31 +77,17 @@ class AuthenticatedSessionController extends Controller
             }
         }
 
-        // 4. Nếu tài khoản không bị xóa, tiến hành đăng nhập bình thường qua Laravel Auth
+        // 4. Tài khoản không nằm trong thùng rác -> đăng nhập bình thường qua
+        // LoginRequest::authenticate(), tự xử lý xác thực mật khẩu, bắt buộc
+        // xác thực email, và tài khoản bị khóa (ném ValidationException và
+        // đăng xuất ngay nếu không thỏa) — tới được dòng sau nghĩa là tài
+        // khoản đã hợp lệ hoàn toàn, không cần kiểm tra lại lần nữa.
         $request->authenticate();
 
-        // 5. Lấy tài khoản vừa đăng nhập thành công
-        $user = Auth::user();
-
-        // 6. Kiểm tra xác thực email đối với tài khoản bình thường
-        if (
-            $user->bat_buoc_xac_thuc_email &&
-            ! $user->hasVerifiedEmail()
-        ) {
-            Auth::logout();
-
-            return redirect()
-                ->route('login')
-                ->with(
-                    'error',
-                    'Tài khoản chưa được xác thực email. Vui lòng kiểm tra email và nhấn vào liên kết xác thực.'
-                );
-        }
-
-        // 7. Tạo session mới
+        // 5. Tạo session mới
         $request->session()->regenerate();
 
-        // 8. Điều hướng theo vai trò
+        // 6. Điều hướng theo vai trò
         return redirect()->route('dashboard');
     }
 

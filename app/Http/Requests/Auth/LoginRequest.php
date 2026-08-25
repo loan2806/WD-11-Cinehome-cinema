@@ -91,12 +91,17 @@ class LoginRequest extends FormRequest
             }
         }
 
-        // 4. Lịch trình kiểm tra cũ: Tài khoản do Admin tạo nhưng chưa xác thực email
+        // 4. Tài khoản tự đăng ký (bắt buộc xác thực email) nhưng chưa xác thực
         if (
             Auth::user()->bat_buoc_xac_thuc_email &&
             is_null(Auth::user()->email_verified_at)
         ) {
+            $emailChuaXacThuc = Auth::user()->email;
             Auth::logout();
+
+            // Cho trang đăng nhập biết email nào để hiện nút "Gửi lại email
+            // xác thực" ngay dưới lỗi này.
+            session()->flash('unverified_email', $emailChuaXacThuc);
 
             throw ValidationException::withMessages([
                 'email' => 'Vui lòng xác thực email trước khi đăng nhập.',

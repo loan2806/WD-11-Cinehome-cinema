@@ -1,4 +1,3 @@
-```blade
 <!DOCTYPE html>
 <html lang="vi">
 
@@ -17,6 +16,12 @@
 <body class="overflow-x-hidden bg-[#080808] text-white">
 
 @include('components.preloader')
+
+@if (session('phien_het_han'))
+<div style="position: fixed; top: 24px; right: 24px; z-index: 100000; display: flex; width: min(390px, calc(100vw - 32px)); flex-direction: column; gap: 12px; pointer-events: none;">
+    <x-toast type="warning" :message="session('phien_het_han')" />
+</div>
+@endif
 
 <div class="min-h-screen overflow-x-hidden bg-[#080808] text-white">
 
@@ -152,7 +157,7 @@
         </div>
 
     </aside>
-```blade
+
     {{-- MAIN CONTENT --}}
     <main id="staffMain" class="min-h-screen bg-[#080808] ml-[270px]">
 

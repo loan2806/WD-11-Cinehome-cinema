@@ -51,6 +51,21 @@
                     <div class="auth-alert">{{ session('error') }}</div>
                 @endif
 
+                {{-- Tài khoản chưa xác thực email: lỗi thật sự đến từ
+                     LoginRequest (gắn vào field "email" qua $errors), không
+                     phải session('error') — nên nút gửi lại chỉ cần dựa vào
+                     cờ session('unverified_email') độc lập. --}}
+                @if (session('unverified_email'))
+                    <form method="POST" action="{{ route('verification.resend-guest') }}" class="auth-resend-verify-form">
+                        @csrf
+                        <input type="hidden" name="email" value="{{ session('unverified_email') }}">
+                        <button type="submit" class="auth-resend-verify-btn">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            Gửi lại email xác thực tới {{ session('unverified_email') }}
+                        </button>
+                    </form>
+                @endif
+
                 <form method="POST" action="{{ route('login') }}" class="auth-form auth-form-animate">
                     @csrf
 
