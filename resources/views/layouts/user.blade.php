@@ -24,6 +24,16 @@
 <body>
     @include('components.preloader')
 
+    {{-- Thông báo phiên làm việc/CSRF hết hạn (từ bootstrap/app.php) — dùng
+         key riêng "phien_het_han" thay vì "error"/"success" để không trùng
+         với các banner thông báo riêng mà nhiều trang trong layout này đã
+         tự hiển thị bằng session('success')/session('error'). --}}
+    @if (session('phien_het_han'))
+    <div style="position: fixed; top: 24px; right: 24px; z-index: 100000; display: flex; width: min(390px, calc(100vw - 32px)); flex-direction: column; gap: 12px; pointer-events: none;">
+        <x-toast type="warning" :message="session('phien_het_han')" />
+    </div>
+    @endif
+
     @include('layouts.header')
 
     <main class="page-content">

@@ -274,7 +274,7 @@
     @include('components.preloader')
 
     {{-- GLOBAL TOAST NOTIFICATIONS --}}
-    @if (session('success') || session('error') || session('warning'))
+    @if (session('success') || session('error') || session('warning') || session('phien_het_han'))
     <div style="position: fixed; top: 24px; right: 24px; z-index: 100000; display: flex; width: min(390px, calc(100vw - 32px)); flex-direction: column; gap: 12px; pointer-events: none;">
         @if (session('success'))
         <x-toast type="success" :message="session('success')" />
@@ -284,6 +284,9 @@
         @endif
         @if (session('warning'))
         <x-toast type="warning" :message="session('warning')" />
+        @endif
+        @if (session('phien_het_han'))
+        <x-toast type="warning" :message="session('phien_het_han')" />
         @endif
     </div>
     @endif

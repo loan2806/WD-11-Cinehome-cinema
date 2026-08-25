@@ -191,9 +191,9 @@
     @php
         // Ưu tiên hiển thị TẤT CẢ các phim đang có suất chiếu / đang chiếu tại rạp
         $moviesWithShowtimes = $nowShowingMovies->merge($comingSoonMovies)->unique('id');
-        $heroMovies = $moviesWithShowtimes->isNotEmpty() 
-            ? $moviesWithShowtimes 
-            : ($bannerMovies->isNotEmpty() ? $bannerMovies->merge($comingLaterMovies)->unique('id') : $visualMovies);
+        $heroMovies = $moviesWithShowtimes->isNotEmpty()
+            ? $moviesWithShowtimes
+            : ($bannerMovies->isNotEmpty() ? $bannerMovies->merge($comingLaterMovies)->unique('id') : collect());
 
         $nowShowingRail = $nowShowingMovies->isNotEmpty()
             ? $nowShowingMovies->take(12)

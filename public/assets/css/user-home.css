@@ -760,6 +760,34 @@ body.overflow-hidden {
     color: #b7f7d7;
 }
 
+.auth-resend-verify-form {
+    margin-top: 10px;
+}
+
+.auth-resend-verify-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    padding: 0 14px;
+    border: 1px solid rgba(247, 184, 75, 0.36);
+    border-radius: 14px;
+    background: rgba(247, 184, 75, 0.1);
+    color: var(--cinema-gold);
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.auth-resend-verify-btn:hover {
+    background: rgba(247, 184, 75, 0.18);
+    border-color: rgba(247, 184, 75, 0.55);
+    transform: translateY(-1px);
+}
+
 @media (max-width: 900px) {
     .auth-page {
         align-items: flex-start;

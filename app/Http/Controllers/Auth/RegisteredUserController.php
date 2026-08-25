@@ -77,7 +77,9 @@ class RegisteredUserController extends Controller
 
             'trang_thai_hoat_dong' => true,
 
-            'bat_buoc_xac_thuc_email' => false,
+            // Tài khoản tự đăng ký bắt buộc xác thực email trước khi đăng
+            // nhập được (khác với tài khoản do Admin/Quản lý tạo sẵn).
+            'bat_buoc_xac_thuc_email' => true,
 
             // Chưa xác thực email
             'email_verified_at' => null,
@@ -175,6 +177,20 @@ class RegisteredUserController extends Controller
 
         /*
     |--------------------------------------------------------------------------
+    | GỬI EMAIL XÁC THỰC
+    |--------------------------------------------------------------------------
+    |
+    | Gọi trực tiếp thay vì chỉ dựa vào listener mặc định của sự kiện
+    | Registered (project này không đăng ký listener đó), để chắc chắn
+    | email luôn được gửi ngay khi tạo tài khoản thành công.
+    |
+    */
+
+        $user->sendEmailVerificationNotification();
+
+
+        /*
+    |--------------------------------------------------------------------------
     | KHÔNG TỰ ĐĂNG NHẬP
     |--------------------------------------------------------------------------
     |
@@ -195,7 +211,7 @@ class RegisteredUserController extends Controller
             ->route('login')
             ->with(
                 'success',
-                'Đăng ký tài khoản thành công. Vui lòng đăng nhập.'
+                'Đăng ký tài khoản thành công! Vui lòng kiểm tra email (' . $user->email . ') và nhấn vào liên kết xác thực trước khi đăng nhập.'
             );
     }
 }

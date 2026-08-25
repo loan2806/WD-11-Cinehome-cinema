@@ -24,32 +24,16 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        // 1. Kiểm tra email + mật khẩu
+        // Kiểm tra email + mật khẩu, tài khoản bị khóa, và bắt buộc xác thực
+        // email (nếu có) — LoginRequest::authenticate() tự ném
+        // ValidationException và đăng xuất ngay khi các điều kiện này không
+        // thỏa, nên tới được đây nghĩa là tài khoản đã hợp lệ hoàn toàn.
         $request->authenticate();
 
-        // 2. Lấy tài khoản vừa đăng nhập
-        $user = Auth::user();
-
-        // 3. Nếu tài khoản bắt buộc xác thực email nhưng chưa xác thực
-        if (
-            $user->bat_buoc_xac_thuc_email &&
-            ! $user->hasVerifiedEmail()
-        ) {
-            // Đăng xuất ngay, không cho vào hệ thống
-            Auth::logout();
-
-            return redirect()
-                ->route('login')
-                ->with(
-                    'error',
-                    'Tài khoản chưa được xác thực email. Vui lòng kiểm tra email và nhấn vào liên kết xác thực.'
-                );
-        }
-
-        // 4. Tạo session mới
+        // Tạo session mới
         $request->session()->regenerate();
 
-        // 5. Điều hướng theo vai trò
+        // Điều hướng theo vai trò
         return redirect()->route('dashboard');
     }
 
