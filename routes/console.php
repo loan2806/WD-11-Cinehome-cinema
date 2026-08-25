@@ -83,6 +83,22 @@ Artisan::command('diem:het-han', function () {
 
 /*
 |--------------------------------------------------------------------------
+| Tự động xóa vĩnh viễn tài khoản trong thùng rác sau 14 ngày
+|--------------------------------------------------------------------------
+*/
+
+Artisan::command('user:clean-trashed', function () {
+    $userModel = config('auth.providers.users.model', \App\Models\User::class);
+    
+    $deletedCount = $userModel::onlyTrashed()
+        ->where('deleted_at', '<=', now()->subDays(14))
+        ->forceDelete();
+
+    $this->info("Đã xóa vĩnh viễn {$deletedCount} tài khoản quá hạn 14 ngày chờ.");
+})->purpose('Xóa vĩnh viễn các tài khoản đã bị soft delete quá 14 ngày');
+
+/*
+|--------------------------------------------------------------------------
 | Lịch chạy tự động
 |--------------------------------------------------------------------------
 */
@@ -95,6 +111,9 @@ Schedule::command('diem:het-han')
 
 Schedule::command('nhatky:clear')
     ->dailyAt('02:00');
+
+Schedule::command('user:clean-trashed')
+    ->dailyAt('03:00');
 
 /*
 |--------------------------------------------------------------------------
