@@ -1997,29 +1997,13 @@ class ThongBaoPushController extends Controller
                 $request->input('nguoi_dung')
             );
 
-            $query->whereHas(
-                'nguoiNhans',
-                function ($q) use ($keyword) {
-
-                    $q->whereHas(
-                        'nguoiDung',
-                        function ($userQuery) use ($keyword) {
-
-                            $userQuery
-                                ->where(
-                                    'ho_ten',
-                                    'like',
-                                    '%' . $keyword . '%'
-                                )
-                                ->orWhere(
-                                    'email',
-                                    'like',
-                                    '%' . $keyword . '%'
-                                );
-                        }
-                    );
-                }
-            );
+            $query->whereHas('nguoiNhans', function ($q) use ($keyword) {
+                $q->where(function ($userQuery) use ($keyword) {
+                    $userQuery
+                        ->where('ho_ten', 'like', '%' . $keyword . '%')
+                        ->orWhere('email', 'like', '%' . $keyword . '%');
+                });
+            });
         }
 
         $thongBaos = $query
