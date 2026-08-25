@@ -119,9 +119,7 @@
                         </strong>
 
 
-                        {{-- ==========================================
-                             TRẠNG THÁI XÁC THỰC EMAIL
-                        =========================================== --}}
+                        {{-- TRẠNG THÁI XÁC THỰC EMAIL --}}
                         @if ($user->email_verified_at)
 
                             <small
@@ -133,7 +131,7 @@
                                     color:#4ade80;
                                     font-weight:700;
                                 ">
-
+                                <i class="fa-solid fa-circle-check"></i> Đã xác thực
                             </small>
 
                         @else
@@ -147,7 +145,7 @@
                                     color:#facc15;
                                     font-weight:700;
                                 ">
-
+                                <i class="fa-solid fa-circle-exclamation"></i> Chưa xác thực
                             </small>
 
                         @endif
@@ -201,9 +199,7 @@
                 </a>
 
 
-                {{-- ==================================================
-                     XÁC THỰC EMAIL
-                =================================================== --}}
+                {{-- XÁC THỰC EMAIL --}}
                 @if (!$user->email_verified_at)
 
                     <div
@@ -351,9 +347,21 @@
             <div class="profile-content">
 
 
-                {{-- ==================================================
-                     THÔNG BÁO THÀNH CÔNG
-                =================================================== --}}
+                {{-- THÔNG BÁO HỆ THỐNG --}}
+                @if (session('success'))
+                    <div class="profile-toast is-success">
+                        <i class="fa-solid fa-circle-check"></i>
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @if (session('warning'))
+                    <div class="profile-toast" style="background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.4); color: #facc15;">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        {{ session('warning') }}
+                    </div>
+                @endif
+
                 @if (session('status') === 'profile-updated')
 
                     <div class="profile-toast is-success">
@@ -380,9 +388,7 @@
                 @endif
 
 
-                {{-- ==================================================
-                     EMAIL ĐÃ GỬI
-                =================================================== --}}
+                {{-- EMAIL ĐÃ GỬI --}}
                 @if (session('status') === 'verification-link-sent')
 
                     <div class="profile-toast is-success">
@@ -397,9 +403,7 @@
                 @endif
 
 
-                {{-- ==================================================
-                     THÔNG TIN CÁ NHÂN
-                =================================================== --}}
+                {{-- THÔNG TIN CÁ NHÂN --}}
                 <div class="profile-card">
 
                     @include('profile.partials.cap_nhat_thong_tin_form')
@@ -407,9 +411,7 @@
                 </div>
 
 
-                {{-- ==================================================
-                     ĐỔI MẬT KHẨU
-                =================================================== --}}
+                {{-- ĐỔI MẬT KHẨU --}}
                 <div class="profile-card">
 
                     @include('profile.partials.doi_mat_khau_form')
@@ -417,9 +419,7 @@
                 </div>
 
 
-                {{-- ==================================================
-                     XÓA TÀI KHOẢN
-                =================================================== --}}
+                {{-- XÓA TÀI KHOẢN --}}
                 <div class="profile-card profile-card-danger">
 
                     @include('profile.partials.xoa_tai_khoan_form')

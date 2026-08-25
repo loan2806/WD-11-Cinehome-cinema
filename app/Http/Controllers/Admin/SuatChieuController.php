@@ -8,6 +8,7 @@ use App\Models\PhongChieu;
 use App\Models\RapChieuPhim;
 use App\Models\SuatChieu;
 use App\Models\CaiDatHeThong;
+use App\Helpers\VietnamHolidayHelper; // Import Helper
 use App\Traits\Loggable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -18,14 +19,6 @@ use Illuminate\Support\Facades\Validator;
 class SuatChieuController extends Controller
 {
     use Loggable;
-
-    private $cacNgayLe = [
-        '01-01' => 'Tết Dương Lịch',
-        '04-30' => 'Ngày Giải Phóng Miền Nam',
-        '05-01' => 'Ngày Quốc Tế Lao Động',
-        '09-02' => 'Ngày Quốc Khánh',
-        '09-03' => 'Ngày Quốc Khánh (Ngày gối đầu)',
-    ];
 
     private function lamTronLen5Phut(Carbon $dateTime): Carbon
     {
@@ -690,9 +683,12 @@ class SuatChieuController extends Controller
         return redirect()->back()->with('success', 'Đã xóa vĩnh viễn suất chiếu khỏi hệ thống!');
     }
 
+    /**
+     * Hàm kiểm tra ngày lễ đã được nâng cấp dùng VietnamHolidayHelper
+     */
     private function isNgayLe(Carbon $date): bool 
     {
-        return array_key_exists($date->format('m-d'), $this->cacNgayLe);
+        return VietnamHolidayHelper::isHoliday($date);
     }
 
     private function layDanhSachSuatChieuTrung($phongChieuId, $thoiGianChieu, $thoiGianKetThuc)
