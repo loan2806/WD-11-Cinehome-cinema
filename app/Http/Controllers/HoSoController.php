@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ThanhVien;
+use App\Models\ThongBaoCaNhan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +13,6 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use App\Models\ThongBaoCaNhan;
 
 class HoSoController extends Controller
 {
@@ -74,28 +74,12 @@ class HoSoController extends Controller
             'ma_gioi_thieu.max' => 'Mã giới thiệu không được vượt quá 50 ký tự.',
         ]);
 
-        /*
-     * Chuẩn hóa mã giới thiệu.
-     */
         $maGioiThieu = strtoupper(
             trim((string) ($data['ma_gioi_thieu'] ?? ''))
         );
 
-        /*
-     * ma_gioi_thieu không thuộc bảng nguoi_dungs.
-     */
         unset($data['ma_gioi_thieu']);
 
-        /*
-     * Ngày sinh chỉ được thiết lập một lần.
-     *
-     * Chưa có ngày sinh:
-     *     -> cho phép lưu ngày sinh lần đầu.
-     *
-     * Đã có ngày sinh:
-     *     -> loại bỏ khỏi dữ liệu cập nhật,
-     *        không thể thay đổi nữa.
-     */
         if ($user->ngay_sinh) {
             unset($data['ngay_sinh']);
         }
@@ -109,12 +93,6 @@ class HoSoController extends Controller
             &$daLienKetGioiThieu
         ): void {
 
-            /*
-         * Cập nhật thông tin hồ sơ.
-         */
-            /*
- * Cập nhật thông tin hồ sơ.
- */
             $user->fill($data);
 
             $coThayDoi = $user->isDirty();
@@ -133,18 +111,10 @@ class HoSoController extends Controller
                 ]);
             }
 
-            /*
-         * Người dùng không nhập mã giới thiệu
-         * thì chỉ cập nhật hồ sơ.
-         */
             if ($maGioiThieu === '') {
                 return;
             }
 
-            /*
-             * Khóa thẻ thành viên hiện tại để tránh người dùng
-             * gửi yêu cầu nhiều lần và nhận thưởng trùng.
-             */
             $thanhVien = ThanhVien::query()
                 ->where('nguoi_dung_id', $user->id)
                 ->lockForUpdate()
@@ -156,9 +126,6 @@ class HoSoController extends Controller
                 ]);
             }
 
-            /*
-             * Mỗi thành viên chỉ được liên kết người giới thiệu một lần.
-             */
             if (
                 $thanhVien->nguoi_gioi_thieu_id !== null
                 || $thanhVien->da_nhan_thuong
@@ -168,9 +135,6 @@ class HoSoController extends Controller
                 ]);
             }
 
-            /*
-             * Không được sử dụng mã giới thiệu của chính mình.
-             */
             if (
                 $thanhVien->ma_gioi_thieu
                 && strcasecmp($thanhVien->ma_gioi_thieu, $maGioiThieu) === 0
@@ -180,33 +144,16 @@ class HoSoController extends Controller
                 ]);
             }
 
-            /*
-             * Tìm chủ sở hữu của mã giới thiệu.
-             */
             $nguoiGioiThieu = ThanhVien::query()
                 ->where('ma_gioi_thieu', $maGioiThieu)
                 ->where('id', '!=', $thanhVien->id)
                 ->lockForUpdate()
                 ->first();
 
-            /*
- * Chặn vòng lặp giới thiệu.
- *
- * Các trường hợp bị chặn:
- * A nhập mã của B, sau đó B nhập mã của A.
- *
- * A được B giới thiệu,
- * B được C giới thiệu,
- * sau đó C nhập mã của A.
- */
             $thanhVienDangKiemTra = $nguoiGioiThieu;
             $cacThanhVienDaDuyet = [];
 
             while ($thanhVienDangKiemTra) {
-                /*
-     * Nếu đi ngược chuỗi giới thiệu và gặp lại chính
-     * thành viên đang nhập mã thì sẽ tạo vòng lặp.
-     */
                 if (
                     (int) $thanhVienDangKiemTra->id
                     === (int) $thanhVien->id
@@ -217,10 +164,6 @@ class HoSoController extends Controller
                     ]);
                 }
 
-                /*
-     * Bảo vệ trường hợp dữ liệu cũ đã có vòng lặp,
-     * tránh while chạy vô hạn.
-     */
                 if (
                     in_array(
                         (int) $thanhVienDangKiemTra->id,
@@ -237,16 +180,10 @@ class HoSoController extends Controller
                 $cacThanhVienDaDuyet[] =
                     (int) $thanhVienDangKiemTra->id;
 
-                /*
-     * Không còn người giới thiệu phía trên thì chuỗi hợp lệ.
-     */
                 if (!$thanhVienDangKiemTra->nguoi_gioi_thieu_id) {
                     break;
                 }
 
-                /*
-     * Tiếp tục kiểm tra người giới thiệu phía trên.
-     */
                 $thanhVienDangKiemTra = ThanhVien::query()
                     ->where(
                         'id',
@@ -262,9 +199,6 @@ class HoSoController extends Controller
                 ]);
             }
 
-            /*
-             * Kiểm tra tài khoản của người giới thiệu.
-             */
             $taiKhoanNguoiGioiThieu = $nguoiGioiThieu->nguoiDung;
 
             if (
@@ -276,18 +210,11 @@ class HoSoController extends Controller
                 ]);
             }
 
-            /*
-             * Liên kết người giới thiệu và đánh dấu đã nhận thưởng.
-             */
             $thanhVien->update([
                 'nguoi_gioi_thieu_id' => $nguoiGioiThieu->id,
                 'da_nhan_thuong' => true,
             ]);
 
-            /*
-             * Thưởng cho người giới thiệu.
-             * Không tính vào tổng điểm xét hạng thành viên.
-             */
             $nguoiGioiThieu->congDiemKhongXetHang(
                 self::DIEM_NGUOI_GIOI_THIEU,
                 'Thưởng ' . self::DIEM_NGUOI_GIOI_THIEU
@@ -296,9 +223,6 @@ class HoSoController extends Controller
                     . ' thành công.'
             );
 
-            /*
-             * Thưởng cho người nhập mã giới thiệu.
-             */
             $thanhVien->congDiemKhongXetHang(
                 self::DIEM_NGUOI_DUOC_GIOI_THIEU,
                 'Thưởng ' . self::DIEM_NGUOI_DUOC_GIOI_THIEU
@@ -326,7 +250,7 @@ class HoSoController extends Controller
     }
 
     /**
-     * Xóa tài khoản thành viên.
+     * Xóa tài khoản thành viên (Soft Delete - Chờ xóa 14 ngày).
      */
     public function destroy(Request $request): RedirectResponse
     {
@@ -346,11 +270,12 @@ class HoSoController extends Controller
 
         Auth::logout();
 
+        // Đưa tài khoản vào trạng thái Soft Delete (chờ xóa trong 14 ngày)
         $user->delete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return Redirect::to('/')->with('warning', 'Tài khoản của bạn đã được đưa vào danh sách chờ xóa. Trong vòng 14 ngày, nếu bạn đăng nhập lại, tài khoản sẽ tự động khôi phục. Sau 14 ngày, tài khoản sẽ bị xóa vĩnh viễn.');
     }
 }

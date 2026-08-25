@@ -5,7 +5,7 @@
         </span>
         <div>
             <h2>Vùng nguy hiểm</h2>
-            <p>Xóa tài khoản sẽ hủy vĩnh viễn lịch sử giao dịch, vé đã lưu và dữ liệu tích lũy của bạn trên CineHome.</p>
+            <p>Tài khoản sẽ chuyển vào trạng thái chờ xóa trong 14 ngày. Nếu bạn đăng nhập lại trong thời gian này, tài khoản sẽ tự động khôi phục. Sau 14 ngày không đăng nhập, tài khoản và dữ liệu tích lũy sẽ bị xóa vĩnh viễn.</p>
         </div>
     </header>
 
@@ -20,7 +20,7 @@
             @method('delete')
 
             <p class="profile-warning-copy">
-                Hành động này không thể hoàn tác. Vui lòng nhập mật khẩu hiện tại để xác nhận bạn là chủ sở hữu tài khoản.
+                Sau khi xác nhận xóa, bạn có <strong>14 ngày</strong> để đổi ý bằng cách đăng nhập lại vào hệ thống để khôi phục tài khoản. Hết 14 ngày, tài khoản sẽ bị xóa vĩnh viễn và không thể phục hồi. Vui lòng nhập mật khẩu hiện tại để xác nhận.
             </p>
 
             <label class="profile-field" for="mat_khau_xoa">
@@ -40,7 +40,7 @@
             <div class="profile-actions">
                 <button type="submit" class="profile-danger-btn">
                     <i class="fa-solid fa-trash-can"></i>
-                    Xóa tài khoản vĩnh viễn
+                    Xác nhận yêu cầu xóa tài khoản (Chờ 14 ngày)
                 </button>
             </div>
         </form>
