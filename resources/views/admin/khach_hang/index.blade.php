@@ -40,7 +40,7 @@ request('trang_thai'),
 
         <div style="display: flex; gap: 10px; align-items: center;">
 
-            <a href="{{ route('admin.khach-hang.trash') }}"
+            <a href="{{ route('admin.thung-rac.index', ['tab' => 'khach_hang']) }}"
                 class="customer-account-primary-btn"
                 style="background: #3f3f46;">
                 <i class="fa-solid fa-trash-can"></i>
@@ -343,244 +343,225 @@ request('trang_thai'),
 </div>
 @endsection
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
 
-    document.querySelectorAll('[data-customer-dropdown]').forEach(function (dropdown) {
+        document.querySelectorAll('[data-customer-dropdown]').forEach(function(dropdown) {
 
-        const trigger = dropdown.querySelector(
-            '[data-customer-dropdown-trigger]'
-        );
-
-        const menu = dropdown.querySelector(
-            '[data-customer-dropdown-menu]'
-        );
-
-        const hiddenInput = dropdown.querySelector(
-            '[data-customer-dropdown-value]'
-        );
-
-        if (!trigger || !menu || !hiddenInput) return;
-
-
-        /* =====================================================
-           TÍNH HƯỚNG XỔ
-        ===================================================== */
-
-        function calculateDirection() {
-
-            dropdown.classList.remove(
-                'dropdown-up',
-                'dropdown-down'
+            const trigger = dropdown.querySelector(
+                '[data-customer-dropdown-trigger]'
             );
 
-            const triggerRect =
-                trigger.getBoundingClientRect();
+            const menu = dropdown.querySelector(
+                '[data-customer-dropdown-menu]'
+            );
 
-            /*
-             * Menu có 3 option,
-             * mỗi option khoảng 52px
-             */
-            const menuHeight =
-                menu.scrollHeight || 160;
+            const hiddenInput = dropdown.querySelector(
+                '[data-customer-dropdown-value]'
+            );
 
-            const spaceBelow =
-                window.innerHeight - triggerRect.bottom;
-
-            const spaceAbove =
-                triggerRect.top;
+            if (!trigger || !menu || !hiddenInput) return;
 
 
-            /*
-             * Không đủ phía dưới
-             * và phía trên rộng hơn
-             * => xổ lên
-             */
+            /* =====================================================
+               TÍNH HƯỚNG XỔ
+            ===================================================== */
 
-            if (
-                spaceBelow < menuHeight + 15 &&
-                spaceAbove > spaceBelow
-            ) {
+            function calculateDirection() {
 
-                dropdown.classList.add('dropdown-up');
+                dropdown.classList.remove(
+                    'dropdown-up',
+                    'dropdown-down'
+                );
 
-            } else {
+                const triggerRect =
+                    trigger.getBoundingClientRect();
 
-                dropdown.classList.add('dropdown-down');
+                /*
+                 * Menu có 3 option,
+                 * mỗi option khoảng 52px
+                 */
+                const menuHeight =
+                    menu.scrollHeight || 160;
 
+                const spaceBelow =
+                    window.innerHeight - triggerRect.bottom;
+
+                const spaceAbove =
+                    triggerRect.top;
+
+
+                /*
+                 * Không đủ phía dưới
+                 * và phía trên rộng hơn
+                 * => xổ lên
+                 */
+
+                if (
+                    spaceBelow < menuHeight + 15 &&
+                    spaceAbove > spaceBelow
+                ) {
+
+                    dropdown.classList.add('dropdown-up');
+
+                } else {
+
+                    dropdown.classList.add('dropdown-down');
+
+                }
             }
-        }
 
 
-        /* =====================================================
-           MỞ
-        ===================================================== */
+            /* =====================================================
+               MỞ
+            ===================================================== */
 
-        function openDropdown() {
+            function openDropdown() {
 
-            calculateDirection();
-
-            dropdown.classList.add('is-open');
-
-            requestAnimationFrame(function () {
                 calculateDirection();
-            });
-        }
 
+                dropdown.classList.add('is-open');
 
-        /* =====================================================
-           ĐÓNG
-        ===================================================== */
-
-        function closeDropdown() {
-
-            dropdown.classList.remove('is-open');
-
-        }
-
-
-        /* =====================================================
-           CLICK TRIGGER
-        ===================================================== */
-
-        trigger.addEventListener('click', function (e) {
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (
-                dropdown.classList.contains('is-open')
-            ) {
-
-                closeDropdown();
-
-            } else {
-
-                /* Đóng dropdown khác */
-
-                document
-                    .querySelectorAll(
-                        '[data-customer-dropdown].is-open'
-                    )
-                    .forEach(function (other) {
-
-                        if (other !== dropdown) {
-                            other.classList.remove('is-open');
-                        }
-
-                    });
-
-                openDropdown();
+                requestAnimationFrame(function() {
+                    calculateDirection();
+                });
             }
 
-        });
+
+            /* =====================================================
+               ĐÓNG
+            ===================================================== */
+
+            function closeDropdown() {
+
+                dropdown.classList.remove('is-open');
+
+            }
 
 
-        /* =====================================================
-           CHỌN OPTION
-        ===================================================== */
+            /* =====================================================
+               CLICK TRIGGER
+            ===================================================== */
 
-        menu
-            .querySelectorAll('[data-value]')
-            .forEach(function (option) {
+            trigger.addEventListener('click', function(e) {
 
-                option.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-                    e.preventDefault();
-                    e.stopPropagation();
+                if (
+                    dropdown.classList.contains('is-open')
+                ) {
 
-                    const value =
-                        this.dataset.value;
+                    closeDropdown();
 
-                    const icon =
-                        this.querySelector('i')
+                } else {
+
+                    /* Đóng dropdown khác */
+
+                    document
+                        .querySelectorAll(
+                            '[data-customer-dropdown].is-open'
+                        )
+                        .forEach(function(other) {
+
+                            if (other !== dropdown) {
+                                other.classList.remove('is-open');
+                            }
+
+                        });
+
+                    openDropdown();
+                }
+
+            });
+
+
+            /* =====================================================
+               CHỌN OPTION
+            ===================================================== */
+
+            menu
+                .querySelectorAll('[data-value]')
+                .forEach(function(option) {
+
+                    option.addEventListener('click', function(e) {
+
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        const value =
+                            this.dataset.value;
+
+                        const icon =
+                            this.querySelector('i')
                             ?.outerHTML || '';
 
-                    const text =
-                        this.querySelector('span')
+                        const text =
+                            this.querySelector('span')
                             ?.textContent
                             .trim() || '';
 
-                    /* Gán value cho form */
+                        /* Gán value cho form */
 
-                    hiddenInput.value = value;
+                        hiddenInput.value = value;
 
 
-                    /* Đổi text trên trigger */
+                        /* Đổi text trên trigger */
 
-                    dropdown
-                        .querySelector(
-                            '.customer-dropdown-current'
-                        )
-                        .innerHTML =
+                        dropdown
+                            .querySelector(
+                                '.customer-dropdown-current'
+                            )
+                            .innerHTML =
                             icon +
                             '<span>' +
                             text +
                             '</span>';
 
 
-                    /* Đổi selected */
+                        /* Đổi selected */
 
-                    menu
-                        .querySelectorAll(
-                            '.customer-dropdown-option'
-                        )
-                        .forEach(function (item) {
+                        menu
+                            .querySelectorAll(
+                                '.customer-dropdown-option'
+                            )
+                            .forEach(function(item) {
 
-                            item.classList.remove(
-                                'is-selected'
-                            );
+                                item.classList.remove(
+                                    'is-selected'
+                                );
 
-                        });
+                            });
 
-                    this.classList.add(
-                        'is-selected'
-                    );
+                        this.classList.add(
+                            'is-selected'
+                        );
 
 
-                    closeDropdown();
+                        closeDropdown();
+
+                    });
 
                 });
+
+
+            /* =====================================================
+               CLICK RA NGOÀI
+            ===================================================== */
+
+            document.addEventListener('click', function(e) {
+
+                if (!dropdown.contains(e.target)) {
+                    closeDropdown();
+                }
 
             });
 
 
-        /* =====================================================
-           CLICK RA NGOÀI
-        ===================================================== */
+            /* =====================================================
+               RESIZE
+            ===================================================== */
 
-        document.addEventListener('click', function (e) {
-
-            if (!dropdown.contains(e.target)) {
-                closeDropdown();
-            }
-
-        });
-
-
-        /* =====================================================
-           RESIZE
-        ===================================================== */
-
-        window.addEventListener('resize', function () {
-
-            if (
-                dropdown.classList.contains('is-open')
-            ) {
-
-                calculateDirection();
-
-            }
-
-        });
-
-
-        /* =====================================================
-           SCROLL
-        ===================================================== */
-
-        window.addEventListener(
-            'scroll',
-            function () {
+            window.addEventListener('resize', function() {
 
                 if (
                     dropdown.classList.contains('is-open')
@@ -590,11 +571,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 }
 
-            },
-            true
-        );
+            });
+
+
+            /* =====================================================
+               SCROLL
+            ===================================================== */
+
+            window.addEventListener(
+                'scroll',
+                function() {
+
+                    if (
+                        dropdown.classList.contains('is-open')
+                    ) {
+
+                        calculateDirection();
+
+                    }
+
+                },
+                true
+            );
+
+        });
 
     });
-
-});
 </script>

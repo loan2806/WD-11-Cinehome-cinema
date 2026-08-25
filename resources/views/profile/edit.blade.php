@@ -119,36 +119,6 @@
                         </strong>
 
 
-                        {{-- TRẠNG THÁI XÁC THỰC EMAIL --}}
-                        @if ($user->email_verified_at)
-
-                            <small
-                                style="
-                                    display:flex;
-                                    align-items:center;
-                                    gap:6px;
-                                    margin-top:6px;
-                                    color:#4ade80;
-                                    font-weight:700;
-                                ">
-                                <i class="fa-solid fa-circle-check"></i> Đã xác thực
-                            </small>
-
-                        @else
-
-                            <small
-                                style="
-                                    display:flex;
-                                    align-items:center;
-                                    gap:6px;
-                                    margin-top:6px;
-                                    color:#facc15;
-                                    font-weight:700;
-                                ">
-                                <i class="fa-solid fa-circle-exclamation"></i> Chưa xác thực
-                            </small>
-
-                        @endif
 
                     </div>
 

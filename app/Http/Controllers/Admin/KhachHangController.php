@@ -301,11 +301,8 @@ class KhachHangController extends Controller
         $khachHang->restore();
 
         return redirect()
-            ->route('admin.khach-hang.trash')
-            ->with(
-                'success',
-                'Đã khôi phục khách hàng thành công.'
-            );
+            ->route('admin.thung-rac.index', ['tab' => 'khach_hang'])
+            ->with('success', 'Đã khôi phục khách hàng thành công!');
     }
 
 
@@ -360,7 +357,7 @@ class KhachHangController extends Controller
         $khachHang->forceDelete();
 
         return redirect()
-            ->route('admin.khach-hang.trash')
+            ->route('admin.thung-rac.index', ['tab' => 'khach_hang'])
             ->with(
                 'success',
                 'Đã xóa vĩnh viễn khách hàng.'
