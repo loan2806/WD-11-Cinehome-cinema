@@ -10,8 +10,17 @@ class NhatKyHoatDongHeThongController extends Controller
 {
     public function index(Request $request)
     {
+        if (
+            $request->filled('from') &&
+            $request->filled('to') &&
+            $request->date('from')->gt($request->date('to'))
+        ) {
+            return back()
+                ->withInput()
+                ->with('error', 'Ngày bắt đầu không được lớn hơn ngày kết thúc.');
+        }
         $query = NhatKyHoatDongHeThong::query()
-            ->when($request->filled('chuc_nang'), fn ($query) => $query->where('chuc_nang', $request->chuc_nang))
+            ->when($request->filled('chuc_nang'), fn($query) => $query->where('chuc_nang', $request->chuc_nang))
             ->when($request->filled('keyword'), function ($query) use ($request) {
                 $keyword = '%' . trim($request->keyword) . '%';
 
@@ -25,8 +34,8 @@ class NhatKyHoatDongHeThongController extends Controller
                         });
                 });
             })
-            ->when($request->filled('from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date('from')))
-            ->when($request->filled('to'), fn ($query) => $query->whereDate('created_at', '<=', $request->date('to')));
+            ->when($request->filled('from'), fn($query) => $query->whereDate('created_at', '>=', $request->date('from')))
+            ->when($request->filled('to'), fn($query) => $query->whereDate('created_at', '<=', $request->date('to')));
 
         $logs = (clone $query)
             ->with('nguoiDung')

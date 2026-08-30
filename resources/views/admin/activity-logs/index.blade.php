@@ -207,85 +207,143 @@ $statCards = [
         </div>
 
         <div class="activity-log-pagination">
-            <span>
+
+            <span class="activity-log-pagination-info">
                 Hiển thị {{ $logs->firstItem() ?? 0 }} - {{ $logs->lastItem() ?? 0 }}
                 trên {{ number_format($logs->total()) }} bản ghi
             </span>
-            {{ $logs->links() }}
+
+            @if ($logs->lastPage() > 1)
+            <nav class="activity-log-pagination-nav" aria-label="Phân trang">
+
+                {{-- Trang trước --}}
+                @if ($logs->onFirstPage())
+                <span class="activity-page-btn disabled">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </span>
+                @else
+                <a
+                    href="{{ $logs->previousPageUrl() }}"
+                    class="activity-page-btn"
+                    aria-label="Trang trước">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </a>
+                @endif
+
+
+                {{-- Các trang --}}
+                @foreach ($logs->getUrlRange(1, $logs->lastPage()) as $page => $url)
+
+                @if ($page == $logs->currentPage())
+
+                <span class="activity-page-btn active">
+                    {{ $page }}
+                </span>
+
+                @else
+
+                <a
+                    href="{{ $url }}"
+                    class="activity-page-btn">
+                    {{ $page }}
+                </a>
+
+                @endif
+
+                @endforeach
+
+
+                {{-- Trang sau --}}
+                @if ($logs->hasMorePages())
+                <a
+                    href="{{ $logs->nextPageUrl() }}"
+                    class="activity-page-btn"
+                    aria-label="Trang sau">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </a>
+                @else
+                <span class="activity-page-btn disabled">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </span>
+                @endif
+
+            </nav>
+            @endif
+
         </div>
     </section>
 </div>
 @endsection
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
 
-    const select = document.querySelector('.activity-select');
+        const select = document.querySelector('.activity-select');
 
-    if (!select) return;
+        if (!select) return;
 
-    const trigger = select.querySelector('.activity-select-trigger');
-    const text = select.querySelector('.activity-select-text');
-    const input = select.querySelector('input[name="chuc_nang"]');
-    const options = select.querySelectorAll('.activity-select-option');
-
-
-    // Bấm vào ô Chức năng
-    trigger.addEventListener('click', function (e) {
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Đóng nếu đang mở
-        if (select.classList.contains('open')) {
-            select.classList.remove('open');
-        }
-
-        // Mở nếu đang đóng
-        else {
-            select.classList.add('open');
-        }
-
-    });
+        const trigger = select.querySelector('.activity-select-trigger');
+        const text = select.querySelector('.activity-select-text');
+        const input = select.querySelector('input[name="chuc_nang"]');
+        const options = select.querySelectorAll('.activity-select-option');
 
 
-    // Chọn chức năng
-    options.forEach(function (option) {
-
-        option.addEventListener('click', function (e) {
+        // Bấm vào ô Chức năng
+        trigger.addEventListener('click', function(e) {
 
             e.preventDefault();
             e.stopPropagation();
 
-            const value = this.dataset.value;
-            const label = this.textContent.trim();
+            // Đóng nếu đang mở
+            if (select.classList.contains('open')) {
+                select.classList.remove('open');
+            }
 
-            // Gán giá trị
-            input.value = value;
-            text.textContent = label;
+            // Mở nếu đang đóng
+            else {
+                select.classList.add('open');
+            }
 
-            // Đổi option active
-            options.forEach(function (item) {
-                item.classList.remove('active');
+        });
+
+
+        // Chọn chức năng
+        options.forEach(function(option) {
+
+            option.addEventListener('click', function(e) {
+
+                e.preventDefault();
+                e.stopPropagation();
+
+                const value = this.dataset.value;
+                const label = this.textContent.trim();
+
+                // Gán giá trị
+                input.value = value;
+                text.textContent = label;
+
+                // Đổi option active
+                options.forEach(function(item) {
+                    item.classList.remove('active');
+                });
+
+                this.classList.add('active');
+
+                // Đóng dropdown
+                select.classList.remove('open');
+
             });
 
-            this.classList.add('active');
+        });
 
-            // Đóng dropdown
-            select.classList.remove('open');
+
+        // Bấm ra ngoài dropdown thì đóng
+        document.addEventListener('click', function(e) {
+
+            if (!select.contains(e.target)) {
+                select.classList.remove('open');
+            }
 
         });
 
     });
-
-
-    // Bấm ra ngoài dropdown thì đóng
-    document.addEventListener('click', function (e) {
-
-        if (!select.contains(e.target)) {
-            select.classList.remove('open');
-        }
-
-    });
-
-});
 </script>
