@@ -33,17 +33,10 @@ class ThungRacController extends Controller
         */
         $tab = $request->get('tab', 'suat_chieu');
 
-
         /*
         |--------------------------------------------------------------------------
-        | BỘ LỌC CHUNG CHO PHIM / SUẤT CHIẾU / KHÁCH HÀNG / NHÂN VIÊN
+        | BỘ LỌC CHUNG
         |--------------------------------------------------------------------------
-        |
-        | Các tab này vẫn dùng:
-        | - tim_kiem
-        | - tu_ngay
-        | - den_ngay
-        |
         */
         $search = $request->get(
             'tim_kiem',
@@ -51,38 +44,29 @@ class ThungRacController extends Controller
         );
 
         $tuNgay = $request->get('tu_ngay');
-
         $denNgay = $request->get('den_ngay');
-
 
         /*
         |--------------------------------------------------------------------------
         | BỘ LỌC RIÊNG CHO THÔNG BÁO PUSH
         |--------------------------------------------------------------------------
-        |
-        | Không dùng tu_ngay / den_ngay ở tab thông báo.
-        |
         */
         $pushSearch = trim(
             (string) $request->get('search', '')
         );
 
         $pushLoai = $request->get('loai');
-
         $pushTrangThai = $request->get('trang_thai');
-
         $pushDoiTuongNhan = $request->get('doi_tuong_nhan');
-
         $pushHangThanhVien = $request->get('hang_thanh_vien');
 
         $pushNguoiDung = trim(
             (string) $request->get('nguoi_dung', '')
         );
 
-
         /*
         |--------------------------------------------------------------------------
-        | CÁC OPTION CỦA THÔNG BÁO PUSH
+        | OPTION HẠNG THÀNH VIÊN
         |--------------------------------------------------------------------------
         */
         $hangThanhVienOptions = [
@@ -92,10 +76,9 @@ class ThungRacController extends Controller
             'platinum' => 'Platinum',
         ];
 
-
         /*
         |--------------------------------------------------------------------------
-        | 1. THỐNG KÊ SỐ LƯỢNG TRONG THÙNG RÁC
+        | 1. THỐNG KÊ THÙNG RÁC
         |--------------------------------------------------------------------------
         */
         $stats = [
@@ -117,22 +100,18 @@ class ThungRacController extends Controller
                 ])
                 ->count(),
 
-            'thong_bao' => ThongBaoPush::onlyTrashed()
-                ->count(),
+            'thong_bao' => ThongBaoPush::onlyTrashed()->count(),
 
         ];
 
-
         $totalTrash = array_sum($stats);
-
 
         /*
         |--------------------------------------------------------------------------
-        | 2. TẢI DỮ LIỆU THEO TAB
+        | 2. DỮ LIỆU THEO TAB
         |--------------------------------------------------------------------------
         */
         $items = match ($tab) {
-
 
             /*
             |--------------------------------------------------------------------------
@@ -144,49 +123,39 @@ class ThungRacController extends Controller
                 ->when(
                     $search,
                     function ($q) use ($search) {
-
                         $q->where(
                             'ten_phim',
                             'like',
                             "%{$search}%"
                         );
-
                     }
                 )
 
                 ->when(
                     $tuNgay,
                     function ($q) use ($tuNgay) {
-
                         $q->whereDate(
                             'deleted_at',
                             '>=',
                             $tuNgay
                         );
-
                     }
                 )
 
                 ->when(
                     $denNgay,
                     function ($q) use ($denNgay) {
-
                         $q->whereDate(
                             'deleted_at',
                             '<=',
                             $denNgay
                         );
-
                     }
                 )
 
                 ->latest('deleted_at')
-
                 ->paginate(10)
-
                 ->withQueryString(),
-
-
 
             /*
             |--------------------------------------------------------------------------
@@ -213,46 +182,36 @@ class ThungRacController extends Controller
                                     'like',
                                     "%{$search}%"
                                 );
-
                             }
                         );
-
                     }
                 )
 
                 ->when(
                     $tuNgay,
                     function ($q) use ($tuNgay) {
-
                         $q->whereDate(
                             'deleted_at',
                             '>=',
                             $tuNgay
                         );
-
                     }
                 )
 
                 ->when(
                     $denNgay,
                     function ($q) use ($denNgay) {
-
                         $q->whereDate(
                             'deleted_at',
                             '<=',
                             $denNgay
                         );
-
                     }
                 )
 
                 ->latest('deleted_at')
-
                 ->paginate(10)
-
                 ->withQueryString(),
-
-
 
             /*
             |--------------------------------------------------------------------------
@@ -284,46 +243,36 @@ class ThungRacController extends Controller
                                         'like',
                                         "%{$search}%"
                                     );
-
                             }
                         );
-
                     }
                 )
 
                 ->when(
                     $tuNgay,
                     function ($q) use ($tuNgay) {
-
                         $q->whereDate(
                             'deleted_at',
                             '>=',
                             $tuNgay
                         );
-
                     }
                 )
 
                 ->when(
                     $denNgay,
                     function ($q) use ($denNgay) {
-
                         $q->whereDate(
                             'deleted_at',
                             '<=',
                             $denNgay
                         );
-
                     }
                 )
 
                 ->latest('deleted_at')
-
                 ->paginate(10)
-
                 ->withQueryString(),
-
-
 
             /*
             |--------------------------------------------------------------------------
@@ -360,70 +309,46 @@ class ThungRacController extends Controller
                                         'like',
                                         "%{$search}%"
                                     );
-
                             }
                         );
-
                     }
                 )
 
                 ->when(
                     $tuNgay,
                     function ($q) use ($tuNgay) {
-
                         $q->whereDate(
                             'deleted_at',
                             '>=',
                             $tuNgay
                         );
-
                     }
                 )
 
                 ->when(
                     $denNgay,
                     function ($q) use ($denNgay) {
-
                         $q->whereDate(
                             'deleted_at',
                             '<=',
                             $denNgay
                         );
-
                     }
                 )
 
                 ->latest('deleted_at')
-
                 ->paginate(10)
-
                 ->withQueryString(),
-
-
 
             /*
             |--------------------------------------------------------------------------
             | THÔNG BÁO PUSH
             |--------------------------------------------------------------------------
-            |
-            | ĐÂY LÀ PHẦN ĐƯỢC SỬA
-            |
             */
             'thong_bao' => ThongBaoPush::onlyTrashed()
 
-                /*
-                |--------------------------------------------------------------------------
-                | Người tạo
-                |--------------------------------------------------------------------------
-                */
                 ->with('nguoiTao')
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | TÌM KIẾM TIÊU ĐỀ
-                |--------------------------------------------------------------------------
-                */
                 ->when(
                     $pushSearch !== '',
                     function ($q) use ($pushSearch) {
@@ -433,16 +358,9 @@ class ThungRacController extends Controller
                             'like',
                             "%{$pushSearch}%"
                         );
-
                     }
                 )
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | LỌC LOẠI
-                |--------------------------------------------------------------------------
-                */
                 ->when(
                     filled($pushLoai),
                     function ($q) use ($pushLoai) {
@@ -451,16 +369,9 @@ class ThungRacController extends Controller
                             'loai',
                             $pushLoai
                         );
-
                     }
                 )
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | LỌC TRẠNG THÁI
-                |--------------------------------------------------------------------------
-                */
                 ->when(
                     filled($pushTrangThai),
                     function ($q) use ($pushTrangThai) {
@@ -469,16 +380,9 @@ class ThungRacController extends Controller
                             'trang_thai',
                             $pushTrangThai
                         );
-
                     }
                 )
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | LỌC NGƯỜI NHẬN
-                |--------------------------------------------------------------------------
-                */
                 ->when(
                     filled($pushDoiTuongNhan),
                     function ($q) use ($pushDoiTuongNhan) {
@@ -487,20 +391,9 @@ class ThungRacController extends Controller
                             'doi_tuong_nhan',
                             $pushDoiTuongNhan
                         );
-
                     }
                 )
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | LỌC HẠNG THÀNH VIÊN
-                |--------------------------------------------------------------------------
-                |
-                | Chỉ áp dụng khi người nhận là:
-                | hang_thanh_vien
-                |
-                */
                 ->when(
                     $pushDoiTuongNhan === 'hang_thanh_vien'
                     && filled($pushHangThanhVien),
@@ -510,24 +403,9 @@ class ThungRacController extends Controller
                             'hang_thanh_vien',
                             $pushHangThanhVien
                         );
-
                     }
                 )
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | LỌC NGƯỜI DÙNG CỤ THỂ
-                |--------------------------------------------------------------------------
-                |
-                | Tìm theo:
-                | - ho_ten
-                | - email
-                |
-                | thông qua:
-                | thong_bao_push_nguoi_dungs
-                |
-                */
                 ->when(
                     $pushDoiTuongNhan === 'nguoi_dung_cu_the'
                     && $pushNguoiDung !== '',
@@ -538,23 +416,19 @@ class ThungRacController extends Controller
 
                                 $subQuery
                                     ->select(DB::raw(1))
-
                                     ->from(
                                         'thong_bao_push_nguoi_dungs as tbnd'
                                     )
-
                                     ->join(
                                         'nguoi_dungs as nd',
                                         'nd.id',
                                         '=',
                                         'tbnd.nguoi_dung_id'
                                     )
-
                                     ->whereColumn(
                                         'tbnd.thong_bao_push_id',
                                         'thong_bao_pushs.id'
                                     )
-
                                     ->where(
                                         function ($userQuery) use ($pushNguoiDung) {
 
@@ -564,41 +438,21 @@ class ThungRacController extends Controller
                                                     'like',
                                                     "%{$pushNguoiDung}%"
                                                 )
-
                                                 ->orWhere(
                                                     'nd.email',
                                                     'like',
                                                     "%{$pushNguoiDung}%"
                                                 );
-
                                         }
                                     );
-
                             }
                         );
-
                     }
                 )
 
-
-                /*
-                |--------------------------------------------------------------------------
-                | SẮP XẾP THEO NGÀY XÓA
-                |--------------------------------------------------------------------------
-                */
                 ->latest('deleted_at')
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | PHÂN TRANG
-                |--------------------------------------------------------------------------
-                */
                 ->paginate(10)
-
                 ->withQueryString(),
-
-
 
             /*
             |--------------------------------------------------------------------------
@@ -606,24 +460,14 @@ class ThungRacController extends Controller
             |--------------------------------------------------------------------------
             */
             default => SuatChieu::onlyTrashed()
-
                 ->paginate(10)
-
                 ->withQueryString(),
-
         };
-
 
         /*
         |--------------------------------------------------------------------------
-        | 3. TRẢ VIEW
+        | TRẢ VIEW
         |--------------------------------------------------------------------------
-        |
-        | Có thêm:
-        | - hangThanhVienOptions
-        |
-        | để Blade dùng khi cần.
-        |
         */
         return view(
             'admin.thung_rac.index',
@@ -637,7 +481,6 @@ class ThungRacController extends Controller
         );
     }
 
-
     /**
      * =========================================================
      * KHÔI PHỤC TẤT CẢ
@@ -647,9 +490,7 @@ class ThungRacController extends Controller
         Request $request,
         string $type
     ) {
-
         $count = 0;
-
 
         /*
         |--------------------------------------------------------------------------
@@ -661,13 +502,10 @@ class ThungRacController extends Controller
             && class_exists(Phims::class)
         ) {
 
-            $count =
-                Phims::onlyTrashed()->count();
+            $count = Phims::onlyTrashed()->count();
 
             Phims::onlyTrashed()->restore();
-
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -679,13 +517,10 @@ class ThungRacController extends Controller
             && class_exists(SuatChieu::class)
         ) {
 
-            $count =
-                SuatChieu::onlyTrashed()->count();
+            $count = SuatChieu::onlyTrashed()->count();
 
             SuatChieu::onlyTrashed()->restore();
-
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -697,13 +532,12 @@ class ThungRacController extends Controller
             && class_exists(NguoiDung::class)
         ) {
 
-            $count =
-                NguoiDung::onlyTrashed()
-                    ->where(
-                        'vai_tro',
-                        'khach_hang'
-                    )
-                    ->count();
+            $count = NguoiDung::onlyTrashed()
+                ->where(
+                    'vai_tro',
+                    'khach_hang'
+                )
+                ->count();
 
             NguoiDung::onlyTrashed()
                 ->where(
@@ -711,9 +545,7 @@ class ThungRacController extends Controller
                     'khach_hang'
                 )
                 ->restore();
-
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -725,22 +557,19 @@ class ThungRacController extends Controller
             && class_exists(NguoiDung::class)
         ) {
 
-            $staffs =
-                NguoiDung::onlyTrashed()
-                    ->whereIn(
-                        'vai_tro',
-                        [
-                            'admin',
-                            'nhan_vien',
-                            'quan_ly',
-                            'super_admin',
-                        ]
-                    )
-                    ->get();
+            $staffs = NguoiDung::onlyTrashed()
+                ->whereIn(
+                    'vai_tro',
+                    [
+                        'admin',
+                        'nhan_vien',
+                        'quan_ly',
+                        'super_admin',
+                    ]
+                )
+                ->get();
 
-            $count =
-                $staffs->count();
-
+            $count = $staffs->count();
 
             foreach ($staffs as $staff) {
 
@@ -749,11 +578,8 @@ class ThungRacController extends Controller
                 $staff->update([
                     'trang_thai_hoat_dong' => true,
                 ]);
-
             }
-
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -765,13 +591,10 @@ class ThungRacController extends Controller
             && class_exists(ThongBaoPush::class)
         ) {
 
-            $count =
-                ThongBaoPush::onlyTrashed()->count();
+            $count = ThongBaoPush::onlyTrashed()->count();
 
             ThongBaoPush::onlyTrashed()->restore();
-
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -785,7 +608,6 @@ class ThungRacController extends Controller
             "Đã khôi phục toàn bộ {$count} bản ghi thuộc danh mục {$type}"
         );
 
-
         /*
         |--------------------------------------------------------------------------
         | THÔNG BÁO ADMIN
@@ -797,7 +619,6 @@ class ThungRacController extends Controller
             'Success'
         );
 
-
         return redirect()
             ->back()
             ->with(
@@ -805,46 +626,326 @@ class ThungRacController extends Controller
                 "Đã khôi phục thành công tất cả {$count} bản ghi!"
             );
     }
-public function restore(Request $request, string $type, int $id)
-{
-    if ($type === 'thong_bao') {
-        $thongBao = ThongBaoPush::onlyTrashed()->findOrFail($id);
-
-        $thongBao->restore();
-
-        return back()->with(
-            'success',
-            'Đã khôi phục thông báo thành công!'
-        );
-    }
-
-    return back()->with('error', 'Loại dữ liệu không hợp lệ!');
-}
-
-public function forceDelete(Request $request, string $type, int $id)
-{
-    if ($type === 'thong_bao') {
-        $thongBao = ThongBaoPush::onlyTrashed()->findOrFail($id);
-
-        ThongBaoPushNguoiDung::where(
-            'thong_bao_push_id',
-            $thongBao->id
-        )->delete();
-
-        $thongBao->forceDelete();
-
-        return back()->with(
-            'success',
-            'Đã xóa vĩnh viễn thông báo thành công!'
-        );
-    }
-
-    return back()->with('error', 'Loại dữ liệu không hợp lệ!');
-}
 
     /**
      * =========================================================
-     * XÓA VĨNH VIỄN / DỌN THÙNG RÁC
+     * KHÔI PHỤC 1 BẢN GHI
+     * =========================================================
+     */
+    public function restore(
+        Request $request,
+        string $type,
+        int $id
+    ) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | THÔNG BÁO
+        |--------------------------------------------------------------------------
+        */
+        if ($type === 'thong_bao') {
+
+            $thongBao = ThongBaoPush::onlyTrashed()
+                ->findOrFail($id);
+
+            $thongBao->restore();
+
+            return back()->with(
+                'success',
+                'Đã khôi phục thông báo thành công!'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PHIM
+        |--------------------------------------------------------------------------
+        */
+        if ($type === 'phim') {
+
+            $phim = Phims::onlyTrashed()
+                ->findOrFail($id);
+
+            $phim->restore();
+
+            return back()->with(
+                'success',
+                'Đã khôi phục phim thành công!'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUẤT CHIẾU
+        |--------------------------------------------------------------------------
+        */
+        if ($type === 'suat_chieu') {
+
+            $suatChieu = SuatChieu::onlyTrashed()
+                ->findOrFail($id);
+
+            $suatChieu->restore();
+
+            return back()->with(
+                'success',
+                'Đã khôi phục suất chiếu thành công!'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | KHÁCH HÀNG
+        |--------------------------------------------------------------------------
+        */
+        if ($type === 'khach_hang') {
+
+            $khachHang = NguoiDung::onlyTrashed()
+                ->where('vai_tro', 'khach_hang')
+                ->findOrFail($id);
+
+            $khachHang->restore();
+
+            return back()->with(
+                'success',
+                'Đã khôi phục khách hàng thành công!'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NHÂN VIÊN
+        |--------------------------------------------------------------------------
+        */
+        if ($type === 'nhan_vien') {
+
+            $nhanVien = NguoiDung::onlyTrashed()
+                ->whereIn(
+                    'vai_tro',
+                    [
+                        'admin',
+                        'nhan_vien',
+                        'quan_ly',
+                        'super_admin',
+                    ]
+                )
+                ->findOrFail($id);
+
+            $nhanVien->restore();
+
+            $nhanVien->update([
+                'trang_thai_hoat_dong' => true,
+            ]);
+
+            return back()->with(
+                'success',
+                'Đã khôi phục nhân viên thành công!'
+            );
+        }
+
+        return back()->with(
+            'error',
+            'Loại dữ liệu không hợp lệ!'
+        );
+    }
+
+    /**
+     * =========================================================
+     * XÓA VĨNH VIỄN 1 BẢN GHI
+     * =========================================================
+     */
+    public function forceDelete(
+        Request $request,
+        string $type,
+        int $id
+    ) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | THÔNG BÁO PUSH
+        |--------------------------------------------------------------------------
+        */
+        if ($type === 'thong_bao') {
+
+            $thongBao = ThongBaoPush::onlyTrashed()
+                ->findOrFail($id);
+
+            ThongBaoPushNguoiDung::where(
+                'thong_bao_push_id',
+                $thongBao->id
+            )->delete();
+
+            $thongBao->forceDelete();
+
+            return back()->with(
+                'success',
+                'Đã xóa vĩnh viễn thông báo thành công!'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | KHÁCH HÀNG
+        |--------------------------------------------------------------------------
+        |
+        | QUAN TRỌNG:
+        | Không được xóa khách hàng nếu đã phát sinh vé.
+        |
+        */
+        if ($type === 'khach_hang') {
+
+            $khachHang = NguoiDung::onlyTrashed()
+                ->where(
+                    'vai_tro',
+                    'khach_hang'
+                )
+                ->findOrFail($id);
+
+            /*
+            |--------------------------------------------------------------------------
+            | KIỂM TRA VÉ
+            |--------------------------------------------------------------------------
+            */
+            $daMuaVe = VeXemPhim::where(
+                'nguoi_dung_id',
+                $khachHang->id
+            )->exists();
+
+            if ($daMuaVe) {
+
+                return back()->with(
+                    'error',
+                    'Không thể xóa vĩnh viễn khách hàng này vì tài khoản đã phát sinh vé xem phim.'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | CHƯA CÓ VÉ -> CHO PHÉP XÓA
+            |--------------------------------------------------------------------------
+            */
+            $khachHang->forceDelete();
+
+            return back()->with(
+                'success',
+                'Đã xóa vĩnh viễn khách hàng thành công!'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NHÂN VIÊN
+        |--------------------------------------------------------------------------
+        */
+        if ($type === 'nhan_vien') {
+
+            $nhanVien = NguoiDung::onlyTrashed()
+                ->whereIn(
+                    'vai_tro',
+                    [
+                        'admin',
+                        'nhan_vien',
+                        'quan_ly',
+                        'super_admin',
+                    ]
+                )
+                ->findOrFail($id);
+
+            /*
+            |--------------------------------------------------------------------------
+            | KIỂM TRA ĐÃ BÁN VÉ
+            |--------------------------------------------------------------------------
+            */
+            $daBanVe = VeXemPhim::where(
+                'nhan_vien_id',
+                $nhanVien->id
+            )->exists();
+
+            /*
+            |--------------------------------------------------------------------------
+            | KIỂM TRA ĐÃ TẠO HÓA ĐƠN ĐỒ ĂN
+            |--------------------------------------------------------------------------
+            */
+            $daTaoHoaDon = FoodInvoice::where(
+                'user_id',
+                $nhanVien->id
+            )->exists();
+
+            if ($daBanVe || $daTaoHoaDon) {
+
+                return back()->with(
+                    'error',
+                    'Không thể xóa vĩnh viễn nhân viên vì tài khoản đã phát sinh dữ liệu công việc.'
+                );
+            }
+
+            $nhanVien->forceDelete();
+
+            return back()->with(
+                'success',
+                'Đã xóa vĩnh viễn nhân viên thành công!'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | PHIM
+        |--------------------------------------------------------------------------
+        */
+        if ($type === 'phim') {
+
+            $phim = Phims::onlyTrashed()
+                ->findOrFail($id);
+
+            /*
+            | Không xóa phim nếu còn suất chiếu
+            */
+            if ($phim->showtimes()->exists()) {
+
+                return back()->with(
+                    'error',
+                    'Không thể xóa vĩnh viễn phim vì vẫn còn suất chiếu liên quan.'
+                );
+            }
+
+            if (method_exists($phim, 'genres')) {
+                $phim->genres()->detach();
+            }
+
+            $phim->forceDelete();
+
+            return back()->with(
+                'success',
+                'Đã xóa vĩnh viễn phim thành công!'
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUẤT CHIẾU
+        |--------------------------------------------------------------------------
+        */
+        if ($type === 'suat_chieu') {
+
+            $suatChieu = SuatChieu::onlyTrashed()
+                ->findOrFail($id);
+
+            $suatChieu->forceDelete();
+
+            return back()->with(
+                'success',
+                'Đã xóa vĩnh viễn suất chiếu thành công!'
+            );
+        }
+
+        return back()->with(
+            'error',
+            'Loại dữ liệu không hợp lệ!'
+        );
+    }
+
+    /**
+     * =========================================================
+     * DỌN SẠCH THÙNG RÁC
      * =========================================================
      */
     public function emptyTrash(
@@ -853,7 +954,6 @@ public function forceDelete(Request $request, string $type, int $id)
     ) {
 
         $count = 0;
-
 
         /*
         |--------------------------------------------------------------------------
@@ -865,45 +965,36 @@ public function forceDelete(Request $request, string $type, int $id)
             && class_exists(Phims::class)
         ) {
 
-            $trashedMovies =
-                Phims::onlyTrashed()->get();
-
+            $trashedMovies = Phims::onlyTrashed()->get();
 
             foreach ($trashedMovies as $phim) {
 
                 /*
-                | Không xóa phim nếu vẫn còn suất chiếu
+                | Không xóa nếu vẫn còn suất chiếu
                 */
                 if (
-                    !$phim
+                    $phim
                         ->showtimes()
                         ->exists()
                 ) {
-
-                    if (
-                        method_exists(
-                            $phim,
-                            'genres'
-                        )
-                    ) {
-
-                        $phim
-                            ->genres()
-                            ->detach();
-
-                    }
-
-
-                    $phim->forceDelete();
-
-                    $count++;
-
+                    continue;
                 }
 
+                /*
+                | Xóa quan hệ thể loại
+                */
+                if (method_exists($phim, 'genres')) {
+
+                    $phim
+                        ->genres()
+                        ->detach();
+                }
+
+                $phim->forceDelete();
+
+                $count++;
             }
-
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -915,33 +1006,88 @@ public function forceDelete(Request $request, string $type, int $id)
             && class_exists(SuatChieu::class)
         ) {
 
-            $count =
-                SuatChieu::onlyTrashed()
-                    ->forceDelete();
+            /*
+            | Chỉ xóa các suất chiếu đã soft-delete.
+            */
+            $trashedShowtimes = SuatChieu::onlyTrashed()->get();
 
+            foreach ($trashedShowtimes as $suatChieu) {
+
+                $suatChieu->forceDelete();
+
+                $count++;
+            }
         }
-
 
         /*
         |--------------------------------------------------------------------------
         | KHÁCH HÀNG
         |--------------------------------------------------------------------------
+        |
+        | ĐÂY LÀ PHẦN QUAN TRỌNG ĐÃ SỬA.
+        |
+        | Không được dùng:
+        |
+        | NguoiDung::onlyTrashed()
+        |     ->where('vai_tro', 'khach_hang')
+        |     ->forceDelete();
+        |
+        | Vì câu lệnh đó xóa tất cả khách hàng bất kể
+        | họ đã từng mua vé hay chưa.
+        |
         */
         elseif (
             $type === 'khach_hang'
             && class_exists(NguoiDung::class)
         ) {
 
-            $count =
-                NguoiDung::onlyTrashed()
-                    ->where(
-                        'vai_tro',
-                        'khach_hang'
-                    )
-                    ->forceDelete();
+            $trashedCustomers = NguoiDung::onlyTrashed()
+                ->where(
+                    'vai_tro',
+                    'khach_hang'
+                )
+                ->get();
 
+            foreach ($trashedCustomers as $khachHang) {
+
+                /*
+                |--------------------------------------------------------------------------
+                | KIỂM TRA KHÁCH HÀNG ĐÃ TỪNG PHÁT SINH VÉ
+                |--------------------------------------------------------------------------
+                |
+                | Chỉ cần có 1 vé liên quan đến người dùng
+                | thì không được xóa vĩnh viễn.
+                |
+                */
+                $daMuaVe = false;
+
+                if (class_exists(VeXemPhim::class)) {
+
+                    $daMuaVe = VeXemPhim::where(
+                        'nguoi_dung_id',
+                        $khachHang->id
+                    )->exists();
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | CÓ VÉ -> GIỮ LẠI
+                |--------------------------------------------------------------------------
+                */
+                if ($daMuaVe) {
+                    continue;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | KHÔNG CÓ VÉ -> XÓA VĨNH VIỄN
+                |--------------------------------------------------------------------------
+                */
+                $khachHang->forceDelete();
+
+                $count++;
+            }
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -953,74 +1099,77 @@ public function forceDelete(Request $request, string $type, int $id)
             && class_exists(NguoiDung::class)
         ) {
 
-            $trashedStaffs =
-                NguoiDung::onlyTrashed()
-                    ->whereIn(
-                        'vai_tro',
-                        [
-                            'admin',
-                            'nhan_vien',
-                            'quan_ly',
-                            'super_admin',
-                        ]
-                    )
-                    ->get();
-
+            $trashedStaffs = NguoiDung::onlyTrashed()
+                ->whereIn(
+                    'vai_tro',
+                    [
+                        'admin',
+                        'nhan_vien',
+                        'quan_ly',
+                        'super_admin',
+                    ]
+                )
+                ->get();
 
             foreach ($trashedStaffs as $staff) {
 
-                $daBanVe =
-                    class_exists(VeXemPhim::class)
-                        ? VeXemPhim::where(
-                            'nhan_vien_id',
-                            $staff->id
-                        )->exists()
-                        : false;
-
-
-                $daTaoHoaDon =
-                    class_exists(FoodInvoice::class)
-                        ? FoodInvoice::where(
-                            'user_id',
-                            $staff->id
-                        )->exists()
-                        : false;
-
-
                 /*
-                | Chỉ xóa vĩnh viễn nếu không có
-                | dữ liệu công việc liên quan.
+                |--------------------------------------------------------------------------
+                | KIỂM TRA ĐÃ BÁN VÉ
+                |--------------------------------------------------------------------------
                 */
-                if (
-                    !$daBanVe
-                    && !$daTaoHoaDon
-                ) {
+                $daBanVe = false;
 
-                    $staff->forceDelete();
+                if (class_exists(VeXemPhim::class)) {
 
-                    $count++;
-
+                    $daBanVe = VeXemPhim::where(
+                        'nhan_vien_id',
+                        $staff->id
+                    )->exists();
                 }
 
+                /*
+                |--------------------------------------------------------------------------
+                | KIỂM TRA ĐÃ TẠO HÓA ĐƠN ĐỒ ĂN
+                |--------------------------------------------------------------------------
+                */
+                $daTaoHoaDon = false;
+
+                if (class_exists(FoodInvoice::class)) {
+
+                    $daTaoHoaDon = FoodInvoice::where(
+                        'user_id',
+                        $staff->id
+                    )->exists();
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | CÓ PHÁT SINH -> KHÔNG XÓA
+                |--------------------------------------------------------------------------
+                */
+                if (
+                    $daBanVe
+                    || $daTaoHoaDon
+                ) {
+                    continue;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | KHÔNG PHÁT SINH -> XÓA
+                |--------------------------------------------------------------------------
+                */
+                $staff->forceDelete();
+
+                $count++;
             }
-
         }
-
 
         /*
         |--------------------------------------------------------------------------
         | THÔNG BÁO PUSH
         |--------------------------------------------------------------------------
-        |
-        | Chỉ tại đây mới xóa người nhận.
-        |
-        | Soft delete:
-        |     ThongBaoPush -> deleted_at
-        |
-        | Force delete:
-        |     Xóa ThongBaoPushNguoiDung
-        |     + Xóa ThongBaoPush
-        |
         */
         elseif (
             $type === 'thong_bao'
@@ -1028,19 +1177,12 @@ public function forceDelete(Request $request, string $type, int $id)
         ) {
 
             $trashedNotifications =
-                ThongBaoPush::onlyTrashed()
-                    ->get();
+                ThongBaoPush::onlyTrashed()->get();
 
-
-            foreach (
-                $trashedNotifications
-                as $thongBao
-            ) {
+            foreach ($trashedNotifications as $thongBao) {
 
                 /*
-                |--------------------------------------------------------------------------
-                | Xóa các bản ghi người nhận
-                |--------------------------------------------------------------------------
+                | Xóa danh sách người nhận trước
                 */
                 if (
                     class_exists(
@@ -1052,23 +1194,16 @@ public function forceDelete(Request $request, string $type, int $id)
                         'thong_bao_push_id',
                         $thongBao->id
                     )->delete();
-
                 }
 
-
                 /*
-                |--------------------------------------------------------------------------
-                | Xóa thông báo vĩnh viễn
-                |--------------------------------------------------------------------------
+                | Xóa thông báo
                 */
                 $thongBao->forceDelete();
 
                 $count++;
-
             }
-
         }
-
 
         /*
         |--------------------------------------------------------------------------
@@ -1082,7 +1217,6 @@ public function forceDelete(Request $request, string $type, int $id)
             "Đã xóa vĩnh viễn {$count} bản ghi rác thuộc danh mục {$type}"
         );
 
-
         /*
         |--------------------------------------------------------------------------
         | THÔNG BÁO ADMIN
@@ -1094,7 +1228,11 @@ public function forceDelete(Request $request, string $type, int $id)
             'Warning'
         );
 
-
+        /*
+        |--------------------------------------------------------------------------
+        | TRẢ VỀ
+        |--------------------------------------------------------------------------
+        */
         return redirect()
             ->back()
             ->with(
