@@ -55,48 +55,48 @@
             {{-- ACTION --}}
             @if(($stats[$tab] ?? 0) > 0)
 
-                <div class="flex flex-wrap items-center gap-3 shrink-0">
+            <div class="flex flex-wrap items-center gap-3 shrink-0">
 
-                    {{-- KHÔI PHỤC TẤT CẢ --}}
-                    <form action="{{ route('admin.thung-rac.restore-all', $tab) }}"
-                          method="POST"
-                          onsubmit="return confirm('Bạn có chắc chắn muốn KHÔI PHỤC TẤT CẢ {{ $stats[$tab] }} bản ghi trong danh mục này?')">
+                {{-- KHÔI PHỤC TẤT CẢ --}}
+                <form action="{{ route('admin.thung-rac.restore-all', $tab) }}"
+                    method="POST"
+                    onsubmit="return confirm('Bạn có chắc chắn muốn KHÔI PHỤC TẤT CẢ {{ $stats[$tab] }} bản ghi trong danh mục này?')">
 
-                        @csrf
-                        @method('PATCH')
+                    @csrf
+                    @method('PATCH')
 
-                        <button type="submit"
-                                class="inline-flex items-center gap-2 rounded-xl bg-[#222328] border border-white/15 px-5 py-3 text-xs font-bold text-white hover:bg-white/10 transition shadow-xl">
+                    <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-[#222328] border border-white/15 px-5 py-3 text-xs font-bold text-white hover:bg-white/10 transition shadow-xl">
 
-                            <i class="fa-solid fa-rotate-left text-emerald-400 text-sm"></i>
+                        <i class="fa-solid fa-rotate-left text-emerald-400 text-sm"></i>
 
-                            Khôi phục tất cả
+                        Khôi phục tất cả
 
-                        </button>
+                    </button>
 
-                    </form>
+                </form>
 
 
-                    {{-- DỌN SẠCH --}}
-                    <form action="{{ route('admin.thung-rac.empty', $tab) }}"
-                          method="POST"
-                          onsubmit="return confirm('CẢNH BÁO NGHIÊM TRỌNG: Thao tác này sẽ XÓA VĨNH VIỄN toàn bộ {{ $stats[$tab] }} bản ghi trong mục này!')">
+                {{-- DỌN SẠCH --}}
+                <form action="{{ route('admin.thung-rac.empty', $tab) }}"
+                    method="POST"
+                    onsubmit="return confirm('CẢNH BÁO NGHIÊM TRỌNG: Thao tác này sẽ XÓA VĨNH VIỄN toàn bộ {{ $stats[$tab] }} bản ghi trong mục này!')">
 
-                        @csrf
-                        @method('DELETE')
+                    @csrf
+                    @method('DELETE')
 
-                        <button type="submit"
-                                class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 px-5 py-3 text-xs font-bold text-white transition shadow-xl shadow-red-600/30">
+                    <button type="submit"
+                        class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 px-5 py-3 text-xs font-bold text-white transition shadow-xl shadow-red-600/30">
 
-                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        <i class="fa-solid fa-trash-can text-sm"></i>
 
-                            Dọn sạch mục này
+                        Dọn sạch mục này
 
-                        </button>
+                    </button>
 
-                    </form>
+                </form>
 
-                </div>
+            </div>
 
             @endif
 
@@ -112,7 +112,7 @@
 
         {{-- PHIM --}}
         <a href="{{ route('admin.thung-rac.index', array_merge(request()->query(), ['tab' => 'phim'])) }}"
-           class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
+            class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
            {{ $tab === 'phim'
                 ? 'border-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
                 : 'border-white/10 bg-[#121214] hover:border-white/20 hover:bg-white/[0.03]' }}">
@@ -138,7 +138,7 @@
 
         {{-- SUẤT CHIẾU --}}
         <a href="{{ route('admin.thung-rac.index', array_merge(request()->query(), ['tab' => 'suat_chieu'])) }}"
-           class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
+            class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
            {{ $tab === 'suat_chieu'
                 ? 'border-emerald-500 bg-emerald-500/10 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                 : 'border-white/10 bg-[#121214] hover:border-white/20 hover:bg-white/[0.03]' }}">
@@ -164,7 +164,7 @@
 
         {{-- KHÁCH HÀNG --}}
         <a href="{{ route('admin.thung-rac.index', array_merge(request()->query(), ['tab' => 'khach_hang'])) }}"
-           class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
+            class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
            {{ $tab === 'khach_hang'
                 ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.2)]'
                 : 'border-white/10 bg-[#121214] hover:border-white/20 hover:bg-white/[0.03]' }}">
@@ -190,7 +190,7 @@
 
         {{-- NHÂN VIÊN --}}
         <a href="{{ route('admin.thung-rac.index', array_merge(request()->query(), ['tab' => 'nhan_vien'])) }}"
-           class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
+            class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
            {{ $tab === 'nhan_vien'
                 ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_20px_rgba(245,158,11,0.2)]'
                 : 'border-white/10 bg-[#121214] hover:border-white/20 hover:bg-white/[0.03]' }}">
@@ -216,7 +216,7 @@
 
         {{-- THÔNG BÁO --}}
         <a href="{{ route('admin.thung-rac.index', array_merge(request()->query(), ['tab' => 'thong_bao'])) }}"
-           class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
+            class="group relative flex items-center gap-3.5 rounded-2xl border p-4 transition-all duration-200 no-underline block overflow-hidden
            {{ $tab === 'thong_bao'
                 ? 'border-purple-500 bg-purple-500/10 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
                 : 'border-white/10 bg-[#121214] hover:border-white/20 hover:bg-white/[0.03]' }}">
@@ -281,7 +281,7 @@
 
                 @if($items instanceof \Illuminate\Pagination\LengthAwarePaginator)
 
-                    / {{ $items->total() }}
+                / {{ $items->total() }}
 
                 @endif
 
@@ -296,12 +296,12 @@
             FILTER BAR
         ====================================================== --}}
         <form action="{{ route('admin.thung-rac.index') }}"
-              method="GET"
-              class="flex flex-col md:flex-row gap-3 bg-[#18181c] p-3.5 border-t border-b border-white/10">
+            method="GET"
+            class="flex flex-col md:flex-row gap-3 bg-[#18181c] p-3.5 border-t border-b border-white/10">
 
             <input type="hidden"
-                   name="tab"
-                   value="{{ $tab }}">
+                name="tab"
+                value="{{ $tab }}">
 
 
             {{-- TÌM KIẾM --}}
@@ -310,10 +310,10 @@
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-red-500"></i>
 
                 <input type="text"
-                       name="tim_kiem"
-                       value="{{ request('tim_kiem') ?? request('search') }}"
-                       placeholder="Tìm theo tên, email hoặc số điện thoại..."
-                       class="h-12 w-full rounded-2xl border border-white/10 bg-[#202126] pl-11 pr-4 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none transition font-medium">
+                    name="tim_kiem"
+                    value="{{ request('tim_kiem') ?? request('search') }}"
+                    placeholder="Tìm theo tên, email hoặc số điện thoại..."
+                    class="h-12 w-full rounded-2xl border border-white/10 bg-[#202126] pl-11 pr-4 text-sm text-white placeholder-gray-500 focus:border-red-500 focus:outline-none transition font-medium">
 
             </div>
 
@@ -322,10 +322,10 @@
             <div class="w-full md:w-[240px] shrink-0">
 
                 <input type="date"
-                       id="filter_tu_ngay"
-                       name="tu_ngay"
-                       value="{{ request('tu_ngay') }}"
-                       class="h-12 w-full rounded-2xl border border-white/10 bg-[#202126] px-4 text-sm text-white font-medium focus:border-red-500 focus:outline-none transition [color-scheme:dark]">
+                    id="filter_tu_ngay"
+                    name="tu_ngay"
+                    value="{{ request('tu_ngay') }}"
+                    class="h-12 w-full rounded-2xl border border-white/10 bg-[#202126] px-4 text-sm text-white font-medium focus:border-red-500 focus:outline-none transition [color-scheme:dark]">
 
             </div>
 
@@ -334,17 +334,17 @@
             <div class="w-full md:w-[165px] shrink-0">
 
                 <input type="date"
-                       id="filter_den_ngay"
-                       name="den_ngay"
-                       value="{{ request('den_ngay') }}"
-                       class="h-12 w-full rounded-2xl border border-white/10 bg-[#202126] px-4 text-sm text-white font-medium focus:border-red-500 focus:outline-none transition [color-scheme:dark]">
+                    id="filter_den_ngay"
+                    name="den_ngay"
+                    value="{{ request('den_ngay') }}"
+                    class="h-12 w-full rounded-2xl border border-white/10 bg-[#202126] px-4 text-sm text-white font-medium focus:border-red-500 focus:outline-none transition [color-scheme:dark]">
 
             </div>
 
 
             {{-- LỌC --}}
             <button type="submit"
-                    class="h-12 shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 px-6 text-sm font-black text-white transition shadow-lg shadow-red-600/30">
+                class="h-12 shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 px-6 text-sm font-black text-white transition shadow-lg shadow-red-600/30">
 
                 <i class="fa-solid fa-filter text-sm"></i>
 
@@ -355,19 +355,19 @@
 
             {{-- RESET --}}
             @if(request()->hasAny([
-                'tim_kiem',
-                'search',
-                'tu_ngay',
-                'den_ngay'
+            'tim_kiem',
+            'search',
+            'tu_ngay',
+            'den_ngay'
             ]))
 
-                <a href="{{ route('admin.thung-rac.index', ['tab' => $tab]) }}"
-                   class="h-12 w-12 shrink-0 inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition"
-                   title="Đặt lại bộ lọc">
+            <a href="{{ route('admin.thung-rac.index', ['tab' => $tab]) }}"
+                class="h-12 w-12 shrink-0 inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10 hover:text-white transition"
+                title="Đặt lại bộ lọc">
 
-                    <i class="fa-solid fa-rotate-left text-xs"></i>
+                <i class="fa-solid fa-rotate-left text-xs"></i>
 
-                </a>
+            </a>
 
             @endif
 
@@ -386,242 +386,242 @@
                 ================================================= --}}
                 @if($tab === 'khach_hang')
 
-                    <table class="w-full text-left text-sm text-gray-300">
+                <table class="w-full text-left text-sm text-gray-300">
 
-                        <thead class="bg-[#18181c] text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/10">
+                    <thead class="bg-[#18181c] text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/10">
 
-                            <tr>
+                        <tr>
 
-                                <th class="px-4 py-4">
-                                    Mã
-                                </th>
+                            <th class="px-4 py-4">
+                                Mã
+                            </th>
 
-                                <th class="px-4 py-4">
-                                    Khách hàng
-                                </th>
+                            <th class="px-4 py-4">
+                                Khách hàng
+                            </th>
 
-                                <th class="px-4 py-4">
-                                    Email
-                                </th>
+                            <th class="px-4 py-4">
+                                Email
+                            </th>
 
-                                <th class="px-4 py-4">
-                                    Số điện thoại
-                                </th>
+                            <th class="px-4 py-4">
+                                Số điện thoại
+                            </th>
 
-                                <th class="px-4 py-4">
-                                    Trạng thái
-                                </th>
+                            <th class="px-4 py-4">
+                                Trạng thái
+                            </th>
 
-                                <th class="px-4 py-4">
-                                    Ngày xóa
-                                </th>
+                            <th class="px-4 py-4">
+                                Ngày xóa
+                            </th>
 
-                                <th class="px-4 py-4 text-right">
-                                    Thao tác
-                                </th>
+                            <th class="px-4 py-4 text-right">
+                                Thao tác
+                            </th>
 
-                            </tr>
+                        </tr>
 
-                        </thead>
+                    </thead>
 
 
-                        <tbody class="divide-y divide-white/5">
+                    <tbody class="divide-y divide-white/5">
 
-                            @forelse($items as $khachHang)
+                        @forelse($items as $khachHang)
 
-                                <tr class="hover:bg-white/[0.03] transition duration-150">
+                        <tr class="hover:bg-white/[0.03] transition duration-150">
 
-                                    {{-- MÃ --}}
-                                    <td class="px-4 py-5">
+                            {{-- MÃ --}}
+                            <td class="px-4 py-5">
 
-                                        <span class="inline-flex items-center justify-center rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-bold text-gray-300">
+                                <span class="inline-flex items-center justify-center rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-bold text-gray-300">
 
-                                            #{{ $khachHang->id }}
+                                    #{{ $khachHang->id }}
 
-                                        </span>
+                                </span>
 
-                                    </td>
+                            </td>
 
 
-                                    {{-- KHÁCH HÀNG --}}
-                                    <td class="px-4 py-5">
+                            {{-- KHÁCH HÀNG --}}
+                            <td class="px-4 py-5">
 
-                                        <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-3">
 
-                                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
+                                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-lg">
 
-                                                <i class="fa-solid fa-user text-base"></i>
+                                        <i class="fa-solid fa-user text-base"></i>
 
-                                            </div>
+                                    </div>
 
 
-                                            <div class="min-w-0">
+                                    <div class="min-w-0">
 
-                                                <strong class="block text-sm font-black text-white">
+                                        <strong class="block text-sm font-black text-white">
 
-                                                    {{ $khachHang->ho_ten ?? 'Chưa cập nhật' }}
+                                            {{ $khachHang->ho_ten ?? 'Chưa cập nhật' }}
 
-                                                </strong>
+                                        </strong>
 
-                                                <small class="mt-1 flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                                        <small class="mt-1 flex items-center gap-1.5 text-xs font-bold text-amber-400">
 
-                                                    <i class="fa-solid fa-user text-[10px]"></i>
+                                            <i class="fa-solid fa-user text-[10px]"></i>
 
-                                                    Khách hàng
+                                            Khách hàng
 
-                                                </small>
+                                        </small>
 
-                                            </div>
+                                    </div>
 
-                                        </div>
+                                </div>
 
-                                    </td>
+                            </td>
 
 
-                                    {{-- EMAIL --}}
-                                    <td class="px-4 py-5">
+                            {{-- EMAIL --}}
+                            <td class="px-4 py-5">
 
-                                        <span class="text-sm font-semibold text-gray-300">
+                                <span class="text-sm font-semibold text-gray-300">
 
-                                            {{ $khachHang->email ?? 'Chưa có email' }}
+                                    {{ $khachHang->email ?? 'Chưa có email' }}
 
-                                        </span>
+                                </span>
 
-                                    </td>
+                            </td>
 
 
-                                    {{-- SỐ ĐIỆN THOẠI --}}
-                                    <td class="px-4 py-5">
+                            {{-- SỐ ĐIỆN THOẠI --}}
+                            <td class="px-4 py-5">
 
-                                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-gray-300">
+                                <span class="inline-flex items-center gap-2 text-sm font-semibold text-gray-300">
 
-                                            <i class="fa-solid fa-phone text-gray-400"></i>
+                                    <i class="fa-solid fa-phone text-gray-400"></i>
 
-                                            {{ $khachHang->so_dien_thoai ?: 'Chưa có SĐT' }}
+                                    {{ $khachHang->so_dien_thoai ?: 'Chưa có SĐT' }}
 
-                                        </span>
+                                </span>
 
-                                    </td>
+                            </td>
 
 
-                                    {{-- TRẠNG THÁI --}}
-                                    <td class="px-4 py-5">
+                            {{-- TRẠNG THÁI --}}
+                            <td class="px-4 py-5">
 
-                                        <span class="inline-flex items-center gap-2 rounded-full bg-red-500/10 border border-red-500/30 px-3 py-1.5 text-xs font-bold text-red-400">
+                                <span class="inline-flex items-center gap-2 rounded-full bg-red-500/10 border border-red-500/30 px-3 py-1.5 text-xs font-bold text-red-400">
 
-                                            <i class="fa-solid fa-trash-can text-[11px]"></i>
+                                    <i class="fa-solid fa-trash-can text-[11px]"></i>
 
-                                            Xóa mềm
+                                    Xóa mềm
 
-                                        </span>
+                                </span>
 
-                                    </td>
+                            </td>
 
 
-                                    {{-- NGÀY XÓA --}}
-                                    <td class="px-4 py-5">
+                            {{-- NGÀY XÓA --}}
+                            <td class="px-4 py-5">
 
-                                        <span class="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-bold text-gray-300">
+                                <span class="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs font-bold text-gray-300">
 
-                                            <i class="fa-regular fa-calendar-xmark text-[11px]"></i>
+                                    <i class="fa-regular fa-calendar-xmark text-[11px]"></i>
 
-                                            {{ optional($khachHang->deleted_at)->format('d/m/Y H:i') }}
+                                    {{ optional($khachHang->deleted_at)->format('d/m/Y H:i') }}
 
-                                        </span>
+                                </span>
 
-                                    </td>
+                            </td>
 
 
-                                    {{-- THAO TÁC --}}
-                                    <td class="px-4 py-5">
+                            {{-- THAO TÁC --}}
+                            <td class="px-4 py-5">
 
-                                        <div class="flex items-center justify-end gap-2">
+                                <div class="flex items-center justify-end gap-2">
 
-                                            {{-- KHÔI PHỤC --}}
-                                            <form method="POST"
-                                                  action="{{ route('admin.khach-hang.restore', $khachHang->id) }}"
-                                                  onsubmit="return confirm('Bạn có chắc muốn khôi phục khách hàng này?');">
+                                    {{-- KHÔI PHỤC --}}
+                                    <form method="POST"
+                                        action="{{ route('admin.khach-hang.restore', $khachHang->id) }}"
+                                        onsubmit="return confirm('Bạn có chắc muốn khôi phục khách hàng này?');">
 
-                                                @csrf
-                                                @method('PATCH')
+                                        @csrf
+                                        @method('PATCH')
 
-                                                <button type="submit"
-                                                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500 hover:text-white transition shadow-md"
-                                                        title="Khôi phục">
+                                        <button type="submit"
+                                            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500 hover:text-white transition shadow-md"
+                                            title="Khôi phục">
 
-                                                    <i class="fa-solid fa-rotate-left text-sm"></i>
+                                            <i class="fa-solid fa-rotate-left text-sm"></i>
 
-                                                </button>
+                                        </button>
 
-                                            </form>
+                                    </form>
 
 
-                                            {{-- XÓA VĨNH VIỄN --}}
-                                            <form method="POST"
-                                                  action="{{ route('admin.khach-hang.force-delete', $khachHang->id) }}"
-                                                  onsubmit="return confirm('Bạn có chắc muốn XÓA VĨNH VIỄN khách hàng này? Dữ liệu sẽ không thể khôi phục.');">
+                                    {{-- XÓA VĨNH VIỄN --}}
+                                    <form method="POST"
+                                        action="{{ route('admin.khach-hang.force-delete', $khachHang->id) }}"
+                                        onsubmit="return confirm('Bạn có chắc muốn XÓA VĨNH VIỄN khách hàng này? Dữ liệu sẽ không thể khôi phục.');">
 
-                                                @csrf
-                                                @method('DELETE')
+                                        @csrf
+                                        @method('DELETE')
 
-                                                <button type="submit"
-                                                        class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/15 text-red-400 hover:bg-red-600 hover:text-white transition shadow-md"
-                                                        title="Xóa vĩnh viễn">
+                                        <button type="submit"
+                                            class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/15 text-red-400 hover:bg-red-600 hover:text-white transition shadow-md"
+                                            title="Xóa vĩnh viễn">
 
-                                                    <i class="fa-solid fa-trash-can text-sm"></i>
+                                            <i class="fa-solid fa-trash-can text-sm"></i>
 
-                                                </button>
+                                        </button>
 
-                                            </form>
+                                    </form>
 
-                                        </div>
+                                </div>
 
-                                    </td>
+                            </td>
 
-                                </tr>
+                        </tr>
 
-                            @empty
+                        @empty
 
-                                <tr>
+                        <tr>
 
-                                    <td colspan="7" class="py-16 text-center">
+                            <td colspan="7" class="py-16 text-center">
 
-                                        <div class="flex flex-col items-center justify-center">
+                                <div class="flex flex-col items-center justify-center">
 
-                                            <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 border border-white/10 mb-4">
+                                    <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 border border-white/10 mb-4">
 
-                                                <i class="fa-solid fa-trash-can text-2xl text-gray-500"></i>
+                                        <i class="fa-solid fa-trash-can text-2xl text-gray-500"></i>
 
-                                            </div>
+                                    </div>
 
-                                            <h3 class="text-lg font-black text-gray-300">
-                                                Thùng rác đang trống
-                                            </h3>
+                                    <h3 class="text-lg font-black text-gray-300">
+                                        Thùng rác đang trống
+                                    </h3>
 
-                                            <p class="text-sm text-gray-500 mt-1">
-                                                Hiện chưa có khách hàng nào bị xóa.
-                                            </p>
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        Hiện chưa có khách hàng nào bị xóa.
+                                    </p>
 
-                                            <a href="{{ route('admin.khach-hang.index') }}"
-                                               class="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#222328] border border-white/10 px-5 py-3 text-xs font-bold text-white hover:bg-white/10 transition">
+                                    <a href="{{ route('admin.khach-hang.index') }}"
+                                        class="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#222328] border border-white/10 px-5 py-3 text-xs font-bold text-white hover:bg-white/10 transition">
 
-                                                <i class="fa-solid fa-arrow-left"></i>
+                                        <i class="fa-solid fa-arrow-left"></i>
 
-                                                Quay lại danh sách
+                                        Quay lại danh sách
 
-                                            </a>
+                                    </a>
 
-                                        </div>
+                                </div>
 
-                                    </td>
+                            </td>
 
-                                </tr>
+                        </tr>
 
-                            @endforelse
+                        @endforelse
 
-                        </tbody>
+                    </tbody>
 
-                    </table>
+                </table>
 
 
                 {{-- =================================================
@@ -629,144 +629,144 @@
                 ================================================= --}}
                 @else
 
-                    <table class="w-full text-left text-sm text-gray-300">
+                <table class="w-full text-left text-sm text-gray-300">
 
-                        <thead class="bg-[#18181c] text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/10">
+                    <thead class="bg-[#18181c] text-xs font-black uppercase tracking-wider text-gray-400 border-b border-white/10">
 
-                            <tr>
+                        <tr>
 
-                                <th class="px-6 py-4">
-                                    Mã
-                                </th>
+                            <th class="px-6 py-4">
+                                Mã
+                            </th>
 
-                                <th class="px-6 py-4">
-                                    Tên / Nhận diện
-                                </th>
+                            <th class="px-6 py-4">
+                                Tên / Nhận diện
+                            </th>
 
-                                <th class="px-6 py-4">
-                                    Thông tin chi tiết
-                                </th>
+                            <th class="px-6 py-4">
+                                Thông tin chi tiết
+                            </th>
 
-                                <th class="px-6 py-4">
-                                    Thời gian xóa
-                                </th>
+                            <th class="px-6 py-4">
+                                Thời gian xóa
+                            </th>
 
-                                <th class="px-6 py-4 text-right">
-                                    Thao tác
-                                </th>
+                            <th class="px-6 py-4 text-right">
+                                Thao tác
+                            </th>
 
-                            </tr>
+                        </tr>
 
-                        </thead>
-
-
-                        <tbody class="divide-y divide-white/5">
-
-                            @forelse($items as $item)
-
-                                @php
-
-                                    $rawPoster = null;
-
-                                    if ($tab === 'phim') {
-
-                                        $rawPoster =
-                                            $item->poster
-                                            ?? $item->anh_poster
-                                            ?? $item->duong_dan_anh
-                                            ?? $item->hinh_anh
-                                            ?? $item->anh_bia
-                                            ?? null;
-
-                                    }
-
-                                    elseif ($tab === 'suat_chieu' && isset($item->phim)) {
-
-                                        $rawPoster =
-                                            $item->phim->poster
-                                            ?? $item->phim->anh_poster
-                                            ?? $item->phim->duong_dan_anh
-                                            ?? $item->phim->hinh_anh
-                                            ?? $item->phim->anh_bia
-                                            ?? null;
-
-                                    }
+                    </thead>
 
 
-                                    $imageUrl = null;
+                    <tbody class="divide-y divide-white/5">
 
-                                    if ($rawPoster) {
+                        @forelse($items as $item)
 
-                                        if (
-                                            \Illuminate\Support\Str::startsWith(
-                                                $rawPoster,
-                                                ['http://', 'https://']
-                                            )
-                                        ) {
+                        @php
 
-                                            $imageUrl = $rawPoster;
+                        $rawPoster = null;
 
-                                        } else {
+                        if ($tab === 'phim') {
 
-                                            $cleanPath = ltrim(
-                                                preg_replace(
-                                                    '#^storage/#',
-                                                    '',
-                                                    $rawPoster
-                                                ),
-                                                '/'
-                                            );
+                        $rawPoster =
+                        $item->poster
+                        ?? $item->anh_poster
+                        ?? $item->duong_dan_anh
+                        ?? $item->hinh_anh
+                        ?? $item->anh_bia
+                        ?? null;
 
-                                            $imageUrl = asset(
-                                                'storage/' . $cleanPath
-                                            );
+                        }
 
-                                        }
+                        elseif ($tab === 'suat_chieu' && isset($item->phim)) {
 
-                                    }
+                        $rawPoster =
+                        $item->phim->poster
+                        ?? $item->phim->anh_poster
+                        ?? $item->phim->duong_dan_anh
+                        ?? $item->phim->hinh_anh
+                        ?? $item->phim->anh_bia
+                        ?? null;
 
-                                @endphp
+                        }
 
 
-                                <tr class="hover:bg-white/[0.03] transition duration-150">
+                        $imageUrl = null;
 
-                                    {{-- ID --}}
-                                    <td class="px-6 py-4 font-mono text-xs text-gray-400">
+                        if ($rawPoster) {
 
-                                        <span class="inline-block rounded-lg bg-white/5 px-2.5 py-1 font-bold border border-white/10">
+                        if (
+                        \Illuminate\Support\Str::startsWith(
+                        $rawPoster,
+                        ['http://', 'https://']
+                        )
+                        ) {
 
-                                            #{{ $item->id }}
+                        $imageUrl = $rawPoster;
 
-                                        </span>
+                        } else {
 
-                                    </td>
+                        $cleanPath = ltrim(
+                        preg_replace(
+                        '#^storage/#',
+                        '',
+                        $rawPoster
+                        ),
+                        '/'
+                        );
+
+                        $imageUrl = asset(
+                        'storage/' . $cleanPath
+                        );
+
+                        }
+
+                        }
+
+                        @endphp
 
 
-                                    {{-- NAME --}}
-                                    <td class="px-6 py-4">
+                        <tr class="hover:bg-white/[0.03] transition duration-150">
 
-                                        <div class="flex items-center gap-3.5">
+                            {{-- ID --}}
+                            <td class="px-6 py-4 font-mono text-xs text-gray-400">
 
-                                            <div class="relative h-12 w-9 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-[#1a1a1e] shadow-md flex items-center justify-center">
+                                <span class="inline-block rounded-lg bg-white/5 px-2.5 py-1 font-bold border border-white/10">
 
-                                                @if($imageUrl)
+                                    #{{ $item->id }}
 
-                                                    <img src="{{ $imageUrl }}"
-                                                         alt="Poster"
-                                                         class="h-full w-full object-cover"
-                                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                </span>
 
-                                                    <div class="hidden h-full w-full items-center justify-center bg-gradient-to-br from-red-500/20 to-amber-500/20 text-red-500 font-bold text-sm">
+                            </td>
 
-                                                        <i class="fa-solid fa-film"></i>
 
-                                                    </div>
+                            {{-- NAME --}}
+                            <td class="px-6 py-4">
 
-                                                @else
+                                <div class="flex items-center gap-3.5">
 
-                                                    <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-red-500/20 to-amber-500/20 text-red-500 font-bold text-sm">
+                                    <div class="relative h-12 w-9 shrink-0 overflow-hidden rounded-lg border border-white/15 bg-[#1a1a1e] shadow-md flex items-center justify-center">
 
-                                                        <i class="fa-solid
+                                        @if($imageUrl)
+
+                                        <img src="{{ $imageUrl }}"
+                                            alt="Poster"
+                                            class="h-full w-full object-cover"
+                                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+
+                                        <div class="hidden h-full w-full items-center justify-center bg-gradient-to-br from-red-500/20 to-amber-500/20 text-red-500 font-bold text-sm">
+
+                                            <i class="fa-solid fa-film"></i>
+
+                                        </div>
+
+                                        @else
+
+                                        <div class="flex h-full w-full items-center justify-center bg-gradient-to-br from-red-500/20 to-amber-500/20 text-red-500 font-bold text-sm">
+
+                                            <i class="fa-solid
                                                         {{ match($tab) {
 
                                                             'phim' => 'fa-film',
@@ -781,255 +781,257 @@
 
                                                         } }}"></i>
 
-                                                    </div>
+                                        </div>
 
-                                                @endif
+                                        @endif
 
-                                            </div>
+                                    </div>
 
 
-                                            <div>
+                                    <div>
 
-                                                <strong class="block font-bold text-white text-base">
+                                        <strong class="block font-bold text-white text-base">
 
-                                                    @if($tab === 'suat_chieu')
+                                            @if($tab === 'suat_chieu')
 
-                                                        {{ $item->phim->ten_phim ?? 'Suất chiếu #' . $item->id }}
+                                            {{ $item->phim->ten_phim ?? 'Suất chiếu #' . $item->id }}
 
-                                                    @else
+                                            @else
 
-                                                        {{ $item->ten_phim
+                                            {{ $item->ten_phim
                                                             ?? $item->ho_ten
                                                             ?? $item->name
                                                             ?? $item->tieu_de
                                                             ?? 'N/A' }}
 
-                                                    @endif
+                                            @endif
 
-                                                </strong>
+                                        </strong>
 
 
-                                                <small class="text-xs text-gray-400 font-mono block mt-0.5">
+                                        <small class="text-xs text-gray-400 font-mono block mt-0.5">
 
-                                                    {{ $item->email
+                                            {{ $item->email
                                                         ?? $item->so_dien_thoai
                                                         ?? 'Bản ghi hệ thống' }}
 
-                                                </small>
+                                        </small>
 
-                                            </div>
+                                    </div>
 
-                                        </div>
+                                </div>
 
-                                    </td>
-
-
-                                    {{-- DETAILS --}}
-                                    <td class="px-6 py-4">
-
-                                        @if($tab === 'phim')
-
-                                            <span class="text-[#d99a32] font-bold text-xs">
-
-                                                <i class="fa-regular fa-clock mr-1"></i>
-
-                                                {{ $item->thoi_luong ?? 0 }} phút
-
-                                            </span>
+                            </td>
 
 
-                                        @elseif($tab === 'suat_chieu')
+                            {{-- DETAILS --}}
+                            <td class="px-6 py-4">
 
-                                            <span class="text-gray-300 text-xs">
+                                @if($tab === 'phim')
 
-                                                Phòng:
+                                <span class="text-[#d99a32] font-bold text-xs">
 
-                                                <strong class="text-white font-bold">
+                                    <i class="fa-regular fa-clock mr-1"></i>
 
-                                                    {{ $item->phongChieu->ten_phong ?? 'N/A' }}
+                                    {{ $item->thoi_luong ?? 0 }} phút
 
-                                                </strong>
-
-                                            </span>
-
-
-                                        @elseif($tab === 'nhan_vien')
-
-                                            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-400 border border-amber-500/20">
-
-                                                <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
-
-                                                {{ $item->vai_tro ?? 'Nhân viên' }}
-
-                                            </span>
+                                </span>
 
 
-                                        @elseif($tab === 'thong_bao')
+                                @elseif($tab === 'suat_chieu')
 
-                                            <span class="text-xs text-gray-400 font-medium">
+                                <span class="text-gray-300 text-xs">
 
-                                                {{ \Illuminate\Support\Str::limit($item->noi_dung ?? '', 50) }}
+                                    Phòng:
 
-                                            </span>
+                                    <strong class="text-white font-bold">
 
-                                        @endif
+                                        {{ $item->phongChieu->ten_phong ?? 'N/A' }}
 
-                                    </td>
+                                    </strong>
+
+                                </span>
 
 
-                                    {{-- DELETED AT --}}
-                                    <td class="px-6 py-4">
+                                @elseif($tab === 'nhan_vien')
 
-                                        <span class="inline-flex items-center gap-1.5 text-xs text-red-400 font-semibold">
+                                @php
+                                $vaiTro = $item->vai_tro ?? 'nhan_vien';
 
-                                            <i class="fa-regular fa-clock text-[10px]"></i>
+                                $vaiTroLabel = match ($vaiTro) {
+                                'admin' => 'Quản trị viên',
+                                'nhan_vien' => 'Nhân viên',
+                                'khach_hang' => 'Khách hàng',
+                                default => ucfirst(str_replace('_', ' ', $vaiTro)),
+                                };
+                                @endphp
 
-                                            {{ $item->deleted_at
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-400 border border-amber-500/20">
+
+                                    <span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+
+                                    {{ $vaiTroLabel }}
+
+                                </span>
+
+                                @endif
+
+                            </td>
+
+
+                            {{-- DELETED AT --}}
+                            <td class="px-6 py-4">
+
+                                <span class="inline-flex items-center gap-1.5 text-xs text-red-400 font-semibold">
+
+                                    <i class="fa-regular fa-clock text-[10px]"></i>
+
+                                    {{ $item->deleted_at
                                                 ? \Carbon\Carbon::parse($item->deleted_at)->format('H:i - d/m/Y')
                                                 : '—' }}
 
-                                        </span>
+                                </span>
 
-                                    </td>
-
-
-                                    {{-- ACTION --}}
-                                    <td class="px-6 py-4 text-right">
-
-                                        <div class="flex items-center justify-end gap-2">
-
-                                            @php
-
-                                                $restoreRoute = match($tab) {
-
-                                                    'phim' =>
-                                                        route(
-                                                            'admin.phims.restore',
-                                                            $item->id
-                                                        ),
-
-                                                    'suat_chieu' =>
-                                                        route(
-                                                            'admin.suat-chieus.restore',
-                                                            $item->id
-                                                        ),
-
-                                                    'nhan_vien' =>
-                                                        route(
-                                                            'admin.nhanviens.restore',
-                                                            $item->id
-                                                        ),
-
-                                                    'thong_bao' =>
-                                                        route(
-                                                            'admin.thong-bao-push.restore',
-                                                            $item->id
-                                                        ),
-
-                                                    default => '#'
-
-                                                };
+                            </td>
 
 
-                                                $forceRoute = match($tab) {
+                            {{-- ACTION --}}
+                            <td class="px-6 py-4 text-right">
 
-                                                    'phim' =>
-                                                        route(
-                                                            'admin.phims.force-delete',
-                                                            $item->id
-                                                        ),
+                                <div class="flex items-center justify-end gap-2">
 
-                                                    'suat_chieu' =>
-                                                        route(
-                                                            'admin.suat-chieus.force-delete',
-                                                            $item->id
-                                                        ),
+                                    @php
 
-                                                    'nhan_vien' =>
-                                                        route(
-                                                            'admin.nhanviens.forceDelete',
-                                                            $item->id
-                                                        ),
+                                    $restoreRoute = match($tab) {
 
-                                                    'thong_bao' =>
-                                                        route(
-                                                            'admin.thong-bao-push.force-delete',
-                                                            $item->id
-                                                        ),
+                                    'phim' =>
+                                    route(
+                                    'admin.phims.restore',
+                                    $item->id
+                                    ),
 
-                                                    default => '#'
+                                    'suat_chieu' =>
+                                    route(
+                                    'admin.suat-chieus.restore',
+                                    $item->id
+                                    ),
 
-                                                };
+                                    'nhan_vien' =>
+                                    route(
+                                    'admin.nhanviens.restore',
+                                    $item->id
+                                    ),
 
-                                            @endphp
+                                    'thong_bao' =>
+                                    route(
+                                    'admin.thong-bao-push.restore',
+                                    $item->id
+                                    ),
 
+                                    default => '#'
 
-                                            {{-- KHÔI PHỤC --}}
-                                            <form action="{{ $restoreRoute }}"
-                                                  method="POST">
-
-                                                @csrf
-
-                                                <button type="submit"
-                                                        onclick="return confirm('Khôi phục bản ghi này về trạng thái hoạt động?')"
-                                                        class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15 text-blue-400 hover:bg-blue-500 hover:text-white transition shadow-md"
-                                                        title="Khôi phục dữ liệu">
-
-                                                    <i class="fa-solid fa-rotate-left text-xs"></i>
-
-                                                </button>
-
-                                            </form>
+                                    };
 
 
-                                            {{-- XÓA VĨNH VIỄN --}}
-                                            <form action="{{ $forceRoute }}"
-                                                  method="POST">
+                                    $forceRoute = match($tab) {
 
-                                                @csrf
-                                                @method('DELETE')
+                                    'phim' =>
+                                    route(
+                                    'admin.phims.force-delete',
+                                    $item->id
+                                    ),
 
-                                                <button type="submit"
-                                                        onclick="return confirm('CẢNH BÁO: Thao tác này sẽ xóa vĩnh viễn khỏi Cơ sở dữ liệu!')"
-                                                        class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/15 text-red-400 hover:bg-red-600 hover:text-white transition shadow-md"
-                                                        title="Xóa vĩnh viễn">
+                                    'suat_chieu' =>
+                                    route(
+                                    'admin.suat-chieus.force-delete',
+                                    $item->id
+                                    ),
 
-                                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                    'nhan_vien' =>
+                                    route(
+                                    'admin.nhanviens.forceDelete',
+                                    $item->id
+                                    ),
 
-                                                </button>
+                                    'thong_bao' =>
+                                    route(
+                                    'admin.thong-bao-push.force-delete',
+                                    $item->id
+                                    ),
 
-                                            </form>
+                                    default => '#'
 
-                                        </div>
+                                    };
 
-                                    </td>
+                                    @endphp
 
-                                </tr>
 
-                            @empty
+                                    {{-- KHÔI PHỤC --}}
+                                    <form action="{{ $restoreRoute }}"
+                                        method="POST">
 
-                                <tr>
+                                        @csrf
 
-                                    <td colspan="5"
-                                        class="py-16 text-center text-gray-500">
+                                        <button type="submit"
+                                            onclick="return confirm('Khôi phục bản ghi này về trạng thái hoạt động?')"
+                                            class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15 text-blue-400 hover:bg-blue-500 hover:text-white transition shadow-md"
+                                            title="Khôi phục dữ liệu">
 
-                                        <i class="fa-solid fa-trash-can text-5xl mb-3 block opacity-20 text-gray-400"></i>
+                                            <i class="fa-solid fa-rotate-left text-xs"></i>
 
-                                        <span class="text-sm font-bold text-gray-400">
+                                        </button>
 
-                                            Không tìm thấy dữ liệu rác nào trong danh mục này!
+                                    </form>
 
-                                        </span>
 
-                                    </td>
+                                    {{-- XÓA VĨNH VIỄN --}}
+                                    <form action="{{ $forceRoute }}"
+                                        method="POST">
 
-                                </tr>
+                                        @csrf
+                                        @method('DELETE')
 
-                            @endforelse
+                                        <button type="submit"
+                                            onclick="return confirm('CẢNH BÁO: Thao tác này sẽ xóa vĩnh viễn khỏi Cơ sở dữ liệu!')"
+                                            class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/15 text-red-400 hover:bg-red-600 hover:text-white transition shadow-md"
+                                            title="Xóa vĩnh viễn">
 
-                        </tbody>
+                                            <i class="fa-solid fa-trash-can text-xs"></i>
 
-                    </table>
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        @empty
+
+                        <tr>
+
+                            <td colspan="5"
+                                class="py-16 text-center text-gray-500">
+
+                                <i class="fa-solid fa-trash-can text-5xl mb-3 block opacity-20 text-gray-400"></i>
+
+                                <span class="text-sm font-bold text-gray-400">
+
+                                    Không tìm thấy dữ liệu rác nào trong danh mục này!
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                        @endforelse
+
+                    </tbody>
+
+                </table>
 
                 @endif
 
@@ -1040,155 +1042,155 @@
                 PAGINATION
             ================================================== --}}
             @if(
-                $items instanceof \Illuminate\Pagination\LengthAwarePaginator
-                && $items->hasPages()
+            $items instanceof \Illuminate\Pagination\LengthAwarePaginator
+            && $items->hasPages()
             )
 
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10 p-4 bg-[#18181c]/50">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10 p-4 bg-[#18181c]/50">
 
-                    <div class="text-xs text-gray-400 font-medium">
+                <div class="text-xs text-gray-400 font-medium">
 
-                        Hiển thị
+                    Hiển thị
 
-                        <strong class="text-white font-bold">
-                            {{ $items->firstItem() ?? 0 }}
-                        </strong>
+                    <strong class="text-white font-bold">
+                        {{ $items->firstItem() ?? 0 }}
+                    </strong>
 
-                        đến
+                    đến
 
-                        <strong class="text-white font-bold">
-                            {{ $items->lastItem() ?? 0 }}
-                        </strong>
+                    <strong class="text-white font-bold">
+                        {{ $items->lastItem() ?? 0 }}
+                    </strong>
 
-                        trong tổng số
+                    trong tổng số
 
-                        <strong class="text-white font-bold">
-                            {{ number_format($items->total()) }}
-                        </strong>
+                    <strong class="text-white font-bold">
+                        {{ number_format($items->total()) }}
+                    </strong>
 
-                        bản ghi
+                    bản ghi
 
-                    </div>
+                </div>
 
 
-                    <div class="flex items-center gap-1.5 shrink-0">
+                <div class="flex items-center gap-1.5 shrink-0">
 
-                        {{-- TRƯỚC --}}
-                        @if ($items->onFirstPage())
+                    {{-- TRƯỚC --}}
+                    @if ($items->onFirstPage())
 
-                            <span class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-white/5 text-gray-600 text-xs font-bold cursor-not-allowed border border-white/5">
+                    <span class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-white/5 text-gray-600 text-xs font-bold cursor-not-allowed border border-white/5">
 
-                                <i class="fa-solid fa-chevron-left mr-1.5 text-[10px]"></i>
+                        <i class="fa-solid fa-chevron-left mr-1.5 text-[10px]"></i>
 
-                                Trước
+                        Trước
 
+                    </span>
+
+                    @else
+
+                    <a href="{{ $items->previousPageUrl() }}"
+                        class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-red-600 hover:text-white hover:border-red-600 text-xs font-bold transition shadow-sm">
+
+                        <i class="fa-solid fa-chevron-left mr-1.5 text-[10px]"></i>
+
+                        Trước
+
+                    </a>
+
+                    @endif
+
+
+                    @php
+
+                    $startPage = max(
+                    1,
+                    $items->currentPage() - 2
+                    );
+
+                    $endPage = min(
+                    $items->lastPage(),
+                    $items->currentPage() + 2
+                    );
+
+                    @endphp
+
+
+                    @if ($startPage > 1)
+
+                    <a href="{{ $items->url(1) }}"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white text-xs font-bold transition">
+
+                        1
+
+                    </a>
+
+                    @if ($startPage > 2)
+
+                    <span class="inline-flex h-9 w-6 items-center justify-center text-gray-500 text-xs font-bold">
+                        ...
+                    </span>
+
+                    @endif
+
+                    @endif
+
+
+                    @foreach (
+                    $items->getUrlRange(
+                    $startPage,
+                    $endPage
+                    )
+                    as $page => $url
+                    )
+
+                    @if ($page == $items->currentPage())
+
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-black shadow-lg shadow-red-600/30 border border-red-500">
+
+                        {{ $page }}
+
+                    </span>
+
+                    @else
+
+                    <a href="{{ $url }}"
+                        class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white text-xs font-bold transition">
+
+                        {{ $page }}
+
+                    </a>
+
+                    @endif
+
+                    @endforeach
+
+
+                    @if ($endPage < $items->lastPage())
+
+                        @if ($endPage < $items->lastPage() - 1)
+
+                            <span class="inline-flex h-9 w-6 items-center justify-center text-gray-500 text-xs font-bold">
+                                ...
                             </span>
-
-                        @else
-
-                            <a href="{{ $items->previousPageUrl() }}"
-                               class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-red-600 hover:text-white hover:border-red-600 text-xs font-bold transition shadow-sm">
-
-                                <i class="fa-solid fa-chevron-left mr-1.5 text-[10px]"></i>
-
-                                Trước
-
-                            </a>
-
-                        @endif
-
-
-                        @php
-
-                            $startPage = max(
-                                1,
-                                $items->currentPage() - 2
-                            );
-
-                            $endPage = min(
-                                $items->lastPage(),
-                                $items->currentPage() + 2
-                            );
-
-                        @endphp
-
-
-                        @if ($startPage > 1)
-
-                            <a href="{{ $items->url(1) }}"
-                               class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white text-xs font-bold transition">
-
-                                1
-
-                            </a>
-
-                            @if ($startPage > 2)
-
-                                <span class="inline-flex h-9 w-6 items-center justify-center text-gray-500 text-xs font-bold">
-                                    ...
-                                </span>
-
-                            @endif
-
-                        @endif
-
-
-                        @foreach (
-                            $items->getUrlRange(
-                                $startPage,
-                                $endPage
-                            )
-                            as $page => $url
-                        )
-
-                            @if ($page == $items->currentPage())
-
-                                <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-red-600 to-red-500 text-white text-xs font-black shadow-lg shadow-red-600/30 border border-red-500">
-
-                                    {{ $page }}
-
-                                </span>
-
-                            @else
-
-                                <a href="{{ $url }}"
-                                   class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white text-xs font-bold transition">
-
-                                    {{ $page }}
-
-                                </a>
-
-                            @endif
-
-                        @endforeach
-
-
-                        @if ($endPage < $items->lastPage())
-
-                            @if ($endPage < $items->lastPage() - 1)
-
-                                <span class="inline-flex h-9 w-6 items-center justify-center text-gray-500 text-xs font-bold">
-                                    ...
-                                </span>
 
                             @endif
 
 
                             <a href="{{ $items->url($items->lastPage()) }}"
-                               class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white text-xs font-bold transition">
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-white/10 hover:text-white text-xs font-bold transition">
 
                                 {{ $items->lastPage() }}
 
                             </a>
 
-                        @endif
+                            @endif
 
 
-                        {{-- SAU --}}
-                        @if ($items->hasMorePages())
+                            {{-- SAU --}}
+                            @if ($items->hasMorePages())
 
                             <a href="{{ $items->nextPageUrl() }}"
-                               class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-red-600 hover:text-white hover:border-red-600 text-xs font-bold transition shadow-sm">
+                                class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-[#1e232d] border border-white/10 text-gray-300 hover:bg-red-600 hover:text-white hover:border-red-600 text-xs font-bold transition shadow-sm">
 
                                 Sau
 
@@ -1196,7 +1198,7 @@
 
                             </a>
 
-                        @else
+                            @else
 
                             <span class="inline-flex h-9 px-3 items-center justify-center rounded-xl bg-white/5 text-gray-600 text-xs font-bold cursor-not-allowed border border-white/5">
 
@@ -1206,11 +1208,11 @@
 
                             </span>
 
-                        @endif
-
-                    </div>
+                            @endif
 
                 </div>
+
+            </div>
 
             @endif
 
@@ -1225,73 +1227,71 @@
     JS RÀNG BUỘC NGÀY
 ============================================================= --}}
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
 
-document.addEventListener('DOMContentLoaded', function () {
+        const tuNgayInput = document.getElementById('filter_tu_ngay');
+        const denNgayInput = document.getElementById('filter_den_ngay');
 
-    const tuNgayInput = document.getElementById('filter_tu_ngay');
-    const denNgayInput = document.getElementById('filter_den_ngay');
+        if (!tuNgayInput || !denNgayInput) {
+            return;
+        }
 
-    if (!tuNgayInput || !denNgayInput) {
-        return;
-    }
+        function updateDateConstraints() {
 
-    function updateDateConstraints() {
+            if (tuNgayInput.value) {
 
-        if (tuNgayInput.value) {
+                denNgayInput.min = tuNgayInput.value;
 
-            denNgayInput.min = tuNgayInput.value;
+                if (
+                    denNgayInput.value &&
+                    denNgayInput.value < tuNgayInput.value
+                ) {
 
-            if (
-                denNgayInput.value &&
-                denNgayInput.value < tuNgayInput.value
-            ) {
+                    denNgayInput.value = tuNgayInput.value;
 
-                denNgayInput.value = tuNgayInput.value;
+                }
+
+            } else {
+
+                denNgayInput.removeAttribute('min');
 
             }
 
-        } else {
 
-            denNgayInput.removeAttribute('min');
+            if (denNgayInput.value) {
 
-        }
+                tuNgayInput.max = denNgayInput.value;
 
+                if (
+                    tuNgayInput.value &&
+                    tuNgayInput.value > denNgayInput.value
+                ) {
 
-        if (denNgayInput.value) {
+                    tuNgayInput.value = denNgayInput.value;
 
-            tuNgayInput.max = denNgayInput.value;
+                }
 
-            if (
-                tuNgayInput.value &&
-                tuNgayInput.value > denNgayInput.value
-            ) {
+            } else {
 
-                tuNgayInput.value = denNgayInput.value;
+                tuNgayInput.removeAttribute('max');
 
             }
 
-        } else {
-
-            tuNgayInput.removeAttribute('max');
-
         }
 
-    }
+        tuNgayInput.addEventListener(
+            'change',
+            updateDateConstraints
+        );
 
-    tuNgayInput.addEventListener(
-        'change',
-        updateDateConstraints
-    );
+        denNgayInput.addEventListener(
+            'change',
+            updateDateConstraints
+        );
 
-    denNgayInput.addEventListener(
-        'change',
-        updateDateConstraints
-    );
+        updateDateConstraints();
 
-    updateDateConstraints();
-
-});
-
+    });
 </script>
 
 @endsection

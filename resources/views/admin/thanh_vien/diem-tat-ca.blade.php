@@ -952,6 +952,9 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 </style>
 
 
+
+
+
 <div class="all-point-page">
 
     {{-- =========================================================
@@ -976,7 +979,6 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
             </p>
 
         </div>
-
 
         <a
             href="{{ route('admin.thanh-vien.index') }}"
@@ -1018,7 +1020,7 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
 
         {{-- =====================================================
-             TẶNG ĐIỂM
+             FORM TẶNG ĐIỂM
         ====================================================== --}}
 
         <section class="all-point-card">
@@ -1083,15 +1085,14 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
                     <div
                         class="all-point-custom-select
-                        @error('doi_tuong_nhan') is-invalid @enderror"
+                        {{ session('error_form') === 'tang' && $errors->has('doi_tuong_nhan') ? 'is-invalid' : '' }}"
                         data-audience-select
                         data-form="gift">
-
 
                         <input
                             type="hidden"
                             name="doi_tuong_nhan"
-                            value="{{ old('loai') === 'tang' ? $oldAudience : 'all' }}"
+                            value="{{ session('error_form') === 'tang' ? old('doi_tuong_nhan', $oldAudience ?? 'all') : 'all' }}"
                             data-audience-value>
 
 
@@ -1105,10 +1106,10 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 data-audience-current>
 
                                 @php
-                                $giftAudience =
-                                old('loai') === 'tang'
-                                ? $oldAudience
-                                : 'all';
+                                    $giftAudience =
+                                        session('error_form') === 'tang'
+                                            ? old('doi_tuong_nhan', $oldAudience ?? 'all')
+                                            : 'all';
                                 @endphp
 
                                 <span
@@ -1119,11 +1120,12 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </span>
 
                                 <span class="all-point-current-text">
+
                                     {{ $audienceGuide[$giftAudience]['label'] ?? 'Tất cả thành viên' }}
+
                                 </span>
 
                             </span>
-
 
                             <i class="fa-solid fa-chevron-down all-point-arrow"></i>
 
@@ -1136,38 +1138,36 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
                             @foreach ($audienceGuide as $value => $meta)
 
-                            <button
-                                type="button"
-                                class="all-point-option
-                                    {{ $giftAudience === $value ? 'is-selected' : '' }}"
-                                data-value="{{ $value }}"
-                                data-label="{{ $meta['label'] }}"
-                                data-icon="{{ $meta['icon'] }}"
-                                data-class="{{ $meta['class'] }}">
+                                <button
+                                    type="button"
+                                    class="all-point-option
+                                        {{ $giftAudience === $value ? 'is-selected' : '' }}"
+                                    data-value="{{ $value }}"
+                                    data-label="{{ $meta['label'] }}"
+                                    data-icon="{{ $meta['icon'] }}"
+                                    data-class="{{ $meta['class'] }}">
 
-                                <span class="all-point-option-icon {{ $meta['class'] }}">
+                                    <span class="all-point-option-icon {{ $meta['class'] }}">
 
-                                    <i class="fa-solid {{ $meta['icon'] }}"></i>
+                                        <i class="fa-solid {{ $meta['icon'] }}"></i>
 
-                                </span>
+                                    </span>
 
+                                    <span class="all-point-option-content">
 
-                                <span class="all-point-option-content">
+                                        <strong>
+                                            {{ $meta['label'] }}
+                                        </strong>
 
-                                    <strong>
-                                        {{ $meta['label'] }}
-                                    </strong>
+                                        <small>
+                                            {{ $meta['description'] }}
+                                        </small>
 
-                                    <small>
-                                        {{ $meta['description'] }}
-                                    </small>
+                                    </span>
 
-                                </span>
+                                    <i class="fa-solid fa-check all-point-check"></i>
 
-
-                                <i class="fa-solid fa-check all-point-check"></i>
-
-                            </button>
+                                </button>
 
                             @endforeach
 
@@ -1176,17 +1176,21 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                     </div>
 
 
-                    @error('doi_tuong_nhan')
+                    @if(session('error_form') === 'tang')
 
-                    <small class="all-point-error">
+                        @error('doi_tuong_nhan')
 
-                        <i class="fa-solid fa-circle-exclamation"></i>
+                            <small class="all-point-error server-error">
 
-                        {{ $message }}
+                                <i class="fa-solid fa-circle-exclamation"></i>
 
-                    </small>
+                                {{ $message }}
 
-                    @enderror
+                            </small>
+
+                        @enderror
+
+                    @endif
 
                 </div>
 
@@ -1210,14 +1214,13 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
                         <div
                             class="all-point-custom-select
-                            @error('hang_thanh_vien') is-invalid @enderror"
+                            {{ session('error_form') === 'tang' && $errors->has('hang_thanh_vien') ? 'is-invalid' : '' }}"
                             data-rank-select>
-
 
                             <input
                                 type="hidden"
                                 name="hang_thanh_vien"
-                                value="{{ old('loai') === 'tang' ? $oldRank : '' }}"
+                                value="{{ session('error_form') === 'tang' ? old('hang_thanh_vien', $oldRank ?? '') : '' }}"
                                 data-rank-value>
 
 
@@ -1230,70 +1233,80 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                     class="all-point-current"
                                     data-rank-current>
 
-                                    @switch(old('loai') === 'tang' ? $oldRank : '')
+                                    @php
+                                        $giftRank =
+                                            session('error_form') === 'tang'
+                                                ? old('hang_thanh_vien', $oldRank ?? '')
+                                                : '';
+                                    @endphp
 
-                                    @case('member')
+                                    @switch($giftRank)
 
-                                    <span class="all-point-option-icon rank-member">
-                                        <i class="fa-solid fa-user"></i>
-                                    </span>
+                                        @case('member')
 
-                                    <span class="all-point-current-text">
-                                        Member
-                                    </span>
+                                            <span class="all-point-option-icon rank-member">
+                                                <i class="fa-solid fa-user"></i>
+                                            </span>
 
-                                    @break
+                                            <span class="all-point-current-text">
+                                                Member
+                                            </span>
 
-                                    @case('silver')
+                                        @break
 
-                                    <span class="all-point-option-icon rank-silver">
-                                        <i class="fa-solid fa-medal"></i>
-                                    </span>
 
-                                    <span class="all-point-current-text">
-                                        Silver
-                                    </span>
+                                        @case('silver')
 
-                                    @break
+                                            <span class="all-point-option-icon rank-silver">
+                                                <i class="fa-solid fa-medal"></i>
+                                            </span>
 
-                                    @case('gold')
+                                            <span class="all-point-current-text">
+                                                Silver
+                                            </span>
 
-                                    <span class="all-point-option-icon rank-gold">
-                                        <i class="fa-solid fa-crown"></i>
-                                    </span>
+                                        @break
 
-                                    <span class="all-point-current-text">
-                                        Gold
-                                    </span>
 
-                                    @break
+                                        @case('gold')
 
-                                    @case('platinum')
+                                            <span class="all-point-option-icon rank-gold">
+                                                <i class="fa-solid fa-crown"></i>
+                                            </span>
 
-                                    <span class="all-point-option-icon rank-platinum">
-                                        <i class="fa-solid fa-gem"></i>
-                                    </span>
+                                            <span class="all-point-current-text">
+                                                Gold
+                                            </span>
 
-                                    <span class="all-point-current-text">
-                                        Platinum
-                                    </span>
+                                        @break
 
-                                    @break
 
-                                    @default
+                                        @case('platinum')
 
-                                    <span class="all-point-option-icon rank-default">
-                                        <i class="fa-solid fa-layer-group"></i>
-                                    </span>
+                                            <span class="all-point-option-icon rank-platinum">
+                                                <i class="fa-solid fa-gem"></i>
+                                            </span>
 
-                                    <span class="all-point-current-text">
-                                        -- Chọn hạng --
-                                    </span>
+                                            <span class="all-point-current-text">
+                                                Platinum
+                                            </span>
+
+                                        @break
+
+
+                                        @default
+
+                                            <span class="all-point-option-icon rank-default">
+                                                <i class="fa-solid fa-layer-group"></i>
+                                            </span>
+
+                                            <span class="all-point-current-text">
+                                                -- Chọn hạng --
+                                            </span>
 
                                     @endswitch
 
                                 </span>
-
 
                                 <i class="fa-solid fa-chevron-down all-point-arrow"></i>
 
@@ -1304,16 +1317,21 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 class="all-point-custom-menu"
                                 data-rank-menu>
 
+
+                                {{-- DEFAULT --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option {{ $oldRank === '' ? 'is-selected' : '' }}"
+                                    class="all-point-option {{ $giftRank === '' ? 'is-selected' : '' }}"
                                     data-value=""
                                     data-label="-- Chọn hạng --"
                                     data-icon="fa-layer-group"
                                     data-class="rank-default">
 
                                     <span class="all-point-option-icon rank-default">
+
                                         <i class="fa-solid fa-layer-group"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -1329,16 +1347,20 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </button>
 
 
+                                {{-- MEMBER --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option {{ $oldRank === 'member' ? 'is-selected' : '' }}"
+                                    class="all-point-option {{ $giftRank === 'member' ? 'is-selected' : '' }}"
                                     data-value="member"
                                     data-label="Member"
                                     data-icon="fa-user"
                                     data-class="rank-member">
 
                                     <span class="all-point-option-icon rank-member">
+
                                         <i class="fa-solid fa-user"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -1358,16 +1380,20 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </button>
 
 
+                                {{-- SILVER --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option {{ $oldRank === 'silver' ? 'is-selected' : '' }}"
+                                    class="all-point-option {{ $giftRank === 'silver' ? 'is-selected' : '' }}"
                                     data-value="silver"
                                     data-label="Silver"
                                     data-icon="fa-medal"
                                     data-class="rank-silver">
 
                                     <span class="all-point-option-icon rank-silver">
+
                                         <i class="fa-solid fa-medal"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -1387,16 +1413,20 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </button>
 
 
+                                {{-- GOLD --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option {{ $oldRank === 'gold' ? 'is-selected' : '' }}"
+                                    class="all-point-option {{ $giftRank === 'gold' ? 'is-selected' : '' }}"
                                     data-value="gold"
                                     data-label="Gold"
                                     data-icon="fa-crown"
                                     data-class="rank-gold">
 
                                     <span class="all-point-option-icon rank-gold">
+
                                         <i class="fa-solid fa-crown"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -1416,16 +1446,20 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </button>
 
 
+                                {{-- PLATINUM --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option {{ $oldRank === 'platinum' ? 'is-selected' : '' }}"
+                                    class="all-point-option {{ $giftRank === 'platinum' ? 'is-selected' : '' }}"
                                     data-value="platinum"
                                     data-label="Platinum"
                                     data-icon="fa-gem"
                                     data-class="rank-platinum">
 
                                     <span class="all-point-option-icon rank-platinum">
+
                                         <i class="fa-solid fa-gem"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -1449,17 +1483,21 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                         </div>
 
 
-                        @error('hang_thanh_vien')
+                        @if(session('error_form') === 'tang')
 
-                        <small class="all-point-error">
+                            @error('hang_thanh_vien')
 
-                            <i class="fa-solid fa-circle-exclamation"></i>
+                                <small class="all-point-error server-error">
 
-                            {{ $message }}
+                                    <i class="fa-solid fa-circle-exclamation"></i>
 
-                        </small>
+                                    {{ $message }}
 
-                        @enderror
+                                </small>
+
+                            @enderror
+
+                        @endif
 
                     </div>
 
@@ -1474,7 +1512,6 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                     class="point-conditional
                     {{ $giftAudience === 'nguoi_dung_cu_the' ? 'is-visible' : '' }}"
                     data-specific-wrapper="gift">
-
 
                     <div class="all-point-field">
 
@@ -1511,35 +1548,37 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
                         <div data-selected-inputs="gift">
 
-                            @foreach (
-                            old('loai') === 'tang'
-                            ? $oldUsers
-                            : []
-                            as $userId
-                            )
+                            @if(session('error_form') === 'tang')
 
-                            <input
-                                type="hidden"
-                                name="nguoi_dung_cu_the[]"
-                                value="{{ $userId }}">
+                                @foreach(old('nguoi_dung_cu_the', []) as $userId)
 
-                            @endforeach
+                                    <input
+                                        type="hidden"
+                                        name="nguoi_dung_cu_the[]"
+                                        value="{{ $userId }}">
+
+                                @endforeach
+
+                            @endif
 
                         </div>
 
 
+                        @if(session('error_form') === 'tang')
 
-                        @error('nguoi_dung_cu_the')
+                            @error('nguoi_dung_cu_the')
 
-                        <small class="all-point-error">
+                                <small class="all-point-error server-error">
 
-                            <i class="fa-solid fa-circle-exclamation"></i>
+                                    <i class="fa-solid fa-circle-exclamation"></i>
 
-                            {{ $message }}
+                                    {{ $message }}
 
-                        </small>
+                                </small>
 
-                        @enderror
+                            @enderror
+
+                        @endif
 
                     </div>
 
@@ -1547,7 +1586,7 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
 
                 {{-- =================================================
-                     SỐ ĐIỂM
+                     SỐ ĐIỂM TẶNG
                 ================================================== --}}
 
                 <div class="all-point-field">
@@ -1557,27 +1596,32 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                         <span class="required">*</span>
                     </label>
 
+
                     <input
                         type="number"
                         name="so_diem"
-                        min="1"
-                        max="10000"
-                        value="{{ old('loai') === 'tang' ? old('so_diem') : '' }}"
+                        step="1"
+                        inputmode="numeric"
+                        value="{{ session('error_form') === 'tang' ? old('so_diem') : '' }}"
                         placeholder="Ví dụ: 100"
-                        class="@error('so_diem') is-invalid @enderror">
+                        class="{{ session('error_form') === 'tang' && $errors->has('so_diem') ? 'is-invalid' : '' }}">
 
 
-                    @error('so_diem')
+                    @if(session('error_form') === 'tang')
 
-                    <small class="all-point-error">
+                        @error('so_diem')
 
-                        <i class="fa-solid fa-circle-exclamation"></i>
+                            <small class="all-point-error server-error">
 
-                        {{ $message }}
+                                <i class="fa-solid fa-circle-exclamation"></i>
 
-                    </small>
+                                {{ $message }}
 
-                    @enderror
+                            </small>
+
+                        @enderror
+
+                    @endif
 
                 </div>
 
@@ -1601,7 +1645,7 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                         <input
                             type="hidden"
                             name="tinh_vao_hang"
-                            value="{{ old('loai') === 'tang' ? old('tinh_vao_hang', '1') : '1' }}"
+                            value="{{ session('error_form') === 'tang' ? old('tinh_vao_hang', '1') : '1' }}"
                             data-tinh-hang-value>
 
 
@@ -1614,31 +1658,36 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 class="all-point-current"
                                 data-tinh-hang-current>
 
-                                @if(old('loai') === 'tang' && old('tinh_vao_hang') === '0')
+                                @if(
+                                    session('error_form') === 'tang'
+                                    && old('tinh_vao_hang') === '0'
+                                )
 
-                                <span class="all-point-option-icon"
-                                    style="color:#ef4444;background:rgba(239,68,68,.12);">
+                                    <span
+                                        class="all-point-option-icon"
+                                        style="color:#ef4444;background:rgba(239,68,68,.12);">
 
-                                    <i class="fa-solid fa-ban"></i>
+                                        <i class="fa-solid fa-ban"></i>
 
-                                </span>
+                                    </span>
 
-                                <span class="all-point-current-text">
-                                    Không - Không tính vào hạng
-                                </span>
+                                    <span class="all-point-current-text">
+                                        Không - Không tính vào hạng
+                                    </span>
 
                                 @else
 
-                                <span class="all-point-option-icon"
-                                    style="color:#22c55e;background:rgba(34,197,94,.12);">
+                                    <span
+                                        class="all-point-option-icon"
+                                        style="color:#22c55e;background:rgba(34,197,94,.12);">
 
-                                    <i class="fa-solid fa-ranking-star"></i>
+                                        <i class="fa-solid fa-ranking-star"></i>
 
-                                </span>
+                                    </span>
 
-                                <span class="all-point-current-text">
-                                    Có - Tính vào hạng
-                                </span>
+                                    <span class="all-point-current-text">
+                                        Có - Tính vào hạng
+                                    </span>
 
                                 @endif
 
@@ -1652,6 +1701,7 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                         <div
                             class="all-point-custom-menu"
                             data-tinh-hang-menu>
+
 
                             <button
                                 type="button"
@@ -1748,24 +1798,29 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                         <span class="required">*</span>
                     </label>
 
+
                     <textarea
                         name="noi_dung"
                         maxlength="255"
                         placeholder="Ví dụ: Tặng 100 điểm nhân dịp sinh nhật CineHome..."
-                        class="@error('noi_dung') is-invalid @enderror">{{ old('loai') === 'tang' ? old('noi_dung') : '' }}</textarea>
+                        class="{{ session('error_form') === 'tang' && $errors->has('noi_dung') ? 'is-invalid' : '' }}">{{ session('error_form') === 'tang' ? old('noi_dung') : '' }}</textarea>
 
 
-                    @error('noi_dung')
+                    @if(session('error_form') === 'tang')
 
-                    <small class="all-point-error">
+                        @error('noi_dung')
 
-                        <i class="fa-solid fa-circle-exclamation"></i>
+                            <small class="all-point-error server-error">
 
-                        {{ $message }}
+                                <i class="fa-solid fa-circle-exclamation"></i>
 
-                    </small>
+                                {{ $message }}
 
-                    @enderror
+                            </small>
+
+                        @enderror
+
+                    @endif
 
                 </div>
 
@@ -1787,7 +1842,7 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
 
         {{-- =====================================================
-             THU HỒI ĐIỂM
+             FORM THU HỒI ĐIỂM
         ====================================================== --}}
 
         <section class="all-point-card">
@@ -1820,9 +1875,12 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                 <i class="fa-solid fa-triangle-exclamation"></i>
 
                 <span id="withdrawWarningText">
+
                     Điểm sẽ được thu hồi khỏi
                     <strong>tất cả thành viên</strong>.
+
                     Không để điểm bị âm.
+
                 </span>
 
             </div>
@@ -1855,15 +1913,14 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
                     <div
                         class="all-point-custom-select
-                        @error('doi_tuong_nhan') is-invalid @enderror"
+                        {{ session('error_form') === 'thu_hoi' && $errors->has('doi_tuong_nhan') ? 'is-invalid' : '' }}"
                         data-audience-select
                         data-form="withdraw">
-
 
                         <input
                             type="hidden"
                             name="doi_tuong_nhan"
-                            value="{{ old('loai') === 'thu_hoi' ? $oldAudience : 'all' }}"
+                            value="{{ session('error_form') === 'thu_hoi' ? old('doi_tuong_nhan', $oldAudience ?? 'all') : 'all' }}"
                             data-audience-value>
 
 
@@ -1877,10 +1934,10 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 data-audience-current>
 
                                 @php
-                                $withdrawAudience =
-                                old('loai') === 'thu_hoi'
-                                ? $oldAudience
-                                : 'all';
+                                    $withdrawAudience =
+                                        session('error_form') === 'thu_hoi'
+                                            ? old('doi_tuong_nhan', $oldAudience ?? 'all')
+                                            : 'all';
                                 @endphp
 
                                 <span
@@ -1891,11 +1948,12 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </span>
 
                                 <span class="all-point-current-text">
+
                                     {{ $audienceGuide[$withdrawAudience]['label'] ?? 'Tất cả thành viên' }}
+
                                 </span>
 
                             </span>
-
 
                             <i class="fa-solid fa-chevron-down all-point-arrow"></i>
 
@@ -1908,38 +1966,36 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
                             @foreach ($audienceGuide as $value => $meta)
 
-                            <button
-                                type="button"
-                                class="all-point-option
-                                    {{ $withdrawAudience === $value ? 'is-selected' : '' }}"
-                                data-value="{{ $value }}"
-                                data-label="{{ $meta['label'] }}"
-                                data-icon="{{ $meta['icon'] }}"
-                                data-class="{{ $meta['class'] }}">
+                                <button
+                                    type="button"
+                                    class="all-point-option
+                                        {{ $withdrawAudience === $value ? 'is-selected' : '' }}"
+                                    data-value="{{ $value }}"
+                                    data-label="{{ $meta['label'] }}"
+                                    data-icon="{{ $meta['icon'] }}"
+                                    data-class="{{ $meta['class'] }}">
 
-                                <span class="all-point-option-icon {{ $meta['class'] }}">
+                                    <span class="all-point-option-icon {{ $meta['class'] }}">
 
-                                    <i class="fa-solid {{ $meta['icon'] }}"></i>
+                                        <i class="fa-solid {{ $meta['icon'] }}"></i>
 
-                                </span>
+                                    </span>
 
+                                    <span class="all-point-option-content">
 
-                                <span class="all-point-option-content">
+                                        <strong>
+                                            {{ $meta['label'] }}
+                                        </strong>
 
-                                    <strong>
-                                        {{ $meta['label'] }}
-                                    </strong>
+                                        <small>
+                                            {{ $meta['description'] }}
+                                        </small>
 
-                                    <small>
-                                        {{ $meta['description'] }}
-                                    </small>
+                                    </span>
 
-                                </span>
+                                    <i class="fa-solid fa-check all-point-check"></i>
 
-
-                                <i class="fa-solid fa-check all-point-check"></i>
-
-                            </button>
+                                </button>
 
                             @endforeach
 
@@ -1948,17 +2004,21 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                     </div>
 
 
-                    @error('doi_tuong_nhan')
+                    @if(session('error_form') === 'thu_hoi')
 
-                    <small class="all-point-error">
+                        @error('doi_tuong_nhan')
 
-                        <i class="fa-solid fa-circle-exclamation"></i>
+                            <small class="all-point-error server-error">
 
-                        {{ $message }}
+                                <i class="fa-solid fa-circle-exclamation"></i>
 
-                    </small>
+                                {{ $message }}
 
-                    @enderror
+                            </small>
+
+                        @enderror
+
+                    @endif
 
                 </div>
 
@@ -1982,14 +2042,13 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
                         <div
                             class="all-point-custom-select
-                            @error('hang_thanh_vien') is-invalid @enderror"
+                            {{ session('error_form') === 'thu_hoi' && $errors->has('hang_thanh_vien') ? 'is-invalid' : '' }}"
                             data-rank-select>
-
 
                             <input
                                 type="hidden"
                                 name="hang_thanh_vien"
-                                value="{{ old('loai') === 'thu_hoi' ? $oldRank : '' }}"
+                                value="{{ session('error_form') === 'thu_hoi' ? old('hang_thanh_vien', $oldRank ?? '') : '' }}"
                                 data-rank-value>
 
 
@@ -2002,74 +2061,80 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                     class="all-point-current"
                                     data-rank-current>
 
-                                    @switch(
-                                    old('loai') === 'thu_hoi'
-                                    ? $oldRank
-                                    : ''
-                                    )
+                                    @php
+                                        $withdrawRank =
+                                            session('error_form') === 'thu_hoi'
+                                                ? old('hang_thanh_vien', $oldRank ?? '')
+                                                : '';
+                                    @endphp
 
-                                    @case('member')
+                                    @switch($withdrawRank)
 
-                                    <span class="all-point-option-icon rank-member">
-                                        <i class="fa-solid fa-user"></i>
-                                    </span>
+                                        @case('member')
 
-                                    <span class="all-point-current-text">
-                                        Member
-                                    </span>
+                                            <span class="all-point-option-icon rank-member">
+                                                <i class="fa-solid fa-user"></i>
+                                            </span>
 
-                                    @break
+                                            <span class="all-point-current-text">
+                                                Member
+                                            </span>
 
-                                    @case('silver')
+                                        @break
 
-                                    <span class="all-point-option-icon rank-silver">
-                                        <i class="fa-solid fa-medal"></i>
-                                    </span>
 
-                                    <span class="all-point-current-text">
-                                        Silver
-                                    </span>
+                                        @case('silver')
 
-                                    @break
+                                            <span class="all-point-option-icon rank-silver">
+                                                <i class="fa-solid fa-medal"></i>
+                                            </span>
 
-                                    @case('gold')
+                                            <span class="all-point-current-text">
+                                                Silver
+                                            </span>
 
-                                    <span class="all-point-option-icon rank-gold">
-                                        <i class="fa-solid fa-crown"></i>
-                                    </span>
+                                        @break
 
-                                    <span class="all-point-current-text">
-                                        Gold
-                                    </span>
 
-                                    @break
+                                        @case('gold')
 
-                                    @case('platinum')
+                                            <span class="all-point-option-icon rank-gold">
+                                                <i class="fa-solid fa-crown"></i>
+                                            </span>
 
-                                    <span class="all-point-option-icon rank-platinum">
-                                        <i class="fa-solid fa-gem"></i>
-                                    </span>
+                                            <span class="all-point-current-text">
+                                                Gold
+                                            </span>
 
-                                    <span class="all-point-current-text">
-                                        Platinum
-                                    </span>
+                                        @break
 
-                                    @break
 
-                                    @default
+                                        @case('platinum')
 
-                                    <span class="all-point-option-icon rank-default">
-                                        <i class="fa-solid fa-layer-group"></i>
-                                    </span>
+                                            <span class="all-point-option-icon rank-platinum">
+                                                <i class="fa-solid fa-gem"></i>
+                                            </span>
 
-                                    <span class="all-point-current-text">
-                                        -- Chọn hạng --
-                                    </span>
+                                            <span class="all-point-current-text">
+                                                Platinum
+                                            </span>
+
+                                        @break
+
+
+                                        @default
+
+                                            <span class="all-point-option-icon rank-default">
+                                                <i class="fa-solid fa-layer-group"></i>
+                                            </span>
+
+                                            <span class="all-point-current-text">
+                                                -- Chọn hạng --
+                                            </span>
 
                                     @endswitch
 
                                 </span>
-
 
                                 <i class="fa-solid fa-chevron-down all-point-arrow"></i>
 
@@ -2080,16 +2145,21 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 class="all-point-custom-menu"
                                 data-rank-menu>
 
+
+                                {{-- DEFAULT --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option"
+                                    class="all-point-option {{ $withdrawRank === '' ? 'is-selected' : '' }}"
                                     data-value=""
                                     data-label="-- Chọn hạng --"
                                     data-icon="fa-layer-group"
                                     data-class="rank-default">
 
                                     <span class="all-point-option-icon rank-default">
+
                                         <i class="fa-solid fa-layer-group"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -2105,16 +2175,20 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </button>
 
 
+                                {{-- MEMBER --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option"
+                                    class="all-point-option {{ $withdrawRank === 'member' ? 'is-selected' : '' }}"
                                     data-value="member"
                                     data-label="Member"
                                     data-icon="fa-user"
                                     data-class="rank-member">
 
                                     <span class="all-point-option-icon rank-member">
+
                                         <i class="fa-solid fa-user"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -2134,16 +2208,20 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </button>
 
 
+                                {{-- SILVER --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option"
+                                    class="all-point-option {{ $withdrawRank === 'silver' ? 'is-selected' : '' }}"
                                     data-value="silver"
                                     data-label="Silver"
                                     data-icon="fa-medal"
                                     data-class="rank-silver">
 
                                     <span class="all-point-option-icon rank-silver">
+
                                         <i class="fa-solid fa-medal"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -2163,16 +2241,20 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </button>
 
 
+                                {{-- GOLD --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option"
+                                    class="all-point-option {{ $withdrawRank === 'gold' ? 'is-selected' : '' }}"
                                     data-value="gold"
                                     data-label="Gold"
                                     data-icon="fa-crown"
                                     data-class="rank-gold">
 
                                     <span class="all-point-option-icon rank-gold">
+
                                         <i class="fa-solid fa-crown"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -2192,16 +2274,20 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                                 </button>
 
 
+                                {{-- PLATINUM --}}
+
                                 <button
                                     type="button"
-                                    class="all-point-option"
+                                    class="all-point-option {{ $withdrawRank === 'platinum' ? 'is-selected' : '' }}"
                                     data-value="platinum"
                                     data-label="Platinum"
                                     data-icon="fa-gem"
                                     data-class="rank-platinum">
 
                                     <span class="all-point-option-icon rank-platinum">
+
                                         <i class="fa-solid fa-gem"></i>
+
                                     </span>
 
                                     <span class="all-point-option-content">
@@ -2225,17 +2311,21 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                         </div>
 
 
-                        @error('hang_thanh_vien')
+                        @if(session('error_form') === 'thu_hoi')
 
-                        <small class="all-point-error">
+                            @error('hang_thanh_vien')
 
-                            <i class="fa-solid fa-circle-exclamation"></i>
+                                <small class="all-point-error server-error">
 
-                            {{ $message }}
+                                    <i class="fa-solid fa-circle-exclamation"></i>
 
-                        </small>
+                                    {{ $message }}
 
-                        @enderror
+                                </small>
+
+                            @enderror
+
+                        @endif
 
                     </div>
 
@@ -2243,14 +2333,13 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
 
                 {{-- =================================================
-                     NGƯỜI DÙNG
+                     NGƯỜI DÙNG CỤ THỂ
                 ================================================== --}}
 
                 <div
                     class="point-conditional
                     {{ $withdrawAudience === 'nguoi_dung_cu_the' ? 'is-visible' : '' }}"
                     data-specific-wrapper="withdraw">
-
 
                     <div class="all-point-field">
 
@@ -2287,36 +2376,37 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
                         <div data-selected-inputs="withdraw">
 
-                            @foreach (
-                            old('loai') === 'thu_hoi'
-                            ? $oldUsers
-                            : []
-                            as $userId
-                            )
+                            @if(session('error_form') === 'thu_hoi')
 
-                            <input
-                                type="hidden"
-                                name="nguoi_dung_cu_the[]"
-                                value="{{ $userId }}">
+                                @foreach(old('nguoi_dung_cu_the', []) as $userId)
 
-                            @endforeach
+                                    <input
+                                        type="hidden"
+                                        name="nguoi_dung_cu_the[]"
+                                        value="{{ $userId }}">
+
+                                @endforeach
+
+                            @endif
 
                         </div>
 
 
+                        @if(session('error_form') === 'thu_hoi')
 
+                            @error('nguoi_dung_cu_the')
 
-                        @error('nguoi_dung_cu_the')
+                                <small class="all-point-error server-error">
 
-                        <small class="all-point-error">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
 
-                            <i class="fa-solid fa-circle-exclamation"></i>
+                                    {{ $message }}
 
-                            {{ $message }}
+                                </small>
 
-                        </small>
+                            @enderror
 
-                        @enderror
+                        @endif
 
                     </div>
 
@@ -2324,7 +2414,7 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 
 
                 {{-- =================================================
-                     SỐ ĐIỂM
+                     SỐ ĐIỂM THU HỒI
                 ================================================== --}}
 
                 <div class="all-point-field">
@@ -2334,27 +2424,32 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                         <span class="required">*</span>
                     </label>
 
+
                     <input
                         type="number"
                         name="so_diem"
-                        min="1"
-                        max="10000"
-                        value="{{ old('loai') === 'thu_hoi' ? old('so_diem') : '' }}"
+                        step="1"
+                        inputmode="numeric"
+                        value="{{ session('error_form') === 'thu_hoi' ? old('so_diem') : '' }}"
                         placeholder="Ví dụ: 50"
-                        class="@error('so_diem') is-invalid @enderror">
+                        class="{{ session('error_form') === 'thu_hoi' && $errors->has('so_diem') ? 'is-invalid' : '' }}">
 
 
-                    @error('so_diem')
+                    @if(session('error_form') === 'thu_hoi')
 
-                    <small class="all-point-error">
+                        @error('so_diem')
 
-                        <i class="fa-solid fa-circle-exclamation"></i>
+                            <small class="all-point-error server-error">
 
-                        {{ $message }}
+                                <i class="fa-solid fa-circle-exclamation"></i>
 
-                    </small>
+                                {{ $message }}
 
-                    @enderror
+                            </small>
+
+                        @enderror
+
+                    @endif
 
                 </div>
 
@@ -2370,24 +2465,29 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                         <span class="required">*</span>
                     </label>
 
+
                     <textarea
                         name="noi_dung"
                         maxlength="255"
                         placeholder="Ví dụ: Thu hồi điểm tặng nhầm..."
-                        class="@error('noi_dung') is-invalid @enderror">{{ old('loai') === 'thu_hoi' ? old('noi_dung') : '' }}</textarea>
+                        class="{{ session('error_form') === 'thu_hoi' && $errors->has('noi_dung') ? 'is-invalid' : '' }}">{{ session('error_form') === 'thu_hoi' ? old('noi_dung') : '' }}</textarea>
 
 
-                    @error('noi_dung')
+                    @if(session('error_form') === 'thu_hoi')
 
-                    <small class="all-point-error">
+                        @error('noi_dung')
 
-                        <i class="fa-solid fa-circle-exclamation"></i>
+                            <small class="all-point-error server-error">
 
-                        {{ $message }}
+                                <i class="fa-solid fa-circle-exclamation"></i>
 
-                    </small>
+                                {{ $message }}
 
-                    @enderror
+                            </small>
+
+                        @enderror
+
+                    @endif
 
                 </div>
 
@@ -2411,808 +2511,763 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
 </div>
 
 
+{{-- =============================================================
+     JAVASCRIPT
+============================================================== --}}
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
 
-        /*
-        |--------------------------------------------------------------------------
-        | ĐÓNG TẤT CẢ DROPDOWN
-        |--------------------------------------------------------------------------
-        */
+document.addEventListener('DOMContentLoaded', function () {
 
-        function closeAllDropdowns(except = null) {
-            document
-                .querySelectorAll('.all-point-custom-select.is-open')
-                .forEach(function(dropdown) {
+    /*
+    |--------------------------------------------------------------------------
+    | CẤU HÌNH
+    |--------------------------------------------------------------------------
+    */
 
-                    if (dropdown !== except) {
-                        dropdown.classList.remove('is-open');
-                        dropdown.classList.remove('open-up');
-                    }
-
-                });
-        }
-
-        function adjustDropdownPosition(select) {
-            if (!select) return;
-
-            const trigger = select.querySelector('.all-point-custom-trigger');
-            const menu = select.querySelector('.all-point-custom-menu');
-
-            if (!trigger || !menu) return;
-
-            select.classList.remove('open-up');
-
-            // Tạm mở menu để đo kích thước
-            const wasOpen = select.classList.contains('is-open');
-
-            if (!wasOpen) {
-                select.classList.add('is-open');
-            }
-
-            const triggerRect = trigger.getBoundingClientRect();
-            const menuHeight = menu.offsetHeight;
-
-            const spaceBelow = window.innerHeight - triggerRect.bottom;
-            const spaceAbove = triggerRect.top;
-
-            // Nếu phía dưới không đủ chỗ nhưng phía trên nhiều chỗ hơn
-            if (
-                spaceBelow < menuHeight + 15 &&
-                spaceAbove > spaceBelow
-            ) {
-                select.classList.add('open-up');
-            }
-
-            if (!wasOpen) {
-                select.classList.remove('is-open');
-            }
-        }
+    const MAX_POINTS = 100000;
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | DROPDOWN ĐỐI TƯỢNG
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | ĐÓNG TẤT CẢ DROPDOWN
+    |--------------------------------------------------------------------------
+    */
+
+    function closeAllDropdowns(except = null) {
 
         document
-            .querySelectorAll('[data-audience-select]')
-            .forEach(function(select) {
+            .querySelectorAll('.all-point-custom-select.is-open')
+            .forEach(function (dropdown) {
 
-                const trigger =
-                    select.querySelector('[data-audience-trigger]');
+                if (dropdown !== except) {
 
-                const menu =
-                    select.querySelector('[data-audience-menu]');
+                    dropdown.classList.remove('is-open');
+                    dropdown.classList.remove('open-up');
 
-                const valueInput =
-                    select.querySelector('[data-audience-value]');
+                }
 
-                const current =
-                    select.querySelector('[data-audience-current]');
+            });
 
-                const form =
-                    select.dataset.form;
+    }
 
 
-                trigger.addEventListener('click', function(e) {
+    /*
+    |--------------------------------------------------------------------------
+    | ĐIỀU CHỈNH VỊ TRÍ DROPDOWN
+    |--------------------------------------------------------------------------
+    */
 
-                    e.stopPropagation();
+    function adjustDropdownPosition(select) {
 
-                    const isOpen =
-                        select.classList.contains('is-open');
+        if (!select) {
+            return;
+        }
 
-                    closeAllDropdowns();
+        const trigger =
+            select.querySelector('.all-point-custom-trigger');
 
-                    if (!isOpen) {
-                        select.classList.add('is-open');
+        const menu =
+            select.querySelector('.all-point-custom-menu');
 
-                        requestAnimationFrame(function() {
-                            adjustDropdownPosition(select);
-                        });
-                    }
+        if (!trigger || !menu) {
+            return;
+        }
 
-                });
+        select.classList.remove('open-up');
 
+        const wasOpen =
+            select.classList.contains('is-open');
 
-                menu
-                    .querySelectorAll('.all-point-option')
-                    .forEach(function(option) {
+        if (!wasOpen) {
+            select.classList.add('is-open');
+        }
 
-                        option.addEventListener('click', function(e) {
+        const triggerRect =
+            trigger.getBoundingClientRect();
 
-                            e.stopPropagation();
+        const menuHeight =
+            menu.offsetHeight;
 
+        const spaceBelow =
+            window.innerHeight - triggerRect.bottom;
 
-                            const value =
-                                this.dataset.value;
+        const spaceAbove =
+            triggerRect.top;
 
-                            const label =
-                                this.dataset.label;
+        if (
+            spaceBelow < menuHeight + 15 &&
+            spaceAbove > spaceBelow
+        ) {
 
-                            const icon =
-                                this.dataset.icon;
+            select.classList.add('open-up');
 
-                            const iconClass =
-                                this.dataset.class;
+        }
 
+        if (!wasOpen) {
+            select.classList.remove('is-open');
+        }
 
-                            valueInput.value = value;
-
-
-                            current.innerHTML = `
-                            <span class="all-point-option-icon ${iconClass}">
-                                <i class="fa-solid ${icon}"></i>
-                            </span>
-
-                            <span class="all-point-current-text">
-                                ${label}
-                            </span>
-                        `;
-
-
-                            menu
-                                .querySelectorAll('.all-point-option')
-                                .forEach(function(item) {
-
-                                    item.classList.remove(
-                                        'is-selected'
-                                    );
-
-                                });
+    }
 
 
-                            this.classList.add('is-selected');
+    /*
+    |--------------------------------------------------------------------------
+    | CLIENT ERROR - SHOW
+    |--------------------------------------------------------------------------
+    */
+
+    function showClientError(field, message) {
+
+        if (!field) {
+            return;
+        }
+
+        field.classList.add('is-invalid');
+
+        const parent =
+            field.closest('.all-point-field');
+
+        if (!parent) {
+            return;
+        }
+
+        let error =
+            parent.querySelector('.client-validation-error');
+
+        if (!error) {
+
+            error =
+                document.createElement('small');
+
+            error.className =
+                'all-point-error client-validation-error';
+
+            parent.appendChild(error);
+
+        }
+
+        error.innerHTML = `
+            <i class="fa-solid fa-circle-exclamation"></i>
+            ${message}
+        `;
+
+    }
 
 
-                            closeAllDropdowns();
+    /*
+    |--------------------------------------------------------------------------
+    | CLIENT ERROR - CLEAR
+    |--------------------------------------------------------------------------
+    */
+
+    function clearClientError(field) {
+
+        if (!field) {
+            return;
+        }
+
+        field.classList.remove('is-invalid');
+
+        const parent =
+            field.closest('.all-point-field');
+
+        if (!parent) {
+            return;
+        }
+
+        const error =
+            parent.querySelector('.client-validation-error');
+
+        if (error) {
+
+            error.remove();
+
+        }
+
+    }
 
 
-                            updateAudience(
-                                form,
-                                value
-                            );
+    /*
+    |--------------------------------------------------------------------------
+    | CLEAR TOÀN BỘ CLIENT ERROR TRONG FORM
+    |--------------------------------------------------------------------------
+    */
 
-                        });
+    function clearFormClientErrors(form) {
+
+        if (!form) {
+            return;
+        }
+
+        form
+            .querySelectorAll('.client-validation-error')
+            .forEach(function (error) {
+
+                error.remove();
+
+            });
+
+        form
+            .querySelectorAll('.is-invalid')
+            .forEach(function (field) {
+
+                field.classList.remove('is-invalid');
+
+            });
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DROPDOWN ĐỐI TƯỢNG
+    |--------------------------------------------------------------------------
+    */
+
+    document
+        .querySelectorAll('[data-audience-select]')
+        .forEach(function (select) {
+
+            const trigger =
+                select.querySelector('[data-audience-trigger]');
+
+            const menu =
+                select.querySelector('[data-audience-menu]');
+
+            const valueInput =
+                select.querySelector('[data-audience-value]');
+
+            const current =
+                select.querySelector('[data-audience-current]');
+
+            const form =
+                select.dataset.form;
+
+
+            if (!trigger || !menu || !valueInput || !current) {
+                return;
+            }
+
+
+            trigger.addEventListener('click', function (e) {
+
+                e.stopPropagation();
+
+                const isOpen =
+                    select.classList.contains('is-open');
+
+                closeAllDropdowns();
+
+                if (!isOpen) {
+
+                    select.classList.add('is-open');
+
+                    requestAnimationFrame(function () {
+
+                        adjustDropdownPosition(select);
 
                     });
+
+                }
 
             });
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | UPDATE ĐỐI TƯỢNG
-        |--------------------------------------------------------------------------
-        */
-
-        function updateAudience(form, value) {
-
-            const rankWrapper =
-                document.querySelector(
-                    `[data-rank-wrapper="${form}"]`
-                );
-
-            const specificWrapper =
-                document.querySelector(
-                    `[data-specific-wrapper="${form}"]`
-                );
-
-
-            if (!rankWrapper || !specificWrapper) {
-                return;
-            }
-
-
-            rankWrapper.classList.remove(
-                'is-visible'
-            );
-
-            specificWrapper.classList.remove(
-                'is-visible'
-            );
-
-
-            if (value === 'hang_thanh_vien') {
-
-                rankWrapper.classList.add(
-                    'is-visible'
-                );
-
-            }
-
-
-            if (value === 'nguoi_dung_cu_the') {
-
-                specificWrapper.classList.add(
-                    'is-visible'
-                );
-
-            }
-
-
-            updateWarning(
-                form,
-                value
-            );
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | WARNING
-        |--------------------------------------------------------------------------
-        */
-
-        function updateWarning(form, value) {
-
-            const warning =
-                document.getElementById(
-                    form === 'gift' ?
-                    'giftWarningText' :
-                    'withdrawWarningText'
-                );
-
-
-            if (!warning) {
-                return;
-            }
-
-
-            if (value === 'all') {
-
-                warning.innerHTML =
-                    form === 'gift' ?
-                    'Điểm sẽ được cộng cho <strong>tất cả thành viên</strong>.' :
-                    'Điểm sẽ được thu hồi khỏi <strong>tất cả thành viên</strong>. Không để điểm bị âm.';
-
-                return;
-            }
-
-
-            if (value === 'hang_thanh_vien') {
-
-                warning.innerHTML =
-                    form === 'gift' ?
-                    'Điểm sẽ được cộng cho <strong>thành viên thuộc hạng được chọn</strong>.' :
-                    'Điểm sẽ được thu hồi khỏi <strong>thành viên thuộc hạng được chọn</strong>. Không để điểm bị âm.';
-
-                return;
-            }
-
-
-            if (value === 'nguoi_dung_cu_the') {
-
-                warning.innerHTML =
-                    form === 'gift' ?
-                    'Điểm sẽ được cộng cho <strong>những người dùng được chọn</strong>.' :
-                    'Điểm sẽ được thu hồi khỏi <strong>những người dùng được chọn</strong>. Không để điểm bị âm.';
-
-            }
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | DROPDOWN HẠNG
-        |--------------------------------------------------------------------------
-        */
-
-        document
-            .querySelectorAll('[data-rank-select]')
-            .forEach(function(select) {
-
-                const trigger =
-                    select.querySelector('[data-rank-trigger]');
-
-                const menu =
-                    select.querySelector('[data-rank-menu]');
-
-                const valueInput =
-                    select.querySelector('[data-rank-value]');
-
-                const current =
-                    select.querySelector('[data-rank-current]');
-
-
-                trigger.addEventListener('click', function(e) {
-
-                    e.stopPropagation();
-
-                    const isOpen =
-                        select.classList.contains('is-open');
-
-                    closeAllDropdowns();
-
-                    if (!isOpen) {
-                        select.classList.add('is-open');
-
-                        requestAnimationFrame(function() {
-                            adjustDropdownPosition(select);
-                        });
-                    }
-
-                });
-
-
-                menu
-                    .querySelectorAll('.all-point-option')
-                    .forEach(function(option) {
-
-                        option.addEventListener('click', function(e) {
-
-                            e.stopPropagation();
-
-
-                            const value =
-                                this.dataset.value;
-
-                            const label =
-                                this.dataset.label;
-
-                            const icon =
-                                this.dataset.icon;
-
-                            const iconClass =
-                                this.dataset.class;
-
-
-                            valueInput.value =
-                                value;
-
-
-                            current.innerHTML = `
-                            <span class="all-point-option-icon ${iconClass}">
-                                <i class="fa-solid ${icon}"></i>
-                            </span>
-
-                            <span class="all-point-current-text">
-                                ${label}
-                            </span>
-                        `;
-
-
-                            menu
-                                .querySelectorAll('.all-point-option')
-                                .forEach(function(item) {
-
-                                    item.classList.remove(
-                                        'is-selected'
-                                    );
-
-                                });
-
-
-                            this.classList.add(
-                                'is-selected'
-                            );
-
-
-                            closeAllDropdowns();
-
-                        });
-
-                    });
-
-            });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | DROPDOWN TÍNH HẠNG
-        |--------------------------------------------------------------------------
-        */
-
-        document
-            .querySelectorAll('[data-tinh-hang-select]')
-            .forEach(function(select) {
-
-                const trigger =
-                    select.querySelector(
-                        '[data-tinh-hang-trigger]'
-                    );
-
-                const menu =
-                    select.querySelector(
-                        '[data-tinh-hang-menu]'
-                    );
-
-                const valueInput =
-                    select.querySelector(
-                        '[data-tinh-hang-value]'
-                    );
-
-                const current =
-                    select.querySelector(
-                        '[data-tinh-hang-current]'
-                    );
-
-
-                trigger.addEventListener(
-                    'click',
-                    function(e) {
+            menu
+                .querySelectorAll('.all-point-option')
+                .forEach(function (option) {
+
+                    option.addEventListener('click', function (e) {
 
                         e.stopPropagation();
 
-                        const isOpen =
-                            select.classList.contains(
-                                'is-open'
-                            );
+                        const value =
+                            this.dataset.value;
+
+                        const label =
+                            this.dataset.label;
+
+                        const icon =
+                            this.dataset.icon;
+
+                        const iconClass =
+                            this.dataset.class;
+
+
+                        valueInput.value =
+                            value;
+
+
+                        current.innerHTML = `
+                            <span class="all-point-option-icon ${iconClass}">
+                                <i class="fa-solid ${icon}"></i>
+                            </span>
+
+                            <span class="all-point-current-text">
+                                ${label}
+                            </span>
+                        `;
+
+
+                        menu
+                            .querySelectorAll('.all-point-option')
+                            .forEach(function (item) {
+
+                                item.classList.remove('is-selected');
+
+                            });
+
+
+                        this.classList.add('is-selected');
+
+
+                        const targetForm =
+                            form === 'gift'
+                                ? document.getElementById('giftPointForm')
+                                : document.getElementById('withdrawPointForm');
+
+
+                        clearFormClientErrors(targetForm);
+
 
                         closeAllDropdowns();
 
-                        if (!isOpen) {
-                            select.classList.add(
-                                'is-open'
-                            );
-                        }
 
-                    }
-                );
-
-
-                menu
-                    .querySelectorAll('.all-point-option')
-                    .forEach(function(option) {
-
-                        option.addEventListener(
-                            'click',
-                            function(e) {
-
-                                e.stopPropagation();
-
-
-                                const value =
-                                    this.dataset.value;
-
-                                const label =
-                                    this.dataset.label;
-
-                                const icon =
-                                    this.dataset.icon;
-
-
-                                valueInput.value =
-                                    value;
-
-
-                                const color =
-                                    this.dataset.inlineColor ||
-                                    '#22c55e';
-
-
-                                current.innerHTML = `
-                                <span
-                                    class="all-point-option-icon"
-                                    style="
-                                        color:${color};
-                                        background:rgba(255,255,255,.06);
-                                    "
-                                >
-                                    <i class="fa-solid ${icon}"></i>
-                                </span>
-
-                                <span class="all-point-current-text">
-                                    ${label}
-                                </span>
-                            `;
-
-
-                                closeAllDropdowns();
-
-                            }
+                        updateAudience(
+                            form,
+                            value
                         );
 
                     });
 
-            });
+                });
 
+        });
 
-        /*
-        |--------------------------------------------------------------------------
-        | TÌM NGƯỜI DÙNG
-        |--------------------------------------------------------------------------
-        |
-        | Dùng chính endpoint tìm người dùng của trang thông báo.
-        |
-        */
 
-        const selectedUsers = {
-            gift: new Map(),
-            withdraw: new Map()
-        };
+    /*
+    |--------------------------------------------------------------------------
+    | UPDATE ĐỐI TƯỢNG
+    |--------------------------------------------------------------------------
+    */
 
+    function updateAudience(form, value) {
 
-        document
-            .querySelectorAll('[data-user-search]')
-            .forEach(function(input) {
+        const rankWrapper =
+            document.querySelector(
+                `[data-rank-wrapper="${form}"]`
+            );
 
-                const form =
-                    input.dataset.userSearch;
+        const specificWrapper =
+            document.querySelector(
+                `[data-specific-wrapper="${form}"]`
+            );
 
-                const resultBox =
-                    document.querySelector(
-                        `[data-user-results="${form}"]`
-                    );
 
-                const selectedBox =
-                    document.querySelector(
-                        `[data-selected-users="${form}"]`
-                    );
+        if (!rankWrapper || !specificWrapper) {
+            return;
+        }
 
-                const hiddenBox =
-                    document.querySelector(
-                        `[data-selected-inputs="${form}"]`
-                    );
 
+        rankWrapper.classList.remove('is-visible');
 
-                let timer = null;
+        specificWrapper.classList.remove('is-visible');
 
 
-                input.addEventListener(
-                    'input',
-                    function() {
+        if (value === 'hang_thanh_vien') {
 
-                        const keyword =
-                            this.value.trim();
+            rankWrapper.classList.add('is-visible');
 
+        }
 
-                        clearTimeout(timer);
 
+        if (value === 'nguoi_dung_cu_the') {
 
-                        if (keyword.length < 2) {
+            specificWrapper.classList.add('is-visible');
 
-                            resultBox.classList.add(
-                                'is-hidden'
-                            );
+        }
 
-                            resultBox.innerHTML = '';
 
-                            return;
+        updateWarning(
+            form,
+            value
+        );
 
-                        }
+    }
 
 
-                        timer = setTimeout(
-                            function() {
+    /*
+    |--------------------------------------------------------------------------
+    | WARNING
+    |--------------------------------------------------------------------------
+    */
 
-                                fetch(
-                                        '{{ route("admin.thong-bao-push.tim-nguoi-dung") }}?keyword=' +
-                                        encodeURIComponent(keyword)
-                                    )
-                                    .then(function(response) {
+    function updateWarning(form, value) {
 
-                                        if (!response.ok) {
-                                            throw new Error(
-                                                'Không thể tìm người dùng'
-                                            );
-                                        }
+        const warning =
+            document.getElementById(
+                form === 'gift'
+                    ? 'giftWarningText'
+                    : 'withdrawWarningText'
+            );
 
-                                        return response.json();
 
-                                    })
-                                    .then(function(users) {
+        if (!warning) {
+            return;
+        }
 
-                                        resultBox.innerHTML = '';
 
+        if (value === 'all') {
 
-                                        if (
-                                            !Array.isArray(users) ||
-                                            users.length === 0
-                                        ) {
+            warning.innerHTML =
+                form === 'gift'
+                    ? 'Điểm sẽ được cộng cho <strong>tất cả thành viên</strong>.'
+                    : 'Điểm sẽ được thu hồi khỏi <strong>tất cả thành viên</strong>. Không để điểm bị âm.';
 
-                                            resultBox.innerHTML = `
-                                        <div
-                                            style="
-                                                padding:14px;
-                                                color:#7f8795;
-                                                font-size:12px;
-                                                text-align:center;
-                                            "
-                                        >
-                                            Không tìm thấy người dùng.
-                                        </div>
-                                    `;
+            return;
 
-                                            resultBox.classList.remove(
-                                                'is-hidden'
-                                            );
+        }
 
-                                            return;
-                                        }
 
+        if (value === 'hang_thanh_vien') {
 
-                                        users.forEach(
-                                            function(user) {
+            warning.innerHTML =
+                form === 'gift'
+                    ? 'Điểm sẽ được cộng cho <strong>thành viên thuộc hạng được chọn</strong>.'
+                    : 'Điểm sẽ được thu hồi khỏi <strong>thành viên thuộc hạng được chọn</strong>. Không để điểm bị âm.';
 
-                                                if (
-                                                    selectedUsers[form]
-                                                    .has(
-                                                        String(user.id)
-                                                    )
-                                                ) {
-                                                    return;
-                                                }
+            return;
 
+        }
 
-                                                const button =
-                                                    document.createElement(
-                                                        'button'
-                                                    );
 
-                                                button.type =
-                                                    'button';
+        if (value === 'nguoi_dung_cu_the') {
 
-                                                button.className =
-                                                    'point-user-result';
+            warning.innerHTML =
+                form === 'gift'
+                    ? 'Điểm sẽ được cộng cho <strong>những người dùng được chọn</strong>.'
+                    : 'Điểm sẽ được thu hồi khỏi <strong>những người dùng được chọn</strong>. Không để điểm bị âm.';
 
+        }
 
-                                                button.innerHTML = `
+    }
 
-                                            <span
-                                                class="point-user-avatar"
-                                            >
-                                                <i
-                                                    class="fa-solid fa-user"
-                                                ></i>
-                                            </span>
 
+    /*
+    |--------------------------------------------------------------------------
+    | DROPDOWN HẠNG
+    |--------------------------------------------------------------------------
+    */
 
-                                            <span
-                                                class="point-user-info"
-                                            >
+    document
+        .querySelectorAll('[data-rank-select]')
+        .forEach(function (select) {
 
-                                                <strong>
-                                                    ${
-                                                        user.name ??
-                                                        user.ho_ten ??
-                                                        'Người dùng'
-                                                    }
-                                                </strong>
+            const trigger =
+                select.querySelector('[data-rank-trigger]');
 
-                                                <small>
-                                                    ${
-                                                        user.email ??
-                                                        ''
-                                                    }
-                                                </small>
+            const menu =
+                select.querySelector('[data-rank-menu]');
 
-                                            </span>
+            const valueInput =
+                select.querySelector('[data-rank-value]');
 
-                                        `;
+            const current =
+                select.querySelector('[data-rank-current]');
 
 
-                                                button.addEventListener(
-                                                    'click',
-                                                    function() {
-
-                                                        addUser(
-                                                            form,
-                                                            user
-                                                        );
-
-                                                        input.value =
-                                                            '';
-
-                                                        resultBox.classList.add(
-                                                            'is-hidden'
-                                                        );
-
-                                                        resultBox.innerHTML =
-                                                            '';
-
-                                                    }
-                                                );
-
-
-                                                resultBox.appendChild(
-                                                    button
-                                                );
-
-                                            }
-                                        );
-
-
-                                        resultBox.classList.remove(
-                                            'is-hidden'
-                                        );
-
-                                    })
-                                    .catch(function() {
-
-                                        resultBox.innerHTML = `
-
-                                    <div
-                                        style="
-                                            padding:14px;
-                                            color:#ff6570;
-                                            font-size:12px;
-                                            text-align:center;
-                                        "
-                                    >
-                                        Có lỗi khi tìm người dùng.
-                                    </div>
-
-                                `;
-
-                                        resultBox.classList.remove(
-                                            'is-hidden'
-                                        );
-
-                                    });
-
-                            },
-                            300
-                        );
-
-                    }
-                );
-
-            });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | ADD USER
-        |--------------------------------------------------------------------------
-        */
-
-        function addUser(form, user) {
-
-            const id =
-                String(user.id);
-
-
-            if (
-                selectedUsers[form].has(id)
-            ) {
+            if (!trigger || !menu || !valueInput || !current) {
                 return;
             }
 
 
-            selectedUsers[form].set(
-                id,
-                user
+            trigger.addEventListener('click', function (e) {
+
+                e.stopPropagation();
+
+                const isOpen =
+                    select.classList.contains('is-open');
+
+                closeAllDropdowns();
+
+                if (!isOpen) {
+
+                    select.classList.add('is-open');
+
+                    requestAnimationFrame(function () {
+
+                        adjustDropdownPosition(select);
+
+                    });
+
+                }
+
+            });
+
+
+            menu
+                .querySelectorAll('.all-point-option')
+                .forEach(function (option) {
+
+                    option.addEventListener('click', function (e) {
+
+                        e.stopPropagation();
+
+                        const value =
+                            this.dataset.value;
+
+                        const label =
+                            this.dataset.label;
+
+                        const icon =
+                            this.dataset.icon;
+
+                        const iconClass =
+                            this.dataset.class;
+
+
+                        valueInput.value =
+                            value;
+
+
+                        current.innerHTML = `
+                            <span class="all-point-option-icon ${iconClass}">
+                                <i class="fa-solid ${icon}"></i>
+                            </span>
+
+                            <span class="all-point-current-text">
+                                ${label}
+                            </span>
+                        `;
+
+
+                        menu
+                            .querySelectorAll('.all-point-option')
+                            .forEach(function (item) {
+
+                                item.classList.remove('is-selected');
+
+                            });
+
+
+                        this.classList.add('is-selected');
+
+
+                        const form =
+                            select.closest('form');
+
+                        clearFormClientErrors(form);
+
+                        closeAllDropdowns();
+
+                    });
+
+                });
+
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DROPDOWN TÍNH HẠNG
+    |--------------------------------------------------------------------------
+    */
+
+    document
+        .querySelectorAll('[data-tinh-hang-select]')
+        .forEach(function (select) {
+
+            const trigger =
+                select.querySelector('[data-tinh-hang-trigger]');
+
+            const menu =
+                select.querySelector('[data-tinh-hang-menu]');
+
+            const valueInput =
+                select.querySelector('[data-tinh-hang-value]');
+
+            const current =
+                select.querySelector('[data-tinh-hang-current]');
+
+
+            if (!trigger || !menu || !valueInput || !current) {
+                return;
+            }
+
+
+            trigger.addEventListener('click', function (e) {
+
+                e.stopPropagation();
+
+                const isOpen =
+                    select.classList.contains('is-open');
+
+                closeAllDropdowns();
+
+                if (!isOpen) {
+
+                    select.classList.add('is-open');
+
+                    requestAnimationFrame(function () {
+
+                        adjustDropdownPosition(select);
+
+                    });
+
+                }
+
+            });
+
+
+            menu
+                .querySelectorAll('.all-point-option')
+                .forEach(function (option) {
+
+                    option.addEventListener('click', function (e) {
+
+                        e.stopPropagation();
+
+                        const value =
+                            this.dataset.value;
+
+                        const label =
+                            this.dataset.label;
+
+                        const icon =
+                            this.dataset.icon;
+
+                        const color =
+                            this.dataset.inlineColor || '#22c55e';
+
+
+                        valueInput.value =
+                            value;
+
+
+                        current.innerHTML = `
+                            <span
+                                class="all-point-option-icon"
+                                style="
+                                    color:${color};
+                                    background:rgba(255,255,255,.06);
+                                "
+                            >
+                                <i class="fa-solid ${icon}"></i>
+                            </span>
+
+                            <span class="all-point-current-text">
+                                ${label}
+                            </span>
+                        `;
+
+
+                        menu
+                            .querySelectorAll('.all-point-option')
+                            .forEach(function (item) {
+
+                                item.classList.remove('is-selected');
+
+                            });
+
+
+                        this.classList.add('is-selected');
+
+
+                        const form =
+                            select.closest('form');
+
+                        clearFormClientErrors(form);
+
+                        closeAllDropdowns();
+
+                    });
+
+                });
+
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | USER ĐƯỢC CHỌN
+    |--------------------------------------------------------------------------
+    */
+
+    const selectedUsers = {
+
+        gift: new Map(),
+
+        withdraw: new Map()
+
+    };
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | KHÔI PHỤC USER SAU VALIDATION - TẶNG
+    |--------------------------------------------------------------------------
+    */
+
+    @if(session('error_form') === 'tang')
+
+        @foreach(old('nguoi_dung_cu_the', []) as $userId)
+
+            selectedUsers.gift.set(
+                "{{ $userId }}",
+                {
+                    id: "{{ $userId }}",
+                    name: "Người dùng đã chọn",
+                    email: ""
+                }
             );
 
+        @endforeach
 
-            renderSelectedUsers(
-                form
+    @endif
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | KHÔI PHỤC USER SAU VALIDATION - THU HỒI
+    |--------------------------------------------------------------------------
+    */
+
+    @if(session('error_form') === 'thu_hoi')
+
+        @foreach(old('nguoi_dung_cu_the', []) as $userId)
+
+            selectedUsers.withdraw.set(
+                "{{ $userId }}",
+                {
+                    id: "{{ $userId }}",
+                    name: "Người dùng đã chọn",
+                    email: ""
+                }
             );
 
-        }
+        @endforeach
+
+    @endif
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | REMOVE USER
-        |--------------------------------------------------------------------------
-        */
+    /*
+    |--------------------------------------------------------------------------
+    | TÌM NGƯỜI DÙNG
+    |--------------------------------------------------------------------------
+    */
 
-        function removeUser(form, id) {
+    document
+        .querySelectorAll('[data-user-search]')
+        .forEach(function (input) {
 
-            selectedUsers[form].delete(
-                String(id)
-            );
+            const form =
+                input.dataset.userSearch;
 
-
-            renderSelectedUsers(
-                form
-            );
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | RENDER USERS
-        |--------------------------------------------------------------------------
-        */
-
-        function renderSelectedUsers(form) {
+            const resultBox =
+                document.querySelector(
+                    `[data-user-results="${form}"]`
+                );
 
             const selectedBox =
                 document.querySelector(
@@ -3225,37 +3280,376 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                 );
 
 
-            selectedBox.innerHTML = '';
-
-            hiddenBox.innerHTML = '';
+            let timer = null;
 
 
-            selectedUsers[form]
-                .forEach(function(user) {
-
-                    const id =
-                        String(user.id);
-
-                    const name =
-                        user.name ??
-                        user.ho_ten ??
-                        'Người dùng';
-
-                    const email =
-                        user.email ??
-                        '';
+            if (!resultBox || !selectedBox || !hiddenBox) {
+                return;
+            }
 
 
-                    const item =
-                        document.createElement(
-                            'div'
+            input.addEventListener('input', function () {
+
+                const keyword =
+                    this.value.trim();
+
+                clearTimeout(timer);
+
+
+                /*
+                |----------------------------------------------------------
+                | XÓA LỖI KHI NGƯỜI DÙNG BẮT ĐẦU NHẬP
+                |----------------------------------------------------------
+                */
+
+                const targetForm =
+                    form === 'gift'
+                        ? document.getElementById('giftPointForm')
+                        : document.getElementById('withdrawPointForm');
+
+
+                clearFormClientErrors(targetForm);
+
+
+                if (keyword.length < 2) {
+
+                    resultBox.classList.add('is-hidden');
+
+                    resultBox.innerHTML = '';
+
+                    return;
+
+                }
+
+
+                timer = setTimeout(function () {
+
+                    fetch(
+                        '{{ route("admin.thong-bao-push.tim-nguoi-dung") }}?keyword=' +
+                        encodeURIComponent(keyword)
+                    )
+
+                    .then(function (response) {
+
+                        if (!response.ok) {
+
+                            throw new Error(
+                                'Không thể tìm người dùng'
+                            );
+
+                        }
+
+                        return response.json();
+
+                    })
+
+                    .then(function (users) {
+
+                        resultBox.innerHTML = '';
+
+
+                        if (
+                            !Array.isArray(users) ||
+                            users.length === 0
+                        ) {
+
+                            resultBox.innerHTML = `
+                                <div
+                                    style="
+                                        padding:14px;
+                                        color:#7f8795;
+                                        font-size:12px;
+                                        text-align:center;
+                                    "
+                                >
+                                    Không tìm thấy người dùng.
+                                </div>
+                            `;
+
+                            resultBox.classList.remove(
+                                'is-hidden'
+                            );
+
+                            return;
+
+                        }
+
+
+                        users.forEach(function (user) {
+
+                            if (
+                                selectedUsers[form]
+                                    .has(String(user.id))
+                            ) {
+
+                                return;
+
+                            }
+
+
+                            const button =
+                                document.createElement('button');
+
+
+                            button.type =
+                                'button';
+
+
+                            button.className =
+                                'point-user-result';
+
+
+                            const userName =
+                                user.name ??
+                                user.ho_ten ??
+                                'Người dùng';
+
+
+                            const userEmail =
+                                user.email ??
+                                '';
+
+
+                            button.innerHTML = `
+
+                                <span class="point-user-avatar">
+
+                                    <i class="fa-solid fa-user"></i>
+
+                                </span>
+
+
+                                <span class="point-user-info">
+
+                                    <strong>
+                                        ${escapeHtml(userName)}
+                                    </strong>
+
+                                    <small>
+                                        ${escapeHtml(userEmail)}
+                                    </small>
+
+                                </span>
+
+                            `;
+
+
+                            button.addEventListener(
+                                'click',
+                                function () {
+
+                                    addUser(
+                                        form,
+                                        user
+                                    );
+
+
+                                    input.value =
+                                        '';
+
+
+                                    resultBox.classList.add(
+                                        'is-hidden'
+                                    );
+
+
+                                    resultBox.innerHTML =
+                                        '';
+
+                                }
+                            );
+
+
+                            resultBox.appendChild(
+                                button
+                            );
+
+                        });
+
+
+                        resultBox.classList.remove(
+                            'is-hidden'
                         );
 
-                    item.className =
-                        'point-selected-user';
+                    })
+
+                    .catch(function () {
+
+                        resultBox.innerHTML = `
+
+                            <div
+                                style="
+                                    padding:14px;
+                                    color:#ff6570;
+                                    font-size:12px;
+                                    text-align:center;
+                                "
+                            >
+                                Có lỗi khi tìm người dùng.
+                            </div>
+
+                        `;
 
 
-                    item.innerHTML = `
+                        resultBox.classList.remove(
+                            'is-hidden'
+                        );
+
+                    });
+
+                }, 300);
+
+            });
+
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ESCAPE HTML
+    |--------------------------------------------------------------------------
+    */
+
+    function escapeHtml(value) {
+
+        if (value === null || value === undefined) {
+            return '';
+        }
+
+        const div =
+            document.createElement('div');
+
+        div.textContent =
+            String(value);
+
+        return div.innerHTML;
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADD USER
+    |--------------------------------------------------------------------------
+    */
+
+    function addUser(form, user) {
+
+        const id =
+            String(user.id);
+
+
+        if (
+            selectedUsers[form].has(id)
+        ) {
+
+            return;
+
+        }
+
+
+        selectedUsers[form].set(
+            id,
+            user
+        );
+
+
+        renderSelectedUsers(
+            form
+        );
+
+
+        const targetForm =
+            form === 'gift'
+                ? document.getElementById('giftPointForm')
+                : document.getElementById('withdrawPointForm');
+
+
+        clearFormClientErrors(
+            targetForm
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REMOVE USER
+    |--------------------------------------------------------------------------
+    */
+
+    function removeUser(form, id) {
+
+        selectedUsers[form].delete(
+            String(id)
+        );
+
+
+        renderSelectedUsers(
+            form
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RENDER USER ĐÃ CHỌN
+    |--------------------------------------------------------------------------
+    */
+
+    function renderSelectedUsers(form) {
+
+        const selectedBox =
+            document.querySelector(
+                `[data-selected-users="${form}"]`
+            );
+
+        const hiddenBox =
+            document.querySelector(
+                `[data-selected-inputs="${form}"]`
+            );
+
+
+        if (!selectedBox || !hiddenBox) {
+            return;
+        }
+
+
+        selectedBox.innerHTML =
+            '';
+
+        hiddenBox.innerHTML =
+            '';
+
+
+        selectedUsers[form]
+            .forEach(function (user) {
+
+                const id =
+                    String(user.id);
+
+
+                const name =
+                    user.name ??
+                    user.ho_ten ??
+                    'Người dùng';
+
+
+                const email =
+                    user.email ??
+                    '';
+
+
+                const item =
+                    document.createElement('div');
+
+
+                item.className =
+                    'point-selected-user';
+
+
+                item.innerHTML = `
 
                     <span class="point-user-avatar">
 
@@ -3267,11 +3661,11 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                     <span class="point-selected-user-info">
 
                         <strong>
-                            ${name}
+                            ${escapeHtml(name)}
                         </strong>
 
                         <small>
-                            ${email}
+                            ${escapeHtml(email)}
                         </small>
 
                     </span>
@@ -3280,8 +3674,7 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                     <button
                         type="button"
                         class="point-remove-user"
-                        title="Bỏ chọn"
-                    >
+                        title="Bỏ chọn">
 
                         <i class="fa-solid fa-xmark"></i>
 
@@ -3290,70 +3683,1036 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                 `;
 
 
+                item
+                    .querySelector('.point-remove-user')
+                    .addEventListener(
+                        'click',
+                        function () {
+
+                            removeUser(
+                                form,
+                                id
+                            );
+
+                        }
+                    );
+
+
+                selectedBox.appendChild(
                     item
-                        .querySelector(
-                            '.point-remove-user'
-                        )
-                        .addEventListener(
-                            'click',
-                            function() {
-
-                                removeUser(
-                                    form,
-                                    id
-                                );
-
-                            }
-                        );
+                );
 
 
-                    selectedBox.appendChild(
-                        item
-                    );
+                const hidden =
+                    document.createElement('input');
 
 
-                    const hidden =
-                        document.createElement(
-                            'input'
-                        );
-
-                    hidden.type =
-                        'hidden';
-
-                    hidden.name =
-                        'nguoi_dung_cu_the[]';
-
-                    hidden.value =
-                        id;
+                hidden.type =
+                    'hidden';
 
 
-                    hiddenBox.appendChild(
-                        hidden
-                    );
+                hidden.name =
+                    'nguoi_dung_cu_the[]';
 
-                });
+
+                hidden.value =
+                    id;
+
+
+                hiddenBox.appendChild(
+                    hidden
+                );
+
+            });
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATE SỐ ĐIỂM
+    |--------------------------------------------------------------------------
+    */
+
+    function validatePoints(points) {
+
+        if (!points) {
+            return false;
+        }
+
+
+        const rawValue =
+            points.value.trim();
+
+
+        /*
+        |--------------------------------------------------------------
+        | BỎ TRỐNG
+        |--------------------------------------------------------------
+        */
+
+        if (rawValue === '') {
+
+            showClientError(
+                points,
+                'Vui lòng nhập số điểm.'
+            );
+
+            return false;
 
         }
 
 
         /*
-        |--------------------------------------------------------------------------
-        | CLICK NGOÀI
-        |--------------------------------------------------------------------------
+        |--------------------------------------------------------------
+        | CHỈ CHO PHÉP SỐ NGUYÊN
+        |--------------------------------------------------------------
         */
 
-        document.addEventListener(
-            'click',
-            function() {
+        if (!/^\d+$/.test(rawValue)) {
+
+            showClientError(
+                points,
+                'Số điểm phải là số nguyên.'
+            );
+
+            return false;
+
+        }
+
+
+        const value =
+            Number(rawValue);
+
+
+        /*
+        |--------------------------------------------------------------
+        | KIỂM TRA SỐ AN TOÀN
+        |--------------------------------------------------------------
+        */
+
+        if (!Number.isSafeInteger(value)) {
+
+            showClientError(
+                points,
+                'Số điểm không hợp lệ.'
+            );
+
+            return false;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------
+        | MIN
+        |--------------------------------------------------------------
+        */
+
+        if (value < 1) {
+
+            showClientError(
+                points,
+                'Số điểm phải lớn hơn 0.'
+            );
+
+            return false;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------
+        | MAX = 100000
+        |--------------------------------------------------------------
+        */
+
+        if (value > MAX_POINTS) {
+
+            showClientError(
+                points,
+                'Số điểm tối đa được phép là 100.000 điểm.'
+            );
+
+            return false;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------
+        | HỢP LỆ
+        |--------------------------------------------------------------
+        */
+
+        clearClientError(points);
+
+        return true;
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATE FORM
+    |--------------------------------------------------------------------------
+    */
+
+    function validatePointForm(form) {
+
+        let valid = true;
+
+
+        if (!form) {
+            return false;
+        }
+
+
+        /*
+        |--------------------------------------------------------------
+        | XÓA LỖI CLIENT CŨ
+        |--------------------------------------------------------------
+        */
+
+        clearFormClientErrors(form);
+
+
+        /*
+        |--------------------------------------------------------------
+        | LẤY DỮ LIỆU TRONG FORM HIỆN TẠI
+        |--------------------------------------------------------------
+        */
+
+        const audience =
+            form.querySelector(
+                '[data-audience-value]'
+            )?.value || 'all';
+
+
+        const rank =
+            form.querySelector(
+                '[data-rank-value]'
+            )?.value || '';
+
+
+        const points =
+            form.querySelector(
+                '[name="so_diem"]'
+            );
+
+
+        const content =
+            form.querySelector(
+                '[name="noi_dung"]'
+            );
+
+
+        const formType =
+            form.id === 'giftPointForm'
+                ? 'gift'
+                : 'withdraw';
+
+
+        /*
+        |--------------------------------------------------------------
+        | SỐ ĐIỂM
+        |--------------------------------------------------------------
+        */
+
+        if (!validatePoints(points)) {
+
+            valid = false;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------
+        | NỘI DUNG
+        |--------------------------------------------------------------
+        */
+
+        if (!content.value.trim()) {
+
+            showClientError(
+                content,
+                'Vui lòng nhập nội dung.'
+            );
+
+            valid = false;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------
+        | GIỚI HẠN NỘI DUNG
+        |--------------------------------------------------------------
+        */
+
+        if (content.value.trim().length > 255) {
+
+            showClientError(
+                content,
+                'Nội dung không được vượt quá 255 ký tự.'
+            );
+
+            valid = false;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------
+        | HẠNG THÀNH VIÊN
+        |--------------------------------------------------------------
+        */
+
+        if (
+            audience === 'hang_thanh_vien' &&
+            !rank
+        ) {
+
+            const rankInput =
+                form.querySelector(
+                    '[data-rank-value]'
+                );
+
+
+            const rankSelect =
+                rankInput?.closest(
+                    '.all-point-custom-select'
+                );
+
+
+            if (rankSelect) {
+
+                rankSelect.classList.add(
+                    'is-invalid'
+                );
+
+
+                const parent =
+                    rankSelect.closest(
+                        '.all-point-field'
+                    );
+
+
+                if (parent) {
+
+                    let error =
+                        parent.querySelector(
+                            '.client-validation-error'
+                        );
+
+
+                    if (!error) {
+
+                        error =
+                            document.createElement(
+                                'small'
+                            );
+
+
+                        error.className =
+                            'all-point-error client-validation-error';
+
+
+                        parent.appendChild(
+                            error
+                        );
+
+                    }
+
+
+                    error.innerHTML = `
+
+                        <i class="fa-solid fa-circle-exclamation"></i>
+
+                        Vui lòng chọn hạng thành viên.
+
+                    `;
+
+                }
+
+            }
+
+
+            valid = false;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------
+        | NGƯỜI DÙNG CỤ THỂ
+        |--------------------------------------------------------------
+        */
+
+        if (
+            audience === 'nguoi_dung_cu_the'
+        ) {
+
+            if (
+                selectedUsers[formType].size === 0
+            ) {
+
+                const specificWrapper =
+                    form.querySelector(
+                        '[data-specific-wrapper].is-visible'
+                    );
+
+
+                if (specificWrapper) {
+
+                    const field =
+                        specificWrapper.querySelector(
+                            '.point-user-search input'
+                        );
+
+
+                    showClientError(
+                        field,
+                        'Vui lòng chọn ít nhất một người dùng.'
+                    );
+
+                }
+
+
+                valid = false;
+
+            }
+
+        }
+
+
+        return valid;
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATION REALTIME SỐ ĐIỂM
+    |--------------------------------------------------------------------------
+    */
+
+    document
+        .querySelectorAll('[name="so_diem"]')
+        .forEach(function (pointsInput) {
+
+
+            /*
+            |--------------------------------------------------------------
+            | INPUT
+            |--------------------------------------------------------------
+            */
+
+            pointsInput.addEventListener(
+                'input',
+                function () {
+
+                    const rawValue =
+                        this.value.trim();
+
+
+                    /*
+                    |------------------------------------------------------
+                    | CHƯA NHẬP
+                    |------------------------------------------------------
+                    */
+
+                    if (rawValue === '') {
+
+                        clearClientError(this);
+
+                        return;
+
+                    }
+
+
+                    /*
+                    |------------------------------------------------------
+                    | CÓ KÝ TỰ KHÔNG PHẢI SỐ
+                    |------------------------------------------------------
+                    */
+
+                    if (!/^\d+$/.test(rawValue)) {
+
+                        showClientError(
+                            this,
+                            'Số điểm phải là số nguyên.'
+                        );
+
+                        return;
+
+                    }
+
+
+                    const value =
+                        Number(rawValue);
+
+
+                    /*
+                    |------------------------------------------------------
+                    | QUÁ LỚN
+                    |------------------------------------------------------
+                    */
+
+                    if (
+                        !Number.isSafeInteger(value)
+                    ) {
+
+                        showClientError(
+                            this,
+                            'Số điểm không hợp lệ.'
+                        );
+
+                        return;
+
+                    }
+
+
+                    /*
+                    |------------------------------------------------------
+                    | NHỎ HƠN 1
+                    |------------------------------------------------------
+                    */
+
+                    if (value < 1) {
+
+                        showClientError(
+                            this,
+                            'Số điểm phải lớn hơn 0.'
+                        );
+
+                        return;
+
+                    }
+
+
+                    /*
+                    |------------------------------------------------------
+                    | VƯỢT MAX
+                    |------------------------------------------------------
+                    */
+
+                    if (value > MAX_POINTS) {
+
+                        showClientError(
+                            this,
+                            'Số điểm tối đa được phép là 100.000 điểm.'
+                        );
+
+                        return;
+
+                    }
+
+
+                    /*
+                    |------------------------------------------------------
+                    | HỢP LỆ
+                    |------------------------------------------------------
+                    */
+
+                    clearClientError(this);
+
+                }
+            );
+
+
+            /*
+            |--------------------------------------------------------------
+            | BLUR
+            |--------------------------------------------------------------
+            */
+
+            pointsInput.addEventListener(
+                'blur',
+                function () {
+
+                    validatePoints(this);
+
+                }
+            );
+
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VALIDATION REALTIME NỘI DUNG
+    |--------------------------------------------------------------------------
+    */
+
+    document
+        .querySelectorAll('[name="noi_dung"]')
+        .forEach(function (textarea) {
+
+            textarea.addEventListener(
+                'input',
+                function () {
+
+                    const value =
+                        this.value.trim();
+
+
+                    if (value === '') {
+
+                        clearClientError(this);
+
+                        return;
+
+                    }
+
+
+                    if (value.length > 255) {
+
+                        showClientError(
+                            this,
+                            'Nội dung không được vượt quá 255 ký tự.'
+                        );
+
+                        return;
+
+                    }
+
+
+                    clearClientError(this);
+
+                }
+            );
+
+
+            textarea.addEventListener(
+                'blur',
+                function () {
+
+                    if (!this.value.trim()) {
+
+                        showClientError(
+                            this,
+                            'Vui lòng nhập nội dung.'
+                        );
+
+                    }
+
+                }
+            );
+
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SUBMIT - TẶNG ĐIỂM
+    |--------------------------------------------------------------------------
+    */
+
+    document
+        .getElementById('giftPointForm')
+        ?.addEventListener(
+            'submit',
+            function (e) {
+
+                const form =
+                    this;
+
+
+                /*
+                |----------------------------------------------------------
+                | VALIDATE
+                |----------------------------------------------------------
+                */
+
+                if (
+                    !validatePointForm(form)
+                ) {
+
+                    e.preventDefault();
+
+                    return;
+
+                }
+
+
+                const audience =
+                    form.querySelector(
+                        '[data-audience-value]'
+                    )?.value || 'all';
+
+
+                const rank =
+                    form.querySelector(
+                        '[data-rank-value]'
+                    )?.value || '';
+
+
+                const points =
+                    form.querySelector(
+                        '[name="so_diem"]'
+                    )?.value || 0;
+
+
+                let audienceText =
+                    'tất cả thành viên';
+
+
+                /*
+                |----------------------------------------------------------
+                | THEO HẠNG
+                |----------------------------------------------------------
+                */
+
+                if (
+                    audience === 'hang_thanh_vien'
+                ) {
+
+                    const rankNames = {
+
+                        member: 'Member',
+                        silver: 'Silver',
+                        gold: 'Gold',
+                        platinum: 'Platinum'
+
+                    };
+
+
+                    audienceText =
+                        'thành viên thuộc hạng ' +
+                        (
+                            rankNames[rank] ||
+                            rank
+                        );
+
+                }
+
+
+                /*
+                |----------------------------------------------------------
+                | USER CỤ THỂ
+                |----------------------------------------------------------
+                */
+
+                if (
+                    audience === 'nguoi_dung_cu_the'
+                ) {
+
+                    const count =
+                        selectedUsers.gift.size;
+
+
+                    audienceText =
+                        count +
+                        ' người dùng được chọn';
+
+                }
+
+
+                /*
+                |----------------------------------------------------------
+                | CONFIRM
+                |----------------------------------------------------------
+                */
+
+                const confirmed =
+                    window.confirm(
+                        'Bạn có chắc chắn muốn TẶNG ' +
+                        Number(points).toLocaleString('vi-VN') +
+                        ' điểm cho ' +
+                        audienceText +
+                        '?'
+                    );
+
+
+                if (!confirmed) {
+
+                    e.preventDefault();
+
+                }
+
+            }
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SUBMIT - THU HỒI ĐIỂM
+    |--------------------------------------------------------------------------
+    */
+
+    document
+        .getElementById('withdrawPointForm')
+        ?.addEventListener(
+            'submit',
+            function (e) {
+
+                const form =
+                    this;
+
+
+                /*
+                |----------------------------------------------------------
+                | VALIDATE
+                |----------------------------------------------------------
+                */
+
+                if (
+                    !validatePointForm(form)
+                ) {
+
+                    e.preventDefault();
+
+                    return;
+
+                }
+
+
+                const audience =
+                    form.querySelector(
+                        '[data-audience-value]'
+                    )?.value || 'all';
+
+
+                const rank =
+                    form.querySelector(
+                        '[data-rank-value]'
+                    )?.value || '';
+
+
+                const points =
+                    form.querySelector(
+                        '[name="so_diem"]'
+                    )?.value || 0;
+
+
+                let audienceText =
+                    'tất cả thành viên';
+
+
+                /*
+                |----------------------------------------------------------
+                | THEO HẠNG
+                |----------------------------------------------------------
+                */
+
+                if (
+                    audience === 'hang_thanh_vien'
+                ) {
+
+                    const rankNames = {
+
+                        member: 'Member',
+                        silver: 'Silver',
+                        gold: 'Gold',
+                        platinum: 'Platinum'
+
+                    };
+
+
+                    audienceText =
+                        'thành viên thuộc hạng ' +
+                        (
+                            rankNames[rank] ||
+                            rank
+                        );
+
+                }
+
+
+                /*
+                |----------------------------------------------------------
+                | USER CỤ THỂ
+                |----------------------------------------------------------
+                */
+
+                if (
+                    audience === 'nguoi_dung_cu_the'
+                ) {
+
+                    const count =
+                        selectedUsers.withdraw.size;
+
+
+                    audienceText =
+                        count +
+                        ' người dùng được chọn';
+
+                }
+
+
+                /*
+                |----------------------------------------------------------
+                | CONFIRM
+                |----------------------------------------------------------
+                */
+
+                const confirmed =
+                    window.confirm(
+                        'Bạn có chắc chắn muốn THU HỒI ' +
+                        Number(points).toLocaleString('vi-VN') +
+                        ' điểm khỏi ' +
+                        audienceText +
+                        '?\n\n' +
+                        'Điểm của thành viên sẽ không bị âm.'
+                    );
+
+
+                if (!confirmed) {
+
+                    e.preventDefault();
+
+                }
+
+            }
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLICK RA NGOÀI
+    |--------------------------------------------------------------------------
+    */
+
+    document.addEventListener(
+        'click',
+        function () {
+
+            closeAllDropdowns();
+
+
+            document
+                .querySelectorAll('.point-user-results')
+                .forEach(function (box) {
+
+                    box.classList.add(
+                        'is-hidden'
+                    );
+
+                });
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | KHÔNG ĐÓNG USER RESULTS KHI CLICK BÊN TRONG
+    |--------------------------------------------------------------------------
+    */
+
+    document
+        .querySelectorAll('.point-user-results')
+        .forEach(function (box) {
+
+            box.addEventListener(
+                'click',
+                function (e) {
+
+                    e.stopPropagation();
+
+                }
+            );
+
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | KHÔNG ĐÓNG SEARCH KHI CLICK INPUT
+    |--------------------------------------------------------------------------
+    */
+
+    document
+        .querySelectorAll('[data-user-search]')
+        .forEach(function (input) {
+
+            input.addEventListener(
+                'click',
+                function (e) {
+
+                    e.stopPropagation();
+
+                }
+            );
+
+        });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | KHỞI TẠO AUDIENCE
+    |--------------------------------------------------------------------------
+    */
+
+    const giftAudienceInput =
+        document.querySelector(
+            '[data-audience-select][data-form="gift"] [data-audience-value]'
+        );
+
+
+    const withdrawAudienceInput =
+        document.querySelector(
+            '[data-audience-select][data-form="withdraw"] [data-audience-value]'
+        );
+
+
+    updateAudience(
+        'gift',
+        giftAudienceInput?.value || 'all'
+    );
+
+
+    updateAudience(
+        'withdraw',
+        withdrawAudienceInput?.value || 'all'
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RENDER USER CŨ
+    |--------------------------------------------------------------------------
+    */
+
+    renderSelectedUsers('gift');
+
+    renderSelectedUsers('withdraw');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | RESIZE
+    |--------------------------------------------------------------------------
+    */
+
+    window.addEventListener(
+        'resize',
+        function () {
+
+            closeAllDropdowns();
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ESC
+    |--------------------------------------------------------------------------
+    */
+
+    document.addEventListener(
+        'keydown',
+        function (e) {
+
+            if (e.key === 'Escape') {
 
                 closeAllDropdowns();
 
-
                 document
-                    .querySelectorAll(
-                        '.point-user-results'
-                    )
-                    .forEach(function(box) {
+                    .querySelectorAll('.point-user-results')
+                    .forEach(function (box) {
 
                         box.classList.add(
                             'is-hidden'
@@ -3362,599 +4721,12 @@ $oldUsers = $oldUsers ? [$oldUsers] : [];
                     });
 
             }
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | KHÔNG CHO CLICK BÊN TRONG LÀM ĐÓNG
-        |--------------------------------------------------------------------------
-        */
-
-        document
-            .querySelectorAll(
-                '.point-user-results'
-            )
-            .forEach(function(box) {
-
-                box.addEventListener(
-                    'click',
-                    function(e) {
-
-                        e.stopPropagation();
-
-                    }
-                );
-
-            });
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | KHỞI TẠO
-        |--------------------------------------------------------------------------
-        */
-
-        updateAudience(
-            'gift',
-            document.querySelector(
-                '[data-audience-select][data-form="gift"] [data-audience-value]'
-            )?.value || 'all'
-        );
-
-
-        updateAudience(
-            'withdraw',
-            document.querySelector(
-                '[data-audience-select][data-form="withdraw"] [data-audience-value]'
-            )?.value || 'all'
-        );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CLIENT VALIDATION
-        |--------------------------------------------------------------------------
-        */
-
-        function showClientError(
-            field,
-            message
-        ) {
-
-            field.classList.add(
-                'is-invalid'
-            );
-
-
-            const parent =
-                field.closest(
-                    '.all-point-field'
-                );
-
-
-            if (!parent) {
-                return;
-            }
-
-
-            let error =
-                parent.querySelector(
-                    '.client-validation-error'
-                );
-
-
-            if (!error) {
-
-                error =
-                    document.createElement(
-                        'small'
-                    );
-
-                error.className =
-                    'all-point-error client-validation-error';
-
-                parent.appendChild(
-                    error
-                );
-
-            }
-
-
-            error.innerHTML = `
-
-            <i class="fa-solid fa-circle-exclamation"></i>
-
-            ${message}
-
-        `;
 
         }
+    );
 
+});
 
-        function clearClientError(
-            field
-        ) {
-
-            field.classList.remove(
-                'is-invalid'
-            );
-
-
-            const parent =
-                field.closest(
-                    '.all-point-field'
-                );
-
-
-            if (!parent) {
-                return;
-            }
-
-
-            const error =
-                parent.querySelector(
-                    '.client-validation-error'
-                );
-
-
-            if (error) {
-
-                error.remove();
-
-            }
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | VALIDATE FORM
-        |--------------------------------------------------------------------------
-        */
-
-        function validatePointForm(form) {
-
-            let valid = true;
-
-
-            const audience =
-                form.querySelector(
-                    '[data-audience-value]'
-                )?.value;
-
-
-            const rank =
-                form.querySelector(
-                    '[data-rank-value]'
-                )?.value;
-
-
-            const points =
-                form.querySelector(
-                    '[name="so_diem"]'
-                );
-
-
-            const content =
-                form.querySelector(
-                    '[name="noi_dung"]'
-                );
-
-
-            clearClientError(
-                points
-            );
-
-            clearClientError(
-                content
-            );
-
-
-            /*
-            |----------------------------------------------
-            | ĐIỂM
-            |----------------------------------------------
-            */
-
-            if (
-                !points.value ||
-                Number(points.value) < 1
-            ) {
-
-                showClientError(
-                    points,
-                    'Vui lòng nhập số điểm hợp lệ.'
-                );
-
-                valid = false;
-
-            }
-
-
-            /*
-            |----------------------------------------------
-            | NỘI DUNG
-            |----------------------------------------------
-            */
-
-            if (
-                !content.value.trim()
-            ) {
-
-                showClientError(
-                    content,
-                    'Vui lòng nhập nội dung.'
-                );
-
-                valid = false;
-
-            }
-
-
-            /*
-            |----------------------------------------------
-            | HẠNG
-            |----------------------------------------------
-            */
-
-            if (
-                audience === 'hang_thanh_vien' &&
-                !rank
-            ) {
-
-                const rankInput =
-                    form.querySelector(
-                        '[data-rank-value]'
-                    );
-
-
-                const rankSelect =
-                    rankInput?.closest(
-                        '.all-point-custom-select'
-                    );
-
-
-                if (rankSelect) {
-
-                    rankSelect.classList.add(
-                        'is-invalid'
-                    );
-
-
-                    const parent =
-                        rankSelect.closest(
-                            '.all-point-field'
-                        );
-
-
-                    if (parent) {
-
-                        let error =
-                            parent.querySelector(
-                                '.client-validation-error'
-                            );
-
-
-                        if (!error) {
-
-                            error =
-                                document.createElement(
-                                    'small'
-                                );
-
-                            error.className =
-                                'all-point-error client-validation-error';
-
-                            parent.appendChild(
-                                error
-                            );
-
-                        }
-
-
-                        error.innerHTML = `
-
-                        <i class="fa-solid fa-circle-exclamation"></i>
-
-                        Vui lòng chọn hạng thành viên.
-
-                    `;
-
-                    }
-
-                }
-
-
-                valid = false;
-
-            }
-
-
-            /*
-            |----------------------------------------------
-            | NGƯỜI DÙNG CỤ THỂ
-            |----------------------------------------------
-            */
-
-            if (
-                audience === 'nguoi_dung_cu_the'
-            ) {
-
-                if (
-                    selectedUsers[
-                        form.id === 'giftPointForm' ?
-                        'gift' :
-                        'withdraw'
-                    ].size === 0
-                ) {
-
-                    const specificWrapper =
-                        form.querySelector(
-                            '.point-conditional.is-visible'
-                        );
-
-
-                    if (specificWrapper) {
-
-                        const field =
-                            specificWrapper.querySelector(
-                                '.point-user-search input'
-                            );
-
-
-                        showClientError(
-                            field,
-                            'Vui lòng chọn ít nhất một người dùng.'
-                        );
-
-                    }
-
-
-                    valid = false;
-
-                }
-
-            }
-
-
-            return valid;
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SUBMIT
-        |--------------------------------------------------------------------------
-        */
-
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SUBMIT + CONFIRM ALERT
-        |--------------------------------------------------------------------------
-        */
-
-        document
-            .getElementById('giftPointForm')
-            ?.addEventListener(
-                'submit',
-                function(e) {
-
-                    /*
-                    |--------------------------------------------------------------
-                    | Validate trước
-                    |--------------------------------------------------------------
-                    */
-
-                    if (!validatePointForm(this)) {
-
-                        e.preventDefault();
-
-                        return;
-
-                    }
-
-
-                    /*
-                    |--------------------------------------------------------------
-                    | Lấy thông tin form
-                    |--------------------------------------------------------------
-                    */
-
-                    const audience =
-                        this.querySelector(
-                            '[data-audience-value]'
-                        )?.value || 'all';
-
-                    const rank =
-                        this.querySelector(
-                            '[data-rank-value]'
-                        )?.value || '';
-
-                    const points =
-                        this.querySelector(
-                            '[name="so_diem"]'
-                        )?.value || 0;
-
-
-                    /*
-                    |--------------------------------------------------------------
-                    | Xác định đối tượng
-                    |--------------------------------------------------------------
-                    */
-
-                    let audienceText =
-                        'tất cả thành viên';
-
-                    if (audience === 'hang_thanh_vien') {
-
-                        const rankNames = {
-                            member: 'Member',
-                            silver: 'Silver',
-                            gold: 'Gold',
-                            platinum: 'Platinum'
-                        };
-
-                        audienceText =
-                            'thành viên thuộc hạng ' +
-                            (rankNames[rank] || rank);
-
-                    }
-
-
-                    if (audience === 'nguoi_dung_cu_the') {
-
-                        const count =
-                            selectedUsers.gift.size;
-
-                        audienceText =
-                            count +
-                            ' người dùng được chọn';
-
-                    }
-
-
-                    /*
-                    |--------------------------------------------------------------
-                    | Xác nhận
-                    |--------------------------------------------------------------
-                    */
-
-                    const confirmed =
-                        window.confirm(
-                            'Bạn có chắc chắn muốn TẶNG ' +
-                            points +
-                            ' điểm cho ' +
-                            audienceText +
-                            '?'
-                        );
-
-
-                    if (!confirmed) {
-
-                        e.preventDefault();
-
-                        return;
-
-                    }
-
-                }
-            );
-
-
-
-        document
-            .getElementById('withdrawPointForm')
-            ?.addEventListener(
-                'submit',
-                function(e) {
-
-                    /*
-                    |--------------------------------------------------------------
-                    | Validate trước
-                    |--------------------------------------------------------------
-                    */
-
-                    if (!validatePointForm(this)) {
-
-                        e.preventDefault();
-
-                        return;
-
-                    }
-
-
-                    /*
-                    |--------------------------------------------------------------
-                    | Lấy thông tin form
-                    |--------------------------------------------------------------
-                    */
-
-                    const audience =
-                        this.querySelector(
-                            '[data-audience-value]'
-                        )?.value || 'all';
-
-                    const rank =
-                        this.querySelector(
-                            '[data-rank-value]'
-                        )?.value || '';
-
-                    const points =
-                        this.querySelector(
-                            '[name="so_diem"]'
-                        )?.value || 0;
-
-
-                    /*
-                    |--------------------------------------------------------------
-                    | Xác định đối tượng
-                    |--------------------------------------------------------------
-                    */
-
-                    let audienceText =
-                        'tất cả thành viên';
-
-                    if (audience === 'hang_thanh_vien') {
-
-                        const rankNames = {
-                            member: 'Member',
-                            silver: 'Silver',
-                            gold: 'Gold',
-                            platinum: 'Platinum'
-                        };
-
-                        audienceText =
-                            'thành viên thuộc hạng ' +
-                            (rankNames[rank] || rank);
-
-                    }
-
-
-                    if (audience === 'nguoi_dung_cu_the') {
-
-                        const count =
-                            selectedUsers.withdraw.size;
-
-                        audienceText =
-                            count +
-                            ' người dùng được chọn';
-
-                    }
-
-
-                    /*
-                    |--------------------------------------------------------------
-                    | Xác nhận
-                    |--------------------------------------------------------------
-                    */
-
-                    const confirmed =
-                        window.confirm(
-                            'Bạn có chắc chắn muốn THU HỒI ' +
-                            points +
-                            ' điểm khỏi ' +
-                            audienceText +
-                            '?\n\nĐiểm của thành viên sẽ không bị âm.'
-                        );
-
-
-                    if (!confirmed) {
-
-                        e.preventDefault();
-
-                        return;
-
-                    }
-
-                }
-            );
-
-    });
 </script>
 
 @endsection

@@ -1054,6 +1054,54 @@
         margin-top: 4px;
         text-transform: uppercase;
     }
+
+    /* =========================================================
+       FIX DROPDOWN THONG KE KHONG BI KPI CHE
+       - Khong tao stacking context cho toan bo filter
+       - Dropdown nam tren KPI
+       - Khong nang parent len de tranh de header/thong bao
+    ========================================================= */
+    .filter-section-modern {
+        position: relative;
+        z-index: auto;
+        isolation: auto;
+        overflow: visible !important;
+    }
+
+    .filter-main-row {
+        position: relative;
+        z-index: 20;
+    }
+
+    .filter-dropdown,
+    .custom-select {
+        position: relative;
+        z-index: 30;
+    }
+
+    .filter-dropdown-menu,
+    .custom-select-dropdown {
+        z-index: 100 !important;
+    }
+
+    .kpi-grid,
+    .main-grid {
+        position: relative;
+        z-index: 1;
+    }
+
+    .filter-actions {
+        position: relative;
+        z-index: 30;
+    }
+
+    .btn-filter-primary,
+    .btn-filter-secondary,
+    .btn-export {
+        position: relative;
+        z-index: 31;
+        pointer-events: auto;
+    }
 </style>
 @endpush
 
@@ -2040,641 +2088,1766 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
-        /* =====================================================
-           BIẾN FILTER
-        ===================================================== */
+    /* =========================================================
+       BIẾN FILTER
+    ========================================================= */
 
-        let currentPeriod = @json($periodType ?? 'day');
+    let currentPeriod = @json($periodType ?? 'day');
 
-        let selectedPhim = @json($phimId ?? '');
-        let selectedPhong = @json($phongChieuId ?? '');
+    let selectedPhim = @json($phimId ?? '');
+    let selectedPhong = @json($phongChieuId ?? '');
 
-        let selectedFromQuarter = @json($fromQuarter ?? ceil(date('n') / 3));
-        let selectedFromQuarterYear = @json($fromQuarterYear ?? date('Y'));
+    let selectedFromQuarter = Number(
+        @json($fromQuarter ?? ceil(date('n') / 3))
+    );
 
-        let selectedToQuarter = @json($toQuarter ?? ceil(date('n') / 3));
-        let selectedToQuarterYear = @json($toQuarterYear ?? date('Y'));
+    let selectedFromQuarterYear = Number(
+        @json($fromQuarterYear ?? date('Y'))
+    );
 
-        let selectedFromYear = @json($fromYear ?? date('Y'));
-        let selectedToYear = @json($toYear ?? date('Y'));
+    let selectedToQuarter = Number(
+        @json($toQuarter ?? ($fromQuarter ?? ceil(date('n') / 3)))
+    );
+
+    let selectedToQuarterYear = Number(
+        @json($toQuarterYear ?? ($fromQuarterYear ?? date('Y')))
+    );
+
+    let selectedFromYear = Number(
+        @json($fromYear ?? date('Y'))
+    );
+
+    let selectedToYear = Number(
+        @json($toYear ?? ($fromYear ?? date('Y')))
+    );
 
 
-        /* =====================================================
-           CHỌN NGÀY / THÁNG / QUÝ / NĂM
-        ===================================================== */
+    /* =========================================================
+       HÀM SO SÁNH QUÝ
+       
+       Ví dụ:
+       Q1/2025 < Q2/2025
+       Q4/2025 < Q1/2026
+       ========================================================= */
 
-        window.selectPeriodType = function(type) {
+    function quarterValue(quarter, year) {
+        return (Number(year) * 4) + Number(quarter);
+    }
 
-            currentPeriod = type;
 
-            document.querySelectorAll('.period-tab')
-                .forEach(function(tab) {
-                    tab.classList.remove('active');
-                });
+    /* =========================================================
+       SO SÁNH QUÝ
+       ========================================================= */
 
-            const selectedTab =
-                document.querySelector(
-                    '.period-tab[data-period="' + type + '"]'
-                );
+    function isQuarterBefore(
+        quarter,
+        year,
+        fromQuarter,
+        fromYear
+    ) {
+        return quarterValue(quarter, year) <
+            quarterValue(fromQuarter, fromYear);
+    }
 
-            if (selectedTab) {
-                selectedTab.classList.add('active');
+
+    /* =========================================================
+       SO SÁNH NĂM
+       ========================================================= */
+
+    function isYearBefore(year, fromYear) {
+        return Number(year) < Number(fromYear);
+    }
+
+
+    /* =========================================================
+       CHỌN NGÀY / THÁNG / QUÝ / NĂM
+       ========================================================= */
+
+    window.selectPeriodType = function (type) {
+
+        currentPeriod = type;
+
+        /* ---------------------------------------------
+           TAB ACTIVE
+        --------------------------------------------- */
+
+        document
+            .querySelectorAll('.period-tab')
+            .forEach(function (tab) {
+
+                tab.classList.remove('active');
+
+            });
+
+
+        const selectedTab = document.querySelector(
+            '.period-tab[data-period="' + type + '"]'
+        );
+
+
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+        }
+
+
+        /* ---------------------------------------------
+           ẨN TẤT CẢ
+        --------------------------------------------- */
+
+        const wraps = [
+            'dateRangeWrap',
+            'monthRangeWrap',
+            'quarterRangeWrap',
+            'yearRangeWrap'
+        ];
+
+
+        wraps.forEach(function (id) {
+
+            const element =
+                document.getElementById(id);
+
+            if (element) {
+                element.classList.add('hidden');
             }
 
-            const wraps = [
-                'dateRangeWrap',
-                'monthRangeWrap',
-                'quarterRangeWrap',
-                'yearRangeWrap'
-            ];
+        });
 
-            wraps.forEach(function(id) {
 
-                const element = document.getElementById(id);
+        /* ---------------------------------------------
+           HIỆN LOẠI ĐANG CHỌN
+        --------------------------------------------- */
 
-                if (element) {
-                    element.classList.add('hidden');
+        const map = {
+            day: 'dateRangeWrap',
+            month: 'monthRangeWrap',
+            quarter: 'quarterRangeWrap',
+            year: 'yearRangeWrap'
+        };
+
+
+        const target =
+            document.getElementById(map[type]);
+
+
+        if (target) {
+            target.classList.remove('hidden');
+        }
+
+
+        /* ---------------------------------------------
+           CẬP NHẬT GIỚI HẠN
+        --------------------------------------------- */
+
+        updateDateEndMin();
+        updateMonthEndMin();
+        updateQuarterToOptions();
+        updateYearToOptions();
+
+        updateFilterDescription();
+    };
+
+
+    /* =========================================================
+       DROPDOWN
+       ========================================================= */
+
+    window.toggleDropdown = function (id) {
+
+        const dropdown =
+            document.getElementById(id);
+
+        if (!dropdown) {
+            return;
+        }
+
+
+        document
+            .querySelectorAll('.filter-dropdown')
+            .forEach(function (item) {
+
+                if (item.id !== id) {
+
+                    item.classList.remove('open');
+
                 }
 
             });
 
-            const map = {
-                day: 'dateRangeWrap',
-                month: 'monthRangeWrap',
-                quarter: 'quarterRangeWrap',
-                year: 'yearRangeWrap'
-            };
 
-            const target =
-                document.getElementById(map[type]);
-
-            if (target) {
-                target.classList.remove('hidden');
-            }
-
-            updateFilterDescription();
-        };
+        dropdown.classList.toggle('open');
+    };
 
 
-        /* =====================================================
-           DROPDOWN
-        ===================================================== */
+    /* =========================================================
+       CLICK BÊN NGOÀI DROPDOWN
+       ========================================================= */
 
-        window.toggleDropdown = function(id) {
+    document.addEventListener('click', function (e) {
 
-            const dropdown =
-                document.getElementById(id);
+        if (!e.target.closest('.filter-dropdown')) {
 
-            if (!dropdown) return;
+            document
+                .querySelectorAll('.filter-dropdown')
+                .forEach(function (dropdown) {
 
-            document.querySelectorAll('.filter-dropdown')
-                .forEach(function(item) {
-
-                    if (item.id !== id) {
-                        item.classList.remove('open');
-                    }
+                    dropdown.classList.remove('open');
 
                 });
 
-            dropdown.classList.toggle('open');
-        };
+        }
+
+    });
 
 
-        /* Click bên ngoài thì đóng dropdown */
-        document.addEventListener('click', function(e) {
+    /* =========================================================
+       NGÀY
+       
+       Đến ngày >= Từ ngày
+       ========================================================= */
 
-            if (!e.target.closest('.filter-dropdown')) {
+    function updateDateEndMin() {
 
-                document.querySelectorAll('.filter-dropdown')
-                    .forEach(function(dropdown) {
-                        dropdown.classList.remove('open');
-                    });
+        const fromInput =
+            document.getElementById('dateFrom');
+
+        const toInput =
+            document.getElementById('dateTo');
+
+
+        if (!fromInput || !toInput) {
+            return;
+        }
+
+
+        const from = fromInput.value;
+
+
+        if (from) {
+
+            /*
+             * HTML5 date:
+             * Đến ngày không thể chọn trước Từ ngày
+             */
+
+            toInput.min = from;
+
+
+            /*
+             * Nếu Đến ngày hiện tại nhỏ hơn Từ ngày
+             * thì tự động đưa về Từ ngày
+             */
+
+            if (
+                toInput.value &&
+                toInput.value < from
+            ) {
+
+                toInput.value = from;
+
+            }
+
+        } else {
+
+            toInput.removeAttribute('min');
+
+        }
+    }
+
+
+    /* =========================================================
+       EVENT NGÀY
+       ========================================================= */
+
+    const dateFrom =
+        document.getElementById('dateFrom');
+
+    const dateTo =
+        document.getElementById('dateTo');
+
+
+    if (dateFrom) {
+
+        dateFrom.addEventListener(
+            'change',
+            function () {
+
+                updateDateEndMin();
+
+                updateFilterDescription();
+
+            }
+        );
+
+    }
+
+
+    if (dateTo) {
+
+        dateTo.addEventListener(
+            'change',
+            function () {
+
+                if (
+                    dateFrom &&
+                    dateFrom.value &&
+                    this.value < dateFrom.value
+                ) {
+
+                    this.value =
+                        dateFrom.value;
+
+                }
+
+                updateFilterDescription();
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       THÁNG
+       
+       Đến tháng >= Từ tháng
+       ========================================================= */
+
+    function updateMonthEndMin() {
+
+        const fromInput =
+            document.getElementById('monthFrom');
+
+        const toInput =
+            document.getElementById('monthTo');
+
+
+        if (!fromInput || !toInput) {
+            return;
+        }
+
+
+        const from = fromInput.value;
+
+
+        if (from) {
+
+            /*
+             * HTML5 month:
+             * Đến tháng không thể chọn trước Từ tháng
+             */
+
+            toInput.min = from;
+
+
+            /*
+             * Nếu đang nhỏ hơn Từ tháng
+             * tự động đưa về Từ tháng
+             */
+
+            if (
+                toInput.value &&
+                toInput.value < from
+            ) {
+
+                toInput.value = from;
+
+            }
+
+        } else {
+
+            toInput.removeAttribute('min');
+
+        }
+    }
+
+
+    /* =========================================================
+       EVENT THÁNG
+       ========================================================= */
+
+    const monthFrom =
+        document.getElementById('monthFrom');
+
+    const monthTo =
+        document.getElementById('monthTo');
+
+
+    if (monthFrom) {
+
+        monthFrom.addEventListener(
+            'change',
+            function () {
+
+                updateMonthEndMin();
+
+                updateFilterDescription();
+
+            }
+        );
+
+    }
+
+
+    if (monthTo) {
+
+        monthTo.addEventListener(
+            'change',
+            function () {
+
+                if (
+                    monthFrom &&
+                    monthFrom.value &&
+                    this.value < monthFrom.value
+                ) {
+
+                    this.value =
+                        monthFrom.value;
+
+                }
+
+                updateFilterDescription();
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       QUÝ - CẬP NHẬT DANH SÁCH ĐẾN QUÝ
+       
+       Ví dụ:
+       
+       Từ = Q1/2025
+       
+       Đến chỉ hiện:
+       Q1/2025
+       Q2/2025
+       Q3/2025
+       Q4/2025
+       Q1/2026
+       ...
+       
+       Không hiện:
+       Q4/2024
+       Q3/2024
+       ...
+       ========================================================= */
+
+    function updateQuarterToOptions() {
+
+        const dropdown =
+            document.getElementById('dropdownQuyTo');
+
+
+        if (!dropdown) {
+            return;
+        }
+
+
+        const options =
+            dropdown.querySelectorAll(
+                '.filter-option'
+            );
+
+
+        options.forEach(function (option) {
+
+            const quarter =
+                Number(option.dataset.quarter);
+
+            const year =
+                Number(option.dataset.year);
+
+
+            if (
+                isQuarterBefore(
+                    quarter,
+                    year,
+                    selectedFromQuarter,
+                    selectedFromQuarterYear
+                )
+            ) {
+
+                /*
+                 * Ẩn quý trước Từ quý
+                 */
+
+                option.style.display = 'none';
+
+                option.classList.remove('selected');
+
+            } else {
+
+                /*
+                 * Hiện quý hợp lệ
+                 */
+
+                option.style.display = '';
 
             }
 
         });
 
 
-        /* =====================================================
-           CHỌN QUÝ FROM
-        ===================================================== */
+        /* ---------------------------------------------
+           KIỂM TRA TO QUARTER HIỆN TẠI
+        --------------------------------------------- */
+
+        if (
+            isQuarterBefore(
+                selectedToQuarter,
+                selectedToQuarterYear,
+                selectedFromQuarter,
+                selectedFromQuarterYear
+            )
+        ) {
+
+            /*
+             * Nếu To < From
+             * tự động đưa To = From
+             */
+
+            selectedToQuarter =
+                selectedFromQuarter;
+
+            selectedToQuarterYear =
+                selectedFromQuarterYear;
 
-        window.selectQuarterFrom = function(quarter, year) {
-
-            selectedFromQuarter = quarter;
-            selectedFromQuarterYear = year;
-
-            const text =
-                document.getElementById('selectedQuyFromName');
-
-            if (text) {
-                text.textContent =
-                    'Q' + quarter + '/' + year;
-            }
-
-            const dropdown =
-                document.getElementById('dropdownQuyFrom');
-
-            if (dropdown) {
-                dropdown.classList.remove('open');
-            }
-
-            updateFilterDescription();
-        };
-
-
-        /* =====================================================
-           CHỌN QUÝ TO
-        ===================================================== */
-
-        window.selectQuarterTo = function(quarter, year) {
-
-            selectedToQuarter = quarter;
-            selectedToQuarterYear = year;
-
-            const text =
-                document.getElementById('selectedQuyToName');
-
-            if (text) {
-                text.textContent =
-                    'Q' + quarter + '/' + year;
-            }
-
-            const dropdown =
-                document.getElementById('dropdownQuyTo');
-
-            if (dropdown) {
-                dropdown.classList.remove('open');
-            }
-
-            updateFilterDescription();
-        };
-
-
-        /* =====================================================
-           CHỌN NĂM FROM
-        ===================================================== */
-
-        window.selectYearFrom = function(year) {
-
-            selectedFromYear = year;
-
-            const text =
-                document.getElementById('selectedNamFromName');
-
-            if (text) {
-                text.textContent = year;
-            }
-
-            const dropdown =
-                document.getElementById('dropdownNamFrom');
-
-            if (dropdown) {
-                dropdown.classList.remove('open');
-            }
-
-            updateFilterDescription();
-        };
-
-
-        /* =====================================================
-           CHỌN NĂM TO
-        ===================================================== */
-
-        window.selectYearTo = function(year) {
-
-            selectedToYear = year;
-
-            const text =
-                document.getElementById('selectedNamToName');
-
-            if (text) {
-                text.textContent = year;
-            }
-
-            const dropdown =
-                document.getElementById('dropdownNamTo');
-
-            if (dropdown) {
-                dropdown.classList.remove('open');
-            }
-
-            updateFilterDescription();
-        };
-
-
-        /* =====================================================
-           CHỌN PHIM / PHÒNG
-        ===================================================== */
-
-        window.selectFilterOption = function(type, value, label) {
-
-            if (type === 'phim') {
-
-                selectedPhim = value;
-
-                const input =
-                    document.getElementById('filterPhimId');
-
-                if (input) {
-                    input.value = value;
-                }
-
-                const text =
-                    document.getElementById('selectedPhimName');
-
-                if (text) {
-                    text.textContent = label;
-                }
-
-                document
-                    .querySelectorAll('#optionsPhim .filter-option')
-                    .forEach(function(option) {
-                        option.classList.remove('selected');
-                    });
-            }
-
-
-            if (type === 'phong') {
-
-                selectedPhong = value;
-
-                const input =
-                    document.getElementById('filterPhongId');
-
-                if (input) {
-                    input.value = value;
-                }
-
-                const text =
-                    document.getElementById('selectedPhongName');
-
-                if (text) {
-                    text.textContent = label;
-                }
-
-                document
-                    .querySelectorAll('#optionsPhong .filter-option')
-                    .forEach(function(option) {
-                        option.classList.remove('selected');
-                    });
-            }
-
-
-            const dropdown =
-                type === 'phim' ?
-                document.getElementById('dropdownPhim') :
-                document.getElementById('dropdownPhong');
-
-            if (dropdown) {
-                dropdown.classList.remove('open');
-            }
-
-            updateFilterDescription();
-        };
-
-
-        /* =====================================================
-           SEARCH DROPDOWN
-        ===================================================== */
-
-        window.filterOptions = function(dropdownId, keyword) {
-
-            const dropdown =
-                document.getElementById(dropdownId);
-
-            if (!dropdown) return;
-
-            const options =
-                dropdown.querySelectorAll('.filter-option');
-
-            keyword =
-                keyword
-                .toLowerCase()
-                .trim();
-
-            options.forEach(function(option) {
-
-                const text =
-                    (
-                        option.dataset.search ||
-                        option.textContent
-                    ).toLowerCase();
-
-                option.style.display =
-                    text.includes(keyword) ?
-                    '' :
-                    'none';
-            });
-        };
-
-
-        /* =====================================================
-           MÔ TẢ FILTER
-        ===================================================== */
-
-        window.updateFilterDescription = function() {
 
             const text =
                 document.getElementById(
-                    'filterDescriptionText'
+                    'selectedQuyToName'
                 );
 
-            if (!text) return;
 
-            let periodText = '';
+            if (text) {
 
-
-            /* NGÀY */
-            if (currentPeriod === 'day') {
-
-                const from =
-                    document.getElementById('dateFrom')?.value;
-
-                const to =
-                    document.getElementById('dateTo')?.value;
-
-                periodText =
-                    from && to ?
-                    formatDate(from) +
-                    ' → ' +
-                    formatDate(to) :
-                    'Hôm nay';
-            }
-
-
-            /* THÁNG */
-            else if (currentPeriod === 'month') {
-
-                const from =
-                    document.getElementById('monthFrom')?.value;
-
-                const to =
-                    document.getElementById('monthTo')?.value;
-
-                periodText =
-                    from && to ?
-                    formatMonth(from) +
-                    ' → ' +
-                    formatMonth(to) :
-                    'Tháng hiện tại';
-            }
-
-
-            /* QUÝ */
-            else if (currentPeriod === 'quarter') {
-
-                periodText =
+                text.textContent =
                     'Q' +
-                    selectedFromQuarter +
-                    '/' +
-                    selectedFromQuarterYear +
-                    ' → Q' +
                     selectedToQuarter +
                     '/' +
                     selectedToQuarterYear;
+
             }
 
-
-            /* NĂM */
-            else if (currentPeriod === 'year') {
-
-                periodText =
-                    selectedFromYear +
-                    ' → ' +
-                    selectedToYear;
-            }
-
-
-            text.innerHTML =
-                '<strong>Đang thống kê:</strong> ' +
-                periodText +
-                ' • ' +
-                (
-                    selectedPhim ?
-                    (
-                        document.getElementById(
-                            'selectedPhimName'
-                        )?.textContent ||
-                        'Tất cả phim'
-                    ) :
-                    'Tất cả phim'
-                ) +
-                ' • ' +
-                (
-                    selectedPhong ?
-                    (
-                        document.getElementById(
-                            'selectedPhongName'
-                        )?.textContent ||
-                        'Tất cả phòng'
-                    ) :
-                    'Tất cả phòng'
-                );
-        };
-
-
-        /* =====================================================
-           FORMAT DATE
-        ===================================================== */
-
-        function formatDate(value) {
-
-            if (!value) return '';
-
-            const parts = value.split('-');
-
-            if (parts.length !== 3) {
-                return value;
-            }
-
-            return parts[2] +
-                '/' +
-                parts[1] +
-                '/' +
-                parts[0];
         }
 
 
-        /* =====================================================
-           FORMAT MONTH
-        ===================================================== */
+        /* ---------------------------------------------
+           CẬP NHẬT ACTIVE
+        --------------------------------------------- */
 
-        function formatMonth(value) {
+        options.forEach(function (option) {
 
-            if (!value) return '';
+            const quarter =
+                Number(option.dataset.quarter);
 
-            const parts = value.split('-');
-
-            if (parts.length !== 2) {
-                return value;
-            }
-
-            return parts[1] +
-                '/' +
-                parts[0];
-        }
+            const year =
+                Number(option.dataset.year);
 
 
-        /* =====================================================
-           APPLY FILTER
-        ===================================================== */
+            option.classList.toggle(
+                'selected',
+                quarter === selectedToQuarter &&
+                year === selectedToQuarterYear
+            );
 
-        window.applyFilters = function() {
+        });
+    }
 
-            const params =
-                new URLSearchParams();
 
-            params.set(
-                'period_type',
-                currentPeriod
+    /* =========================================================
+       CHỌN QUÝ FROM
+       ========================================================= */
+
+    window.selectQuarterFrom = function (
+        quarter,
+        year
+    ) {
+
+        selectedFromQuarter =
+            Number(quarter);
+
+        selectedFromQuarterYear =
+            Number(year);
+
+
+        const text =
+            document.getElementById(
+                'selectedQuyFromName'
             );
 
 
-            /* NGÀY */
-            if (currentPeriod === 'day') {
+        if (text) {
 
-                const from =
-                    document.getElementById('dateFrom')?.value;
+            text.textContent =
+                'Q' +
+                quarter +
+                '/' +
+                year;
 
-                const to =
-                    document.getElementById('dateTo')?.value;
+        }
 
-                if (from) {
-                    params.set('from_date', from);
-                }
 
-                if (to) {
-                    params.set('to_date', to);
-                }
+        /*
+         * QUAN TRỌNG:
+         * Sau khi chọn FROM phải lọc lại
+         * toàn bộ danh sách TO
+         */
+
+        updateQuarterToOptions();
+
+
+        /*
+         * Nếu TO cũ nhỏ hơn FROM
+         * thì đưa TO = FROM
+         */
+
+        if (
+            isQuarterBefore(
+                selectedToQuarter,
+                selectedToQuarterYear,
+                selectedFromQuarter,
+                selectedFromQuarterYear
+            )
+        ) {
+
+            selectedToQuarter =
+                selectedFromQuarter;
+
+            selectedToQuarterYear =
+                selectedFromQuarterYear;
+
+
+            const toText =
+                document.getElementById(
+                    'selectedQuyToName'
+                );
+
+
+            if (toText) {
+
+                toText.textContent =
+                    'Q' +
+                    selectedToQuarter +
+                    '/' +
+                    selectedToQuarterYear;
+
             }
 
-
-            /* THÁNG */
-            if (currentPeriod === 'month') {
-
-                const from =
-                    document.getElementById('monthFrom')?.value;
-
-                const to =
-                    document.getElementById('monthTo')?.value;
-
-                if (from) {
-                    params.set('from_month', from);
-                }
-
-                if (to) {
-                    params.set('to_month', to);
-                }
-            }
+        }
 
 
-            /* QUÝ */
-            if (currentPeriod === 'quarter') {
-
-                params.set(
-                    'from_quarter',
-                    selectedFromQuarter
-                );
-
-                params.set(
-                    'from_quarter_year',
-                    selectedFromQuarterYear
-                );
-
-                params.set(
-                    'to_quarter',
-                    selectedToQuarter
-                );
-
-                params.set(
-                    'to_quarter_year',
-                    selectedToQuarterYear
-                );
-            }
+        const dropdown =
+            document.getElementById(
+                'dropdownQuyFrom'
+            );
 
 
-            /* NĂM */
-            if (currentPeriod === 'year') {
+        if (dropdown) {
+            dropdown.classList.remove('open');
+        }
 
-                params.set(
-                    'from_year',
+
+        updateFilterDescription();
+    };
+
+
+    /* =========================================================
+       CHỌN QUÝ TO
+       ========================================================= */
+
+    window.selectQuarterTo = function (
+        quarter,
+        year
+    ) {
+
+        quarter = Number(quarter);
+        year = Number(year);
+
+
+        /*
+         * Không cho chọn TO < FROM
+         */
+
+        if (
+            isQuarterBefore(
+                quarter,
+                year,
+                selectedFromQuarter,
+                selectedFromQuarterYear
+            )
+        ) {
+
+            return;
+        }
+
+
+        selectedToQuarter =
+            quarter;
+
+        selectedToQuarterYear =
+            year;
+
+
+        const text =
+            document.getElementById(
+                'selectedQuyToName'
+            );
+
+
+        if (text) {
+
+            text.textContent =
+                'Q' +
+                quarter +
+                '/' +
+                year;
+
+        }
+
+
+        const dropdown =
+            document.getElementById(
+                'dropdownQuyTo'
+            );
+
+
+        if (dropdown) {
+            dropdown.classList.remove('open');
+        }
+
+
+        updateQuarterToOptions();
+
+        updateFilterDescription();
+    };
+
+
+    /* =========================================================
+       NĂM - CẬP NHẬT DANH SÁCH ĐẾN NĂM
+       
+       Ví dụ:
+       
+       Từ = 2025
+       
+       Đến chỉ hiện:
+       2025
+       2026
+       ...
+       
+       Không hiện:
+       2024
+       2023
+       ...
+       ========================================================= */
+
+    function updateYearToOptions() {
+
+        const dropdown =
+            document.getElementById(
+                'dropdownNamTo'
+            );
+
+
+        if (!dropdown) {
+            return;
+        }
+
+
+        const options =
+            dropdown.querySelectorAll(
+                '.filter-option'
+            );
+
+
+        options.forEach(function (option) {
+
+            /*
+             * Blade đang có:
+             *
+             * data-value="{{ $y }}"
+             */
+
+            const year =
+                Number(option.dataset.value);
+
+
+            if (
+                isYearBefore(
+                    year,
                     selectedFromYear
+                )
+            ) {
+
+                option.style.display = 'none';
+
+                option.classList.remove(
+                    'selected'
                 );
 
+            } else {
+
+                option.style.display = '';
+
+            }
+
+        });
+
+
+        /* ---------------------------------------------
+           Nếu TO < FROM
+           --------------------------------------------- */
+
+        if (
+            isYearBefore(
+                selectedToYear,
+                selectedFromYear
+            )
+        ) {
+
+            selectedToYear =
+                selectedFromYear;
+
+
+            const text =
+                document.getElementById(
+                    'selectedNamToName'
+                );
+
+
+            if (text) {
+
+                text.textContent =
+                    selectedToYear;
+
+            }
+
+        }
+
+
+        /* ---------------------------------------------
+           ACTIVE
+           --------------------------------------------- */
+
+        options.forEach(function (option) {
+
+            const year =
+                Number(option.dataset.value);
+
+
+            option.classList.toggle(
+                'selected',
+                year === selectedToYear
+            );
+
+        });
+    }
+
+
+    /* =========================================================
+       CHỌN NĂM FROM
+       ========================================================= */
+
+    window.selectYearFrom = function (year) {
+
+        selectedFromYear =
+            Number(year);
+
+
+        const text =
+            document.getElementById(
+                'selectedNamFromName'
+            );
+
+
+        if (text) {
+
+            text.textContent =
+                selectedFromYear;
+
+        }
+
+
+        /*
+         * Cập nhật danh sách TO
+         */
+
+        updateYearToOptions();
+
+
+        /*
+         * Nếu TO < FROM
+         * đưa TO = FROM
+         */
+
+        if (
+            selectedToYear <
+            selectedFromYear
+        ) {
+
+            selectedToYear =
+                selectedFromYear;
+
+
+            const toText =
+                document.getElementById(
+                    'selectedNamToName'
+                );
+
+
+            if (toText) {
+
+                toText.textContent =
+                    selectedToYear;
+
+            }
+
+        }
+
+
+        const dropdown =
+            document.getElementById(
+                'dropdownNamFrom'
+            );
+
+
+        if (dropdown) {
+            dropdown.classList.remove('open');
+        }
+
+
+        updateFilterDescription();
+    };
+
+
+    /* =========================================================
+       CHỌN NĂM TO
+       ========================================================= */
+
+    window.selectYearTo = function (year) {
+
+        year = Number(year);
+
+
+        /*
+         * Không cho TO < FROM
+         */
+
+        if (
+            year <
+            selectedFromYear
+        ) {
+
+            return;
+        }
+
+
+        selectedToYear =
+            year;
+
+
+        const text =
+            document.getElementById(
+                'selectedNamToName'
+            );
+
+
+        if (text) {
+
+            text.textContent =
+                selectedToYear;
+
+        }
+
+
+        const dropdown =
+            document.getElementById(
+                'dropdownNamTo'
+            );
+
+
+        if (dropdown) {
+            dropdown.classList.remove('open');
+        }
+
+
+        updateYearToOptions();
+
+        updateFilterDescription();
+    };
+
+
+    /* =========================================================
+       CHỌN PHIM / PHÒNG
+       ========================================================= */
+
+    window.selectFilterOption = function (
+        type,
+        value,
+        label
+    ) {
+
+        if (type === 'phim') {
+
+            selectedPhim = value;
+
+
+            const input =
+                document.getElementById(
+                    'filterPhimId'
+                );
+
+
+            if (input) {
+                input.value = value;
+            }
+
+
+            const text =
+                document.getElementById(
+                    'selectedPhimName'
+                );
+
+
+            if (text) {
+                text.textContent = label;
+            }
+
+
+            document
+                .querySelectorAll(
+                    '#optionsPhim .filter-option'
+                )
+                .forEach(function (option) {
+
+                    option.classList.remove(
+                        'selected'
+                    );
+
+                });
+
+
+            /*
+             * Đánh dấu option vừa chọn
+             */
+
+            document
+                .querySelectorAll(
+                    '#optionsPhim .filter-option'
+                )
+                .forEach(function (option) {
+
+                    if (
+                        String(option.dataset.value) ===
+                        String(value)
+                    ) {
+
+                        option.classList.add(
+                            'selected'
+                        );
+
+                    }
+
+                });
+        }
+
+
+        if (type === 'phong') {
+
+            selectedPhong = value;
+
+
+            const input =
+                document.getElementById(
+                    'filterPhongId'
+                );
+
+
+            if (input) {
+                input.value = value;
+            }
+
+
+            const text =
+                document.getElementById(
+                    'selectedPhongName'
+                );
+
+
+            if (text) {
+                text.textContent = label;
+            }
+
+
+            document
+                .querySelectorAll(
+                    '#optionsPhong .filter-option'
+                )
+                .forEach(function (option) {
+
+                    option.classList.remove(
+                        'selected'
+                    );
+
+                });
+
+
+            document
+                .querySelectorAll(
+                    '#optionsPhong .filter-option'
+                )
+                .forEach(function (option) {
+
+                    if (
+                        String(option.dataset.value) ===
+                        String(value)
+                    ) {
+
+                        option.classList.add(
+                            'selected'
+                        );
+
+                    }
+
+                });
+        }
+
+
+        const dropdown =
+            type === 'phim'
+                ? document.getElementById('dropdownPhim')
+                : document.getElementById('dropdownPhong');
+
+
+        if (dropdown) {
+            dropdown.classList.remove('open');
+        }
+
+
+        updateFilterDescription();
+    };
+
+
+    /* =========================================================
+       SEARCH DROPDOWN
+       ========================================================= */
+
+    window.filterOptions = function (
+        dropdownId,
+        keyword
+    ) {
+
+        const dropdown =
+            document.getElementById(
+                dropdownId
+            );
+
+
+        if (!dropdown) {
+            return;
+        }
+
+
+        const options =
+            dropdown.querySelectorAll(
+                '.filter-option'
+            );
+
+
+        keyword =
+            keyword
+                .toLowerCase()
+                .trim();
+
+
+        options.forEach(function (option) {
+
+            const text =
+                (
+                    option.dataset.search ||
+                    option.textContent
+                ).toLowerCase();
+
+
+            /*
+             * Không làm hiện lại các option
+             * bị giới hạn bởi FROM.
+             */
+
+            if (
+                option.style.display === 'none' &&
+                (
+                    dropdownId === 'dropdownQuyTo' ||
+                    dropdownId === 'dropdownNamTo'
+                )
+            ) {
+
+                return;
+
+            }
+
+
+            option.style.display =
+                text.includes(keyword)
+                    ? ''
+                    : 'none';
+
+        });
+    };
+
+
+    /* =========================================================
+       FORMAT DATE
+       ========================================================= */
+
+    function formatDate(value) {
+
+        if (!value) {
+            return '';
+        }
+
+
+        const parts =
+            value.split('-');
+
+
+        if (parts.length !== 3) {
+            return value;
+        }
+
+
+        return parts[2] +
+            '/' +
+            parts[1] +
+            '/' +
+            parts[0];
+    }
+
+
+    /* =========================================================
+       FORMAT MONTH
+       ========================================================= */
+
+    function formatMonth(value) {
+
+        if (!value) {
+            return '';
+        }
+
+
+        const parts =
+            value.split('-');
+
+
+        if (parts.length !== 2) {
+            return value;
+        }
+
+
+        return parts[1] +
+            '/' +
+            parts[0];
+    }
+
+
+    /* =========================================================
+       MÔ TẢ FILTER
+       ========================================================= */
+
+    window.updateFilterDescription = function () {
+
+        const text =
+            document.getElementById(
+                'filterDescriptionText'
+            );
+
+
+        if (!text) {
+            return;
+        }
+
+
+        let periodText = '';
+
+
+        /* ---------------------------------------------
+           NGÀY
+           --------------------------------------------- */
+
+        if (currentPeriod === 'day') {
+
+            const from =
+                document.getElementById(
+                    'dateFrom'
+                )?.value;
+
+
+            const to =
+                document.getElementById(
+                    'dateTo'
+                )?.value;
+
+
+            periodText =
+                from && to
+                    ? formatDate(from) +
+                      ' → ' +
+                      formatDate(to)
+                    : 'Hôm nay';
+        }
+
+
+        /* ---------------------------------------------
+           THÁNG
+           --------------------------------------------- */
+
+        else if (currentPeriod === 'month') {
+
+            const from =
+                document.getElementById(
+                    'monthFrom'
+                )?.value;
+
+
+            const to =
+                document.getElementById(
+                    'monthTo'
+                )?.value;
+
+
+            periodText =
+                from && to
+                    ? formatMonth(from) +
+                      ' → ' +
+                      formatMonth(to)
+                    : 'Tháng hiện tại';
+        }
+
+
+        /* ---------------------------------------------
+           QUÝ
+           --------------------------------------------- */
+
+        else if (currentPeriod === 'quarter') {
+
+            periodText =
+                'Q' +
+                selectedFromQuarter +
+                '/' +
+                selectedFromQuarterYear +
+                ' → Q' +
+                selectedToQuarter +
+                '/' +
+                selectedToQuarterYear;
+        }
+
+
+        /* ---------------------------------------------
+           NĂM
+           --------------------------------------------- */
+
+        else if (currentPeriod === 'year') {
+
+            periodText =
+                selectedFromYear +
+                ' → ' +
+                selectedToYear;
+        }
+
+
+        /* ---------------------------------------------
+           PHIM
+           --------------------------------------------- */
+
+        const phimText =
+            selectedPhim
+                ? (
+                    document.getElementById(
+                        'selectedPhimName'
+                    )?.textContent ||
+                    'Tất cả phim'
+                )
+                : 'Tất cả phim';
+
+
+        /* ---------------------------------------------
+           PHÒNG
+           --------------------------------------------- */
+
+        const phongText =
+            selectedPhong
+                ? (
+                    document.getElementById(
+                        'selectedPhongName'
+                    )?.textContent ||
+                    'Tất cả phòng'
+                )
+                : 'Tất cả phòng';
+
+
+        text.innerHTML =
+            '<strong>Đang thống kê:</strong> ' +
+            periodText +
+            ' • ' +
+            phimText +
+            ' • ' +
+            phongText;
+    };
+
+
+    /* =========================================================
+       VALIDATE KHOẢNG THỜI GIAN
+       ========================================================= */
+
+    function validatePeriod() {
+
+        /* ---------------------------------------------
+           NGÀY
+           --------------------------------------------- */
+
+        if (currentPeriod === 'day') {
+
+            const from =
+                document.getElementById(
+                    'dateFrom'
+                )?.value;
+
+
+            const to =
+                document.getElementById(
+                    'dateTo'
+                )?.value;
+
+
+            if (
+                from &&
+                to &&
+                to < from
+            ) {
+
+                alert(
+                    'Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu.'
+                );
+
+                return false;
+            }
+        }
+
+
+        /* ---------------------------------------------
+           THÁNG
+           --------------------------------------------- */
+
+        if (currentPeriod === 'month') {
+
+            const from =
+                document.getElementById(
+                    'monthFrom'
+                )?.value;
+
+
+            const to =
+                document.getElementById(
+                    'monthTo'
+                )?.value;
+
+
+            if (
+                from &&
+                to &&
+                to < from
+            ) {
+
+                alert(
+                    'Tháng kết thúc phải lớn hơn hoặc bằng tháng bắt đầu.'
+                );
+
+                return false;
+            }
+        }
+
+
+        /* ---------------------------------------------
+           QUÝ
+           --------------------------------------------- */
+
+        if (currentPeriod === 'quarter') {
+
+            if (
+                isQuarterBefore(
+                    selectedToQuarter,
+                    selectedToQuarterYear,
+                    selectedFromQuarter,
+                    selectedFromQuarterYear
+                )
+            ) {
+
+                alert(
+                    'Quý kết thúc phải lớn hơn hoặc bằng quý bắt đầu.'
+                );
+
+                return false;
+            }
+        }
+
+
+        /* ---------------------------------------------
+           NĂM
+           --------------------------------------------- */
+
+        if (currentPeriod === 'year') {
+
+            if (
+                selectedToYear <
+                selectedFromYear
+            ) {
+
+                alert(
+                    'Năm kết thúc phải lớn hơn hoặc bằng năm bắt đầu.'
+                );
+
+                return false;
+            }
+        }
+
+
+        return true;
+    }
+
+
+    /* =========================================================
+       APPLY FILTER
+       ========================================================= */
+
+    window.applyFilters = function () {
+
+        /*
+         * Không cho lọc khoảng thời gian sai
+         */
+
+        if (!validatePeriod()) {
+            return;
+        }
+
+
+        const params =
+            new URLSearchParams();
+
+
+        params.set(
+            'period_type',
+            currentPeriod
+        );
+
+
+        /* ---------------------------------------------
+           NGÀY
+           --------------------------------------------- */
+
+        if (currentPeriod === 'day') {
+
+            const from =
+                document.getElementById(
+                    'dateFrom'
+                )?.value;
+
+
+            const to =
+                document.getElementById(
+                    'dateTo'
+                )?.value;
+
+
+            if (from) {
                 params.set(
-                    'to_year',
-                    selectedToYear
+                    'from_date',
+                    from
                 );
             }
 
 
-            /* PHIM */
-            if (selectedPhim !== '') {
+            if (to) {
+                params.set(
+                    'to_date',
+                    to
+                );
+            }
+        }
+
+
+        /* ---------------------------------------------
+           THÁNG
+           --------------------------------------------- */
+
+        if (currentPeriod === 'month') {
+
+            const from =
+                document.getElementById(
+                    'monthFrom'
+                )?.value;
+
+
+            const to =
+                document.getElementById(
+                    'monthTo'
+                )?.value;
+
+
+            if (from) {
 
                 params.set(
-                    'phim_id',
-                    selectedPhim
+                    'from_month',
+                    from
                 );
+
             }
 
 
-            /* PHÒNG */
-            if (selectedPhong !== '') {
+            if (to) {
 
                 params.set(
-                    'phong_chieu_id',
-                    selectedPhong
+                    'to_month',
+                    to
                 );
+
             }
+        }
 
 
-            /* CHUYỂN TRANG */
+        /* ---------------------------------------------
+           QUÝ
+           --------------------------------------------- */
 
-            window.location.href =
-                window.location.pathname +
-                '?' +
-                params.toString();
-        };
+        if (currentPeriod === 'quarter') {
 
-
-        /* =====================================================
-           RESET
-        ===================================================== */
-
-        window.resetFilters = function() {
-
-            window.location.href =
-                window.location.pathname;
-        };
+            params.set(
+                'from_quarter',
+                selectedFromQuarter
+            );
 
 
-        /* =====================================================
-           BIỂU ĐỒ DOANH THU
-           DÙNG BIỂU ĐỒ CỘT
-        ===================================================== */
+            params.set(
+                'from_quarter_year',
+                selectedFromQuarterYear
+            );
 
-        const revenueByTime =
-            @json($revenueByTime ?? []);
 
-        const lineCanvas =
-            document.getElementById('lineChart');
+            params.set(
+                'to_quarter',
+                selectedToQuarter
+            );
+
+
+            params.set(
+                'to_quarter_year',
+                selectedToQuarterYear
+            );
+        }
+
+
+        /* ---------------------------------------------
+           NĂM
+           --------------------------------------------- */
+
+        if (currentPeriod === 'year') {
+
+            params.set(
+                'from_year',
+                selectedFromYear
+            );
+
+
+            params.set(
+                'to_year',
+                selectedToYear
+            );
+        }
+
+
+        /* ---------------------------------------------
+           PHIM
+           --------------------------------------------- */
+
+        if (selectedPhim !== '') {
+
+            params.set(
+                'phim_id',
+                selectedPhim
+            );
+        }
+
+
+        /* ---------------------------------------------
+           PHÒNG
+           --------------------------------------------- */
+
+        if (selectedPhong !== '') {
+
+            params.set(
+                'phong_chieu_id',
+                selectedPhong
+            );
+        }
+
+
+        /* ---------------------------------------------
+           CHUYỂN TRANG
+           --------------------------------------------- */
+
+        window.location.href =
+            window.location.pathname +
+            '?' +
+            params.toString();
+    };
+
+
+    /* =========================================================
+       RESET
+       ========================================================= */
+
+    window.resetFilters = function () {
+
+        window.location.href =
+            window.location.pathname;
+    };
+
+
+    /* =========================================================
+       BIỂU ĐỒ DOANH THU THEO THỜI GIAN
+       ========================================================= */
+
+    const revenueByTime =
+        @json($revenueByTime ?? []);
+
+
+    const lineCanvas =
+        document.getElementById(
+            'lineChart'
+        );
+
+
+    if (
+        lineCanvas &&
+        typeof Chart !== 'undefined'
+    ) {
+
+        let labels = [];
+        let values = [];
 
 
         if (
-            lineCanvas &&
-            typeof Chart !== 'undefined'
+            Array.isArray(
+                revenueByTime
+            )
         ) {
 
-            let labels = [];
-            let values = [];
-
-
-            if (Array.isArray(revenueByTime)) {
-
-                revenueByTime.forEach(function(item) {
+            revenueByTime.forEach(
+                function (item) {
 
                     labels.push(
                         item.label ??
@@ -2683,6 +3856,7 @@
                         item.thoi_gian ??
                         ''
                     );
+
 
                     values.push(
                         Number(
@@ -2693,232 +3867,370 @@
                         )
                     );
 
-                });
-            }
+                }
+            );
+        }
 
 
-            /*
-             * Nếu chỉ có 1 ngày:
-             * vẫn chỉ hiện 1 cột và cột được giới hạn độ rộng.
-             *
-             * Nếu nhiều ngày:
-             * tự động chia đều các cột.
-             */
-
-            const isSingleColumn =
-                labels.length === 1;
+        const isSingleColumn =
+            labels.length === 1;
 
 
-            window.revenueLineChart =
-                new Chart(
-                    lineCanvas, {
+        window.revenueLineChart =
+            new Chart(
+                lineCanvas,
+                {
 
-                        type: 'bar',
+                    type: 'bar',
 
-                        data: {
+                    data: {
 
-                            labels: labels,
+                        labels: labels,
 
-                            datasets: [{
+                        datasets: [{
 
-                                label: 'Doanh thu',
+                            label: 'Doanh thu',
 
-                                data: values,
+                            data: values,
 
-                                borderWidth: 2,
+                            borderWidth: 2,
 
-                                borderRadius: 6,
+                            borderRadius: 6,
 
-                                /* Quan trọng */
-                                barPercentage: isSingleColumn ?
-                                    0.25 :
-                                    0.65,
+                            barPercentage:
+                                isSingleColumn
+                                    ? 0.25
+                                    : 0.65,
 
-                                categoryPercentage: isSingleColumn ?
-                                    0.5 :
-                                    0.8,
+                            categoryPercentage:
+                                isSingleColumn
+                                    ? 0.5
+                                    : 0.8,
 
-                                maxBarThickness: isSingleColumn ?
-                                    180 :
-                                    70
+                            maxBarThickness:
+                                isSingleColumn
+                                    ? 180
+                                    : 70
 
-                            }]
-                        },
-
-
-                        options: {
-
-                            responsive: true,
-
-                            maintainAspectRatio: false,
+                        }]
+                    },
 
 
-                            plugins: {
+                    options: {
 
-                                legend: {
-                                    display: false
-                                },
+                        responsive: true,
+
+                        maintainAspectRatio: false,
 
 
-                                tooltip: {
+                        plugins: {
 
-                                    callbacks: {
+                            legend: {
+                                display: false
+                            },
 
-                                        label: function(context) {
 
-                                            return 'Doanh thu: ' +
+                            tooltip: {
+
+                                callbacks: {
+
+                                    label:
+                                        function (context) {
+
+                                            return (
+                                                'Doanh thu: ' +
                                                 Number(
                                                     context.raw || 0
                                                 ).toLocaleString(
                                                     'vi-VN'
                                                 ) +
-                                                'đ';
+                                                'đ'
+                                            );
                                         }
-                                    }
+                                }
+                            }
+                        },
+
+
+                        scales: {
+
+                            x: {
+
+                                grid: {
+                                    display: false
+                                },
+
+                                ticks: {
+                                    color: '#777'
                                 }
                             },
 
 
-                            scales: {
+                            y: {
 
-                                x: {
+                                beginAtZero: true,
 
-                                    grid: {
-                                        display: false
-                                    },
+                                ticks: {
 
-                                    ticks: {
-                                        color: '#777'
-                                    }
-                                },
+                                    color: '#777',
 
+                                    callback:
+                                        function (value) {
 
-                                y: {
-
-                                    beginAtZero: true,
-
-                                    ticks: {
-
-                                        color: '#777',
-
-                                        callback: function(value) {
-
-                                            return Number(value)
-                                                .toLocaleString('vi-VN') +
-                                                'đ';
+                                            return Number(
+                                                value
+                                            ).toLocaleString(
+                                                'vi-VN'
+                                            ) + 'đ';
                                         }
-                                    }
                                 }
                             }
                         }
                     }
-                );
-        }
+                }
+            );
+    }
 
 
-        /* =====================================================
-           PIE / DOUGHNUT
-        ===================================================== */
+    /* =========================================================
+       PIE / DOUGHNUT DOANH THU
+       ========================================================= */
 
-        const pieCanvas =
-            document.getElementById('pieChart');
-
-
-        if (
-            pieCanvas &&
-            typeof Chart !== 'undefined'
-        ) {
-
-            const ticketRevenue =
-                Number(
-                    @json((float)($kpi['ticket_revenue'] ?? 0))
-                );
-
-            const comboRevenue =
-                Number(
-                    @json((float)($kpi['combo_revenue'] ?? 0))
-                );
-
-            const snackRevenue =
-                Number(
-                    @json((float)($kpi['snack_revenue'] ?? 0))
-                );
+    const pieCanvas =
+        document.getElementById(
+            'pieChart'
+        );
 
 
-            window.revenuePieChart =
-                new Chart(
-                    pieCanvas, {
+    if (
+        pieCanvas &&
+        typeof Chart !== 'undefined'
+    ) {
 
-                        type: 'doughnut',
+        const ticketRevenue =
+            Number(
+                @json(
+                    (float)($kpi['ticket_revenue'] ?? 0)
+                )
+            );
 
-                        data: {
 
-                            labels: [
-                                'Vé',
-                                'Combo',
-                                'Đồ ăn'
+        const comboRevenue =
+            Number(
+                @json(
+                    (float)($kpi['combo_revenue'] ?? 0)
+                )
+            );
+
+
+        const snackRevenue =
+            Number(
+                @json(
+                    (float)($kpi['snack_revenue'] ?? 0)
+                )
+            );
+
+
+        window.revenuePieChart =
+            new Chart(
+                pieCanvas,
+                {
+
+                    type: 'doughnut',
+
+                    data: {
+
+                        labels: [
+                            'Vé',
+                            'Combo',
+                            'Đồ ăn'
+                        ],
+
+                        datasets: [{
+
+                            data: [
+                                ticketRevenue,
+                                comboRevenue,
+                                snackRevenue
                             ],
 
-                            datasets: [{
+                            borderWidth: 0
 
-                                data: [
-                                    ticketRevenue,
-                                    comboRevenue,
-                                    snackRevenue
-                                ],
-
-                                borderWidth: 0
-                            }]
-                        },
+                        }]
+                    },
 
 
-                        options: {
+                    options: {
 
-                            responsive: true,
+                        responsive: true,
 
-                            maintainAspectRatio: false,
+                        maintainAspectRatio: false,
 
-                            cutout: '65%',
-
-
-                            plugins: {
-
-                                legend: {
-                                    display: false
-                                },
+                        cutout: '65%',
 
 
-                                tooltip: {
+                        plugins: {
 
-                                    callbacks: {
+                            legend: {
+                                display: false
+                            },
 
-                                        label: function(context) {
 
-                                            return context.label +
+                            tooltip: {
+
+                                callbacks: {
+
+                                    label:
+                                        function (context) {
+
+                                            return (
+                                                context.label +
                                                 ': ' +
                                                 Number(
                                                     context.raw || 0
                                                 ).toLocaleString(
                                                     'vi-VN'
                                                 ) +
-                                                'đ';
+                                                'đ'
+                                            );
+
                                         }
-                                    }
                                 }
                             }
                         }
                     }
-                );
-        }
+                }
+            );
+    }
 
 
-        /* =====================================================
-           KHỞI TẠO FILTER BAN ĐẦU
-        ===================================================== */
+    /* =========================================================
+       BIỂU ĐỒ COMBO / ĐỒ ĂN
+       ========================================================= */
 
-        updateFilterDescription();
+    const comboRevenue =
+        {{ (float)($kpi['combo_revenue'] ?? 0) }};
 
-    });
+
+    const snackRevenue =
+        {{ (float)($kpi['snack_revenue'] ?? 0) }};
+
+
+    const foodCanvas =
+        document.getElementById(
+            'foodRevenueChart'
+        );
+
+
+    if (
+        foodCanvas &&
+        typeof Chart !== 'undefined'
+    ) {
+
+        new Chart(
+            foodCanvas,
+            {
+
+                type: 'doughnut',
+
+                data: {
+
+                    labels: [
+                        'Combo',
+                        'Đồ ăn & nước'
+                    ],
+
+                    datasets: [{
+
+                        data: [
+                            comboRevenue,
+                            snackRevenue
+                        ],
+
+                        borderWidth: 0
+
+                    }]
+                },
+
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    cutout: '65%',
+
+
+                    plugins: {
+
+                        legend: {
+
+                            position: 'bottom',
+
+                            labels: {
+
+                                padding: 20,
+
+                                usePointStyle: true
+
+                            }
+                        },
+
+
+                        tooltip: {
+
+                            callbacks: {
+
+                                label:
+                                    function (context) {
+
+                                        const value =
+                                            context.raw || 0;
+
+
+                                        return (
+                                            context.label +
+                                            ': ' +
+                                            new Intl
+                                                .NumberFormat(
+                                                    'vi-VN'
+                                                )
+                                                .format(
+                                                    value
+                                                ) +
+                                            'đ'
+                                        );
+
+                                    }
+                            }
+                        }
+                    }
+                }
+            }
+        );
+    }
+
+
+    /* =========================================================
+       KHỞI TẠO FILTER BAN ĐẦU
+       
+       RẤT QUAN TRỌNG:
+       Khi reload trang, các option TO cũng phải
+       được giới hạn theo FROM hiện tại.
+       ========================================================= */
+
+    updateDateEndMin();
+
+    updateMonthEndMin();
+
+    updateQuarterToOptions();
+
+    updateYearToOptions();
+
+    updateFilterDescription();
+
+});
 </script>
 
 @endpush
@@ -2937,77 +4249,7 @@
         width: 100%;
         height: 240px;
     }
+    
 </style>
 @endpush
 
-@push('scripts')
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    const comboRevenue = {{ (float)($kpi['combo_revenue'] ?? 0) }};
-    const snackRevenue = {{ (float)($kpi['snack_revenue'] ?? 0) }};
-
-    const foodCanvas = document.getElementById('foodRevenueChart');
-
-    if (foodCanvas) {
-
-        new Chart(foodCanvas, {
-            type: 'doughnut',
-
-            data: {
-                labels: [
-                    'Combo',
-                    'Đồ ăn & nước'
-                ],
-
-                datasets: [{
-                    data: [
-                        comboRevenue,
-                        snackRevenue
-                    ],
-
-                    borderWidth: 0
-                }]
-            },
-
-            options: {
-                responsive: true,
-
-                maintainAspectRatio: false,
-
-                cutout: '65%',
-
-                plugins: {
-
-                    legend: {
-                        position: 'bottom',
-
-                        labels: {
-                            padding: 20,
-                            usePointStyle: true
-                        }
-                    },
-
-                    tooltip: {
-                        callbacks: {
-
-                            label: function(context) {
-
-                                const value = context.raw || 0;
-
-                                return context.label + ': ' +
-                                    new Intl.NumberFormat('vi-VN').format(value) +
-                                    'đ';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-});
-</script>
-
-@endpush
