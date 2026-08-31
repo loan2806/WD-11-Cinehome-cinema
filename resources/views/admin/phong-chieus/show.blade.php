@@ -2726,6 +2726,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const batDau = (document.getElementById('maintBatDau') || document.getElementById('maintenanceStartTime'))?.value;
         const ketThuc = (document.getElementById('maintKetThuc') || document.getElementById('maintenanceEndTime'))?.value || null;
         const lyDo = (document.getElementById('maintLyDo') || document.getElementById('maintenanceReason'))?.value?.trim();
+        const baoTriNgay = document.getElementById('maintNgayLapTuc')?.checked || false;
 
         if (!batDau) {
             window.showToast('Vui lòng chọn thời gian bắt đầu bảo trì.', 'warning');
@@ -2753,7 +2754,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     thoi_gian_ket_thuc: ketThuc,
                     ngay_bat_dau: batDau,
                     ngay_ket_thuc: ketThuc,
-                    ly_do: lyDo
+                    ly_do: lyDo,
+                    bao_tri_ngay: baoTriNgay
                 })
             });
             const data = await res.json();
@@ -4223,6 +4225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const batDau = (document.getElementById('maintBatDau') || document.getElementById('maintenanceStartTime'))?.value;
         const ketThuc = (document.getElementById('maintKetThuc') || document.getElementById('maintenanceEndTime'))?.value || null;
         const lyDo = (document.getElementById('maintLyDo') || document.getElementById('maintenanceReason'))?.value?.trim();
+        const baoTriNgay = document.getElementById('maintNgayLapTuc')?.checked || false;
 
         if (!batDau) {
             window.showToast('Vui lòng chọn thời gian bắt đầu bảo trì.', 'warning');
@@ -4249,7 +4252,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     ghe_ids: ids,
                     thoi_gian_bat_dau: batDau,
                     thoi_gian_ket_thuc: ketThuc,
-                    ly_do: lyDo
+                    ly_do: lyDo,
+                    bao_tri_ngay: baoTriNgay
                 })
             });
 
