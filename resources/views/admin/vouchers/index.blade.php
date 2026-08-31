@@ -29,6 +29,24 @@
 <div class="voucher-admin-page">
     @include('admin.partials.flash')
 
+    {{-- Trang này trước đây không hiện lỗi validate ở đâu cả (chỉ có toast
+         cho session success/error) — khi form thiếu trường bắt buộc, request
+         bị redirect back kèm lỗi nhưng KHÔNG có gì hiển thị, nhìn như bấm
+         Lưu không có tác dụng gì. Thêm khối này để lỗi luôn hiện rõ. --}}
+    @if ($errors->any())
+        <div class="voucher-error-banner">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div>
+                <strong>Không thể lưu — vui lòng kiểm tra lại:</strong>
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
     <section class="voucher-hero">
         <div>
             <span class="voucher-eyebrow">
@@ -96,6 +114,33 @@
                                 @foreach ($voucherTypeLabels as $value => $label)
                                     <option value="{{ $value }}" @selected(old('loai_voucher', 'giam_gia_ve') === $value)>{{ $label }}</option>
                                 @endforeach
+                            </select>
+                        </div>
+                    </label>
+                    <label class="voucher-field">
+                        <span>Kiểu giảm</span>
+                        <div class="voucher-select">
+                            <button type="button" class="voucher-select__trigger">
+                                <span class="voucher-select__value">Chọn kiểu giảm</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <select name="kieu_giam" class="hidden" required>
+                                <option value="tien" @selected(old('kieu_giam', 'tien') === 'tien')>Số tiền cố định (đ)</option>
+                                <option value="phan_tram" @selected(old('kieu_giam') === 'phan_tram')>Phần trăm (%)</option>
+                            </select>
+                        </div>
+                    </label>
+                    <label class="voucher-field">
+                        <span>Đối tượng sử dụng</span>
+                        <div class="voucher-select">
+                            <button type="button" class="voucher-select__trigger">
+                                <span class="voucher-select__value">Chọn đối tượng</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <select name="doi_tuong_su_dung" class="hidden" required>
+                                <option value="user" @selected(old('doi_tuong_su_dung', 'user') === 'user')>Khách hàng</option>
+                                <option value="staff" @selected(old('doi_tuong_su_dung') === 'staff')>Nhân viên</option>
+                                <option value="all" @selected(old('doi_tuong_su_dung') === 'all')>Tất cả</option>
                             </select>
                         </div>
                     </label>
@@ -495,6 +540,37 @@
 
 @push('styles')
 <style>
+    .voucher-error-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding: 14px 18px;
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        border-radius: 16px;
+        background: rgba(239, 68, 68, 0.1);
+        color: #fecaca;
+    }
+
+    .voucher-error-banner > i {
+        margin-top: 3px;
+        color: #f87171;
+    }
+
+    .voucher-error-banner strong {
+        color: #ffffff;
+    }
+
+    .voucher-error-banner ul {
+        margin: 6px 0 0;
+        padding-left: 18px;
+    }
+
+    .voucher-error-banner li {
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
     /* 🌟 DROPDOWN "LOẠI VOUCHER" — thay cho <select> gốc của trình duyệt.
        .voucher-panel có overflow:hidden + backdrop-filter nên menu PHẢI được
        document.body.appendChild và position:fixed để thoát ra ngoài, nếu không
