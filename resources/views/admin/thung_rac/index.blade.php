@@ -875,8 +875,8 @@
                     id="filter_tu_ngay"
                     name="tu_ngay"
                     value="{{ request('tu_ngay') }}"
+                    max="{{ request('den_ngay') }}"
                     class="h-12 w-full rounded-2xl border border-white/10 bg-[#202126] px-4 text-sm text-white font-medium focus:border-red-500 focus:outline-none transition [color-scheme:dark]">
-
             </div>
 
 
@@ -887,6 +887,7 @@
                     id="filter_den_ngay"
                     name="den_ngay"
                     value="{{ request('den_ngay') }}"
+                    min="{{ request('tu_ngay') }}"
                     class="h-12 w-full rounded-2xl border border-white/10 bg-[#202126] px-4 text-sm text-white font-medium focus:border-red-500 focus:outline-none transition [color-scheme:dark]">
 
             </div>
@@ -3327,5 +3328,63 @@
 
     });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
 
+    const tuNgay = document.getElementById('filter_tu_ngay');
+    const denNgay = document.getElementById('filter_den_ngay');
+
+    if (!tuNgay || !denNgay) return;
+
+    function updateDateLimits() {
+
+        const startDate = tuNgay.value;
+        const endDate = denNgay.value;
+
+        // Khi chọn TỪ NGÀY
+        if (startDate) {
+
+            // ĐẾN NGÀY không được nhỏ hơn TỪ NGÀY
+            denNgay.min = startDate;
+
+            // Nếu ĐẾN NGÀY hiện tại nhỏ hơn TỪ NGÀY
+            // thì tự động đưa về cùng ngày TỪ NGÀY
+            if (endDate && endDate < startDate) {
+                denNgay.value = startDate;
+            }
+        } else {
+            denNgay.removeAttribute('min');
+        }
+
+        // Khi đã có ĐẾN NGÀY
+        // thì TỪ NGÀY không được lớn hơn ĐẾN NGÀY
+        if (endDate) {
+
+            tuNgay.max = endDate;
+
+            // Nếu TỪ NGÀY hiện tại lớn hơn ĐẾN NGÀY
+            if (startDate && startDate > endDate) {
+                tuNgay.value = endDate;
+            }
+
+        } else {
+            tuNgay.removeAttribute('max');
+        }
+    }
+
+    // Khi người dùng chọn TỪ NGÀY
+    tuNgay.addEventListener('change', function () {
+        updateDateLimits();
+    });
+
+    // Khi người dùng chọn ĐẾN NGÀY
+    denNgay.addEventListener('change', function () {
+        updateDateLimits();
+    });
+
+    // Chạy ngay khi load trang để giữ filter sau khi submit
+    updateDateLimits();
+
+});
+</script>
 @endsection
