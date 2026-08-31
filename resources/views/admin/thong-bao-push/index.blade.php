@@ -45,8 +45,11 @@ request('trang_thai'),
             </div>
         </div>
         <div class="push-hero-actions">
-            <a href="{{ route('admin.thong-bao-push.trash') }}" class="staff-list-secondary-btn">
-                <i class="fa-solid fa-trash"></i> Thùng rác
+            <a href="{{ route('admin.thung-rac.index', ['tab' => 'thong_bao']) }}"
+                class="customer-account-primary-btn"
+                style="background: #3f3f46;">
+                <i class="fa-solid fa-trash-can"></i>
+                Thùng rác
             </a>
             <a href="{{ route('admin.thong-bao-push.create') }}" class="push-primary-btn">
                 <i class="fa-solid fa-plus"></i> Tạo thông báo mới

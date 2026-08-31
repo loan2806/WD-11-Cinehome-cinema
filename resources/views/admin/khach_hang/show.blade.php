@@ -135,7 +135,6 @@
                         <th class="px-6 py-4">Phim</th>
                         <th class="px-6 py-4">Ghế</th>
                         <th class="px-6 py-4">Tiền</th>
-                        <th class="px-6 py-4">Trạng thái</th>
                     </tr>
                 </thead>
 
@@ -146,7 +145,6 @@
                         <td class="px-6 py-4 text-white">{{ $ve->ten_phim }}</td>
                         <td class="px-6 py-4 text-gray-400">{{ $ve->ma_ghe }}</td>
                         <td class="px-6 py-4 text-white">{{ number_format($ve->tong_tien, 0, ',', '.') }}đ</td>
-                        <td class="px-6 py-4 text-gray-400">{{ $ve->trang_thai }}</td>
                     </tr>
                     @empty
                     <tr>
