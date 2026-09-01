@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 class LoginRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Determine if the user is authorized to make the request.
      */
     public function authorize(): bool
     {
@@ -40,84 +40,225 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $email = $this->boolean('email') ? $this->email : $this->string('email');
-        $password = $this->string('mat_khau');
+        /*
+        |--------------------------------------------------------------------------
+        | Lấy thông tin đăng nhập
+        |--------------------------------------------------------------------------
+        */
 
-        // 1. Kiểm tra tài khoản bao gồm cả tài khoản nằm trong thùng rác (Soft Delete)
-        $userModel = config('auth.providers.users.model', \App\Models\User::class);
-        $user = $userModel::withTrashed()->where('email', $email)->first();
+        $email = trim((string) $this->input('email'));
+        $password = (string) $this->input('mat_khau');
 
-        // 2. Nếu tài khoản tồn tại và đang ở trạng thái bị xóa tạm thời (trashed)
-        if ($user && $user->trashed()) {
-            if (Hash::check($password, $user->password)) {
-                // Kiểm tra xem thời gian xóa có nằm trong vòng 14 ngày không
-                if ($user->deleted_at && $user->deleted_at->gte(now()->subDays(14))) {
-                    // Tự động khôi phục tài khoản
-                    $user->restore();
+        /*
+        |--------------------------------------------------------------------------
+        | XÓA trạng thái email chưa xác thực cũ
+        |--------------------------------------------------------------------------
+        |
+        | Rất quan trọng:
+        | Nếu trước đó Đạt Bình chưa xác thực và có session
+        | unverified_email thì khi người dùng nhập một email khác,
+        | không được giữ lại email cũ.
+        |
+        */
 
-                    // Thực hiện đăng nhập
-                    Auth::login($user, $this->boolean('remember'));
-                } else {
-                    // Quá 14 ngày -> Xóa vĩnh viễn tài khoản
-                    $user->forceDelete();
+        session()->forget('unverified_email');
 
-                    RateLimiter::hit($this->throttleKey());
+        /*
+        |--------------------------------------------------------------------------
+        | Tìm tài khoản
+        |--------------------------------------------------------------------------
+        |
+        | Có withTrashed() để vẫn xử lý được tài khoản đang trong
+        | thời gian 14 ngày khôi phục.
+        |
+        */
 
-                    throw ValidationException::withMessages([
-                        'email' => 'Tài khoản của bạn đã vượt quá thời hạn 14 ngày khôi phục và đã bị xóa vĩnh viễn.',
-                    ]);
-                }
-            } else {
-                // Mật khẩu không chính xác
-                RateLimiter::hit($this->throttleKey());
+        $userModel = config(
+            'auth.providers.users.model',
+            \App\Models\User::class
+        );
 
-                throw ValidationException::withMessages([
-                    'email' => __('auth.failed'),
-                ]);
+        $user = $userModel::withTrashed()
+            ->where('email', $email)
+            ->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Tài khoản không tồn tại
+        |--------------------------------------------------------------------------
+        */
+
+        if (! $user) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Tài khoản hoặc mật khẩu không chính xác.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Kiểm tra mật khẩu
+        |--------------------------------------------------------------------------
+        */
+
+        if (! Hash::check($password, $user->password)) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Tài khoản hoặc mật khẩu không chính xác.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | TÀI KHOẢN ĐANG Ở THÙNG RÁC
+        |--------------------------------------------------------------------------
+        */
+
+        if ($user->trashed()) {
+
+            /*
+            |--------------------------------------------------------------
+            | Còn trong 14 ngày -> khôi phục
+            |--------------------------------------------------------------
+            */
+
+            if (
+                $user->deleted_at &&
+                $user->deleted_at->gte(now()->subDays(14))
+            ) {
+                $user->restore();
+
+                Auth::login(
+                    $user,
+                    $this->boolean('remember')
+                );
             }
-        } else {
-            // 3. Nếu tài khoản hoạt động bình thường, tiến hành Auth::attempt chuẩn của Laravel
-            $credentials = [
-                'email' => $email,
-                'password' => $password,
-            ];
 
-            if (! Auth::attempt($credentials, $this->boolean('remember'))) {
-                RateLimiter::hit($this->throttleKey());
+            /*
+            |--------------------------------------------------------------
+            | Quá 14 ngày -> xóa vĩnh viễn
+            |--------------------------------------------------------------
+            */
+
+            else {
+
+                $user->forceDelete();
+
+                RateLimiter::hit(
+                    $this->throttleKey()
+                );
 
                 throw ValidationException::withMessages([
-                    'email' => __('auth.failed'),
+                    'email' =>
+                        'Tài khoản của bạn đã vượt quá thời hạn 14 ngày khôi phục và đã bị xóa vĩnh viễn.',
                 ]);
             }
         }
 
-        // 4. Tài khoản tự đăng ký (bắt buộc xác thực email) nhưng chưa xác thực
+        /*
+        |--------------------------------------------------------------------------
+        | TÀI KHOẢN BÌNH THƯỜNG
+        |--------------------------------------------------------------------------
+        */
+
+        else {
+
+            Auth::login(
+                $user,
+                $this->boolean('remember')
+            );
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Kiểm tra đăng nhập thành công
+        |--------------------------------------------------------------------------
+        */
+
+        if (! Auth::check()) {
+            RateLimiter::hit($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => 'Tài khoản hoặc mật khẩu không chính xác.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | EMAIL CHƯA XÁC THỰC
+        |--------------------------------------------------------------------------
+        |
+        | Đây là phần quan trọng nhất.
+        |
+        | Nếu tài khoản vừa nhập chưa xác thực:
+        |
+        | 1. Lấy chính email vừa đăng nhập.
+        | 2. Logout.
+        | 3. Lưu chính email đó vào session.
+        | 4. Login page sẽ dùng session này để hiện nút gửi lại.
+        |
+        */
+
         if (
-            Auth::user()->bat_buoc_xac_thuc_email &&
-            is_null(Auth::user()->email_verified_at)
+            $user->bat_buoc_xac_thuc_email &&
+            is_null($user->email_verified_at)
         ) {
-            $emailChuaXacThuc = Auth::user()->email;
-            Auth::logout();
 
-            // Cho trang đăng nhập biết email nào để hiện nút "Gửi lại email
-            // xác thực" ngay dưới lỗi này.
-            session()->flash('unverified_email', $emailChuaXacThuc);
+            /*
+            | Chỉ lưu email của tài khoản vừa submit.
+            */
+            session()->flash(
+                'unverified_email',
+                $user->email
+            );
 
-            throw ValidationException::withMessages([
-                'email' => 'Vui lòng xác thực email trước khi đăng nhập.',
-            ]);
-        }
-
-        // 5. Lịch trình kiểm tra cũ: Nếu tài khoản bị khóa thì đăng xuất ngay
-        if (! Auth::user()->trang_thai_hoat_dong) {
             Auth::logout();
 
             throw ValidationException::withMessages([
-                'email' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.',
+                'email' =>
+                    'Vui lòng xác thực email trước khi đăng nhập.',
             ]);
         }
 
-        RateLimiter::clear($this->throttleKey());
+        /*
+        |--------------------------------------------------------------------------
+        | TÀI KHOẢN BỊ KHÓA
+        |--------------------------------------------------------------------------
+        */
+
+        if (! $user->trang_thai_hoat_dong) {
+
+            Auth::logout();
+
+            /*
+            | Không cho hiển thị nút gửi email xác thực
+            | khi tài khoản bị khóa.
+            */
+            session()->forget('unverified_email');
+
+            throw ValidationException::withMessages([
+                'email' =>
+                    'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Đăng nhập thành công
+        |--------------------------------------------------------------------------
+        |
+        | Nếu login thành công thì chắc chắn không được giữ
+        | unverified_email của tài khoản trước.
+        |
+        */
+
+        session()->forget('unverified_email');
+
+        RateLimiter::clear(
+            $this->throttleKey()
+        );
     }
 
     /**
@@ -127,13 +268,20 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (
+            ! RateLimiter::tooManyAttempts(
+                $this->throttleKey(),
+                5
+            )
+        ) {
             return;
         }
 
         event(new Lockout($this));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        $seconds = RateLimiter::availableIn(
+            $this->throttleKey()
+        );
 
         throw ValidationException::withMessages([
             'email' => __('auth.throttle', [
@@ -148,6 +296,12 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')) . '|' . $this->ip());
+        return Str::transliterate(
+            Str::lower(
+                $this->string('email')
+            )
+            . '|'
+            . $this->ip()
+        );
     }
 }
