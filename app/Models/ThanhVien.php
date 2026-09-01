@@ -30,7 +30,7 @@ class ThanhVien extends Model
         'tong_diem_tich_luy' => 'integer',
         'da_nhan_thuong' => 'boolean',
     ];
-    
+
 
     /**
      * Một thẻ thành viên thuộc về một người dùng.
@@ -416,16 +416,16 @@ class ThanhVien extends Model
      * Hệ số tích điểm theo hạng thành viên.
      *
      * Member   : x1.0
-     * Silver   : x1.05
-     * Gold     : x1.10
-     * Platinum : x1.15
+     * Silver   : x1.5
+     * Gold     : x2.0
+     * Platinum : x3.0
      */
     public function heSoTichDiem(): float
     {
         return match ($this->hang_thanh_vien) {
-            'silver' => 1.05,
-            'gold' => 1.10,
-            'platinum' => 1.15,
+            'silver' => 1.5,
+            'gold' => 2.0,
+            'platinum' => 3.0,
             default => 1.0,
         };
     }

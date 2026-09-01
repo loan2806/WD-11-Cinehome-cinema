@@ -26,69 +26,199 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        // 1. Lấy thông tin email và mật khẩu từ request (hỗ trợ cả 'password' và 'mat_khau')
+        /*
+        |--------------------------------------------------------------------------
+        | XÓA EMAIL CHƯA XÁC THỰC CŨ
+        |--------------------------------------------------------------------------
+        |
+        | Tránh trường hợp:
+        |
+        | Tài khoản A chưa xác thực
+        | -> có nút gửi lại email A
+        |
+        | Sau đó người dùng đăng nhập tài khoản B
+        | -> vẫn còn nút gửi lại email A.
+        |
+        */
+        session()->forget('unverified_email');
+
+        /*
+        |--------------------------------------------------------------------------
+        | LẤY EMAIL VÀ MẬT KHẨU
+        |--------------------------------------------------------------------------
+        */
+
         $email = trim((string) $request->input('email'));
-        $password = (string) ($request->input('password') ?? $request->input('mat_khau'));
 
-        // 2. Tìm tài khoản trong CSDL (bao gồm cả tài khoản đang ở trong thùng rác)
-        $userModel = config('auth.providers.users.model', \App\Models\User::class);
-        $user = $userModel::withTrashed()->where('email', $email)->first();
+        $password = (string) (
+            $request->input('password')
+            ?? $request->input('mat_khau')
+        );
 
-        // 3. Nếu tìm thấy tài khoản và mật khẩu chính xác
-        if ($user && Hash::check($password, $user->password)) {
-            // Kiểm tra xem tài khoản có đang trong trạng thái chờ xóa (Soft Deleted) không
-            if ($user->trashed()) {
+        /*
+        |--------------------------------------------------------------------------
+        | TÌM TÀI KHOẢN KỂ CẢ SOFT DELETE
+        |--------------------------------------------------------------------------
+        */
+
+        $userModel = config(
+            'auth.providers.users.model',
+            \App\Models\User::class
+        );
+
+        $user = $userModel::withTrashed()
+            ->where('email', $email)
+            ->first();
+
+        /*
+        |--------------------------------------------------------------------------
+        | TÀI KHOẢN ĐANG Ở THÙNG RÁC
+        |--------------------------------------------------------------------------
+        */
+
+        if ($user && $user->trashed()) {
+
+            /*
+            |--------------------------------------------------------------------------
+            | KIỂM TRA MẬT KHẨU
+            |--------------------------------------------------------------------------
+            */
+
+            if (Hash::check($password, $user->password)) {
+
                 $deletedAt = Carbon::parse($user->deleted_at);
 
-                // Nếu còn trong thời hạn 14 ngày
+                /*
+                |--------------------------------------------------------------------------
+                | CÒN TRONG 14 NGÀY -> KHÔI PHỤC
+                |--------------------------------------------------------------------------
+                */
+
                 if ($deletedAt->gte(now()->subDays(14))) {
-                    // Khôi phục tài khoản
+
                     $user->restore();
 
-                    // Đăng nhập tài khoản
-                    Auth::login($user, $request->boolean('remember'));
+                    Auth::login(
+                        $user,
+                        $request->boolean('remember')
+                    );
 
-                    // Kiểm tra xác thực email nếu hệ thống yêu cầu
-                    if ($user->bat_buoc_xac_thuc_email && ! $user->hasVerifiedEmail()) {
+                    /*
+                    |--------------------------------------------------------------------------
+                    | KIỂM TRA EMAIL CHƯA XÁC THỰC
+                    |--------------------------------------------------------------------------
+                    */
+
+                    if (
+                        $user->bat_buoc_xac_thuc_email &&
+                        !$user->hasVerifiedEmail()
+                    ) {
+
+                        $emailChuaXacThuc = $user->email;
+
                         Auth::logout();
 
-                        // Cho trang đăng nhập biết email nào để hiện nút "Gửi
-                        // lại email xác thực" ngay dưới lỗi này.
-                        session()->flash('unverified_email', $user->email);
+                        /*
+                        |--------------------------------------------------------------------------
+                        | LƯU ĐÚNG EMAIL CHƯA XÁC THỰC
+                        |--------------------------------------------------------------------------
+                        */
+
+                        session()->flash(
+                            'unverified_email',
+                            $emailChuaXacThuc
+                        );
 
                         return redirect()
                             ->route('login')
-                            ->with('error', 'Tài khoản chưa được xác thực email. Vui lòng kiểm tra email và nhấn vào liên kết xác thực.');
+                            ->with(
+                                'error',
+                                'Tài khoản chưa được xác thực email. Vui lòng kiểm tra email và nhấn vào liên kết xác thực.'
+                            );
                     }
+
+                    /*
+                    |--------------------------------------------------------------------------
+                    | ĐĂNG NHẬP THÀNH CÔNG
+                    |--------------------------------------------------------------------------
+                    */
 
                     $request->session()->regenerate();
 
                     return redirect()
                         ->route('dashboard')
-                        ->with('success', 'Tài khoản của bạn đã được khôi phục thành công!');
-                } else {
-                    // Đã quá 14 ngày -> Thực hiện xóa vĩnh viễn
-                    $user->forceDelete();
-
-                    return redirect()
-                        ->route('login')
-                        ->with('error', 'Tài khoản của bạn đã vượt quá thời hạn 14 ngày khôi phục và đã bị xóa vĩnh viễn.');
+                        ->with(
+                            'success',
+                            'Tài khoản của bạn đã được khôi phục thành công!'
+                        );
                 }
+
+                /*
+                |--------------------------------------------------------------------------
+                | QUÁ 14 NGÀY -> XÓA VĨNH VIỄN
+                |--------------------------------------------------------------------------
+                */
+
+                $user->forceDelete();
+
+                return redirect()
+                    ->route('login')
+                    ->with(
+                        'error',
+                        'Tài khoản của bạn đã vượt quá thời hạn 14 ngày khôi phục và đã bị xóa vĩnh viễn.'
+                    );
             }
+
+            /*
+            |--------------------------------------------------------------------------
+            | SAI MẬT KHẨU
+            |--------------------------------------------------------------------------
+            */
+
+            return redirect()
+                ->route('login')
+                ->withInput([
+                    'email' => $email,
+                    'auth_modal' => 'login',
+                ])
+                ->with(
+                    'error',
+                    'Tài khoản hoặc mật khẩu không chính xác.'
+                );
         }
 
-        // 4. Tài khoản không nằm trong thùng rác -> đăng nhập bình thường qua
-        // LoginRequest::authenticate(), tự xử lý xác thực mật khẩu, bắt buộc
-        // xác thực email, và tài khoản bị khóa (ném ValidationException và
-        // đăng xuất ngay nếu không thỏa) — tới được dòng sau nghĩa là tài
-        // khoản đã hợp lệ hoàn toàn, không cần kiểm tra lại lần nữa.
+        /*
+        |--------------------------------------------------------------------------
+        | TÀI KHOẢN BÌNH THƯỜNG
+        |--------------------------------------------------------------------------
+        |
+        | LoginRequest sẽ xử lý:
+        |
+        | - Sai tài khoản/mật khẩu
+        | - Chưa xác thực email
+        | - Tài khoản bị khóa
+        | - Rate limit
+        |
+        */
+
         $request->authenticate();
 
-        // 5. Tạo session mới
+        /*
+        |--------------------------------------------------------------------------
+        | TẠO SESSION MỚI
+        |--------------------------------------------------------------------------
+        */
+
         $request->session()->regenerate();
 
-        // 6. Điều hướng theo vai trò
-        return redirect()->route('dashboard');
+        /*
+        |--------------------------------------------------------------------------
+        | ĐIỀU HƯỚNG
+        |--------------------------------------------------------------------------
+        */
+
+        return redirect()
+            ->route('dashboard');
     }
 
     /**
