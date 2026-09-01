@@ -21,7 +21,10 @@ class VerifyEmailController extends Controller
     {
         // Tìm tài khoản
         $user = NguoiDung::findOrFail($id);
-
+        // Kiểm tra link xác thực còn hạn và chữ ký hợp lệ
+        if (! $request->hasValidSignature()) {
+            abort(403, 'Liên kết xác thực email đã hết hạn hoặc không hợp lệ.');
+        }
         // Kiểm tra hash email có đúng không
         if (! hash_equals(
             sha1($user->getEmailForVerification()),
