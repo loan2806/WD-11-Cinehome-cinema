@@ -274,7 +274,7 @@
     @include('components.preloader')
 
     {{-- GLOBAL TOAST NOTIFICATIONS --}}
-    @if (session('success') || session('error') || session('warning'))
+    @if (session('success') || session('error') || session('warning') || session('phien_het_han'))
     <div style="position: fixed; top: 24px; right: 24px; z-index: 100000; display: flex; width: min(390px, calc(100vw - 32px)); flex-direction: column; gap: 12px; pointer-events: none;">
         @if (session('success'))
         <x-toast type="success" :message="session('success')" />
@@ -284,6 +284,9 @@
         @endif
         @if (session('warning'))
         <x-toast type="warning" :message="session('warning')" />
+        @endif
+        @if (session('phien_het_han'))
+        <x-toast type="warning" :message="session('phien_het_han')" />
         @endif
     </div>
     @endif
@@ -587,7 +590,7 @@
         <main id="adminMain" class="ml-[285px] min-h-screen overflow-x-hidden bg-[#080808]">
 
             {{-- TOPBAR --}}
-            <header class="sticky top-0 z-50 border-b border-white/10 bg-[#101010]/95 backdrop-blur-xl">
+            <header class="sticky top-0 z-[9000] border-b border-white/10 bg-[#101010]/95 backdrop-blur-xl">
                 <div class="flex h-[76px] items-center justify-between gap-4 px-5">
 
                     {{-- LEFT --}}

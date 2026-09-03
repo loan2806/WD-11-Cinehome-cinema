@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use App\Models\ThanhVien;
 use App\Notifications\ResetPasswordNotification;
+use App\Notifications\XacThucEmailNotification;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\HoaDon;
 
@@ -143,5 +144,14 @@ public function hoaDons()
 {
     $this->notify(new ResetPasswordNotification($token));
 }
+
+    /**
+     * Gửi email xác thực bằng giao diện thương hiệu CineHome thay vì
+     * template mặc định (xanh dương) của Laravel.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new XacThucEmailNotification());
+    }
 
 }

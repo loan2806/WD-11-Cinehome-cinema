@@ -409,6 +409,7 @@ class PhongChieuController extends Controller
             'thoi_gian_bat_dau' => 'required|date',
             'thoi_gian_ket_thuc' => 'nullable|date|after:thoi_gian_bat_dau',
             'ly_do' => 'required|string|max:500',
+            'bao_tri_ngay' => 'nullable|boolean',
         ], [
             'thoi_gian_bat_dau.required' => 'Vui lòng chọn thời gian bắt đầu.',
             'thoi_gian_ket_thuc.after' => 'Thời gian kết thúc phải sau thời gian bắt đầu.',
@@ -418,6 +419,14 @@ class PhongChieuController extends Controller
         $gheIds = $validated['ghe_ids'];
         $thoiGianBatDau = Carbon::parse($validated['thoi_gian_bat_dau']);
         $thoiGianKetThuc = !empty($validated['thoi_gian_ket_thuc']) ? Carbon::parse($validated['thoi_gian_ket_thuc']) : null;
+
+        // "Bảo trì ngay lập tức" (ghế hỏng đột xuất): không có thời gian kết
+        // thúc, nên 3 kiểm tra xung đột bên dưới (vé đã bán, lịch bảo trì
+        // khác, suất chiếu) vốn không có giới hạn trên sẽ khớp với BẤT KỲ
+        // suất chiếu/vé nào trong tương lai của phòng — gần như luôn bị chặn
+        // dù ghế đang hỏng thật. Cờ này bỏ qua các kiểm tra đó để khóa ghế
+        // ngay lập tức, không ràng buộc gì cả.
+        $boQuaKiemTraXungDot = (bool) ($validated['bao_tri_ngay'] ?? false);
 
         if ($thoiGianBatDau->isPast()) {
             $thoiGianBatDau = now();
@@ -436,51 +445,53 @@ class PhongChieuController extends Controller
             $seat = $gheList->get($gheId);
             if (!$seat) continue;
 
-            // 1. Kiểm tra vé đã bán thuộc khoảng thời gian bảo trì
-            $conflicted = $this->hasConflictInPeriod($seat, $thoiGianBatDau, $thoiGianKetThuc);
-            if ($conflicted) {
-                $errors[] = "Ghế {$seat->ma_ghe} đã có khách đặt vé trong khoảng thời gian này.";
-                continue;
-            }
-
             if ($seat->trang_thai === 'bao_tri') {
                 continue;
             }
 
-            // 2. Kiểm tra lịch bảo trì trùng lặp
-            $lichTrungLap = LichBaoTriGheNgoi::where('ghe_ngoi_id', $seat->id)
-                ->whereIn('trang_thai', ['cho_thuc_hien', 'dang_thuc_hien'])
-                ->where(function ($q) use ($thoiGianBatDau, $thoiGianKetThuc) {
-                    if ($thoiGianKetThuc) {
-                        $q->whereBetween('thoi_gian_bat_dau', [$thoiGianBatDau, $thoiGianKetThuc])
-                           ->orWhereBetween('thoi_gian_ket_thuc', [$thoiGianBatDau, $thoiGianKetThuc])
-                           ->orWhere(function ($q3) use ($thoiGianBatDau, $thoiGianKetThuc) {
-                               $q3->where('thoi_gian_bat_dau', '<=', $thoiGianBatDau)
-                                  ->where('thoi_gian_ket_thuc', '>=', $thoiGianKetThuc);
-                           });
-                    } else {
-                        $q->where('thoi_gian_bat_dau', '>=', $thoiGianBatDau);
-                    }
-                })
-                ->exists();
+            if (! $boQuaKiemTraXungDot) {
+                // 1. Kiểm tra vé đã bán thuộc khoảng thời gian bảo trì
+                $conflicted = $this->hasConflictInPeriod($seat, $thoiGianBatDau, $thoiGianKetThuc);
+                if ($conflicted) {
+                    $errors[] = "Ghế {$seat->ma_ghe} đã có khách đặt vé trong khoảng thời gian này.";
+                    continue;
+                }
 
-            if ($lichTrungLap) {
-                $errors[] = "Ghế {$seat->ma_ghe} đã có lịch bảo trì trùng lặp trong thời gian này.";
-                continue;
-            }
+                // 2. Kiểm tra lịch bảo trì trùng lặp
+                $lichTrungLap = LichBaoTriGheNgoi::where('ghe_ngoi_id', $seat->id)
+                    ->whereIn('trang_thai', ['cho_thuc_hien', 'dang_thuc_hien'])
+                    ->where(function ($q) use ($thoiGianBatDau, $thoiGianKetThuc) {
+                        if ($thoiGianKetThuc) {
+                            $q->whereBetween('thoi_gian_bat_dau', [$thoiGianBatDau, $thoiGianKetThuc])
+                               ->orWhereBetween('thoi_gian_ket_thuc', [$thoiGianBatDau, $thoiGianKetThuc])
+                               ->orWhere(function ($q3) use ($thoiGianBatDau, $thoiGianKetThuc) {
+                                   $q3->where('thoi_gian_bat_dau', '<=', $thoiGianBatDau)
+                                      ->where('thoi_gian_ket_thuc', '>=', $thoiGianKetThuc);
+                               });
+                        } else {
+                            $q->where('thoi_gian_bat_dau', '>=', $thoiGianBatDau);
+                        }
+                    })
+                    ->exists();
 
-            // 3. Kiểm tra suất chiếu trùng khoảng thời gian bảo trì
-            $suatChieuQuery = SuatChieu::where('phong_chieu_id', $phongChieu->id);
-            if ($thoiGianKetThuc) {
-                $suatChieuQuery->where('thoi_gian_chieu', '<', $thoiGianKetThuc)
-                    ->whereRaw("DATE_ADD(thoi_gian_chieu, INTERVAL COALESCE(thoi_luong, 120) MINUTE) > '" . $thoiGianBatDau->format('Y-m-d H:i:s') . "'");
-            } else {
-                $suatChieuQuery->whereRaw("DATE_ADD(thoi_gian_chieu, INTERVAL COALESCE(thoi_luong, 120) MINUTE) > '" . $thoiGianBatDau->format('Y-m-d H:i:s') . "'");
-            }
+                if ($lichTrungLap) {
+                    $errors[] = "Ghế {$seat->ma_ghe} đã có lịch bảo trì trùng lặp trong thời gian này.";
+                    continue;
+                }
 
-            if ($suatChieuQuery->exists()) {
-                $errors[] = "Ghế {$seat->ma_ghe}: Có suất chiếu trùng với khoảng thời gian bảo trì đã chọn.";
-                continue;
+                // 3. Kiểm tra suất chiếu trùng khoảng thời gian bảo trì
+                $suatChieuQuery = SuatChieu::where('phong_chieu_id', $phongChieu->id);
+                if ($thoiGianKetThuc) {
+                    $suatChieuQuery->where('thoi_gian_chieu', '<', $thoiGianKetThuc)
+                        ->whereRaw("DATE_ADD(thoi_gian_chieu, INTERVAL COALESCE(thoi_luong, 120) MINUTE) > '" . $thoiGianBatDau->format('Y-m-d H:i:s') . "'");
+                } else {
+                    $suatChieuQuery->whereRaw("DATE_ADD(thoi_gian_chieu, INTERVAL COALESCE(thoi_luong, 120) MINUTE) > '" . $thoiGianBatDau->format('Y-m-d H:i:s') . "'");
+                }
+
+                if ($suatChieuQuery->exists()) {
+                    $errors[] = "Ghế {$seat->ma_ghe}: Có suất chiếu trùng với khoảng thời gian bảo trì đã chọn.";
+                    continue;
+                }
             }
 
             $beforeStatus = $seat->trang_thai;
@@ -824,8 +835,7 @@ class PhongChieuController extends Controller
         $isMiddleRow = !$isFirstThreeRows && !$isLastTwoRows;
 
         if ($isFirstThreeRows) {
-            if ($isCouple) return ['3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế Couple.'];
-            if ($isVip) return ['3 hàng gần màn chiếu chỉ được đặt ghế Thường. Không thể đặt ghế VIP.'];
+            if ($isCouple) return ['3 hàng gần màn chiếu chỉ được đặt ghế Thường hoặc VIP. Không thể đặt ghế Couple.'];
         }
         
         if ($isMiddleRow) {
@@ -834,8 +844,7 @@ class PhongChieuController extends Controller
         }
 
         if ($isLastTwoRows) {
-            if ($isThuong) return ['2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế Thường.'];
-            if ($isVip) return ['2 hàng cuối chỉ được đặt ghế Couple. Không thể đặt ghế VIP.'];
+            if ($isThuong) return ['2 hàng cuối chỉ được đặt ghế VIP hoặc Couple. Không thể đặt ghế Thường.'];
         }
 
         return null;
@@ -1313,10 +1322,10 @@ class PhongChieuController extends Controller
                 $isCouple = $loaiGhe->la_couple === true;
                 $isThuong = strtolower($loaiGhe->ten_loai) === 'thường' || strtolower($loaiGhe->ten_loai) === 'thuong';
 
-                if ($isFirstThree && ($isVip || $isCouple)) {
+                if ($isFirstThree && $isCouple) {
                     return response()->json([
                         'success' => false,
-                        'message' => $isVip ? '3 hàng gần màn chiếu không được đặt ghế VIP.' : '3 hàng gần màn chiếu không được đặt ghế Couple.',
+                        'message' => '3 hàng gần màn chiếu không được đặt ghế Couple.',
                     ], 422);
                 }
 

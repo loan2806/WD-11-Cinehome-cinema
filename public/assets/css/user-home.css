@@ -760,6 +760,34 @@ body.overflow-hidden {
     color: #b7f7d7;
 }
 
+.auth-resend-verify-form {
+    margin-top: 10px;
+}
+
+.auth-resend-verify-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    padding: 0 14px;
+    border: 1px solid rgba(247, 184, 75, 0.36);
+    border-radius: 14px;
+    background: rgba(247, 184, 75, 0.1);
+    color: var(--cinema-gold);
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.auth-resend-verify-btn:hover {
+    background: rgba(247, 184, 75, 0.18);
+    border-color: rgba(247, 184, 75, 0.55);
+    transform: translateY(-1px);
+}
+
 @media (max-width: 900px) {
     .auth-page {
         align-items: flex-start;
@@ -1239,64 +1267,331 @@ body.overflow-hidden {
     }
 }
 
-/* Hero */
-.booking-hero.hero-slider {
-    position: relative;
-    height: 800px;
-    min-height: 720px;
-    overflow: hidden;
-    background: #05070b;
+/* Hero - Cinema Billboard Style */
+.booking-hero.hero-slider,
+.booking-hero.hero-slider.netflix-hero-billboard {
+    position: relative !important;
+    width: 100% !important;
+    height: 82vh !important;
+    min-height: 600px !important;
+    max-height: 820px !important;
+    overflow: hidden !important;
+    background: #080a0f !important;
 }
 
 .booking-hero-slide.hero-slide {
-    position: absolute;
-    inset: 0;
-    display: block;
-    visibility: hidden;
-    opacity: 0;
-    overflow: hidden;
-    background: var(--cinema-bg, #05070b);
-    transform: scale(1.04);
-    transition:
-        opacity 0.9s var(--cinema-ease),
-        visibility 0.9s var(--cinema-ease),
-        transform 1.4s var(--cinema-ease);
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
+    background-size: cover !important;
+    background-position: center 25% !important;
+    background-repeat: no-repeat !important;
+    transform: scale(1.05) !important;
+    transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.8s cubic-bezier(0.22, 1, 0.36, 1), transform 1.2s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    z-index: 1 !important;
 }
 
 .booking-hero-slide.hero-slide.active {
-    visibility: visible;
-    opacity: 1;
-    transform: scale(1);
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: scale(1) !important;
+    z-index: 2 !important;
 }
 
-/* Poster phim vốn là ảnh DỌC (~2:3) còn banner lại rất RỘNG theo chiều
-   ngang — không có cách crop/scale nào vừa lấp đầy chiều ngang vừa giữ được
-   trọn vẹn nội dung ảnh. Giải pháp: dùng bản MỜ (blur) phóng to của chính
-   poster làm phông nền không khí, phủ kín toàn banner cho đẹp mắt/đúng tông
-   phim; ảnh SẮC NÉT, không cắt xén thì đã có ở khung poster bên phải
-   (.booking-hero-poster). Phóng to (scale) + lùi mép (inset âm) để viền mờ
-   không lộ ra khi blur. */
+/* Cinema Gradient Overlays - Clear & Bright Backdrop */
+.netflix-hero-overlay,
 .booking-hero-slide::before {
-    content: "";
-    position: absolute;
-    inset: -30px;
-    background-image: var(--hero-poster);
-    background-position: center 22%;
-    background-size: cover;
-    filter: blur(14px) saturate(1.15) brightness(0.78) contrast(1.05);
-    transform: scale(1.06);
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: 
+        linear-gradient(90deg, rgba(8, 10, 15, 0.82) 0%, rgba(8, 10, 15, 0.45) 45%, rgba(8, 10, 15, 0.1) 78%, transparent 100%),
+        linear-gradient(0deg, rgba(8, 10, 15, 0.9) 0%, transparent 35%),
+        linear-gradient(180deg, rgba(8, 10, 15, 0.5) 0%, transparent 22%) !important;
+    z-index: 2 !important;
+    pointer-events: none !important;
 }
 
-.booking-hero-slide::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(circle at 18% 38%, rgba(229, 9, 20, 0.2), transparent 24%),
-        linear-gradient(135deg, rgba(247, 184, 75, 0.08), transparent 42%),
-        linear-gradient(90deg, rgba(5, 7, 11, 0.95) 0%, rgba(5, 7, 11, 0.72) 34%, rgba(5, 7, 11, 0.32) 64%, rgba(5, 7, 11, 0.6) 100%),
-        linear-gradient(0deg, #080a0f 0%, rgba(8, 10, 15, 0.78) 12%, rgba(8, 10, 15, 0.08) 50%, rgba(8, 10, 15, 0.32) 100%);
-    pointer-events: none;
+/* Big Movie Title */
+.netflix-hero-title {
+    font-size: clamp(2.6rem, 5vw, 4.2rem) !important;
+    font-weight: 900 !important;
+    line-height: 1.05 !important;
+    color: #ffffff !important;
+    text-transform: uppercase !important;
+    letter-spacing: -0.5px !important;
+    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.95), 0 2px 8px rgba(0, 0, 0, 0.8) !important;
+    margin: 0 0 16px 0 !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+/* Meta Row */
+.netflix-hero-meta {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+    font-size: 14px !important;
+}
+
+.cinema-status-tag {
+    background: rgba(229, 9, 20, 0.2) !important;
+    color: #ff4d5a !important;
+    border: 1px solid rgba(229, 9, 20, 0.4) !important;
+    padding: 3px 10px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+.netflix-meta-year {
+    color: #e5e5e5 !important;
+    font-weight: 600 !important;
+}
+
+.netflix-age-badge {
+    border: 1px solid rgba(255, 255, 255, 0.4) !important;
+    padding: 2px 7px !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border-radius: 3px !important;
+}
+
+.netflix-meta-duration {
+    color: #e5e5e5 !important;
+    font-weight: 600 !important;
+}
+
+.netflix-quality-tag {
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    font-size: 11px !important;
+    padding: 1px 6px !important;
+    border-radius: 3px !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* Synopsis Description */
+.netflix-hero-desc {
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+    color: #d2d2d2 !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95) !important;
+    margin-bottom: 22px !important;
+    max-width: 620px !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+}
+
+/* Cinema CTA Buttons */
+.netflix-hero-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 14px !important;
+    margin-bottom: 22px !important;
+}
+
+.btn-booking-primary,
+.btn-netflix-play {
+    background: linear-gradient(135deg, #e50914 0%, #ff2e3b 100%) !important;
+    color: #ffffff !important;
+    font-size: 15px !important;
+    font-weight: 800 !important;
+    padding: 13px 30px !important;
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    box-shadow: 0 6px 20px rgba(229, 9, 20, 0.45) !important;
+    border: none !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+}
+
+.btn-booking-primary:hover,
+.btn-netflix-play:hover {
+    background: linear-gradient(135deg, #ff1e27 0%, #ff4752 100%) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 0 10px 28px rgba(229, 9, 20, 0.65) !important;
+}
+
+.btn-booking-secondary,
+.btn-netflix-info {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #ffffff !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    padding: 13px 26px !important;
+    border-radius: 8px !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+}
+
+.btn-booking-secondary:hover,
+.btn-netflix-info:hover {
+    background: rgba(255, 255, 255, 0.22) !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    transform: translateY(-2px) scale(1.03) !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Sub-info text lines */
+.netflix-hero-subinfo {
+    font-size: 13px !important;
+    color: #a3a3a3 !important;
+    margin-bottom: 20px !important;
+    line-height: 1.5 !important;
+}
+
+.netflix-hero-subinfo p {
+    margin: 0 0 4px 0 !important;
+}
+
+.netflix-hero-subinfo strong {
+    color: #d4d4d4 !important;
+}
+
+/* Vertical Poster & Hero Info Layout */
+.hero-poster-and-info-flex {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 22px !important;
+    margin-top: 14px !important;
+}
+
+.hero-vertical-poster-card {
+    position: relative !important;
+    width: 145px !important;
+    height: 215px !important;
+    flex-shrink: 0 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    border: 2px solid rgba(229, 9, 20, 0.5) !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75), 0 0 24px rgba(229, 9, 20, 0.3) !important;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    background: #18181c !important;
+}
+
+.hero-vertical-poster-card:hover {
+    transform: translateY(-4px) scale(1.04) !important;
+    border-color: rgba(255, 59, 70, 0.9) !important;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.85), 0 0 35px rgba(229, 9, 20, 0.5) !important;
+}
+
+.hero-vertical-poster-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+.hero-poster-age-badge {
+    position: absolute !important;
+    top: 8px !important;
+    left: 8px !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    color: #facc15 !important;
+    border: 1px solid rgba(250, 204, 21, 0.5) !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    padding: 2px 7px !important;
+    border-radius: 6px !important;
+    line-height: 1 !important;
+    z-index: 5 !important;
+}
+
+.hero-info-text-side {
+    flex-grow: 1 !important;
+    min-width: 0 !important;
+}
+
+/* Suất chiếu hôm nay pill bar */
+.hero-today-showtimes {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 18px !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    padding: 7px 14px !important;
+    border-radius: 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    backdrop-filter: blur(8px) !important;
+    width: fit-content !important;
+}
+
+.showtimes-label {
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    color: #facc15 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.showtimes-pills {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+}
+
+.showtime-pill {
+    background: rgba(229, 9, 20, 0.25) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(229, 9, 20, 0.5) !important;
+    font-size: 12.5px !important;
+    font-weight: 700 !important;
+    padding: 3px 9px !important;
+    border-radius: 6px !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+}
+
+.showtime-pill:hover {
+    background: #e50914 !important;
+    color: #ffffff !important;
+    transform: scale(1.08) !important;
+    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.5) !important;
+}
+
+@media (max-width: 768px) {
+    .hero-poster-and-info-flex {
+        flex-direction: column !important;
+        gap: 14px !important;
+    }
+    
+    .hero-vertical-poster-card {
+        width: 110px !important;
+        height: 160px !important;
+    }
 }
 
 .booking-hero-content.hero-content {

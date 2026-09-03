@@ -8,28 +8,37 @@ use App\Models\ThanhVien;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-
+    /**
+     * Hiển thị trang đăng ký.
+     */
     public function create(): View
     {
         return view('auth.dang_ky');
     }
 
-
+    /**
+     * Xử lý đăng ký tài khoản.
+     */
     public function store(Request $request): RedirectResponse
     {
+        /*
+        |--------------------------------------------------------------------------
+        | VALIDATE
+        |--------------------------------------------------------------------------
+        */
+
         $request->validate([
 
             'ho_ten' => [
                 'required',
                 'string',
-                'max:255'
+                'max:255',
             ],
 
             'email' => [
@@ -38,30 +47,47 @@ class RegisteredUserController extends Controller
                 'lowercase',
                 'email',
                 'max:255',
-                'unique:' . NguoiDung::class
+                'unique:' . NguoiDung::class,
             ],
 
             'mat_khau' => [
                 'required',
                 'confirmed',
-                Rules\Password::defaults()
+                Rules\Password::defaults(),
             ],
 
-            // Mã giới thiệu không bắt buộc
             'ma_gioi_thieu' => [
                 'nullable',
                 'string',
-                'exists:thanh_viens,ma_gioi_thieu'
+                'exists:thanh_viens,ma_gioi_thieu',
             ],
-
         ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | XÓA SESSION EMAIL CHƯA XÁC THỰC CŨ
+        |--------------------------------------------------------------------------
+        |
+        | Ví dụ:
+        |
+        | Đạt Bình chưa xác thực
+        | -> session có:
+        | unverified_email = datbin@gmail.com
+        |
+        | Sau đó đăng ký Đạt Thắng.
+        |
+        | Khi chuyển sang login không được tiếp tục dùng email
+        | của Đạt Bình.
+        |
+        */
+
+        $request->session()->forget('unverified_email');
 
         /*
-    |--------------------------------------------------------------------------
-    | TẠO TÀI KHOẢN
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | TẠO TÀI KHOẢN
+        |--------------------------------------------------------------------------
+        */
 
         $user = NguoiDung::create([
 
@@ -77,19 +103,22 @@ class RegisteredUserController extends Controller
 
             'trang_thai_hoat_dong' => true,
 
-            'bat_buoc_xac_thuc_email' => false,
+            /*
+            | Tài khoản tự đăng ký bắt buộc xác thực email.
+            */
+            'bat_buoc_xac_thuc_email' => true,
 
-            // Chưa xác thực email
+            /*
+            | Tài khoản mới chưa xác thực.
+            */
             'email_verified_at' => null,
-
         ]);
 
-
         /*
-    |--------------------------------------------------------------------------
-    | TÌM NGƯỜI GIỚI THIỆU
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | TÌM NGƯỜI GIỚI THIỆU
+        |--------------------------------------------------------------------------
+        */
 
         $nguoiGioiThieu = null;
 
@@ -101,32 +130,31 @@ class RegisteredUserController extends Controller
             )->first();
         }
 
-
         /*
-    |--------------------------------------------------------------------------
-    | TẠO THẺ THÀNH VIÊN
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | TẠO THẺ THÀNH VIÊN
+        |--------------------------------------------------------------------------
+        */
 
         $thanhVien = ThanhVien::create([
 
             'nguoi_dung_id' => $user->id,
 
             'ma_thanh_vien' =>
-            'TV' . str_pad(
-                $user->id,
-                6,
-                '0',
-                STR_PAD_LEFT
-            ),
+                'TV' . str_pad(
+                    $user->id,
+                    6,
+                    '0',
+                    STR_PAD_LEFT
+                ),
 
             'ma_gioi_thieu' =>
-            ThanhVien::taoMaGioiThieu(
-                $user->id
-            ),
+                ThanhVien::taoMaGioiThieu(
+                    $user->id
+                ),
 
             'nguoi_gioi_thieu_id' =>
-            $nguoiGioiThieu?->id,
+                $nguoiGioiThieu?->id,
 
             'hang_thanh_vien' => 'member',
 
@@ -135,19 +163,17 @@ class RegisteredUserController extends Controller
             'tong_diem_tich_luy' => 0,
 
             'ngay_tham_gia' => now(),
-
         ]);
 
-
         /*
-    |--------------------------------------------------------------------------
-    | NGƯỜI GIỚI THIỆU NHẬN 100 ĐIỂM
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | NGƯỜI GIỚI THIỆU NHẬN 100 ĐIỂM
+        |--------------------------------------------------------------------------
+        */
 
         if (
-            $nguoiGioiThieu
-            && !$nguoiGioiThieu->da_nhan_thuong
+            $nguoiGioiThieu &&
+            ! $nguoiGioiThieu->da_nhan_thuong
         ) {
 
             $nguoiGioiThieu->congDiem(
@@ -157,45 +183,51 @@ class RegisteredUserController extends Controller
             );
 
             $nguoiGioiThieu->update([
-                'da_nhan_thuong' => true
+                'da_nhan_thuong' => true,
             ]);
         }
 
-
         /*
-    |--------------------------------------------------------------------------
-    | SỰ KIỆN ĐĂNG KÝ
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | SỰ KIỆN ĐĂNG KÝ
+        |--------------------------------------------------------------------------
+        */
 
         event(
             new Registered($user)
         );
 
+        /*
+        |--------------------------------------------------------------------------
+        | GỬI EMAIL XÁC THỰC
+        |--------------------------------------------------------------------------
+        */
+
+        $user->sendEmailVerificationNotification();
 
         /*
-    |--------------------------------------------------------------------------
-    | KHÔNG TỰ ĐĂNG NHẬP
-    |--------------------------------------------------------------------------
-    |
-    | ĐÃ XÓA:
-    |
-    | Auth::login($user);
-    |
-    */
+        |--------------------------------------------------------------------------
+        | ĐẢM BẢO KHÔNG CÓ SESSION EMAIL CŨ
+        |--------------------------------------------------------------------------
+        */
 
+        $request->session()->forget(
+            'unverified_email'
+        );
 
         /*
-    |--------------------------------------------------------------------------
-    | CHUYỂN VỀ TRANG ĐĂNG NHẬP
-    |--------------------------------------------------------------------------
-    */
+        |--------------------------------------------------------------------------
+        | CHUYỂN VỀ LOGIN
+        |--------------------------------------------------------------------------
+        */
 
         return redirect()
             ->route('login')
             ->with(
                 'success',
-                'Đăng ký tài khoản thành công. Vui lòng đăng nhập.'
+                'Đăng ký tài khoản thành công! Vui lòng kiểm tra email (' .
+                $user->email .
+                ') và nhấn vào liên kết xác thực trước khi đăng nhập.'
             );
     }
 }

@@ -14,8 +14,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const dots = slider.querySelectorAll("[data-slide-target]");
         const prevButton = slider.querySelector("[data-slide-prev]");
         const nextButton = slider.querySelector("[data-slide-next]");
+        
+        const SLIDE_DURATION = 7000; // 7 giây theo yêu cầu của người dùng
         let currentSlide = 0;
         let autoplayTimer = null;
+        let isHovered = false;
 
         function showSlide(index) {
             if (!slides.length) return;
@@ -27,17 +30,17 @@ document.addEventListener("DOMContentLoaded", function () {
             });
 
             dots.forEach(function (dot, dotIndex) {
-                dot.classList.toggle("active", dotIndex === currentSlide);
+                const isActive = dotIndex === currentSlide;
+                dot.classList.toggle("active", isActive);
 
                 const progress = dot.querySelector("span");
-
                 if (progress) {
                     progress.style.transition = "none";
-                    progress.style.width = "0";
+                    progress.style.width = "0%";
 
-                    if (dotIndex === currentSlide) {
+                    if (isActive && !isHovered) {
                         requestAnimationFrame(function () {
-                            progress.style.transition = "";
+                            progress.style.transition = `width ${SLIDE_DURATION}ms linear`;
                             progress.style.width = "100%";
                         });
                     }
@@ -46,12 +49,21 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         function nextSlide() {
+            if (isHovered) return;
             showSlide(currentSlide + 1);
         }
 
         function startAutoplay() {
             stopAutoplay();
-            autoplayTimer = setInterval(nextSlide, 5200);
+            if (slides.length <= 1 || isHovered) return;
+
+            const activeDot = slider.querySelector("[data-slide-target].active span");
+            if (activeDot) {
+                activeDot.style.transition = `width ${SLIDE_DURATION}ms linear`;
+                activeDot.style.width = "100%";
+            }
+
+            autoplayTimer = setInterval(nextSlide, SLIDE_DURATION);
         }
 
         function stopAutoplay() {
@@ -59,32 +71,58 @@ document.addEventListener("DOMContentLoaded", function () {
                 clearInterval(autoplayTimer);
                 autoplayTimer = null;
             }
+
+            const activeDot = slider.querySelector("[data-slide-target].active span");
+            if (activeDot) {
+                const computedWidth = window.getComputedStyle(activeDot).width;
+                activeDot.style.transition = "none";
+                activeDot.style.width = computedWidth;
+            }
         }
 
         dots.forEach(function (dot) {
             dot.addEventListener("click", function () {
                 const index = Number(dot.getAttribute("data-slide-target"));
                 showSlide(index);
-                startAutoplay();
+                if (!isHovered) startAutoplay();
             });
         });
 
         if (prevButton) {
             prevButton.addEventListener("click", function () {
                 showSlide(currentSlide - 1);
-                startAutoplay();
+                if (!isHovered) startAutoplay();
             });
         }
 
         if (nextButton) {
             nextButton.addEventListener("click", function () {
                 showSlide(currentSlide + 1);
-                startAutoplay();
+                if (!isHovered) startAutoplay();
             });
         }
 
-        slider.addEventListener("mouseenter", stopAutoplay);
-        slider.addEventListener("mouseleave", startAutoplay);
+        slider.addEventListener("mouseenter", function () {
+            isHovered = true;
+            stopAutoplay();
+        });
+
+        slider.addEventListener("mouseleave", function () {
+            isHovered = false;
+            startAutoplay();
+        });
+
+        slider.addEventListener("touchstart", function () {
+            isHovered = true;
+            stopAutoplay();
+        }, { passive: true });
+
+        slider.addEventListener("touchend", function () {
+            setTimeout(function() {
+                isHovered = false;
+                startAutoplay();
+            }, 3000);
+        }, { passive: true });
 
         showSlide(0);
 

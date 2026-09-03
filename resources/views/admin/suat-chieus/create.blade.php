@@ -41,7 +41,7 @@
     }
 
     .cine-select-wrapper.open {
-        z-index: 99999 !important;
+        z-index: 200 !important;
     }
 
     .cine-select-trigger {
@@ -86,7 +86,7 @@
         border-radius: 16px !important;
         padding: 8px !important;
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.95), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
-        z-index: 999999 !important;
+        z-index: 1000 !important;
         max-height: 260px !important;
         overflow-y: auto !important;
         display: none !important;
@@ -204,13 +204,31 @@
     .btn-conflict-cancel:hover {
         background: #3f3f46;
     }
+
+    /* Styling khung hiển thị phát hiện Ngày Lễ */
+    .showtime-holiday-price {
+        background: rgba(234, 179, 8, 0.1) !important;
+        border: 1px solid rgba(234, 179, 8, 0.3) !important;
+        border-radius: 14px !important;
+        padding: 16px !important;
+        margin-bottom: 20px !important;
+    }
+    .showtime-holiday-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #facc15;
+        margin-bottom: 12px;
+    }
+    .showtime-holiday-head i {
+        font-size: 20px;
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="showtime-create-page">
     @include('admin.partials.flash')
-
 
     <section class="showtime-hero-panel">
         <div>
@@ -459,7 +477,7 @@
                             </label>
                         </div>
 
-                        <!-- CHẾ ĐỘ 2: CHỌN KHUNG GIỜ THỦ CÔNG (GIỐNG HỆT ẢNH 2) -->
+                        <!-- CHẾ ĐỘ 2: CHỌN KHUNG GIỜ THỦ CÔNG -->
                         <div id="sub_che_do_thu_cong" style="background: #18181c; padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; display: none;">
                             <div style="margin-bottom: 12px;">
                                 <strong style="color: #fff; font-size: 15px; display: block;">Khung giờ trong ngày <b style="color: #ef4444;">*</b></strong>
@@ -495,15 +513,16 @@
                         </div>
                     </div>
 
+                    <!-- Ô NHẬP GIÁ RIÊNG DÀNH CHO NGÀY LỄ (TỰ ĐỘNG HIỆN KHI CÓ NGÀY LỄ) -->
                     <div id="khu_vuc_gia_ngay_le" class="showtime-holiday-price" style="display: none;">
                         <div class="showtime-holiday-head">
                             <i class="fa-solid fa-gift"></i>
                             <div>
-                                <strong>Phát hiện ngày lễ: <span id="ten_ngay_le_label"></span></strong>
-                                <small>Nhập giá riêng nếu muốn áp dụng biểu giá ngày lễ.</small>
+                                <strong style="font-size: 15px;">Phát hiện ngày lễ trong chuỗi: <span id="ten_ngay_le_label" style="color: #fff; font-weight: 800;"></span></strong>
+                                <br><small style="color: #eab308;">Nhập giá riêng bên dưới để áp dụng biểu giá cho các ngày lễ này.</small>
                             </div>
                         </div>
-                        <label class="showtime-field">
+                        <label class="showtime-field" style="margin-top: 10px;">
                             <span>Giá vé ngày lễ</span>
                             <div class="showtime-money-input">
                                 <input type="number" name="gia_ve_ngay_le" id="gia_ve_ngay_le" value="{{ old('gia_ve_ngay_le') }}" placeholder="Ví dụ: 120000">
@@ -575,6 +594,199 @@
 
 @push('scripts')
 <script>
+/* === THUẬT TOÁN BẮT NGÀY LỄ VIỆT NAM (DƯƠNG LỊCH & ÂM LỊCH) TRÊN JS === */
+function INT_JS(d) { return Math.floor(d); }
+function jdFromDate_JS(dd, mm, yy) {
+    let a = INT_JS((14 - mm) / 12);
+    let y = yy + 4800 - a;
+    let m = mm + 12 * a - 3;
+    return dd + INT_JS((153 * m + 2) / 5) + 365 * y + INT_JS(y / 4) - INT_JS(y / 100) + INT_JS(y / 400) - 32045;
+}
+function getNewMoonDay_JS(k, timeZone) {
+    timeZone = timeZone || 7;
+    let T = k / 1236.85;
+    let T2 = T * T;
+    let T3 = T2 * T;
+    let dr = Math.PI / 180;
+    let Jd1 = 2415020.75933 + 29.53058868 * k + 0.0001178 * T2 - 0.000000155 * T3;
+    Jd1 += 0.00033 * Math.sin((166.56 + 132.87 * T - 0.009173 * T2) * dr);
+    let M = 359.2242 + 29.10535608 * k - 0.0000333 * T2 - 0.00000347 * T3;
+    let Mpr = 306.0253 + 385.81691806 * k + 0.0107306 * T2 + 0.00001236 * T3;
+    let F = 21.2964 + 390.67050646 * k - 0.0016528 * T2 - 0.00000239 * T3;
+    let C1 = (0.1734 - 0.000393 * T) * Math.sin(M * dr) + 0.0021 * Math.sin(2 * M * dr);
+    C1 = C1 - 0.4068 * Math.sin(Mpr * dr) + 0.0161 * Math.sin(2 * Mpr * dr);
+    C1 = C1 - 0.0004 * Math.sin(3 * Mpr * dr);
+    C1 = C1 + 0.0104 * Math.sin(2 * F * dr) - 0.0051 * Math.sin((M + Mpr) * dr);
+    C1 = C1 - 0.0074 * Math.sin((M - Mpr) * dr) + 0.0004 * Math.sin((2 * F + M) * dr);
+    C1 = C1 - 0.0004 * Math.sin((2 * F - M) * dr) - 0.0006 * Math.sin((2 * F + Mpr) * dr);
+    C1 = C1 + 0.0010 * Math.sin((2 * F - Mpr) * dr) + 0.0005 * Math.sin((M + 2 * Mpr) * dr);
+    let deltat;
+    if (T < -11) {
+        deltat = 0.001 + 0.000839 * T + 0.0002261 * T2 - 0.00000845 * T3 - 0.000000081 * T * T3;
+    } else {
+        deltat = -0.00002 + 0.000297 * T + 0.001029 * T2 + 0.000941 * T3 + 0.000256 * T * T3;
+    }
+    let JdNew = Jd1 + C1 - deltat;
+    return INT_JS(JdNew + 0.5 + timeZone / 24);
+}
+function getSunLongitude_JS(dayNumber, timeZone) {
+    timeZone = timeZone || 7;
+    let T = (dayNumber - 2451545.5 - timeZone / 24) / 36525;
+    let T2 = T * T;
+    let dr = Math.PI / 180;
+    let M = 357.52910 + 35999.05030 * T - 0.0001559 * T2 - 0.00000048 * T * T2;
+    let L0 = 280.46645 + 36000.76983 * T + 0.0003032 * T2;
+    let DL = (1.914602 - 0.004817 * T - 0.000014 * T2) * Math.sin(M * dr);
+    DL += (0.019993 - 0.000101 * T) * Math.sin(2 * M * dr) + 0.000289 * Math.sin(3 * M * dr);
+    let L = L0 + DL;
+    L = L - 360 * INT_JS(L / 360);
+    return INT_JS(L / 30);
+}
+function getLunarMonth11_JS(yy, timeZone) {
+    timeZone = timeZone || 7;
+    let off = jdFromDate_JS(31, 12, yy) - 2415021;
+    let k = INT_JS(off / 29.5305888);
+    let nm = getNewMoonDay_JS(k, timeZone);
+    let sunLong = getSunLongitude_JS(nm, timeZone);
+    if (sunLong >= 9) {
+        nm = getNewMoonDay_JS(k - 1, timeZone);
+    }
+    return nm;
+}
+function getLeapMonthOffset_JS(a11, timeZone) {
+    timeZone = timeZone || 7;
+    let k = INT_JS((a11 - 2415021) / 29.5305888 + 0.5);
+    let last = 0;
+    let i = 1;
+    let arc = getSunLongitude_JS(getNewMoonDay_JS(k + i, timeZone), timeZone);
+    do {
+        last = arc;
+        i++;
+        arc = getSunLongitude_JS(getNewMoonDay_JS(k + i, timeZone), timeZone);
+    } while (arc != last && i < 14);
+    return i - 1;
+}
+function convertSolar2Lunar_JS(dd, mm, yy, timeZone) {
+    timeZone = timeZone || 7;
+    let dayNumber = jdFromDate_JS(dd, mm, yy);
+    let k = INT_JS((dayNumber - 2415021) / 29.5305888);
+    let monthStart = getNewMoonDay_JS(k + 1, timeZone);
+    if (monthStart > dayNumber) {
+        monthStart = getNewMoonDay_JS(k, timeZone);
+    }
+    let a11 = getLunarMonth11_JS(yy, timeZone);
+    let b11 = a11;
+    if (a11 >= monthStart) {
+        a11 = getLunarMonth11_JS(yy - 1, timeZone);
+    } else {
+        b11 = getLunarMonth11_JS(yy + 1, timeZone);
+    }
+    let lunarDay = dayNumber - monthStart + 1;
+    let diff = INT_JS((monthStart - a11) / 29);
+    let lunarLeap = 0;
+    let lunarMonth = diff + 11;
+    if (b11 - a11 > 365) {
+        let leapMonthDiff = getLeapMonthOffset_JS(a11, timeZone);
+        if (diff >= leapMonthDiff) {
+            lunarMonth = diff + 10;
+            if (diff == leapMonthDiff) {
+                lunarLeap = 1;
+            }
+        }
+    }
+    if (lunarMonth > 12) {
+        lunarMonth = lunarMonth - 12;
+    }
+    return { day: lunarDay, month: lunarMonth, year: yy, leap: lunarLeap };
+}
+
+function checkHolidayNameJS(dateStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return null;
+    const yy = parseInt(parts[0]);
+    const mm = parseInt(parts[1]);
+    const dd = parseInt(parts[2]);
+
+    // 1. Check Dương lịch
+    const solarKey = (mm < 10 ? '0' + mm : mm) + '-' + (dd < 10 ? '0' + dd : dd);
+    const solarHolidays = {
+        '01-01': 'Tết Dương Lịch (01/01)',
+        '04-30': 'Giải Phóng Miền Nam (30/04)',
+        '05-01': 'Quốc Tế Lao Động (01/05)',
+        '09-02': 'Quốc Khánh (02/09)',
+        '09-03': 'Quốc Khánh (03/09)'
+    };
+    if (solarHolidays[solarKey]) {
+        return solarHolidays[solarKey];
+    }
+
+    // 2. Check Âm lịch
+    const lunar = convertSolar2Lunar_JS(dd, mm, yy, 7);
+    const lDay = lunar.day;
+    const lMonth = lunar.month;
+
+    if (lMonth === 3 && lDay === 10) {
+        return 'Giỗ Tổ Hùng Vương (10/03 Âm Lịch)';
+    }
+    if (lMonth === 12 && (lDay === 29 || lDay === 30)) {
+        return 'Tất Niên / Giao Thừa (' + dd + '/' + mm + ')';
+    }
+    if (lMonth === 1 && lDay >= 1 && lDay <= 5) {
+        return 'Tết Nguyên Đán Mùng ' + lDay + ' (' + dd + '/' + mm + ')';
+    }
+
+    return null;
+}
+
+// Hàm Quét ngày lễ tự động trong khoảng ngày đã chọn
+function scanAndDetectHolidays() {
+    const loaiInput = document.getElementById('loai_tao');
+    const khuGiaNgayLe = document.getElementById('khu_vuc_gia_ngay_le');
+    const labelNgayLe = document.getElementById('ten_ngay_le_label');
+
+    if (!khuGiaNgayLe || !labelNgayLe) return;
+
+    const isDonLe = !loaiInput || loaiInput.value === 'don_le';
+    let detectedHolidays = [];
+
+    if (isDonLe) {
+        const singleDate = document.getElementById('ngay_chieu_don_le')?.value;
+        if (singleDate) {
+            const hName = checkHolidayNameJS(singleDate);
+            if (hName) detectedHolidays.push(hName);
+        }
+    } else {
+        const startStr = document.getElementById('ngay_bat_dau')?.value;
+        const endStr = document.getElementById('ngay_ket_thuc')?.value;
+
+        if (startStr && endStr) {
+            let cur = new Date(startStr);
+            let end = new Date(endStr);
+
+            while (cur <= end) {
+                let y = cur.getFullYear();
+                let m = String(cur.getMonth() + 1).padStart(2, '0');
+                let d = String(cur.getDate()).padStart(2, '0');
+                let dateStr = `${y}-${m}-${d}`;
+
+                let hName = checkHolidayNameJS(dateStr);
+                if (hName && !detectedHolidays.includes(hName)) {
+                    detectedHolidays.push(hName);
+                }
+                cur.setDate(cur.getDate() + 1);
+            }
+        }
+    }
+
+    if (detectedHolidays.length > 0) {
+        labelNgayLe.textContent = detectedHolidays.join(', ');
+        khuGiaNgayLe.style.display = 'block';
+    } else {
+        khuGiaNgayLe.style.display = 'none';
+    }
+}
+
 function submitIgnoreConflicts() {
     document.getElementById('bo_qua_trung').value = '1';
     document.getElementById('showtimeCreateForm').submit();
@@ -736,12 +948,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if (khuHangLoat) khuHangLoat.style.setProperty('display', isSingle ? 'none' : 'block', 'important');
         if (modePreview) modePreview.textContent = isSingle ? 'Đơn lẻ' : 'Hàng loạt';
         window.switchSubBatchMode();
+        scanAndDetectHolidays();
     }
 
     if (loaiInput) {
         loaiInput.addEventListener('change', switchFormMode);
         switchFormMode();
     }
+
+    // Bắt sự kiện thay đổi ngày để tự động quét ngày lễ
+    document.getElementById('ngay_chieu_don_le')?.addEventListener('change', scanAndDetectHolidays);
+    document.getElementById('ngay_bat_dau')?.addEventListener('change', scanAndDetectHolidays);
+    document.getElementById('ngay_ket_thuc')?.addEventListener('change', scanAndDetectHolidays);
+
+    // Chạy kiểm tra ngay khi load lại trang
+    scanAndDetectHolidays();
 
     // Monitor Phân Tích Lịch
     const phimInput = document.getElementById('phim_id');

@@ -4,7 +4,7 @@
 
 @push('styles')
 <style>
-    /* 🌟 CSS BẢNG XẾP HẠNG TOP 3 PHIM HOT CỦA THÁNG */
+    /* 🌟 BẢNG XẾP HẠNG TOP 3 PHIM HOT CỦA THÁNG (NETFLIX STYLE) */
     .hot-movies-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -29,13 +29,13 @@
         align-items: center;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         box-sizing: border-box;
-        cursor: pointer; /* Cho phép con trỏ bàn tay trên toàn bộ ô */
+        cursor: pointer;
     }
 
     .hot-movie-card:hover {
         transform: translateY(-5px);
-        border-color: rgba(250, 204, 21, 0.5);
-        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 20px rgba(250, 204, 21, 0.12);
+        border-color: rgba(229, 9, 20, 0.6);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.7), 0 0 20px rgba(229, 9, 20, 0.2);
     }
 
     .hot-rank-badge {
@@ -189,12 +189,11 @@
 
 @section('content')
     @php
-        $heroMovies = $bannerMovies
-            ->merge($comingSoonMovies)
-            ->merge($nowShowingMovies)
-            ->merge($comingLaterMovies)
-            ->unique('id')
-            ->take(5);
+        // Ưu tiên hiển thị TẤT CẢ các phim đang có suất chiếu / đang chiếu tại rạp
+        $moviesWithShowtimes = $nowShowingMovies->merge($comingSoonMovies)->unique('id');
+        $heroMovies = $moviesWithShowtimes->isNotEmpty()
+            ? $moviesWithShowtimes
+            : ($bannerMovies->isNotEmpty() ? $bannerMovies->merge($comingLaterMovies)->unique('id') : collect());
 
         $nowShowingRail = $nowShowingMovies->isNotEmpty()
             ? $nowShowingMovies->take(12)
@@ -260,101 +259,128 @@
     @endphp
 
     <section class="cinema-home">
-        <section class="booking-hero hero-slider" data-home-slider>
+        <!-- CINEMA HERO BANNER BANNER NỔI BẬT RẠP PHIM CINEHOME -->
+        <section class="booking-hero hero-slider netflix-hero-billboard" data-home-slider>
             @forelse ($heroMovies as $movie)
                 @php
                     $detailUrlWithSchedule = route('user.movies.show', $movie->slug) . '#lich-chieu';
+                    $bannerImage = $movie->banner 
+                        ? (str_contains($movie->banner, '/') ? asset('storage/' . $movie->banner) : asset('storage/movies/' . $movie->banner))
+                        : ($movie->poster 
+                            ? (str_contains($movie->poster, '/') ? asset('storage/' . $movie->poster) : asset('storage/movies/' . $movie->poster))
+                            : asset('assets/images/LOGO copy.png'));
+
+                    $posterImage = $movie->poster 
+                        ? (str_contains($movie->poster, '/') ? asset('storage/' . $movie->poster) : asset('storage/movies/' . $movie->poster))
+                        : $bannerImage;
+
+                    // Lấy suất chiếu hôm nay nếu có
+                    $todayShowtimes = $movie->showtimes
+                        ? $movie->showtimes->filter(function($st) {
+                            return !empty($st->thoi_gian_chieu) && \Carbon\Carbon::parse($st->thoi_gian_chieu)->isToday();
+                        })->sortBy('thoi_gian_chieu')->take(4)
+                        : collect();
                 @endphp
 
                 <article class="hero-slide booking-hero-slide {{ $loop->first ? 'active' : '' }}"
                     data-slide-index="{{ $loop->index }}"
-                    style="--hero-poster: url('{{ asset('storage/movies/' . $movie->poster) }}');">
+                    style="background-image: url('{{ $bannerImage }}');">
+                    <div class="netflix-hero-overlay"></div>
                     <div class="container-fluid px-5 booking-hero-content hero-content">
-                        <div class="booking-hero-copy hero-info">
-                            <div class="booking-eyebrow">
-                                <i class="fa-solid fa-bolt"></i>
-                                Đặt vé nhanh tại CineHome
-                            </div>
-
-                            <h1 class="booking-hero-title hero-title">
+                        <div class="booking-hero-copy hero-info netflix-hero-copy">
+                            
+                            {{-- Tiêu đề phim --}}
+                            <h1 class="netflix-hero-title">
                                 {{ $movie->ten_phim }}
                             </h1>
 
-                            <p class="booking-hero-desc hero-desc">
-                                {{ \Illuminate\Support\Str::limit($movie->mo_ta, 190) }}
-                            </p>
-
-                            <div class="booking-hero-meta hero-meta">
-                                <span>
-                                    <i class="fa-solid fa-film"></i>
-                                    {{ $movie->genres->pluck('ten_the_loai')->take(2)->join(', ') ?: 'Điện ảnh' }}
+                            {{-- Dãy thẻ Meta chuẩn Rạp Phim CineHome --}}
+                            <div class="netflix-hero-meta">
+                                <span class="cinema-status-tag">
+                                    <i class="fa-solid fa-fire"></i> Đang chiếu tại rạp
                                 </span>
-
-                                <span>
-                                    <i class="fa-solid fa-clock"></i>
-                                    {{ $movie->thoi_luong }} phút
-                                </span>
-
-                                <span>
-                                    <i class="fa-solid fa-user-shield"></i>
-                                    {{ $movie->gioi_han_tuoi }}
-                                </span>
+                                @if(!empty($movie->ngay_ra_rap))
+                                    <span class="netflix-meta-year">{{ \Carbon\Carbon::parse($movie->ngay_ra_rap)->format('Y') }}</span>
+                                @else
+                                    <span class="netflix-meta-year">{{ now()->format('Y') }}</span>
+                                @endif
+                                <span class="netflix-age-badge">{{ $movie->gioi_han_tuoi ?: '16+' }}</span>
+                                <span class="netflix-meta-duration">{{ $movie->thoi_luong ? $movie->thoi_luong . ' phút' : '120 phút' }}</span>
+                                <span class="netflix-quality-tag">2D / 3D / IMAX</span>
                             </div>
 
-                            <div class="booking-hero-actions hero-buttons">
-                                <a href="{{ $detailUrlWithSchedule }}" class="btn-book booking-primary-btn">
-                                    <i class="fa-solid fa-ticket"></i>
-                                    Đặt vé ngay
-                                </a>
-
-                                <a href="{{ route('user.movies.show', $movie->slug) }}" class="btn-trailer booking-ghost-btn">
-                                    <i class="fa-solid fa-circle-info"></i>
-                                    Chi tiết phim
-                                </a>
-                            </div>
-
-                            <div class="booking-hero-stats">
-                                <div>
-                                    <strong>{{ $nowShowingMovies->count() }}</strong>
-                                    <span>Phim đang chiếu</span>
+                            {{-- KHUNG POSTER KHỔ DỌC VÀ NỘI DUNG --}}
+                            <div class="hero-poster-and-info-flex">
+                                {{-- Ảnh poster phim khổ dọc --}}
+                                <div class="hero-vertical-poster-card">
+                                    <img src="{{ $posterImage }}" alt="{{ $movie->ten_phim }}" class="hero-vertical-poster-img">
+                                    <span class="hero-poster-age-badge">{{ $movie->gioi_han_tuoi ?: '16+' }}</span>
                                 </div>
-                                <div>
-                                    <strong>{{ $comingSoonMovies->count() + $comingLaterMovies->count() }}</strong>
-                                    <span>Phim sắp chiếu</span>
-                                </div>
-                                <div>
-                                    <strong>3</strong>
-                                    <span>Bước nhận vé</span>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="booking-hero-poster reveal-on-scroll">
-                            <img src="{{ asset('storage/movies/' . $movie->poster) }}" alt="{{ $movie->ten_phim }}">
-                            <div class="poster-ticket">
-                                <i class="fa-solid fa-ticket"></i>
-                                Vé điện tử
+                                {{-- Khung chữ & Thao tác --}}
+                                <div class="hero-info-text-side">
+                                    {{-- Mô tả phim --}}
+                                    <p class="netflix-hero-desc">
+                                        {{ \Illuminate\Support\Str::limit($movie->mo_ta, 190) }}
+                                    </p>
+
+                                    {{-- Suất chiếu hôm nay (Nếu có) --}}
+                                    @if($todayShowtimes->isNotEmpty())
+                                        <div class="hero-today-showtimes">
+                                            <span class="showtimes-label"><i class="fa-solid fa-clock"></i> Suất chiếu hôm nay:</span>
+                                            <div class="showtimes-pills">
+                                                @foreach($todayShowtimes as $st)
+                                                    <a href="{{ $detailUrlWithSchedule }}" class="showtime-pill">
+                                                        {{ \Carbon\Carbon::parse($st->thoi_gian_chieu)->format('H:i') }}
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    {{-- Bộ nút bấm ĐẶT VÉ NGAY & CHI TIẾT PHIM --}}
+                                    <div class="netflix-hero-actions">
+                                        <a href="{{ $detailUrlWithSchedule }}" class="btn-booking-primary">
+                                            <i class="fa-solid fa-ticket"></i> ĐẶT VÉ NGAY
+                                        </a>
+
+                                        <a href="{{ route('user.movies.show', $movie->slug) }}" class="btn-booking-secondary">
+                                            <i class="fa-solid fa-circle-info"></i> CHI TIẾT PHIM
+                                        </a>
+                                    </div>
+
+                                    {{-- Dòng thông tin phụ --}}
+                                    <div class="netflix-hero-subinfo">
+                                        @if(!empty($movie->dien_vien))
+                                            <p><strong>Diễn viên:</strong> {{ \Illuminate\Support\Str::limit($movie->dien_vien, 75) }}</p>
+                                        @endif
+                                        <p><strong>Thể loại:</strong> {{ $movie->genres->pluck('ten_the_loai')->take(3)->join(', ') ?: 'Hành động, Phiêu lưu' }}</p>
+                                    </div>
+                                </div>
                             </div>
+
                         </div>
                     </div>
                 </article>
             @empty
                 <article class="hero-slide booking-hero-slide active empty-hero"
-                    style="--hero-poster: url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=80');">
+                    style="background-image: url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=80');">
+                    <div class="netflix-hero-overlay"></div>
                     <div class="container-fluid px-5 booking-hero-content hero-content">
-                        <div class="booking-hero-copy hero-info">
-                            <div class="booking-eyebrow">
-                                <i class="fa-solid fa-bolt"></i>
-                                CineHome Cinema
+                        <div class="booking-hero-copy hero-info netflix-hero-copy">
+                            <h1 class="netflix-hero-title">CINEHOME CINEMA</h1>
+                            <div class="netflix-hero-meta">
+                                <span class="cinema-status-tag"><i class="fa-solid fa-film"></i> Rạp Phim Cao Cấp</span>
+                                <span class="netflix-meta-year">{{ now()->format('Y') }}</span>
+                                <span class="netflix-age-badge">16+</span>
+                                <span class="netflix-quality-tag">IMAX 4K</span>
                             </div>
-                            <h1 class="booking-hero-title hero-title">Đặt vé xem phim dễ dàng</h1>
-                            <p class="booking-hero-desc hero-desc">
-                                Khám phá lịch chiếu mới nhất, chọn ghế yêu thích và nhận vé điện tử chỉ trong vài bước.
+                            <p class="netflix-hero-desc">
+                                Khám phá thế giới điện ảnh đẳng cấp tại CineHome. Đặt vé xem phim bom tấn, chọn ghế yêu thích và nhận vé điện tử nhanh chóng.
                             </p>
-                            <div class="booking-hero-actions hero-buttons">
-                                <a href="{{ route('dat_ve.chon_phim') }}" class="btn-book booking-primary-btn">
-                                    <i class="fa-solid fa-ticket"></i>
-                                    Đặt vé ngay
+                            <div class="netflix-hero-actions">
+                                <a href="{{ route('dat_ve.chon_phim') }}" class="btn-booking-primary">
+                                    <i class="fa-solid fa-ticket"></i> ĐẶT VÉ NGAY
                                 </a>
                             </div>
                         </div>
@@ -438,7 +464,6 @@
                                 $detailUrlWithSchedule = route('user.movies.show', $movie->slug) . '#lich-chieu';
                             @endphp
 
-                            <!-- Bấm vào bất kỳ vị trí nào trên ô đều sẽ chuyển trang đến lịch chiếu -->
                             <div class="hot-movie-card" onclick="window.location.href='{{ $detailUrlWithSchedule }}'">
                                 <div class="hot-rank-badge" style="{{ $badgeStyle }}">
                                     <i class="fa-solid fa-crown"></i> TOP {{ $rank }}
@@ -697,7 +722,7 @@
                             <i class="fa-solid fa-crown"></i>
                             Thành viên CineHome
                         </span>
-                        ## Đặt vé hôm nay, tích điểm cho lần xem tiếp theo
+                        <h2>Đặt vé hôm nay, tích điểm cho lần xem tiếp theo</h2>
                         <p>Nhận ưu đãi voucher, quản lý vé điện tử và theo dõi lịch sử đặt vé trong tài khoản của bạn.</p>
                     </div>
 

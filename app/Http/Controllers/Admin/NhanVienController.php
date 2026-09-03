@@ -169,7 +169,7 @@ class NhanVienController extends Controller
 
         AdminNotificationService::push(
             '🗑️ Xóa nhân viên',
-            "Đã chuyển nhân viên {$ten} vào thùng rác",
+            "Đã chuyển nhân viên {$ten} vào thùng rác hệ thống",
             'Warning'
         );
 
@@ -177,14 +177,15 @@ class NhanVienController extends Controller
             $request,
             'Xóa nhân viên',
             'Quản lý nhân viên',
-            "Đã chuyển nhân viên {$ten} vào thùng rác"
+            "Đã chuyển nhân viên {$ten} vào thùng rác hệ thống"
         );
 
         return back()->with(
             'success',
-            'Đã chuyển nhân viên vào thùng rác.'
+            'Đã chuyển nhân viên vào thùng rác chung của hệ thống.'
         );
     }
+
     public function restore(Request $request, $id)
     {
         $nhanvien = NguoiDung::onlyTrashed()
@@ -243,7 +244,6 @@ class NhanVienController extends Controller
 
         $ten = $nhanvien->ho_ten;
 
-        // Chưa phát sinh dữ liệu => cho phép xóa vĩnh viễn
         $nhanvien->forceDelete();
 
         AdminNotificationService::push(
@@ -267,32 +267,7 @@ class NhanVienController extends Controller
 
     public function trash(Request $request)
     {
-        $query = NguoiDung::onlyTrashed()
-            ->where('vai_tro', 'nhan_vien');
-
-        if ($request->filled('keyword')) {
-            $keyword = trim($request->keyword);
-
-            $query->where(function ($q) use ($keyword) {
-                $q->where('ho_ten', 'like', "%{$keyword}%")
-                    ->orWhere('email', 'like', "%{$keyword}%");
-            });
-        }
-
-        if ($request->filled('deleted_from')) {
-            $query->whereDate('deleted_at', '>=', $request->deleted_from);
-        }
-
-        if ($request->filled('deleted_to')) {
-            $query->whereDate('deleted_at', '<=', $request->deleted_to);
-        }
-
-        $nhanViens = $query
-            ->latest('deleted_at')
-            ->paginate(10)
-            ->withQueryString();
-
-        return view('admin.nhanviens.trash', compact('nhanViens'));
+        return redirect()->route('admin.thung-rac.index', ['tab' => 'nhan_vien']);
     }
 
     public function toggleStatus(Request $request, NguoiDung $nhanvien)
